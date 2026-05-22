@@ -4,6 +4,10 @@ User management controller.
 Provides the /api/v1/users router. All endpoints require admin privileges.
 Supports paginated listing, single-user retrieval, profile updates, deletion,
 approval, blocking, and a statistics overview.
+
+Multi-tenancy: every operation is automatically scoped to the current admin's
+``tenant_id``.  Superadmin users (``tenant_id=None``) see all users across
+every tenant.
 """
 
 from typing import Optional
@@ -22,7 +26,6 @@ from app.utils.response import paginated_response, success_response
 router = APIRouter(
     prefix="/api/v1/users",
     tags=["Users"],
-    dependencies=[Depends(require_admin)],
 )
 
 
@@ -40,15 +43,18 @@ def list_users(
     role: Optional[UserRole] = Query(default=None, description="Filter by role"),
     status: Optional[UserStatus] = Query(default=None, description="Filter by status"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
-    Return a paginated list of users.
+    Return a paginated list of users scoped to the caller's tenant.
 
     Query parameters:
     - **page**: 1-indexed page number.
     - **per_page**: Number of users per page (max 100).
     - **role**: Optional ``admin`` or ``voter`` filter.
     - **status**: Optional ``active``, ``pending``, or ``blocked`` filter.
+
+    Superadmin callers (``tenant_id=None``) see users from all tenants.
     """
     skip = (page - 1) * per_page
     users, total = user_service.get_all_users(
@@ -57,6 +63,7 @@ def list_users(
         limit=per_page,
         role=role,
         status_filter=status,
+        tenant_id=current_user.tenant_id,
     )
     data = [UserResponse.model_validate(u).model_dump(mode="json") for u in users]
     return paginated_response(data=data, total=total, page=page, per_page=per_page)
@@ -72,11 +79,13 @@ def list_users(
 )
 def user_stats(
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
-    Return aggregate user statistics: totals by role and status.
+    Return aggregate user statistics scoped to the caller's tenant.
+    Superadmin callers receive platform-wide totals.
     """
-    stats = user_service.get_dashboard_stats(db)
+    stats = user_service.get_dashboard_stats(db, tenant_id=current_user.tenant_id)
     return success_response(data=stats, message="User statistics retrieved.")
 
 
@@ -92,12 +101,13 @@ def user_stats(
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> UserResponse:
     """
-    Fetch a user by their primary key.
-    Raises 404 if not found.
+    Fetch a user by their primary key, scoped to the caller's tenant.
+    Raises 404 if not found or not in the caller's tenant.
     """
-    user = user_service.get_user_by_id(db, user_id)
+    user = user_service.get_user_by_id(db, user_id, tenant_id=current_user.tenant_id)
     return UserResponse.model_validate(user)
 
 
@@ -114,6 +124,7 @@ def update_user(
     user_id: int,
     payload: UserUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> UserResponse:
     """
     Apply a partial update to the user identified by ``user_id``.
@@ -135,12 +146,13 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
     Permanently remove the user identified by ``user_id``.
-    Raises 404 if not found.
+    Scoped to the caller's tenant.  Raises 404 if not found or not in tenant.
     """
-    user_service.delete_user(db, user_id)
+    user_service.delete_user(db, user_id, tenant_id=current_user.tenant_id)
     return success_response(message=f"User {user_id} deleted successfully.")
 
 
@@ -156,12 +168,13 @@ def delete_user(
 def approve_user(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> UserResponse:
     """
     Set a pending user's status to ``active``, allowing them to log in.
-    Raises 400 if the user is not in ``pending`` status.
+    Scoped to the caller's tenant.  Raises 400 if not in ``pending`` status.
     """
-    updated = user_service.approve_user(db, user_id)
+    updated = user_service.approve_user(db, user_id, tenant_id=current_user.tenant_id)
     return UserResponse.model_validate(updated)
 
 
@@ -177,10 +190,11 @@ def approve_user(
 def block_user(
     user_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> UserResponse:
     """
     Set a user's status to ``blocked``, preventing further logins.
-    Raises 400 if the user is already blocked.
+    Scoped to the caller's tenant.  Raises 400 if already blocked.
     """
-    updated = user_service.block_user(db, user_id)
+    updated = user_service.block_user(db, user_id, tenant_id=current_user.tenant_id)
     return UserResponse.model_validate(updated)
