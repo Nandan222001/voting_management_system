@@ -194,7 +194,12 @@ const candidateSlice = createSlice({
       })
       .addCase(fetchElectionResults.fulfilled, (state, action) => {
         state.loading = false
-        state.results = action.payload.results || action.payload.data || action.payload
+        // Normalize: API returns { total_votes, results: [...] }, pages expect { total_votes, candidates: [...] }
+        const payload = action.payload.data || action.payload
+        state.results = {
+          ...payload,
+          candidates: payload.results || payload.candidates || []
+        }
       })
       .addCase(fetchElectionResults.rejected, (state, action) => {
         state.loading = false
