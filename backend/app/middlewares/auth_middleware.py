@@ -90,6 +90,46 @@ def get_current_user(
     return user
 
 
+def get_optional_current_user(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """
+    Attempt to decode a Bearer JWT and return the authenticated ``User``.
+
+    Unlike :func:`get_current_user` this dependency does **not** raise 401
+    when no ``Authorization`` header is present — it simply returns ``None``.
+    This makes it suitable for publicly-accessible endpoints that optionally
+    apply tenant scoping when a valid token is supplied.
+
+    Args:
+        token: Optional JWT access token (``None`` when no header is sent).
+        db:    Database session provided by :func:`app.config.database.get_db`.
+
+    Returns:
+        The authenticated :class:`app.models.user.User` instance, or ``None``
+        if no (valid) token was provided.
+    """
+    if not token:
+        return None
+
+    try:
+        payload = decode_token(token)
+        user_id: int | None = payload.get("sub")
+        token_type: str | None = payload.get("type")
+
+        if user_id is None or token_type != "access":
+            return None
+    except JWTError:
+        return None
+
+    user: User | None = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None or not user.is_verified:
+        return None
+
+    return user
+
+
 # ---------------------------------------------------------------------------
 # Role-enforcement dependencies
 # ---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user
+from app.middlewares.auth_middleware import get_current_user, get_optional_current_user
 from app.models.user import User, UserRole
 from app.schemas.vote import VoteCreate, VoteResponse
 from app.services.vote_service import vote_service

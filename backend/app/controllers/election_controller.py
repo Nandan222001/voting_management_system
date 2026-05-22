@@ -18,7 +18,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, require_admin
+from app.middlewares.auth_middleware import (
+    get_current_user,
+    get_optional_current_user,
+    require_admin,
+)
 from app.models.election import ElectionStatus
 from app.models.user import User, UserRole
 from app.schemas.election import ElectionCreate, ElectionResponse, ElectionUpdate
@@ -79,7 +83,7 @@ def list_elections(
         description="Filter elections by tenant (superadmin) or auto-scoped.",
     ),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> JSONResponse:
     """
     Return a paginated list of elections.
@@ -157,7 +161,7 @@ def create_election(
 def get_election(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> ElectionResponse:
     """
     Fetch a single election by primary key.
