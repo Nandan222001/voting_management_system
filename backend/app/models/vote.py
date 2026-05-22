@@ -29,6 +29,14 @@ class Vote(Base):
         UniqueConstraint("user_id", "election_id", name="uq_vote_user_election"),
     )
 
+    # Multi-tenancy – CASCADE delete votes when tenant is removed
+    tenant_id = Column(
+        Integer,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
     # Primary key
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 

@@ -4,6 +4,7 @@ import electionReducer from './slices/electionSlice'
 import candidateReducer from './slices/candidateSlice'
 import userReducer from './slices/userSlice'
 import voteReducer from './slices/voteSlice'
+import tenantReducer from './slices/tenantSlice'
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     candidates: candidateReducer,
     users: userReducer,
     votes: voteReducer,
+    tenants: tenantReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

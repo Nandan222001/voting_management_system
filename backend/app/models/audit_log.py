@@ -36,6 +36,14 @@ class AuditLog(Base):
         index=True,
     )
 
+    # Multi-tenancy – SET NULL so logs survive tenant removal for auditing
+    tenant_id = Column(
+        Integer,
+        ForeignKey("tenants.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # What happened (e.g. "user.login", "vote.cast", "election.status_changed")
     action = Column(String(100), nullable=False, index=True)
 

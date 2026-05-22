@@ -30,6 +30,14 @@ class Candidate(Base):
         index=True,
     )
 
+    # Multi-tenancy – CASCADE delete candidates when tenant is removed
+    tenant_id = Column(
+        Integer,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
     # Candidate details
     full_name = Column(String(150), nullable=False)
     party = Column(String(150), nullable=True)
