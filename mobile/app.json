@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "CivicVote",
+    "slug": "civicvote",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#003fd2"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.civicvote.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#003fd2"
+      },
+      "package": "com.civicvote.mobile"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
