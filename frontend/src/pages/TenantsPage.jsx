@@ -12,7 +12,6 @@ import {
   FaEye,
   FaUsers,
   FaVoteYea,
-  FaTimes,
 } from 'react-icons/fa';
 import {
   fetchTenants,

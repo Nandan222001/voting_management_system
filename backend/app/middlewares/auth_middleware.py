@@ -23,10 +23,18 @@ from app.models.user import User, UserRole
 from app.utils.security import decode_token
 
 # ---------------------------------------------------------------------------
-# OAuth2 scheme
+# OAuth2 schemes
 # ---------------------------------------------------------------------------
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+
+# A variant that returns ``None`` instead of raising 401 when no token is
+# present; used by endpoints that are publicly accessible but optionally
+# tenant-scoped when the caller is authenticated.
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/auth/login",
+    auto_error=False,
+)
 
 
 # ---------------------------------------------------------------------------

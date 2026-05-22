@@ -4,17 +4,24 @@ Vote controller.
 Provides the /api/v1/votes router.
 - POST /cast          — authenticated voters only.
 - GET  /my-vote/{id}  — authenticated voters only.
-- GET  /results/{id}  — public.
-- GET  /live/{id}     — public.
+- GET  /results/{id}  — public (tenant-scoped for authenticated users).
+- GET  /live/{id}     — public (tenant-scoped for authenticated users).
+
+Multi-tenancy: cast_vote verifies that the election and candidate belong to
+the same tenant as the voter.  Results and live-stats endpoints accept an
+optional ``tenant_id`` query parameter; authenticated non-superadmin users are
+auto-scoped to their own tenant.
 """
 
-from fastapi import APIRouter, Depends, Request
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.vote import VoteCreate, VoteResponse
 from app.services.vote_service import vote_service
 from app.utils.helpers import get_client_ip
@@ -55,6 +62,7 @@ def cast_vote(
         election_id=payload.election_id,
         candidate_id=payload.candidate_id,
         ip_address=ip,
+        tenant_id=current_user.tenant_id,
     )
     return VoteResponse.model_validate(vote)
 
@@ -102,12 +110,21 @@ def get_my_vote(
 def get_results(
     election_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return aggregated vote results for the specified election,
     ranked by vote count descending, including percentage shares.
+
+    Authenticated non-superadmin users are automatically scoped to their tenant.
     """
-    results = vote_service.get_election_results(db, election_id)
+    effective_tenant_id: Optional[int] = None
+    if current_user is not None and current_user.role != UserRole.superadmin:
+        effective_tenant_id = current_user.tenant_id
+
+    results = vote_service.get_election_results(
+        db, election_id, tenant_id=effective_tenant_id
+    )
     return success_response(
         data=results.model_dump(mode="json"),
         message="Election results retrieved.",
@@ -125,10 +142,19 @@ def get_results(
 def get_live_stats(
     election_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return real-time voting statistics for the specified election.
     Includes per-candidate vote counts, percentages, and the leading candidate.
+
+    Authenticated non-superadmin users are automatically scoped to their tenant.
     """
-    stats = vote_service.get_live_stats(db, election_id)
+    effective_tenant_id: Optional[int] = None
+    if current_user is not None and current_user.role != UserRole.superadmin:
+        effective_tenant_id = current_user.tenant_id
+
+    stats = vote_service.get_live_stats(
+        db, election_id, tenant_id=effective_tenant_id
+    )
     return success_response(data=stats, message="Live stats retrieved.")
