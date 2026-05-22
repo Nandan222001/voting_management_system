@@ -110,7 +110,7 @@ def get_my_vote(
 def get_results(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> JSONResponse:
     """
     Return aggregated vote results for the specified election,
@@ -142,7 +142,7 @@ def get_results(
 def get_live_stats(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> JSONResponse:
     """
     Return real-time voting statistics for the specified election.
