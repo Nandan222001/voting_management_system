@@ -308,31 +308,20 @@ class UserService:
             base_query = base_query.filter(User.tenant_id == tenant_id)
 
         total_users: int = base_query.count()
-        total_voters: int = base_query.filter(User.role == UserRole.voter).count()
-        total_admins: int = base_query.filter(User.role == UserRole.admin).count()
+        total_voters: int = (
+            base_query.filter(User.role == UserRole.voter).count()
+        )
+        total_admins: int = (
+            base_query.filter(User.role == UserRole.admin).count()
+        )
         pending_count: int = (
-            db.query(User)
-            .filter(
-                User.status == UserStatus.pending,
-                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
-            )
-            .count()
+            base_query.filter(User.status == UserStatus.pending).count()
         )
         active_count: int = (
-            db.query(User)
-            .filter(
-                User.status == UserStatus.active,
-                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
-            )
-            .count()
+            base_query.filter(User.status == UserStatus.active).count()
         )
         blocked_count: int = (
-            db.query(User)
-            .filter(
-                User.status == UserStatus.blocked,
-                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
-            )
-            .count()
+            base_query.filter(User.status == UserStatus.blocked).count()
         )
 
         return {
