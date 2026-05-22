@@ -56,6 +56,14 @@ class Election(Base):
         index=True,
     )
 
+    # Multi-tenancy – CASCADE delete elections when tenant is removed
+    tenant_id = Column(
+        Integer,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
     # Timestamps
     created_at = Column(
         DateTime,
@@ -73,6 +81,7 @@ class Election(Base):
 
     # Relationships
     creator = relationship("User", back_populates="elections_created", lazy="select")
+    tenant = relationship("Tenant", back_populates="elections", lazy="select")
     candidates = relationship(
         "Candidate",
         back_populates="election",

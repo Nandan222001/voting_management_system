@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
@@ -26,6 +28,11 @@ class RegisterRequest(BaseModel):
         min_length=8,
         max_length=128,
         examples=["Str0ng!Pass"],
+    )
+    tenant_id: Optional[int] = Field(
+        default=None,
+        description="ID of the tenant organisation this user is registering under.",
+        examples=[1],
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -61,6 +68,7 @@ class AuthUserInfo(BaseModel):
     email: EmailStr
     role: str
     is_verified: bool
+    tenant_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

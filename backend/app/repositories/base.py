@@ -5,6 +5,11 @@ Dependency Inversion Principle: Higher-level services depend on this
 abstraction rather than on concrete SQLAlchemy calls.  Concrete repositories
 extend ``BaseRepository`` and may override or add methods without touching
 service code (Open/Closed Principle).
+
+Multi-tenancy: Tenant-scoped query helpers (``get_by_id_and_tenant``,
+``get_all_by_tenant``, ``count_by_tenant``) are provided for models that
+carry a ``tenant_id`` column.  Models without that column are handled
+gracefully — the tenant filter is simply skipped.
 """
 
 from typing import Any, Generic, Optional, Type, TypeVar
@@ -13,6 +18,7 @@ from sqlalchemy.orm import Session
 
 # T is bound to any SQLAlchemy declarative model.
 T = TypeVar("T")
+
 
 
 class BaseRepository(Generic[T]):
@@ -77,6 +83,83 @@ class BaseRepository(Generic[T]):
             Row count as an integer.
         """
         return self.db.query(self.model).count()
+
+    # ------------------------------------------------------------------
+    # Tenant-scoped read helpers
+    # ------------------------------------------------------------------
+
+    def get_by_id_and_tenant(self, id: Any, tenant_id: int) -> Optional[T]:
+        """
+        Fetch a single record by primary key **and** tenant_id.
+
+        This prevents cross-tenant data leakage: if the record exists but
+        belongs to a different tenant, ``None`` is returned.
+
+        If the model has no ``tenant_id`` column the tenant filter is skipped
+        and the method behaves identically to :meth:`get_by_id`.
+
+        Args:
+            id:        Primary key value.
+            tenant_id: The tenant scope to restrict the query to.
+
+        Returns:
+            The ORM instance, or ``None`` if not found / wrong tenant.
+        """
+        query = self.db.query(self.model).filter(self.model.id == id)
+        if hasattr(self.model, "tenant_id"):
+            query = query.filter(self.model.tenant_id == tenant_id)
+        return query.first()
+
+    def get_all_by_tenant(
+        self,
+        tenant_id: int,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[T]:
+        """
+        Fetch a paginated slice of records belonging to *tenant_id*.
+
+        If the model has no ``tenant_id`` column the method falls back to the
+        global :meth:`get_all`.
+
+        Args:
+            tenant_id: The tenant scope to restrict the query to.
+            skip:      Number of rows to skip (offset).
+            limit:     Maximum number of rows to return.
+
+        Returns:
+            A list of ORM instances scoped to the given tenant.
+        """
+        if not hasattr(self.model, "tenant_id"):
+            return self.get_all(skip=skip, limit=limit)
+        return (
+            self.db.query(self.model)
+            .filter(self.model.tenant_id == tenant_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def count_by_tenant(self, tenant_id: int) -> int:
+        """
+        Count records belonging to *tenant_id*.
+
+        If the model has no ``tenant_id`` column the method falls back to the
+        global :meth:`count`.
+
+        Args:
+            tenant_id: The tenant scope to count within.
+
+        Returns:
+            Row count as an integer.
+        """
+        if not hasattr(self.model, "tenant_id"):
+            return self.count()
+        return (
+            self.db.query(self.model)
+            .filter(self.model.tenant_id == tenant_id)
+            .count()
+        )
 
     # ------------------------------------------------------------------
     # Write helpers

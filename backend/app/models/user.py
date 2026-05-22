@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
+    ForeignKey,
     Integer,
     String,
     func,
@@ -18,6 +19,7 @@ from app.config.database import Base
 class UserRole(str, enum.Enum):
     """Role assigned to a user account."""
 
+    superadmin = "superadmin"
     admin = "admin"
     voter = "voter"
 
@@ -31,7 +33,7 @@ class UserStatus(str, enum.Enum):
 
 
 class User(Base):
-    """ORM model representing a registered user (admin or voter)."""
+    """ORM model representing a registered user (superadmin, admin, or voter)."""
 
     __tablename__ = "users"
 
@@ -63,6 +65,14 @@ class User(Base):
     otp_expires_at = Column(DateTime, nullable=True)
     is_verified = Column(Boolean, nullable=False, default=False)
 
+    # Multi-tenancy – nullable because superadmin has no tenant
+    tenant_id = Column(
+        Integer,
+        ForeignKey("tenants.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Timestamps (auto-managed by the DB)
     created_at = Column(
         DateTime,
@@ -83,6 +93,12 @@ class User(Base):
     audit_logs = relationship("AuditLog", back_populates="user", lazy="select")
     elections_created = relationship(
         "Election", back_populates="creator", lazy="select"
+    )
+    tenant = relationship(
+        "Tenant",
+        back_populates="users",
+        foreign_keys=[tenant_id],
+        lazy="select",
     )
 
     def __repr__(self) -> str:  # pragma: no cover

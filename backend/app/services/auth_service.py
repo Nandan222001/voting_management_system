@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole, UserStatus
 from app.repositories.user_repository import UserRepository
+from app.repositories.tenant_repository import TenantRepository
 from app.schemas.auth import AuthUserInfo, RegisterRequest, TokenResponse
 from app.utils.security import (
     create_access_token,
@@ -43,25 +44,65 @@ class AuthService:
     # Registration
     # ------------------------------------------------------------------
 
-    def register(self, db: Session, register_data: RegisterRequest) -> User:
+    def register(
+        self,
+        db: Session,
+        register_data: RegisterRequest,
+        tenant_id: Optional[int] = None,
+    ) -> User:
         """
         Create a new voter account.
 
         - Hashes the password before persistence.
         - Generates and stores an OTP for e-mail verification.
         - New accounts start with ``status=pending`` and ``is_verified=False``.
+        - When *tenant_id* is provided the user is associated with that tenant;
+          the tenant must exist and must not have exceeded its voter limit.
 
         Args:
             db:            Active database session.
             register_data: Validated registration payload.
+            tenant_id:     Optional tenant to assign the new user to.
 
         Returns:
             The newly created ``User`` ORM instance.
 
         Raises:
+            HTTPException 404: If the specified tenant does not exist.
+            HTTPException 402: If the tenant's voter limit has been exceeded.
             HTTPException 409: If the e-mail address is already registered.
         """
         repo = UserRepository(db)
+
+        # Resolve tenant_id — prefer the value carried in the request body,
+        # then fall back to the parameter (caller override).
+        resolved_tenant_id: Optional[int] = (
+            register_data.tenant_id if register_data.tenant_id is not None else tenant_id
+        )
+
+        if resolved_tenant_id is not None:
+            tenant_repo = TenantRepository(db)
+            tenant = tenant_repo.get_by_id(resolved_tenant_id)
+            if tenant is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Tenant with id={resolved_tenant_id} not found.",
+                )
+            # Enforce voter limit.
+            from app.models.user import UserRole as _Role
+            current_voter_count = (
+                db.query(User)
+                .filter(User.tenant_id == resolved_tenant_id, User.role == _Role.voter)
+                .count()
+            )
+            if current_voter_count >= tenant.max_voters:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail=(
+                        f"Voter limit of {tenant.max_voters} has been reached "
+                        "for this organisation. Please upgrade your plan."
+                    ),
+                )
 
         if repo.get_by_email(register_data.email):
             raise HTTPException(
@@ -82,6 +123,7 @@ class AuthService:
             is_verified=False,
             otp_code=otp,
             otp_expires_at=otp_expires,
+            tenant_id=resolved_tenant_id,
         )
         db.add(user)
         db.commit()
@@ -130,7 +172,21 @@ class AuthService:
                 detail="Your account is awaiting admin approval.",
             )
 
-        token_payload = {"sub": str(user.id), "role": user.role.value}
+        # Check whether the user's tenant is suspended.
+        if user.tenant_id is not None:
+            tenant_repo = TenantRepository(db)
+            tenant = tenant_repo.get_by_id(user.tenant_id)
+            if tenant is not None and tenant.status.value == "suspended":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Your organization's account has been suspended.",
+                )
+
+        token_payload = {
+            "sub": str(user.id),
+            "role": user.role.value,
+            "tenant_id": user.tenant_id,
+        }
         access_token = create_access_token(token_payload)
         # Refresh token is stored implicitly; the client must send it back.
         create_refresh_token(token_payload)
@@ -144,6 +200,7 @@ class AuthService:
                 email=user.email,
                 role=user.role.value,
                 is_verified=user.is_verified,
+                tenant_id=user.tenant_id,
             ),
         )
 
@@ -263,7 +320,11 @@ class AuthService:
                 detail="User not found.",
             )
 
-        token_payload = {"sub": str(user.id), "role": user.role.value}
+        token_payload = {
+            "sub": str(user.id),
+            "role": user.role.value,
+            "tenant_id": user.tenant_id,
+        }
         new_access_token = create_access_token(token_payload)
 
         return TokenResponse(
@@ -275,6 +336,7 @@ class AuthService:
                 email=user.email,
                 role=user.role.value,
                 is_verified=user.is_verified,
+                tenant_id=user.tenant_id,
             ),
         )
 
