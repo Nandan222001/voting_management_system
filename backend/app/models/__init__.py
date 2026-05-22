@@ -1,0 +1,26 @@
+# Re-export every ORM model so that:
+#   1. Alembic's env.py can import Base and discover all tables via
+#      ``from app.models import Base``  (after importing this package).
+#   2. Application code can do ``from app.models import User`` etc.
+
+from app.models.user import User, UserRole, UserStatus          # noqa: F401
+from app.models.election import Election, ElectionStatus        # noqa: F401
+from app.models.candidate import Candidate                      # noqa: F401
+from app.models.vote import Vote                                # noqa: F401
+from app.models.audit_log import AuditLog                      # noqa: F401
+
+# Convenience re-export of the shared declarative base so callers never have
+# to import database.py directly when they only need Base.
+from app.config.database import Base                            # noqa: F401
+
+__all__ = [
+    "Base",
+    "User",
+    "UserRole",
+    "UserStatus",
+    "Election",
+    "ElectionStatus",
+    "Candidate",
+    "Vote",
+    "AuditLog",
+]
