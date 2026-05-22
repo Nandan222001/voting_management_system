@@ -41,19 +41,20 @@ class VoteService:
         election_id: int,
         candidate_id: int,
         ip_address: Optional[str] = None,
+        tenant_id: Optional[int] = None,
     ) -> Vote:
         """
         Cast a ballot on behalf of *user_id* in *election_id* for
         *candidate_id*.
 
         Validation steps performed (in order):
-        1. The election must exist.
+        1. The election must exist and belong to the same tenant as the voter.
         2. The election must currently be ``active``.
-        3. The candidate must exist and belong to the election.
+        3. The candidate must exist and belong to the election (and same tenant).
         4. The user must not have already voted in this election.
 
         Side-effects on success:
-        * A ``Vote`` record is created.
+        * A ``Vote`` record is created with ``tenant_id`` set.
         * The candidate's ``vote_count`` is atomically incremented.
         * An audit log entry is written.
 
@@ -63,12 +64,15 @@ class VoteService:
             election_id:  Primary key of the target election.
             candidate_id: Primary key of the chosen candidate.
             ip_address:   Network address of the client (optional).
+            tenant_id:    Tenant the voter belongs to; all related entities must
+                          share this tenant.  Pass ``None`` for superadmin.
 
         Returns:
             The newly-created ``Vote`` ORM instance.
 
         Raises:
-            HTTPException 404: If the election or candidate is not found.
+            HTTPException 404: If the election or candidate is not found, or
+                               does not belong to the same tenant.
             HTTPException 400: If the election is not active.
             HTTPException 409: If the user has already voted in this election.
         """
@@ -77,9 +81,14 @@ class VoteService:
         vote_repo = VoteRepository(db)
         audit_repo = AuditLogRepository(db)
 
-        # 1. Election must exist.
+        # 1. Election must exist and belong to the correct tenant.
         election: Optional[Election] = election_repo.get_by_id(election_id)
         if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Election with id={election_id} not found.",
@@ -95,7 +104,7 @@ class VoteService:
                 ),
             )
 
-        # 3. Candidate must belong to this election.
+        # 3. Candidate must belong to this election (and therefore same tenant).
         candidate = candidate_repo.get_by_id(candidate_id)
         if candidate is None or candidate.election_id != election_id:
             raise HTTPException(
@@ -113,13 +122,14 @@ class VoteService:
                 detail="You have already cast your vote in this election.",
             )
 
-        # Persist the vote.
+        # Persist the vote — tenant_id is required on the Vote model.
         vote = Vote(
             user_id=user_id,
             election_id=election_id,
             candidate_id=candidate_id,
             voted_at=datetime.now(timezone.utc),
             ip_address=ip_address,
+            tenant_id=tenant_id if tenant_id is not None else election.tenant_id,
         )
         db.add(vote)
 
@@ -153,7 +163,10 @@ class VoteService:
     # ------------------------------------------------------------------
 
     def get_election_results(
-        self, db: Session, election_id: int
+        self,
+        db: Session,
+        election_id: int,
+        tenant_id: Optional[int] = None,
     ) -> ElectionResultResponse:
         """
         Return the full result summary for *election_id*, including per-
@@ -162,16 +175,23 @@ class VoteService:
         Args:
             db:          Active database session.
             election_id: Primary key of the election.
+            tenant_id:   When supplied, verify the election belongs to this
+                         tenant before returning results.
 
         Returns:
             An :class:`~app.schemas.vote.ElectionResultResponse` instance.
 
         Raises:
-            HTTPException 404: If the election does not exist.
+            HTTPException 404: If the election does not exist or is not in tenant.
         """
         election_repo = ElectionRepository(db)
         election: Optional[Election] = election_repo.get_by_id(election_id)
         if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Election with id={election_id} not found.",
@@ -213,7 +233,10 @@ class VoteService:
     # ------------------------------------------------------------------
 
     def get_live_stats(
-        self, db: Session, election_id: int
+        self,
+        db: Session,
+        election_id: int,
+        tenant_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """
         Return real-time voting statistics for an election.
@@ -224,6 +247,8 @@ class VoteService:
         Args:
             db:          Active database session.
             election_id: Primary key of the election.
+            tenant_id:   When supplied, verify the election belongs to this
+                         tenant before returning stats.
 
         Returns:
             A dictionary with keys:
@@ -231,11 +256,16 @@ class VoteService:
             ``total_votes``, ``candidate_stats``.
 
         Raises:
-            HTTPException 404: If the election does not exist.
+            HTTPException 404: If the election does not exist or is not in tenant.
         """
         election_repo = ElectionRepository(db)
         election: Optional[Election] = election_repo.get_by_id(election_id)
         if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Election with id={election_id} not found.",

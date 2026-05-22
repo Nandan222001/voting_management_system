@@ -66,6 +66,7 @@ class UserResponse(UserBase):
     role: UserRole
     status: UserStatus
     is_verified: bool
+    tenant_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

@@ -12,8 +12,11 @@ import CandidatesPage from './pages/CandidatesPage'
 import UsersPage from './pages/UsersPage'
 import ResultsPage from './pages/ResultsPage'
 import AuditLogsPage from './pages/AuditLogsPage'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import TenantsPage from './pages/TenantsPage'
 
-// PrivateRoute component — each page handles its own MainLayout
+// ─── PrivateRoute ─────────────────────────────────────────────────────────────
+// Requires authenticated user. Shows spinner while auth is resolving.
 function PrivateRoute({ children }) {
   const { isAuthenticated, loading } = useSelector((state) => state.auth)
 
@@ -35,10 +38,59 @@ function PrivateRoute({ children }) {
   return children
 }
 
-// RootRedirect: decides where / goes
+// ─── SuperAdminRoute ──────────────────────────────────────────────────────────
+// Requires authenticated user with role === 'superadmin'.
+// Redirects non-superadmins to /dashboard.
+function SuperAdminRoute({ children }) {
+  const { isAuthenticated, loading, user } = useSelector((state) => state.auth)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 font-medium">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user?.role !== 'superadmin') {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return children
+}
+
+// ─── RootRedirect ─────────────────────────────────────────────────────────────
+// Decides where / goes based on auth state and role.
 function RootRedirect() {
-  const { isAuthenticated } = useSelector((state) => state.auth)
-  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />
+  const { isAuthenticated, loading, user } = useSelector((state) => state.auth)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 font-medium">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user?.role === 'superadmin') {
+    return <Navigate to="/superadmin" replace />
+  }
+
+  return <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
@@ -57,7 +109,25 @@ export default function App() {
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Protected */}
+      {/* SuperAdmin-only routes */}
+      <Route
+        path="/superadmin"
+        element={
+          <SuperAdminRoute>
+            <SuperAdminDashboard />
+          </SuperAdminRoute>
+        }
+      />
+      <Route
+        path="/tenants"
+        element={
+          <SuperAdminRoute>
+            <TenantsPage />
+          </SuperAdminRoute>
+        }
+      />
+
+      {/* Protected routes for all authenticated users */}
       <Route
         path="/dashboard"
         element={

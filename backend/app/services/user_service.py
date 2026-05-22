@@ -39,10 +39,11 @@ class UserService:
         limit: int = 20,
         role: Optional[UserRole] = None,
         status_filter: Optional[UserStatus] = None,
+        tenant_id: Optional[int] = None,
     ) -> tuple[list[User], int]:
         """
-        Return a paginated list of users, optionally filtered by role and/or
-        status.
+        Return a paginated list of users, optionally filtered by role, status,
+        and tenant.
 
         Args:
             db:            Active database session.
@@ -50,12 +51,19 @@ class UserService:
             limit:         Maximum rows to return.
             role:          When supplied, restrict to users with this role.
             status_filter: When supplied, restrict to users with this status.
+            tenant_id:     When supplied, restrict to users belonging to that
+                           tenant.  Pass ``None`` (superadmin) to see all users
+                           across every tenant.
 
         Returns:
             A ``(users, total)`` tuple.
         """
         repo = UserRepository(db)
         query = db.query(User)
+
+        # Scope to tenant when the caller is not a superadmin.
+        if tenant_id is not None:
+            query = query.filter(User.tenant_id == tenant_id)
 
         if role is not None:
             query = query.filter(User.role == role)
@@ -66,23 +74,36 @@ class UserService:
         users: list[User] = query.offset(skip).limit(limit).all()
         return users, total
 
-    def get_user_by_id(self, db: Session, user_id: int) -> User:
+    def get_user_by_id(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> User:
         """
-        Fetch a single user by primary key.
+        Fetch a single user by primary key, optionally scoped to a tenant.
 
         Args:
-            db:      Active database session.
-            user_id: Primary key to look up.
+            db:        Active database session.
+            user_id:   Primary key to look up.
+            tenant_id: When supplied, verify the user belongs to this tenant.
+                       Pass ``None`` (superadmin) to skip the ownership check.
 
         Returns:
             The matching ``User`` instance.
 
         Raises:
-            HTTPException 404: If no user with that id exists.
+            HTTPException 404: If no user with that id exists, or the user does
+                               not belong to the specified tenant.
         """
         repo = UserRepository(db)
         user: Optional[User] = repo.get_by_id(user_id)
         if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with id={user_id} not found.",
+            )
+        if tenant_id is not None and user.tenant_id != tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"User with id={user_id} not found.",
@@ -150,23 +171,29 @@ class UserService:
         db.refresh(user)
         return user
 
-    def approve_user(self, db: Session, user_id: int) -> User:
+    def approve_user(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> User:
         """
         Approve a pending user, setting their status to ``active``.
 
         Args:
-            db:      Active database session.
-            user_id: Primary key of the user to approve.
+            db:        Active database session.
+            user_id:   Primary key of the user to approve.
+            tenant_id: When supplied, verify the user belongs to this tenant.
 
         Returns:
             The updated ``User`` instance.
 
         Raises:
-            HTTPException 404: If the user does not exist.
+            HTTPException 404: If the user does not exist or is not in tenant.
             HTTPException 400: If the user is not in ``pending`` status.
         """
         repo = UserRepository(db)
-        user = self.get_user_by_id(db, user_id)
+        user = self.get_user_by_id(db, user_id, tenant_id=tenant_id)
 
         if user.status != UserStatus.pending:
             raise HTTPException(
@@ -182,23 +209,29 @@ class UserService:
             )
         return updated
 
-    def block_user(self, db: Session, user_id: int) -> User:
+    def block_user(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> User:
         """
         Block an active user, preventing further logins.
 
         Args:
-            db:      Active database session.
-            user_id: Primary key of the user to block.
+            db:        Active database session.
+            user_id:   Primary key of the user to block.
+            tenant_id: When supplied, verify the user belongs to this tenant.
 
         Returns:
             The updated ``User`` instance.
 
         Raises:
-            HTTPException 404: If the user does not exist.
+            HTTPException 404: If the user does not exist or is not in tenant.
             HTTPException 400: If the user is already blocked.
         """
         repo = UserRepository(db)
-        user = self.get_user_by_id(db, user_id)
+        user = self.get_user_by_id(db, user_id, tenant_id=tenant_id)
 
         if user.status == UserStatus.blocked:
             raise HTTPException(
@@ -214,20 +247,29 @@ class UserService:
             )
         return updated
 
-    def delete_user(self, db: Session, user_id: int) -> bool:
+    def delete_user(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> bool:
         """
         Permanently delete a user record.
 
         Args:
-            db:      Active database session.
-            user_id: Primary key of the user to delete.
+            db:        Active database session.
+            user_id:   Primary key of the user to delete.
+            tenant_id: When supplied, verify the user belongs to this tenant.
 
         Returns:
             ``True`` on success.
 
         Raises:
-            HTTPException 404: If the user does not exist.
+            HTTPException 404: If the user does not exist or is not in tenant.
         """
+        # Validate tenant ownership before deletion.
+        self.get_user_by_id(db, user_id, tenant_id=tenant_id)
+
         repo = UserRepository(db)
         deleted = repo.delete(user_id)
         if not deleted:
@@ -241,32 +283,56 @@ class UserService:
     # Dashboard statistics
     # ------------------------------------------------------------------
 
-    def get_dashboard_stats(self, db: Session) -> dict[str, Any]:
+    def get_dashboard_stats(
+        self,
+        db: Session,
+        tenant_id: Optional[int] = None,
+    ) -> dict[str, Any]:
         """
         Return aggregate user statistics for the admin dashboard.
 
-        Counts are computed from the database rather than cached, ensuring
-        they always reflect the current state.
+        Counts are scoped to the given tenant when *tenant_id* is provided.
+        Superadmin callers pass ``None`` to see platform-wide totals.
 
         Args:
-            db: Active database session.
+            db:        Active database session.
+            tenant_id: When supplied, restrict counts to this tenant.
 
         Returns:
             A dictionary with keys:
             ``total_users``, ``total_voters``, ``total_admins``,
             ``pending_count``, ``active_count``, ``blocked_count``.
         """
-        total_users: int = db.query(User).count()
-        total_voters: int = db.query(User).filter(User.role == UserRole.voter).count()
-        total_admins: int = db.query(User).filter(User.role == UserRole.admin).count()
+        base_query = db.query(User)
+        if tenant_id is not None:
+            base_query = base_query.filter(User.tenant_id == tenant_id)
+
+        total_users: int = base_query.count()
+        total_voters: int = base_query.filter(User.role == UserRole.voter).count()
+        total_admins: int = base_query.filter(User.role == UserRole.admin).count()
         pending_count: int = (
-            db.query(User).filter(User.status == UserStatus.pending).count()
+            db.query(User)
+            .filter(
+                User.status == UserStatus.pending,
+                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
+            )
+            .count()
         )
         active_count: int = (
-            db.query(User).filter(User.status == UserStatus.active).count()
+            db.query(User)
+            .filter(
+                User.status == UserStatus.active,
+                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
+            )
+            .count()
         )
         blocked_count: int = (
-            db.query(User).filter(User.status == UserStatus.blocked).count()
+            db.query(User)
+            .filter(
+                User.status == UserStatus.blocked,
+                *([User.tenant_id == tenant_id] if tenant_id is not None else []),
+            )
+            .count()
         )
 
         return {

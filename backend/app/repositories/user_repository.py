@@ -24,12 +24,16 @@ class UserRepository(BaseRepository[User]):
         super().__init__(db)
 
     # ------------------------------------------------------------------
-    # Lookup helpers
+    # Lookup helpers — global (no tenant scope)
     # ------------------------------------------------------------------
 
     def get_by_email(self, email: str) -> Optional[User]:
         """
-        Fetch a user by their unique e-mail address.
+        Fetch a user by their unique e-mail address (global lookup).
+
+        This is intentionally tenant-agnostic so that the authentication
+        service and superadmin workflows can locate any user regardless of
+        which tenant they belong to.
 
         Args:
             email: E-mail address to search for (case-insensitive look-up
@@ -71,7 +75,8 @@ class UserRepository(BaseRepository[User]):
 
     def get_pending_users(self) -> list[User]:
         """
-        Return all users whose registration is awaiting admin approval.
+        Return all users whose registration is awaiting admin approval
+        (global, across all tenants).
 
         Returns:
             A list of ``User`` instances with ``status == PENDING``.
@@ -80,6 +85,68 @@ class UserRepository(BaseRepository[User]):
             self.db.query(User)
             .filter(User.status == UserStatus.pending)
             .all()
+        )
+
+    # ------------------------------------------------------------------
+    # Tenant-scoped lookup helpers
+    # ------------------------------------------------------------------
+
+    def get_by_email_and_tenant(
+        self, email: str, tenant_id: int
+    ) -> Optional[User]:
+        """
+        Fetch a user by e-mail address within a specific tenant context.
+
+        Unlike :meth:`get_by_email`, this method enforces tenant isolation
+        and will return ``None`` if the user belongs to a different tenant.
+
+        Args:
+            email:     E-mail address to search for.
+            tenant_id: Tenant scope to restrict the lookup to.
+
+        Returns:
+            The matching ``User`` instance, or ``None``.
+        """
+        return (
+            self.db.query(User)
+            .filter(User.email == email, User.tenant_id == tenant_id)
+            .first()
+        )
+
+    def get_pending_by_tenant(self, tenant_id: int) -> list[User]:
+        """
+        Return all pending users within the given tenant.
+
+        Args:
+            tenant_id: Tenant scope to restrict the lookup to.
+
+        Returns:
+            A list of ``User`` instances with ``status == pending`` belonging
+            to *tenant_id*.
+        """
+        return (
+            self.db.query(User)
+            .filter(
+                User.tenant_id == tenant_id,
+                User.status == UserStatus.pending,
+            )
+            .all()
+        )
+
+    def count_by_tenant(self, tenant_id: int) -> int:
+        """
+        Count the total number of users belonging to *tenant_id*.
+
+        Args:
+            tenant_id: Tenant scope to count within.
+
+        Returns:
+            Row count as an integer.
+        """
+        return (
+            self.db.query(User)
+            .filter(User.tenant_id == tenant_id)
+            .count()
         )
 
     # ------------------------------------------------------------------

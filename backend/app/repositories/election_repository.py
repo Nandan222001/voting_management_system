@@ -28,34 +28,51 @@ class ElectionRepository(BaseRepository[Election]):
     # Filtered lookups
     # ------------------------------------------------------------------
 
-    def get_active_elections(self) -> list[Election]:
+    def get_active_elections(
+        self,
+        tenant_id: Optional[int] = None,
+    ) -> list[Election]:
         """
         Return all elections whose status is ``ACTIVE``.
+
+        When *tenant_id* is supplied the results are scoped to that tenant;
+        otherwise all active elections across all tenants are returned
+        (superadmin cross-tenant view).
+
+        Args:
+            tenant_id: Optional tenant scope.
 
         Returns:
             A list of active ``Election`` instances.
         """
-        return (
-            self.db.query(Election)
-            .filter(Election.status == ElectionStatus.active)
-            .all()
+        query = self.db.query(Election).filter(
+            Election.status == ElectionStatus.active
         )
+        if tenant_id is not None:
+            query = query.filter(Election.tenant_id == tenant_id)
+        return query.all()
 
-    def get_by_status(self, status: ElectionStatus) -> list[Election]:
+    def get_by_status(
+        self,
+        status: ElectionStatus,
+        tenant_id: Optional[int] = None,
+    ) -> list[Election]:
         """
         Return all elections matching the given *status*.
 
+        When *tenant_id* is supplied the results are scoped to that tenant.
+
         Args:
-            status: The ``ElectionStatus`` to filter by.
+            status:    The ``ElectionStatus`` to filter by.
+            tenant_id: Optional tenant scope.
 
         Returns:
             A list of matching ``Election`` instances.
         """
-        return (
-            self.db.query(Election)
-            .filter(Election.status == status)
-            .all()
-        )
+        query = self.db.query(Election).filter(Election.status == status)
+        if tenant_id is not None:
+            query = query.filter(Election.tenant_id == tenant_id)
+        return query.all()
 
     def get_with_candidate_count(self) -> list[tuple]:
         """
@@ -71,6 +88,64 @@ class ElectionRepository(BaseRepository[Election]):
             .group_by(Election.id)
             .order_by(Election.id)
             .all()
+        )
+
+    # ------------------------------------------------------------------
+    # Tenant-scoped helpers
+    # ------------------------------------------------------------------
+
+    def get_active_by_tenant(self, tenant_id: int) -> list[Election]:
+        """
+        Return all active elections belonging to *tenant_id*.
+
+        Args:
+            tenant_id: The tenant scope to restrict the query to.
+
+        Returns:
+            A list of active ``Election`` instances for that tenant.
+        """
+        return (
+            self.db.query(Election)
+            .filter(
+                Election.tenant_id == tenant_id,
+                Election.status == ElectionStatus.active,
+            )
+            .all()
+        )
+
+    def count_by_tenant(self, tenant_id: int) -> int:
+        """
+        Count all elections belonging to *tenant_id*.
+
+        Args:
+            tenant_id: The tenant scope to count within.
+
+        Returns:
+            Row count as an integer.
+        """
+        return (
+            self.db.query(Election)
+            .filter(Election.tenant_id == tenant_id)
+            .count()
+        )
+
+    def count_active_by_tenant(self, tenant_id: int) -> int:
+        """
+        Count active elections belonging to *tenant_id*.
+
+        Args:
+            tenant_id: The tenant scope to count within.
+
+        Returns:
+            Row count as an integer.
+        """
+        return (
+            self.db.query(Election)
+            .filter(
+                Election.tenant_id == tenant_id,
+                Election.status == ElectionStatus.active,
+            )
+            .count()
         )
 
     # ------------------------------------------------------------------

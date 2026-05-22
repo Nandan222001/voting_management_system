@@ -23,13 +23,18 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import MainLayout from '../components/layout/MainLayout';
 import { format, parseISO } from 'date-fns';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function safeFormat(dateStr) {
+  if (!dateStr) return '—';
   try {
     return format(parseISO(dateStr), 'MMM d, yyyy');
   } catch {
-    return dateStr || '—';
+    return dateStr;
   }
 }
+
+// ─── Plan Badge ───────────────────────────────────────────────────────────────
 
 const PLAN_BADGE_STYLES = {
   starter: 'bg-gray-100 text-gray-600 ring-gray-200',
@@ -49,6 +54,8 @@ function PlanBadge({ plan }) {
     </span>
   );
 }
+
+// ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 export default function SuperAdminDashboard() {
   const dispatch = useDispatch();
@@ -151,41 +158,35 @@ export default function SuperAdminDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Organization
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Slug
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Plan
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Elections
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Users
-                    </th>
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    {[
+                      'Organization Name',
+                      'Slug',
+                      'Plan',
+                      'Status',
+                      'Elections',
+                      'Users',
+                      'Created',
+                      'Actions',
+                    ].map((col) => (
+                      <th
+                        key={col}
+                        className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
+                          col === 'Actions' ? 'text-right' : 'text-left'
+                        }`}
+                      >
+                        {col}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {tenants.map((tenant) => {
                     const id = tenant._id || tenant.id;
                     const isSuspended = tenant.status === 'suspended';
+
                     return (
-                      <tr
-                        key={id}
-                        className="hover:bg-gray-50 transition-colors group"
-                      >
+                      <tr key={id} className="hover:bg-gray-50 transition-colors group">
+                        {/* Organization Name */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             {tenant.logo_url ? (
@@ -207,32 +208,46 @@ export default function SuperAdminDashboard() {
                             </span>
                           </div>
                         </td>
+
+                        {/* Slug */}
                         <td className="px-6 py-4">
                           <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                             {tenant.slug}
                           </span>
                         </td>
+
+                        {/* Plan */}
                         <td className="px-6 py-4">
                           <PlanBadge plan={tenant.plan} />
                         </td>
+
+                        {/* Status */}
                         <td className="px-6 py-4">
                           <Badge status={tenant.status} />
                         </td>
+
+                        {/* Elections */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-gray-600">
                             <FaVoteYea className="text-gray-400 text-xs" />
                             <span>{tenant.election_count ?? tenant.elections ?? '—'}</span>
                           </div>
                         </td>
+
+                        {/* Users */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-gray-600">
                             <FaUsers className="text-gray-400 text-xs" />
                             <span>{tenant.user_count ?? tenant.users ?? '—'}</span>
                           </div>
                         </td>
+
+                        {/* Created */}
                         <td className="px-6 py-4 text-gray-500 text-xs">
                           {safeFormat(tenant.created_at || tenant.createdAt)}
                         </td>
+
+                        {/* Actions */}
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
                             <button
