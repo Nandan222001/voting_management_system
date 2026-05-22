@@ -25,7 +25,12 @@ export default function useAuth() {
   const login = async (email, password) => {
     const result = await dispatch(loginUser({ email, password }))
     if (loginUser.fulfilled.match(result)) {
-      navigate('/dashboard')
+      const role = result.payload?.user?.role
+      if (role === 'superadmin') {
+        navigate('/superadmin')
+      } else {
+        navigate('/dashboard')
+      }
       return { success: true }
     }
     return { success: false, error: result.payload }
@@ -39,6 +44,8 @@ export default function useAuth() {
   const isAdmin = user?.role === 'admin'
   const isModerator = user?.role === 'moderator'
   const isAdminOrModerator = isAdmin || isModerator
+  const isSuperAdmin = user?.role === 'superadmin'
+  const tenantId = user?.tenant_id ?? null
 
   return {
     user,
@@ -50,5 +57,7 @@ export default function useAuth() {
     isAdmin,
     isModerator,
     isAdminOrModerator,
+    isSuperAdmin,
+    tenantId,
   }
 }

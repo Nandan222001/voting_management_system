@@ -3,7 +3,15 @@ Authentication middleware / FastAPI dependencies.
 
 Single Responsibility: Provides reusable FastAPI ``Depends`` callables that
 validate JWT tokens and enforce role-based access control (RBAC).
+
+Roles
+-----
+* ``superadmin`` — platform-level administrator with cross-tenant access.
+* ``admin``      — tenant-level administrator; can manage their own tenant.
+* ``voter``      — end-user who participates in elections within a tenant.
 """
+
+from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -22,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 # ---------------------------------------------------------------------------
-# Dependencies
+# Base dependency — token decoding + user resolution
 # ---------------------------------------------------------------------------
 
 
@@ -74,23 +82,111 @@ def get_current_user(
     return user
 
 
+# ---------------------------------------------------------------------------
+# Role-enforcement dependencies
+# ---------------------------------------------------------------------------
+
+
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """
-    Extend :func:`get_current_user` by asserting that the caller is an admin.
+    Assert that the caller has ``admin`` OR ``superadmin`` role.
+
+    Both tenant admins and the platform superadmin are permitted to perform
+    admin-level operations within a tenant context.
 
     Args:
         current_user: The authenticated user provided by
                       :func:`get_current_user`.
 
     Returns:
-        The same ``User`` instance, guaranteed to have ``role == admin``.
+        The same ``User`` instance, guaranteed to have an admin-level role.
 
     Raises:
-        HTTPException(403): If the authenticated user is not an admin.
+        HTTPException(403): If the authenticated user is a plain ``voter``.
     """
-    if current_user.role != UserRole.admin:
+    if current_user.role not in (UserRole.admin, UserRole.superadmin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required",
         )
     return current_user
+
+
+def require_superadmin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Assert that the caller has the ``superadmin`` role.
+
+    This dependency guards platform-level operations (tenant management,
+    global statistics) that must not be accessible to ordinary tenant admins.
+
+    Args:
+        current_user: The authenticated user provided by
+                      :func:`get_current_user`.
+
+    Returns:
+        The same ``User`` instance, guaranteed to have ``role == superadmin``.
+
+    Raises:
+        HTTPException(403): If the authenticated user is not a superadmin.
+    """
+    if current_user.role != UserRole.superadmin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Superadmin privileges required",
+        )
+    return current_user
+
+
+def require_tenant_admin(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Assert that the caller has ``admin`` OR ``superadmin`` role.
+
+    Semantically equivalent to :func:`require_admin` but named for clarity
+    at call sites where the intention is explicitly tenant-administration.
+
+    Args:
+        current_user: The authenticated user provided by
+                      :func:`get_current_user`.
+
+    Returns:
+        The same ``User`` instance, guaranteed to have an admin-level role.
+
+    Raises:
+        HTTPException(403): If the authenticated user's role is ``voter``.
+    """
+    if current_user.role not in (UserRole.admin, UserRole.superadmin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant admin privileges required",
+        )
+    return current_user
+
+
+# ---------------------------------------------------------------------------
+# Tenant context helper
+# ---------------------------------------------------------------------------
+
+
+def get_tenant_context(
+    current_user: User = Depends(get_current_user),
+) -> Optional[int]:
+    """
+    Extract the tenant scope from the authenticated user.
+
+    * For ``admin`` and ``voter`` roles this is the ``tenant_id`` stored on
+      the user record (always non-``None`` for properly provisioned accounts).
+    * For ``superadmin`` this returns ``None`` — superadmins operate
+      cross-tenant and must pass a ``tenant_id`` explicitly through the
+      request (path parameter or query parameter).
+
+    Args:
+        current_user: The authenticated user provided by
+                      :func:`get_current_user`.
+
+    Returns:
+        The integer ``tenant_id`` for tenant-scoped users, or ``None`` for
+        superadmins.
+    """
+    if current_user.role == UserRole.superadmin:
+        return None
+    return current_user.tenant_id

@@ -8,9 +8,11 @@ const STATUS_STYLES = {
   cancelled: 'bg-red-100 text-red-700 ring-red-200',
   rejected: 'bg-red-100 text-red-700 ring-red-200',
   deleted: 'bg-red-100 text-red-700 ring-red-200',
+  suspended: 'bg-red-100 text-red-700 ring-red-200',
   // Neutral / Waiting
   pending: 'bg-yellow-100 text-yellow-700 ring-yellow-200',
   'pending approval': 'bg-yellow-100 text-yellow-700 ring-yellow-200',
+  trial: 'bg-yellow-100 text-yellow-700 ring-yellow-200',
   // Draft / Inactive
   draft: 'bg-gray-100 text-gray-600 ring-gray-200',
   inactive: 'bg-gray-100 text-gray-600 ring-gray-200',
@@ -22,6 +24,7 @@ const STATUS_STYLES = {
   admin: 'bg-indigo-100 text-indigo-700 ring-indigo-200',
   moderator: 'bg-purple-100 text-purple-700 ring-purple-200',
   voter: 'bg-teal-100 text-teal-700 ring-teal-200',
+  superadmin: 'bg-purple-100 text-purple-700 ring-purple-200',
 };
 
 const DEFAULT_STYLE = 'bg-gray-100 text-gray-600 ring-gray-200';

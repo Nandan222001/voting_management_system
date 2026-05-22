@@ -9,6 +9,8 @@ const PAGE_TITLES = {
   '/users': 'User Management',
   '/results': 'Results & Reports',
   '/audit-logs': 'Audit Logs',
+  '/superadmin': 'Platform Overview',
+  '/tenants': 'Tenant Management',
 };
 
 function getTitle(pathname) {
