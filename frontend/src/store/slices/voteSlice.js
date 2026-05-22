@@ -31,7 +31,7 @@ export const fetchAuditLogs = createAsyncThunk(
   'votes/fetchAuditLogs',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/audit-logs', { params })
+      const response = await api.get('/reports/audit-logs', { params })
       return response.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch audit logs.')
