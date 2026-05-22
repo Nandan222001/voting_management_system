@@ -5,6 +5,10 @@ Provides the /api/v1/elections router with endpoints for listing, creating,
 retrieving, updating, deleting, activating, closing elections, and statistics.
 Public listing and retrieval are available without authentication.
 Create, update, delete, activate, close, and stats require admin privileges.
+
+Multi-tenancy: every write operation and admin-only read is scoped to the
+current user's ``tenant_id``.  Superadmin users (``tenant_id=None``) may
+optionally filter by an explicit ``tenant_id`` query parameter.
 """
 
 from typing import Optional
@@ -16,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user, require_admin
 from app.models.election import ElectionStatus
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.election import ElectionCreate, ElectionResponse, ElectionUpdate
 from app.services.election_service import election_service
 from app.utils.response import paginated_response, success_response
@@ -31,16 +35,28 @@ router = APIRouter(prefix="/api/v1/elections", tags=["Elections"])
 @router.get(
     "/stats/overview",
     summary="Election statistics overview (admin only)",
-    dependencies=[Depends(require_admin)],
 )
 def election_stats(
+    tenant_id: Optional[int] = Query(
+        default=None,
+        description="(Superadmin only) Filter stats to a specific tenant.",
+    ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
     Return aggregate election statistics: totals by status.
     Requires admin privileges.
+
+    Admins see only their own tenant's data.  Superadmin may pass an optional
+    ``tenant_id`` query parameter to scope results.
     """
-    stats = election_service.get_stats(db)
+    # Non-superadmin admins are always scoped to their own tenant.
+    effective_tenant_id = (
+        tenant_id if current_user.role == UserRole.superadmin
+        else current_user.tenant_id
+    )
+    stats = election_service.get_stats(db, tenant_id=effective_tenant_id)
     return success_response(data=stats, message="Election statistics retrieved.")
 
 
@@ -58,7 +74,12 @@ def list_elections(
     status: Optional[ElectionStatus] = Query(
         default=None, description="Filter by election status"
     ),
+    tenant_id: Optional[int] = Query(
+        default=None,
+        description="Filter elections by tenant (superadmin) or auto-scoped.",
+    ),
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return a paginated list of elections.
@@ -67,12 +88,27 @@ def list_elections(
     - **per_page**: Number of elections per page (max 100).
     - **status**: Optional status filter (``draft``, ``active``, ``closed``,
       ``cancelled``).
+    - **tenant_id**: Superadmin may supply this to scope to a specific tenant;
+      all other authenticated users are automatically scoped to their own tenant.
 
-    This endpoint is publicly accessible — no authentication required.
+    Authenticated users see only their tenant's elections.
     """
+    # Determine effective tenant scope.
+    if current_user is not None:
+        if current_user.role == UserRole.superadmin:
+            effective_tenant_id = tenant_id  # superadmin may or may not filter
+        else:
+            effective_tenant_id = current_user.tenant_id
+    else:
+        effective_tenant_id = tenant_id  # unauthenticated: use explicit param
+
     skip = (page - 1) * per_page
     elections, total = election_service.get_all(
-        db, skip=skip, limit=per_page, status_filter=status
+        db,
+        skip=skip,
+        limit=per_page,
+        status_filter=status,
+        tenant_id=effective_tenant_id,
     )
     data = []
     for election in elections:
@@ -98,9 +134,14 @@ def create_election(
 ) -> ElectionResponse:
     """
     Create a new election. Requires admin privileges.
-    The election starts in ``draft`` status.
+    The election starts in ``draft`` status and is scoped to the caller's tenant.
     """
-    election = election_service.create_election(db, payload, current_user.id)
+    election = election_service.create_election(
+        db,
+        payload,
+        current_user.id,
+        tenant_id=current_user.tenant_id,
+    )
     return ElectionResponse.model_validate(election)
 
 
@@ -116,12 +157,18 @@ def create_election(
 def get_election(
     election_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ) -> ElectionResponse:
     """
-    Fetch a single election by primary key. Publicly accessible.
-    Raises 404 if not found.
+    Fetch a single election by primary key.
+    Authenticated users are automatically scoped to their own tenant.
+    Raises 404 if not found or not accessible.
     """
-    election = election_service.get_by_id(db, election_id)
+    effective_tenant_id: Optional[int] = None
+    if current_user is not None and current_user.role != UserRole.superadmin:
+        effective_tenant_id = current_user.tenant_id
+
+    election = election_service.get_by_id(db, election_id, tenant_id=effective_tenant_id)
     return ElectionResponse.model_validate(election)
 
 
@@ -138,13 +185,18 @@ def update_election(
     election_id: int,
     payload: ElectionUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ) -> ElectionResponse:
     """
     Apply a partial update to an election. Requires admin privileges.
-    Raises 400 if the election is closed or cancelled.
+    Scoped to the caller's tenant.  Raises 400 if closed or cancelled.
     """
-    updated = election_service.update_election(db, election_id, payload)
+    updated = election_service.update_election(
+        db,
+        election_id,
+        payload,
+        tenant_id=current_user.tenant_id,
+    )
     return ElectionResponse.model_validate(updated)
 
 
@@ -160,13 +212,17 @@ def update_election(
 def delete_election(
     election_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
     Permanently delete an election. Requires admin privileges.
-    Only draft elections may be deleted.
+    Only draft elections may be deleted.  Scoped to the caller's tenant.
     """
-    election_service.delete_election(db, election_id)
+    election_service.delete_election(
+        db,
+        election_id,
+        tenant_id=current_user.tenant_id,
+    )
     return success_response(message=f"Election {election_id} deleted successfully.")
 
 
@@ -182,13 +238,17 @@ def delete_election(
 def activate_election(
     election_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ) -> ElectionResponse:
     """
     Transition a draft election to ``active``, opening it for voting.
-    Requires admin privileges.
+    Requires admin privileges.  Scoped to the caller's tenant.
     """
-    updated = election_service.activate_election(db, election_id)
+    updated = election_service.activate_election(
+        db,
+        election_id,
+        tenant_id=current_user.tenant_id,
+    )
     return ElectionResponse.model_validate(updated)
 
 
@@ -204,11 +264,15 @@ def activate_election(
 def close_election(
     election_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
 ) -> ElectionResponse:
     """
     Transition an active election to ``closed``, stopping further voting.
-    Requires admin privileges.
+    Requires admin privileges.  Scoped to the caller's tenant.
     """
-    updated = election_service.close_election(db, election_id)
+    updated = election_service.close_election(
+        db,
+        election_id,
+        tenant_id=current_user.tenant_id,
+    )
     return ElectionResponse.model_validate(updated)
