@@ -129,7 +129,17 @@ class TenantService:
     ) -> Tenant:
         tenant = self.get_tenant_by_id(db, tenant_id)
         repo = TenantRepository(db)
-        return repo.update(tenant, data)
+        update_dict = data.model_dump(exclude_unset=True)
+        if "plan" in update_dict:
+            plan_limits = {
+                "starter": (5, 1000),
+                "professional": (25, 10000),
+                "enterprise": (999999, 99999999),
+            }
+            max_e, max_v = plan_limits.get(update_dict["plan"], (5, 1000))
+            update_dict["max_elections"] = max_e
+            update_dict["max_voters"] = max_v
+        return repo.update(tenant, update_dict)
 
     # ------------------------------------------------------------------
     # Lifecycle
