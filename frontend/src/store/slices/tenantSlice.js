@@ -8,7 +8,7 @@ export const fetchTenants = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await tenantService.getAllTenants(params)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tenants.')
     }
@@ -20,7 +20,7 @@ export const fetchTenantById = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await tenantService.getTenantById(id)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch tenant.')
     }
@@ -32,7 +32,7 @@ export const createTenant = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await tenantService.createTenant(data)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create tenant.')
     }
@@ -44,7 +44,7 @@ export const updateTenant = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await tenantService.updateTenant(id, data)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update tenant.')
     }
@@ -56,7 +56,7 @@ export const suspendTenant = createAsyncThunk(
   async ({ id, reason }, { rejectWithValue }) => {
     try {
       const response = await tenantService.suspendTenant(id, reason)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to suspend tenant.')
     }
@@ -68,7 +68,7 @@ export const activateTenant = createAsyncThunk(
   async (id, { rejectWithValue }) => {
     try {
       const response = await tenantService.activateTenant(id)
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to activate tenant.')
     }
@@ -92,7 +92,7 @@ export const fetchPlatformStats = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await tenantService.getPlatformStats()
-      return response.data
+      return response.data.data
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch platform stats.')
     }
@@ -114,10 +114,10 @@ const initialState = {
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 function updateTenantInList(tenants, updated) {
-  const tenant = updated?.tenant || updated
-  return tenants.map((t) =>
-    t._id === tenant._id || t.id === tenant.id ? { ...t, ...tenant } : t
-  )
+  return tenants.map((t) => {
+    const sameId = (t.id != null && t.id === updated.id) || (t._id != null && t._id === updated._id)
+    return sameId ? { ...t, ...updated } : t
+  })
 }
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ const tenantSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // fetchTenants
+    // fetchTenants — payload is { tenants: [], total, page, per_page }
     builder
       .addCase(fetchTenants.pending, (state) => {
         state.loading = true
@@ -142,15 +142,15 @@ const tenantSlice = createSlice({
       })
       .addCase(fetchTenants.fulfilled, (state, action) => {
         state.loading = false
-        state.tenants = action.payload.tenants || action.payload.data || action.payload
-        state.total = action.payload.total || state.tenants.length
+        state.tenants = action.payload.tenants ?? []
+        state.total = action.payload.total ?? state.tenants.length
       })
       .addCase(fetchTenants.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
 
-    // fetchTenantById
+    // fetchTenantById — payload is the tenant object
     builder
       .addCase(fetchTenantById.pending, (state) => {
         state.loading = true
@@ -158,14 +158,14 @@ const tenantSlice = createSlice({
       })
       .addCase(fetchTenantById.fulfilled, (state, action) => {
         state.loading = false
-        state.currentTenant = action.payload.tenant || action.payload
+        state.currentTenant = action.payload
       })
       .addCase(fetchTenantById.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
 
-    // createTenant
+    // createTenant — payload is the new tenant object
     builder
       .addCase(createTenant.pending, (state) => {
         state.actionLoading = true
@@ -173,8 +173,7 @@ const tenantSlice = createSlice({
       })
       .addCase(createTenant.fulfilled, (state, action) => {
         state.actionLoading = false
-        const tenant = action.payload.tenant || action.payload
-        state.tenants.unshift(tenant)
+        state.tenants.unshift(action.payload)
         state.total += 1
       })
       .addCase(createTenant.rejected, (state, action) => {
@@ -182,7 +181,7 @@ const tenantSlice = createSlice({
         state.error = action.payload
       })
 
-    // updateTenant
+    // updateTenant — payload is the updated tenant object
     builder
       .addCase(updateTenant.pending, (state) => {
         state.actionLoading = true
@@ -191,9 +190,8 @@ const tenantSlice = createSlice({
       .addCase(updateTenant.fulfilled, (state, action) => {
         state.actionLoading = false
         state.tenants = updateTenantInList(state.tenants, action.payload)
-        const updated = action.payload?.tenant || action.payload
         if (state.currentTenant) {
-          state.currentTenant = { ...state.currentTenant, ...updated }
+          state.currentTenant = { ...state.currentTenant, ...action.payload }
         }
       })
       .addCase(updateTenant.rejected, (state, action) => {
@@ -201,7 +199,7 @@ const tenantSlice = createSlice({
         state.error = action.payload
       })
 
-    // suspendTenant
+    // suspendTenant — payload is the updated tenant object
     builder
       .addCase(suspendTenant.pending, (state) => {
         state.actionLoading = true
@@ -210,9 +208,8 @@ const tenantSlice = createSlice({
       .addCase(suspendTenant.fulfilled, (state, action) => {
         state.actionLoading = false
         state.tenants = updateTenantInList(state.tenants, action.payload)
-        const updated = action.payload?.tenant || action.payload
         if (state.currentTenant) {
-          state.currentTenant = { ...state.currentTenant, ...updated }
+          state.currentTenant = { ...state.currentTenant, ...action.payload }
         }
       })
       .addCase(suspendTenant.rejected, (state, action) => {
@@ -220,7 +217,7 @@ const tenantSlice = createSlice({
         state.error = action.payload
       })
 
-    // activateTenant
+    // activateTenant — payload is the updated tenant object
     builder
       .addCase(activateTenant.pending, (state) => {
         state.actionLoading = true
@@ -229,9 +226,8 @@ const tenantSlice = createSlice({
       .addCase(activateTenant.fulfilled, (state, action) => {
         state.actionLoading = false
         state.tenants = updateTenantInList(state.tenants, action.payload)
-        const updated = action.payload?.tenant || action.payload
         if (state.currentTenant) {
-          state.currentTenant = { ...state.currentTenant, ...updated }
+          state.currentTenant = { ...state.currentTenant, ...action.payload }
         }
       })
       .addCase(activateTenant.rejected, (state, action) => {
@@ -239,7 +235,7 @@ const tenantSlice = createSlice({
         state.error = action.payload
       })
 
-    // deleteTenant
+    // deleteTenant — payload is the deleted tenant's id
     builder
       .addCase(deleteTenant.pending, (state) => {
         state.actionLoading = true
@@ -257,7 +253,7 @@ const tenantSlice = createSlice({
         state.error = action.payload
       })
 
-    // fetchPlatformStats
+    // fetchPlatformStats — payload is the stats object
     builder
       .addCase(fetchPlatformStats.pending, (state) => {
         state.loading = true
@@ -265,7 +261,7 @@ const tenantSlice = createSlice({
       })
       .addCase(fetchPlatformStats.fulfilled, (state, action) => {
         state.loading = false
-        state.platformStats = action.payload.stats || action.payload
+        state.platformStats = action.payload
       })
       .addCase(fetchPlatformStats.rejected, (state, action) => {
         state.loading = false

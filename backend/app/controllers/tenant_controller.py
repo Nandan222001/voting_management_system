@@ -49,9 +49,26 @@ def list_tenants(
     _: User = Depends(require_superadmin),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
+    from app.repositories.tenant_repository import TenantRepository
+    from app.models.tenant import Tenant as TenantModel
+
     skip = (page - 1) * per_page
-    tenants, total = tenant_service.get_all_tenants(db, skip=skip, limit=per_page, status=status)
-    data = [TenantResponse.model_validate(t).model_dump(mode="json") for t in tenants]
+    repo = TenantRepository(db)
+
+    if status:
+        rows = repo.get_by_status_with_counts(status, skip=skip, limit=per_page)
+        total = db.query(TenantModel).filter(TenantModel.status == status).count()
+    else:
+        rows = repo.get_all_with_counts(skip=skip, limit=per_page)
+        total = repo.count()
+
+    data = []
+    for row in rows:
+        t_dict = TenantResponse.model_validate(row["tenant"]).model_dump(mode="json")
+        t_dict["user_count"] = row["user_count"]
+        t_dict["election_count"] = row["election_count"]
+        data.append(t_dict)
+
     return success_response(
         data={"tenants": data, "total": total, "page": page, "per_page": per_page},
         message="Tenants retrieved.",
