@@ -17,6 +17,8 @@ import { fetchElections, selectElections, selectElectionLoading } from '../store
 import StatsCard from '../components/common/StatsCard';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import MainLayout from '../components/layout/MainLayout';
+
 import { format, parseISO } from 'date-fns';
 
 function safeFormat(dateStr) {
@@ -58,11 +60,12 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
+    <MainLayout title="Dashboard">
+      <div className="space-y-6 animate-fade-in">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             Welcome back! Here&apos;s what&apos;s happening today.
           </p>
@@ -214,5 +217,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  </MainLayout>
   );
 }

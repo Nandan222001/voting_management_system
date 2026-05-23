@@ -26,6 +26,7 @@ import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Pagination from '../components/common/Pagination';
+import MainLayout from '../components/layout/MainLayout';
 import { format, parseISO } from 'date-fns';
 
 const LIMIT = 10;
@@ -215,7 +216,8 @@ export default function ElectionsPage() {
 
   const totalPages = Math.ceil(total / LIMIT);
 
-  return (
+return (
+  <MainLayout title="Elections">
     <div className="space-y-5 animate-fade-in">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -276,7 +278,7 @@ export default function ElectionsPage() {
         onAction={(row) => {
           if (row._actionLabel) handleRowAction(row);
         }}
-        actionLabel={null}
+        // actionLabel={null}
       />
 
       {/* Override action column with per-row labels by rendering actions externally */}
@@ -447,5 +449,6 @@ export default function ElectionsPage() {
         variant="red"
       />
     </div>
+  </MainLayout>
   );
 }

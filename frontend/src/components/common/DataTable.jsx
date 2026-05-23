@@ -33,11 +33,11 @@ export default function DataTable({
             <tr>
               {columns.map((col) => (
                 <th
-                  key={col.key}
+                  key={col.key || col.header}
                   className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
                   style={col.width ? { width: col.width } : {}}
                 >
-                  {col.label}
+                  {col.header}
                 </th>
               ))}
               {showActions && (
@@ -54,7 +54,7 @@ export default function DataTable({
               Array.from({ length: 5 }).map((_, i) => (
                 <SkeletonRow key={i} cols={colCount} />
               ))
-            ) : data.length === 0 ? (
+            ) : data?.length === 0 ? (
               <tr>
                 <td colSpan={colCount} className="px-4 py-12 text-center">
                   <div className="flex flex-col items-center text-gray-400">
@@ -64,25 +64,29 @@ export default function DataTable({
                 </td>
               </tr>
             ) : (
-              data.map((row, rowIdx) => (
+              data?.map((row, rowIdx) => (
                 <tr key={row.id ?? rowIdx} className="hover:bg-gray-50 transition-colors">
                   {columns.map((col) => (
                     <td
-                      key={col.key}
+                      key={col.key || col.header}
                       className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap"
                     >
-                      {col.render ? col.render(row[col.key], row) : (row[col.key] ?? '—')}
+                      {col.render
+                        ? col.render(row[col.key], row)
+                        : typeof row[col.key] === 'object'
+                          ? '—'
+                          : (row[col.key] ?? '—')}
                     </td>
                   ))}
                   {showActions && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
-                        {onAction && (
+                        {onAction && row._actionLabel && (
                           <button
                             onClick={() => onAction(row)}
                             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
                           >
-                            {actionLabel}
+                            {row._actionLabel}
                           </button>
                         )}
                         {onEdit && (

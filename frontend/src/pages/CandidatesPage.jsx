@@ -70,7 +70,7 @@ export default function CandidatesPage() {
         {/* Candidates grid */}
         {!selectedElectionId ? (
           <EmptyState
-            icon={<FaUserTie className="h-12 w-12 text-gray-300" />}
+            icon={FaUserTie}
             title="Select an Election"
             message="Choose an election above to view its candidates."
           />
@@ -78,7 +78,7 @@ export default function CandidatesPage() {
           <LoadingSpinner message="Loading candidates..." />
         ) : candidates.length === 0 ? (
           <EmptyState
-            icon={<FaUserTie className="h-12 w-12 text-gray-300" />}
+            icon={FaUserTie}
             title="No Candidates"
             message="No candidates have been added to this election yet."
             action={

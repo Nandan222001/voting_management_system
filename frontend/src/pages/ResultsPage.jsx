@@ -72,7 +72,7 @@ export default function ResultsPage() {
 
         {!selectedElectionId ? (
           <EmptyState
-            icon={<FaChartPie className="h-12 w-12 text-gray-300" />}
+            icon={FaChartPie}
             title="Select an Election"
             message="Choose an election above to view detailed results and analytics."
           />
@@ -82,18 +82,18 @@ export default function ResultsPage() {
           <>
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatsCard title="Total Votes" value={totalVotes} icon={<FaVoteYea />} color="indigo" />
-              <StatsCard title="Candidates" value={candidates.length} icon={<FaUsers />} color="blue" />
+              <StatsCard title="Total Votes" value={totalVotes} icon={FaVoteYea} color="indigo" />
+              <StatsCard title="Candidates" value={candidates.length} icon={FaUsers} color="blue" />
               <StatsCard
                 title="Participation"
                 value={results?.participation_rate ? `${results.participation_rate.toFixed(1)}%` : `${totalVotes}`}
-                icon={<FaChartPie />}
+                icon={FaChartPie}
                 color="green"
               />
               <StatsCard
                 title="Winner"
                 value={winner ? winner.candidate_name.split(' ')[0] : '—'}
-                icon={<FaTrophy />}
+                icon={FaTrophy}
                 color="yellow"
               />
             </div>
