@@ -17,7 +17,7 @@ from app.schemas.tenant import TenantCreate, TenantResponse, TenantUpdate
 from app.services.tenant_service import tenant_service
 from app.utils.response import success_response
 
-router = APIRouter(prefix="/api/v1/tenants", tags=["Tenants (SuperAdmin)"])
+router = APIRouter(prefix="/tenants", tags=["Tenants (SuperAdmin)"])
 
 
 class SuspendRequest(BaseModel):

@@ -36,15 +36,15 @@ class UserRepository(BaseRepository[User]):
         which tenant they belong to.
 
         Args:
-            email: E-mail address to search for (case-insensitive look-up
-                   relies on the database collation).
+            email: E-mail address to search for (case-insensitive lookup
+                   via lowercase normalization).
 
         Returns:
             The matching ``User`` instance, or ``None``.
         """
         return (
             self.db.query(User)
-            .filter(User.email == email)
+            .filter(User.email == email.lower())
             .first()
         )
 
@@ -101,7 +101,7 @@ class UserRepository(BaseRepository[User]):
         and will return ``None`` if the user belongs to a different tenant.
 
         Args:
-            email:     E-mail address to search for.
+            email:     E-mail address to search for (case-insensitive).
             tenant_id: Tenant scope to restrict the lookup to.
 
         Returns:
@@ -109,7 +109,7 @@ class UserRepository(BaseRepository[User]):
         """
         return (
             self.db.query(User)
-            .filter(User.email == email, User.tenant_id == tenant_id)
+            .filter(User.email == email.lower(), User.tenant_id == tenant_id)
             .first()
         )
 

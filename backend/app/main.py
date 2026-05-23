@@ -53,13 +53,20 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-app.include_router(auth_router)
-app.include_router(tenant_router)   # SuperAdmin — platform management
-app.include_router(user_router)
-app.include_router(election_router)
-app.include_router(candidate_router)
-app.include_router(vote_router)
-app.include_router(report_router)
+# app.include_router(auth_router)
+# app.include_router(tenant_router)   # SuperAdmin — platform management
+# app.include_router(user_router)
+# app.include_router(election_router)
+# app.include_router(candidate_router)
+# app.include_router(vote_router)
+# app.include_router(report_router)
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(tenant_router, prefix="/api/v1")
+app.include_router(user_router, prefix="/api/v1")
+app.include_router(election_router, prefix="/api/v1")
+app.include_router(candidate_router, prefix="/api/v1")
+app.include_router(vote_router, prefix="/api/v1")
+app.include_router(report_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------
