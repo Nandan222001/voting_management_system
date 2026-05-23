@@ -71,6 +71,45 @@ class TenantRepository(BaseRepository[Tenant]):
             .all()
         )
 
+    def get_by_status_with_counts(
+        self,
+        status: str,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[dict]:
+        """Return tenants with a given status enriched with user/election counts."""
+        user_count_sq = (
+            self.db.query(func.count(User.id))
+            .filter(User.tenant_id == Tenant.id)
+            .correlate(Tenant)
+            .scalar_subquery()
+        )
+        election_count_sq = (
+            self.db.query(func.count(Election.id))
+            .filter(Election.tenant_id == Tenant.id)
+            .correlate(Tenant)
+            .scalar_subquery()
+        )
+        rows = (
+            self.db.query(
+                Tenant,
+                user_count_sq.label("user_count"),
+                election_count_sq.label("election_count"),
+            )
+            .filter(Tenant.status == status)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "tenant": tenant,
+                "user_count": user_count or 0,
+                "election_count": election_count or 0,
+            }
+            for tenant, user_count, election_count in rows
+        ]
+
     def get_all_with_counts(
         self,
         skip: int = 0,
