@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaBalanceScale, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { loginUser, clearError, selectAuthLoading, selectAuthError, selectIsAuthenticated } from '../store/slices/authSlice';
+import { loginUser, clearError, selectAuthLoading, selectAuthError, selectIsAuthenticated, selectCurrentUser } from '../store/slices/authSlice';
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const loading = useSelector(selectAuthLoading);
   const error = useSelector(selectAuthError);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const user = useSelector(selectCurrentUser);
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -19,9 +20,10 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      if (user?.role === 'superadmin') navigate('/superadmin', { replace: true })
+      else navigate('/dashboard', { replace: true })
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   // Show error toast when auth error occurs
   useEffect(() => {
@@ -58,7 +60,9 @@ export default function LoginPage() {
     const result = await dispatch(loginUser({ email: form.email, password: form.password }));
     if (loginUser.fulfilled.match(result)) {
       toast.success('Welcome back!');
-      navigate('/dashboard', { replace: true });
+      const returnedUser = result.payload?.user
+      if (returnedUser?.role === 'superadmin') navigate('/superadmin', { replace: true })
+      else navigate('/dashboard', { replace: true })
     }
   };
 
@@ -187,6 +191,17 @@ export default function LoginPage() {
                   'Sign In'
                 )}
               </button>
+
+              {/* Register link */}
+              <div className="mt-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
+                >
+                  Create account
+                </button>
+              </div>
             </form>
           </div>
         </div>

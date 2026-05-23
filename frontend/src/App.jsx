@@ -1,3 +1,6 @@
+import RegisterPage from './pages/RegisterPage'
+
+// inside your <Routes>:
 import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
@@ -104,10 +107,12 @@ export default function App() {
   }, [dispatch, token])
 
   return (
+    
     <Routes>
       {/* Public */}
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* SuperAdmin-only routes */}
       <Route

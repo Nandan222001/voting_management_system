@@ -73,43 +73,73 @@ export default function UsersPage() {
   const columns = [
     {
       header: 'User',
-      render: u => (
+      key: 'full_name',
+      render: (_, u) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
-            {u.full_name?.[0]?.toUpperCase()}
+            {u?.full_name?.[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-gray-900 text-sm">{u.full_name}</p>
-            <p className="text-xs text-gray-500">{u.email}</p>
+            <p className="font-medium text-gray-900 text-sm">
+              {u?.full_name || '—'}
+            </p>
+            <p className="text-xs text-gray-500">
+              {u?.email || '—'}
+            </p>
           </div>
         </div>
       )
+
     },
-    { header: 'Phone', render: u => <span className="text-sm text-gray-600">{u.phone || '—'}</span> },
     {
-      header: 'Role',
-      render: u => (
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-          {u.role}
+      header: 'Phone',
+      key: 'phone',
+      render: (value) => (
+        <span className="text-sm text-gray-600">
+          {value || '—'}
         </span>
       )
     },
-    { header: 'Status', render: u => <Badge status={u.status} /> },
+    {
+      header: 'Role',
+      key: 'role',
+      render: (value) => (
+        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${value === 'admin'
+            ? 'bg-purple-100 text-purple-700'
+            : 'bg-blue-100 text-blue-700'
+          }`}>
+          {value}
+        </span>
+      )
+    },
+    {
+      header: 'Status',
+      key: 'status',
+      render: (value) => <Badge status={value} />
+    },
     {
       header: 'Verified',
-      render: u => (
-        <span className={`text-xs font-medium ${u.is_verified ? 'text-green-600' : 'text-gray-400'}`}>
-          {u.is_verified ? 'Yes' : 'No'}
+      key: 'is_verified',
+      render: (value) => (
+        <span className={`text-xs font-medium ${value ? 'text-green-600' : 'text-gray-400'
+          }`}>
+          {value ? 'Yes' : 'No'}
         </span>
       )
     },
     {
       header: 'Registered',
-      render: u => <span className="text-sm text-gray-500">{u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}</span>
+      key: 'created_at',
+      render: (value) => (
+        <span className="text-sm text-gray-500">
+          {value ? new Date(value).toLocaleDateString() : '—'}
+        </span>
+      )
     },
     {
       header: 'Actions',
-      render: u => (
+      key: 'actions',
+      render: (_, u) => (
         <div className="flex items-center gap-2">
           <button onClick={() => setViewUser(u)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</button>
           {u.status === 'pending' && (
@@ -138,10 +168,33 @@ export default function UsersPage() {
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatsCard title="Total Users" value={stats.total_users ?? 0} icon={<FaUsers />} color="indigo" />
-            <StatsCard title="Active Voters" value={stats.active_voters ?? 0} icon={<FaUserCheck />} color="green" />
-            <StatsCard title="Pending" value={stats.pending_users ?? 0} icon={<FaUsers />} color="yellow" />
-            <StatsCard title="Blocked" value={stats.blocked_users ?? 0} icon={<FaBan />} color="red" />
+            <StatsCard
+              title="Total Users"
+              value={stats.total_users ?? 0}
+              icon={FaUsers}
+              color="indigo"
+            />
+
+            <StatsCard
+              title="Active Voters"
+              value={stats.active_voters ?? 0}
+              icon={FaUserCheck}
+              color="green"
+            />
+
+            <StatsCard
+              title="Pending"
+              value={stats.pending_users ?? 0}
+              icon={FaUsers}
+              color="yellow"
+            />
+
+            <StatsCard
+              title="Blocked"
+              value={stats.blocked_users ?? 0}
+              icon={FaBan}
+              color="red"
+            />
           </div>
         )}
 
