@@ -17,11 +17,12 @@ from app.schemas.auth import (
     OTPVerifyRequest,
     RegisterRequest,
     TokenResponse,
+    
 )
 from app.schemas.user import UserResponse
 from app.services.auth_service import auth_service
 
-router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 # ---------------------------------------------------------------------------
