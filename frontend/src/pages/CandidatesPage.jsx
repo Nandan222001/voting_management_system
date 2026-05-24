@@ -81,16 +81,8 @@ export default function CandidatesPage() {
             icon={FaUserTie}
             title="No Candidates"
             message="No candidates have been added to this election yet."
-            action={
-              selectedElection?.status === 'draft' && (
-                <button
-                  onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                  className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
-                >
-                  Add Candidates
-                </button>
-              )
-            }
+            action={selectedElection?.status === 'draft' ? () => navigate(`/elections/${selectedElectionId}`) : null}
+            actionLabel="Add Candidates"
           />
         ) : (
           <div>
