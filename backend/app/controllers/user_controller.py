@@ -24,7 +24,7 @@ from app.services.user_service import user_service
 from app.utils.response import paginated_response, success_response
 
 router = APIRouter(
-    prefix="/api/v1/users",
+    prefix="/users",
     tags=["Users"],
 )
 

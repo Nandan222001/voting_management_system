@@ -17,7 +17,7 @@ from app.schemas.candidate import CandidateCreate, CandidateResponse, CandidateU
 from app.services.candidate_service import candidate_service
 from app.utils.response import success_response
 
-router = APIRouter(prefix="/api/v1/candidates", tags=["Candidates"])
+router = APIRouter(prefix="/candidates", tags=["Candidates"])
 
 
 # ---------------------------------------------------------------------------

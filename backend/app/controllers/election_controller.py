@@ -29,7 +29,7 @@ from app.schemas.election import ElectionCreate, ElectionResponse, ElectionUpdat
 from app.services.election_service import election_service
 from app.utils.response import paginated_response, success_response
 
-router = APIRouter(prefix="/api/v1/elections", tags=["Elections"])
+router = APIRouter(prefix="/elections", tags=["Elections"])
 
 
 # ---------------------------------------------------------------------------

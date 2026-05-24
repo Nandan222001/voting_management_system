@@ -27,7 +27,7 @@ from app.services.vote_service import vote_service
 from app.utils.helpers import get_client_ip
 from app.utils.response import success_response
 
-router = APIRouter(prefix="/api/v1/votes", tags=["Votes"])
+router = APIRouter(prefix="/votes", tags=["Votes"])
 
 
 # ---------------------------------------------------------------------------
