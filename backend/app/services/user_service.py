@@ -40,6 +40,8 @@ class UserService:
         role: Optional[UserRole] = None,
         status_filter: Optional[UserStatus] = None,
         tenant_id: Optional[int] = None,
+        designation: Optional[str] = None,
+        district: Optional[str] = None,
     ) -> tuple[list[User], int]:
         """
         Return a paginated list of users, optionally filtered by role, status,
@@ -69,6 +71,10 @@ class UserService:
             query = query.filter(User.role == role)
         if status_filter is not None:
             query = query.filter(User.status == status_filter)
+        if designation:
+            query = query.filter(User.designation == designation)
+        if district:
+            query = query.filter(User.district == district)
 
         total: int = query.count()
         users: list[User] = query.offset(skip).limit(limit).all()

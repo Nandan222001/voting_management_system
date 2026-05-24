@@ -12,13 +12,26 @@ export default function RegisterPage() {
   const error = useSelector(selectAuthError)
   const isAuthenticated = useSelector(selectIsAuthenticated)
 
-  const [form, setForm] = useState({ full_name: '', email: '', phone: '', password: '', tenant_id: '' })
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    password: '',
+    tenant_id: '',
+    designation: '',
+    street_address: '',
+    city: '',
+    district: '',
+    state: '',
+    country: '',
+    pincode: '',
+  })
   const [showPassword, setShowPassword] = useState(false)
   const [touched, setTouched] = useState({})
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true })
+      navigate('/', { replace: true })
     }
   }, [isAuthenticated, navigate])
 
@@ -43,9 +56,17 @@ export default function RegisterPage() {
     if (!form.full_name) errs.full_name = 'Full name is required'
     if (!form.email) errs.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email'
+    if (!form.phone) errs.phone = 'Phone is required'
+    else if (!/^\+?[0-9\s\-()]{7,20}$/.test(form.phone)) errs.phone = 'Enter a valid phone number'
     if (!form.password) errs.password = 'Password is required'
     else if (form.password.length < 8) errs.password = 'Password must be at least 8 characters'
-    if (form.phone && !/^\+?[0-9\s\-()]{7,20}$/.test(form.phone)) errs.phone = 'Enter a valid phone number'
+    if (!form.designation) errs.designation = 'Designation is required'
+    if (!form.street_address) errs.street_address = 'Street address is required'
+    if (!form.city) errs.city = 'City is required'
+    if (!form.district) errs.district = 'District is required'
+    if (!form.state) errs.state = 'State is required'
+    if (!form.country) errs.country = 'Country is required'
+    if (!form.pincode) errs.pincode = 'Pincode is required'
     return errs
   }
 
@@ -53,20 +74,39 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setTouched({ full_name: true, email: true, password: true })
+    setTouched({
+      full_name: true,
+      email: true,
+      phone: true,
+      password: true,
+      designation: true,
+      street_address: true,
+      city: true,
+      district: true,
+      state: true,
+      country: true,
+      pincode: true,
+    })
     if (Object.keys(validationErrors).length > 0) return
 
     const payload = {
-      full_name: form.full_name,
-      email: form.email,
-      phone: form.phone || null,
+      full_name: form.full_name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
       password: form.password,
       tenant_id: form.tenant_id ? Number(form.tenant_id) : null,
+      designation: form.designation.trim(),
+      street_address: form.street_address.trim(),
+      city: form.city.trim(),
+      district: form.district.trim(),
+      state: form.state.trim(),
+      country: form.country.trim(),
+      pincode: form.pincode.trim(),
     }
 
     try {
       await dispatch(registerUser(payload)).unwrap()
-      toast.success('Registration successful. Please verify your email with the OTP sent.')
+      toast.success('Member registration submitted. Please verify your email with the OTP sent.')
       navigate('/login', { replace: true })
     } catch (err) {
       console.error('Registration failed', err)
@@ -80,7 +120,7 @@ export default function RegisterPage() {
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 opacity-10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-2xl">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -96,8 +136,8 @@ export default function RegisterPage() {
 
           <div className="px-8 py-8">
             <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Create a new account</h2>
-              <p className="text-gray-500 text-sm mt-1">Register to manage or participate in elections</p>
+              <h2 className="text-xl font-bold text-gray-900">Create a member account</h2>
+              <p className="text-gray-500 text-sm mt-1">Internal party members only</p>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -150,16 +190,37 @@ export default function RegisterPage() {
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1.5">Phone (optional)</label>
+                <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1.5">Phone</label>
                 <input
                   id="phone"
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  className="w-full pr-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white hover:border-gray-400"
+                  onBlur={handleBlur}
+                  className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    touched.phone && validationErrors.phone ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
                 />
                 {touched.phone && validationErrors.phone && (
                   <p className="mt-1.5 text-xs text-red-600 font-medium">{validationErrors.phone}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="designation" className="block text-sm font-semibold text-gray-700 mb-1.5">Designation</label>
+                <input
+                  id="designation"
+                  name="designation"
+                  value={form.designation}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="President, Vice President, Secretary"
+                  className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    touched.designation && validationErrors.designation ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                />
+                {touched.designation && validationErrors.designation && (
+                  <p className="mt-1.5 text-xs text-red-600 font-medium">{validationErrors.designation}</p>
                 )}
               </div>
 
@@ -206,6 +267,34 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="w-full pr-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white hover:border-gray-400"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  ['street_address', 'Street Address'],
+                  ['city', 'City'],
+                  ['district', 'District'],
+                  ['state', 'State'],
+                  ['country', 'Country'],
+                  ['pincode', 'Pincode'],
+                ].map(([name, label]) => (
+                  <div key={name} className={name === 'street_address' ? 'sm:col-span-2' : ''}>
+                    <label htmlFor={name} className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+                    <input
+                      id={name}
+                      name={name}
+                      value={form[name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={`w-full px-3 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                        touched[name] && validationErrors[name] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white hover:border-gray-400'
+                      }`}
+                    />
+                    {touched[name] && validationErrors[name] && (
+                      <p className="mt-1.5 text-xs text-red-600 font-medium">{validationErrors[name]}</p>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <button

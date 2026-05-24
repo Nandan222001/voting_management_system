@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+
+from .candidate_committee import CandidateCommitteeResponse
+from .target import TargetResponse
 
 
 # ---------------------------------------------------------------------------
@@ -34,8 +37,29 @@ class CandidateBase(BaseModel):
     )
     bio: Optional[str] = Field(
         default=None,
-        examples=["Experienced community leader with 10 years of public service."],
+        examples=["Experienced party member with 10 years of organizational service."],
     )
+    committee_id: Optional[int] = Field(
+        default=None,
+        examples=[1],
+    )
+    target_id: Optional[int] = Field(
+        default=None,
+        examples=[1],
+    )
+
+    @field_validator("committee_id", "target_id", mode="before")
+    @classmethod
+    def transform_empty_string_to_none(cls, v: Any) -> Any:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            val = v.strip()
+            if val == "" or val.lower() == "null" or val.lower() == "undefined":
+                return None
+            if val.isdigit():
+                return int(val)
+        return v
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,6 +86,21 @@ class CandidateUpdate(BaseModel):
     symbol: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = None
+    committee_id: Optional[int] = Field(default=None)
+    target_id: Optional[int] = Field(default=None)
+
+    @field_validator("committee_id", "target_id", mode="before")
+    @classmethod
+    def transform_empty_string_to_none(cls, v: Any) -> Any:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            val = v.strip()
+            if val == "" or val.lower() == "null" or val.lower() == "undefined":
+                return None
+            if val.isdigit():
+                return int(val)
+        return v
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -79,6 +118,9 @@ class CandidateResponse(CandidateBase):
 
     # Percentage of the total votes in the election; populated by the service layer
     vote_percentage: float = Field(default=0.0, examples=[35.5])
+
+    committee: Optional[CandidateCommitteeResponse] = None
+    target: Optional[TargetResponse] = None
 
     created_at: datetime
     updated_at: datetime

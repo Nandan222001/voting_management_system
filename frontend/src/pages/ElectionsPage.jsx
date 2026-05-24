@@ -21,6 +21,7 @@ import {
   selectElectionLoading,
   selectElectionActionLoading,
 } from '../store/slices/electionSlice';
+import { fetchTargets } from '../store/slices/targetSlice';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';
 import Modal from '../components/common/Modal';
@@ -49,8 +50,8 @@ function safeFormat(dateStr) {
 const emptyForm = {
   title: '',
   description: '',
-  start_date: '',
-  end_date: '',
+  election_date: '',
+  target_id: '',
 };
 
 export default function ElectionsPage() {
@@ -60,6 +61,7 @@ export default function ElectionsPage() {
   const total = useSelector(selectElectionTotal);
   const loading = useSelector(selectElectionLoading);
   const actionLoading = useSelector(selectElectionActionLoading);
+  const { targets } = useSelector(s => s.targets);
 
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
@@ -87,6 +89,7 @@ export default function ElectionsPage() {
     if (statusFilter) params.status = statusFilter;
     if (debouncedSearch) params.search = debouncedSearch;
     dispatch(fetchElections(params));
+    dispatch(fetchTargets());
   }, [dispatch, page, statusFilter, debouncedSearch]);
 
   useEffect(() => {
@@ -111,8 +114,8 @@ export default function ElectionsPage() {
     setForm({
       title: election.title || '',
       description: election.description || '',
-      start_date: election.start_date?.substring(0, 10) || election.startDate?.substring(0, 10) || '',
-      end_date: election.end_date?.substring(0, 10) || election.endDate?.substring(0, 10) || '',
+      election_date: (election.start_date || election.startDate)?.substring(0, 10) || '',
+      target_id: election.target_id || '',
     });
     setFormErrors({});
     setModalOpen(true);
@@ -121,11 +124,7 @@ export default function ElectionsPage() {
   const validateForm = () => {
     const errs = {};
     if (!form.title.trim()) errs.title = 'Title is required';
-    if (!form.start_date) errs.start_date = 'Start date is required';
-    if (!form.end_date) errs.end_date = 'End date is required';
-    if (form.start_date && form.end_date && form.end_date <= form.start_date) {
-      errs.end_date = 'End date must be after start date';
-    }
+    if (!form.election_date) errs.election_date = 'Election date is required';
     return errs;
   };
 
@@ -136,12 +135,19 @@ export default function ElectionsPage() {
       setFormErrors(errs);
       return;
     }
+    const payload = {
+      title: form.title,
+      description: form.description,
+      start_date: `${form.election_date}T00:00:00`,
+      end_date: `${form.election_date}T23:59:59`,
+      target_id: form.target_id ? parseInt(form.target_id) : null,
+    };
     let result;
     if (editTarget) {
       const id = editTarget._id || editTarget.id;
-      result = await dispatch(updateElection({ id, data: form }));
+      result = await dispatch(updateElection({ id, data: payload }));
     } else {
-      result = await dispatch(createElection(form));
+      result = await dispatch(createElection(payload));
     }
     if (result.meta.requestStatus === 'fulfilled') {
       toast.success(editTarget ? 'Election updated!' : 'Election created!');
@@ -172,13 +178,13 @@ export default function ElectionsPage() {
     },
     {
       key: 'start_date',
-      label: 'Start Date',
+      label: 'Election Date',
       render: (val, row) => safeFormat(val || row.startDate),
     },
     {
-      key: 'end_date',
-      label: 'End Date',
-      render: (val, row) => safeFormat(val || row.endDate),
+      key: 'target',
+      label: 'Geographical Scope',
+      render: (target) => target ? `${target.name} (${target.type})` : 'All regions',
     },
     {
       key: 'candidates_count',
@@ -330,40 +336,38 @@ return (
             />
           </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Start Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.start_date}
-                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  formErrors.start_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                }`}
-              />
-              {formErrors.start_date && (
-                <p className="mt-1 text-xs text-red-600">{formErrors.start_date}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  formErrors.end_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                }`}
-              />
-              {formErrors.end_date && (
-                <p className="mt-1 text-xs text-red-600">{formErrors.end_date}</p>
-              )}
-            </div>
+          {/* Election date */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Election Date <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={form.election_date}
+              onChange={(e) => setForm((p) => ({ ...p, election_date: e.target.value }))}
+              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                formErrors.election_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+              }`}
+            />
+            {formErrors.election_date && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.election_date}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Geographical Scope (Target)
+            </label>
+            <select
+              value={form.target_id}
+              onChange={(e) => setForm((p) => ({ ...p, target_id: e.target.value }))}
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            >
+              <option value="">-- All Regions --</option>
+              {targets.map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
+              ))}
+            </select>
           </div>
 
           {/* Actions */}

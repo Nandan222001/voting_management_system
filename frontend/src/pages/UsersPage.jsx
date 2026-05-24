@@ -10,6 +10,8 @@ import Pagination from '../components/common/Pagination'
 import Modal from '../components/common/Modal'
 import StatsCard from '../components/common/StatsCard'
 import { fetchUsers, approveUser, blockUser, deleteUser, fetchUserStats } from '../store/slices/userSlice'
+import { fetchTargets } from '../store/slices/targetSlice'
+import { getInitials } from '../utils/helpers'
 
 const TABS = [
   { key: '', label: 'All Users' },
@@ -21,6 +23,7 @@ const TABS = [
 export default function UsersPage() {
   const dispatch = useDispatch()
   const { users, total, stats, loading } = useSelector(s => s.users)
+  const { targets } = useSelector(s => s.targets)
 
   const [activeTab, setActiveTab] = useState('')
   const [search, setSearch] = useState('')
@@ -31,6 +34,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     dispatch(fetchUserStats())
+    dispatch(fetchTargets())
   }, [dispatch])
 
   useEffect(() => {
@@ -76,9 +80,17 @@ export default function UsersPage() {
       key: 'full_name',
       render: (_, u) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
-            {u?.full_name?.[0]?.toUpperCase()}
-          </div>
+          {u.image_url ? (
+            <img
+              src={u.image_url}
+              alt={u.full_name}
+              className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200"
+            />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+              {getInitials(u.full_name)}
+            </div>
+          )}
           <div>
             <p className="font-medium text-gray-900 text-sm">
               {u?.full_name || '—'}
@@ -89,7 +101,6 @@ export default function UsersPage() {
           </div>
         </div>
       )
-
     },
     {
       header: 'Phone',
@@ -97,6 +108,15 @@ export default function UsersPage() {
       render: (value) => (
         <span className="text-sm text-gray-600">
           {value || '—'}
+        </span>
+      )
+    },
+    {
+      header: 'Target / Area',
+      key: 'target',
+      render: (target) => (
+        <span className="text-sm text-gray-600">
+          {target ? target.name : '—'}
         </span>
       )
     },
@@ -253,6 +273,7 @@ export default function UsersPage() {
             </div>
             {[
               ['Phone', viewUser.phone || '—'],
+              ['Target Area', viewUser.target ? `${viewUser.target.name} (${viewUser.target.type})` : '—'],
               ['Role', viewUser.role],
               ['Status', <Badge status={viewUser.status} />],
               ['Verified', viewUser.is_verified ? 'Yes' : 'No'],

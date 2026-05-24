@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.models.election import ElectionStatus
+from app.schemas.target import TargetResponse
 
 
 # ---------------------------------------------------------------------------
@@ -17,6 +18,17 @@ class ElectionBase(BaseModel):
     description: Optional[str] = Field(default=None, examples=["Annual student council election."])
     start_date: datetime = Field(..., examples=["2025-09-01T08:00:00"])
     end_date: datetime = Field(..., examples=["2025-09-01T18:00:00"])
+    target_district: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        examples=["Maharashtra"],
+        description="Optional district scope. If omitted, all tenant members are eligible.",
+    )
+    target_id: Optional[int] = Field(
+        default=None,
+        examples=[1],
+        description="Link to a structured geographical target.",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,6 +60,8 @@ class ElectionUpdate(BaseModel):
     description: Optional[str] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    target_district: Optional[str] = Field(default=None, max_length=100)
+    target_id: Optional[int] = None
     status: Optional[ElectionStatus] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -76,6 +90,8 @@ class ElectionResponse(ElectionBase):
     # Computed / aggregated fields populated by the service layer
     candidate_count: int = Field(default=0, examples=[4])
     total_votes: int = Field(default=0, examples=[120])
+
+    target: Optional[TargetResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 

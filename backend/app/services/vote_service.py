@@ -17,6 +17,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.election import Election, ElectionStatus
+from app.models.user import User
 from app.models.vote import Vote
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.candidate_repository import CandidateRepository
@@ -102,6 +103,18 @@ class VoteService:
                     f"Voting is not currently open for this election. "
                     f"Status: '{election.status.value}'."
                 ),
+            )
+
+        member = db.query(User).filter(User.id == user_id).first()
+        if member is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found.",
+            )
+        if election.target_district and member.district != election.target_district:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This election is not available for your district.",
             )
 
         # 3. Candidate must belong to this election (and therefore same tenant).

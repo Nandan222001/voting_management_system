@@ -1,104 +1,41 @@
-import RegisterPage from './pages/RegisterPage'
-
-// inside your <Routes>:
 import React, { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getMe } from './store/slices/authSlice'
-
-// Pages
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import ElectionsPage from './pages/ElectionsPage'
-import ElectionDetailPage from './pages/ElectionDetailPage'
 import CandidatesPage from './pages/CandidatesPage'
 import UsersPage from './pages/UsersPage'
+import TenantsPage from './pages/TenantsPage'
 import ResultsPage from './pages/ResultsPage'
 import AuditLogsPage from './pages/AuditLogsPage'
+import CandidateCommitteesPage from './pages/CandidateCommitteesPage'
+import TargetsPage from './pages/TargetsPage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
-import TenantsPage from './pages/TenantsPage'
+import ElectionDetailPage from './pages/ElectionDetailPage'
+import { selectIsAuthenticated, selectCurrentUser, getMe } from './store/slices/authSlice'
+import { Toaster } from 'react-hot-toast'
 
-// ─── PrivateRoute ─────────────────────────────────────────────────────────────
-// Requires authenticated user. Shows spinner while auth is resolving.
-function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useSelector((state) => state.auth)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+// Higher-order component to protect routes
+const PrivateRoute = ({ children, roles = [] }) => {
+  const isAuthenticated = useSelector(selectIsAuthenticated)
+  const user = useSelector(selectCurrentUser)
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+
+  if (roles.length > 0 && !roles.includes(user?.role)) {
+    return <Navigate to="/" replace />
   }
 
   return children
-}
-
-// ─── SuperAdminRoute ──────────────────────────────────────────────────────────
-// Requires authenticated user with role === 'superadmin'.
-// Redirects non-superadmins to /dashboard.
-function SuperAdminRoute({ children }) {
-  const { isAuthenticated, loading, user } = useSelector((state) => state.auth)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (user?.role !== 'superadmin') {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  return children
-}
-
-// ─── RootRedirect ─────────────────────────────────────────────────────────────
-// Decides where / goes based on auth state and role.
-function RootRedirect() {
-  const { isAuthenticated, loading, user } = useSelector((state) => state.auth)
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (user?.role === 'superadmin') {
-    return <Navigate to="/superadmin" replace />
-  }
-
-  return <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
   const dispatch = useDispatch()
-  const { token } = useSelector((state) => state.auth)
+  const token = localStorage.getItem('token')
 
   useEffect(() => {
     if (token) {
@@ -107,91 +44,114 @@ export default function App() {
   }, [dispatch, token])
 
   return (
-    
-    <Routes>
-      {/* Public */}
-      <Route path="/" element={<RootRedirect />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    <>
+      <Toaster position="top-right" />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        
+        <Route 
+          path="/" 
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          } 
+        />
 
-      {/* SuperAdmin-only routes */}
-      <Route
-        path="/superadmin"
-        element={
-          <SuperAdminRoute>
-            <SuperAdminDashboard />
-          </SuperAdminRoute>
-        }
-      />
-      <Route
-        path="/tenants"
-        element={
-          <SuperAdminRoute>
-            <TenantsPage />
-          </SuperAdminRoute>
-        }
-      />
+        <Route 
+          path="/dashboard" 
+          element={
+            <PrivateRoute roles={['superadmin']}>
+              <SuperAdminDashboard />
+            </PrivateRoute>
+          } 
+        />
 
-      {/* Protected routes for all authenticated users */}
-      <Route
-        path="/dashboard"
-        element={
-          <PrivateRoute>
-            <DashboardPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/elections"
-        element={
-          <PrivateRoute>
-            <ElectionsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/elections/:id"
-        element={
-          <PrivateRoute>
-            <ElectionDetailPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/candidates"
-        element={
-          <PrivateRoute>
-            <CandidatesPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/users"
-        element={
-          <PrivateRoute>
-            <UsersPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/results"
-        element={
-          <PrivateRoute>
-            <ResultsPage />
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/audit-logs"
-        element={
-          <PrivateRoute>
-            <AuditLogsPage />
-          </PrivateRoute>
-        }
-      />
+        <Route 
+          path="/tenants" 
+          element={
+            <PrivateRoute roles={['superadmin']}>
+              <TenantsPage />
+            </PrivateRoute>
+          } 
+        />
 
-      {/* 404 fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route 
+          path="/elections" 
+          element={
+            <PrivateRoute>
+              <ElectionsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/elections/:id" 
+          element={
+            <PrivateRoute>
+              <ElectionDetailPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/candidates" 
+          element={
+            <PrivateRoute>
+              <CandidatesPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/results/:id" 
+          element={
+            <PrivateRoute>
+              <ResultsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/users" 
+          element={
+            <PrivateRoute roles={['admin']}>
+              <UsersPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/audit-logs" 
+          element={
+            <PrivateRoute>
+              <AuditLogsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/candidate-committees" 
+          element={
+            <PrivateRoute roles={['admin']}>
+              <CandidateCommitteesPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/targets" 
+          element={
+            <PrivateRoute roles={['admin']}>
+              <TargetsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        {/* 404 fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }

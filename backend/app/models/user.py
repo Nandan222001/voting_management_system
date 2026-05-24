@@ -33,7 +33,7 @@ class UserStatus(str, enum.Enum):
 
 
 class User(Base):
-    """ORM model representing a registered user (superadmin, admin, or voter)."""
+    """ORM model representing a registered user (admin or internal member)."""
 
     __tablename__ = "users"
 
@@ -44,6 +44,21 @@ class User(Base):
     full_name = Column(String(150), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
+    designation = Column(String(100), nullable=True)
+    street_address = Column(String(300), nullable=True)
+    city = Column(String(100), nullable=True)
+    district = Column(String(100), nullable=True, index=True)
+    state = Column(String(100), nullable=True)
+    country = Column(String(100), nullable=True)
+    pincode = Column(String(20), nullable=True)
+
+    # Scoping – link to structured geographical target
+    target_id = Column(
+        Integer,
+        ForeignKey("targets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Authentication
     hashed_password = Column(String(255), nullable=False)
@@ -98,6 +113,11 @@ class User(Base):
         "Tenant",
         back_populates="users",
         foreign_keys=[tenant_id],
+        lazy="select",
+    )
+    target = relationship(
+        "Target",
+        back_populates="users",
         lazy="select",
     )
 

@@ -12,6 +12,7 @@ import EmptyState from '../components/common/EmptyState'
 import Badge from '../components/common/Badge'
 import { fetchElections } from '../store/slices/electionSlice'
 import { fetchElectionResults } from '../store/slices/candidateSlice'
+import { getInitials } from '../utils/helpers'
 
 const COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
 
@@ -170,9 +171,22 @@ export default function ResultsPage() {
                     .sort((a, b) => b.vote_count - a.vote_count)
                     .map((c, i) => (
                       <div key={c.candidate_id} className="flex items-center gap-4 px-6 py-4">
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${i === 0 && totalVotes > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${i === 0 && totalVotes > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
                           {i + 1}
                         </span>
+                        
+                        {c.image_url ? (
+                          <img
+                            src={c.image_url}
+                            alt={c.candidate_name}
+                            className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 text-xs font-bold ring-1 ring-indigo-100 shrink-0">
+                            {getInitials(c.candidate_name)}
+                          </div>
+                        )}
+
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 text-sm truncate">{c.candidate_name}</p>
                           <p className="text-xs text-gray-500">{c.party}</p>

@@ -13,6 +13,7 @@ Dependency Inversion: Depends on ``ElectionRepository`` (abstraction).
 from typing import Any, Optional
 
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.election import Election, ElectionStatus
@@ -25,6 +26,31 @@ class ElectionService:
     """
     Orchestrates election use-cases for the Digital Voting System.
     """
+
+    def resolve_superadmin_tenant_id(
+        self,
+        db: Session,
+        tenant_id: Optional[int] = None,
+    ) -> int:
+        """
+        Resolve the tenant used when a superadmin creates tenant-owned data.
+
+        Superadmins do not carry a tenant_id in their JWT. If they pass one
+        explicitly, use it. If the platform has exactly one tenant, use that
+        tenant as a practical default for local/single-tenant deployments.
+        """
+        if tenant_id is not None:
+            return tenant_id
+
+        tenant_repo = TenantRepository(db)
+        tenants = tenant_repo.get_all(skip=0, limit=2)
+        if len(tenants) == 1:
+            return tenants[0].id
+
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="tenant_id is required when a superadmin creates an election.",
+        )
 
     # ------------------------------------------------------------------
     # Create
@@ -91,6 +117,7 @@ class ElectionService:
         limit: int = 20,
         status_filter: Optional[ElectionStatus] = None,
         tenant_id: Optional[int] = None,
+        member_district: Optional[str] = None,
     ) -> tuple[list[Election], int]:
         """
         Return a paginated list of elections, optionally filtered by status
@@ -112,6 +139,14 @@ class ElectionService:
             query = query.filter(Election.tenant_id == tenant_id)
         if status_filter is not None:
             query = query.filter(Election.status == status_filter)
+        if member_district is not None:
+            query = query.filter(
+                or_(
+                    Election.target_district.is_(None),
+                    Election.target_district == "",
+                    Election.target_district == member_district,
+                )
+            )
 
         total: int = query.count()
         elections: list[Election] = (

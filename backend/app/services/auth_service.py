@@ -51,13 +51,13 @@ class AuthService:
         tenant_id: Optional[int] = None,
     ) -> User:
         """
-        Create a new voter account.
+        Create a new internal member account.
 
         - Hashes the password before persistence.
         - Generates and stores an OTP for e-mail verification.
         - New accounts start with ``status=pending`` and ``is_verified=False``.
         - When *tenant_id* is provided the user is associated with that tenant;
-          the tenant must exist and must not have exceeded its voter limit.
+          the tenant must exist and must not have exceeded its member limit.
 
         Args:
             db:            Active database session.
@@ -91,7 +91,8 @@ class AuthService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Tenant with id={resolved_tenant_id} not found.",
                 )
-            # Enforce voter limit.
+            # Enforce member limit. The underlying tenant column is still named
+            # max_voters for migration compatibility.
             from app.models.user import UserRole as _Role
             current_voter_count = (
                 db.query(User)
@@ -120,6 +121,13 @@ class AuthService:
             full_name=register_data.full_name,
             email=normalized_email,
             phone=register_data.phone,
+            designation=register_data.designation,
+            street_address=register_data.street_address,
+            city=register_data.city,
+            district=register_data.district,
+            state=register_data.state,
+            country=register_data.country,
+            pincode=register_data.pincode,
             hashed_password=hash_password(register_data.password),
             role=UserRole.voter,
             status=UserStatus.pending,
@@ -190,6 +198,8 @@ class AuthService:
             "sub": str(user.id),
             "role": user.role.value,
             "tenant_id": user.tenant_id,
+            "district": user.district,
+            "designation": user.designation,
         }
         access_token = create_access_token(token_payload)
         # Refresh token is stored implicitly; the client must send it back.
@@ -205,6 +215,8 @@ class AuthService:
                 role=user.role.value,
                 is_verified=user.is_verified,
                 tenant_id=user.tenant_id,
+                district=user.district,
+                designation=user.designation,
             ),
         )
 
@@ -328,6 +340,8 @@ class AuthService:
             "sub": str(user.id),
             "role": user.role.value,
             "tenant_id": user.tenant_id,
+            "district": user.district,
+            "designation": user.designation,
         }
         new_access_token = create_access_token(token_payload)
 
@@ -341,6 +355,8 @@ class AuthService:
                 role=user.role.value,
                 is_verified=user.is_verified,
                 tenant_id=user.tenant_id,
+                district=user.district,
+                designation=user.designation,
             ),
         )
 

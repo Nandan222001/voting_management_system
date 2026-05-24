@@ -33,14 +33,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     "/register",
     status_code=status.HTTP_201_CREATED,
     response_model=UserResponse,
-    summary="Register a new voter account",
+    summary="Register a new internal member account",
 )
 def register(
     payload: RegisterRequest,
     db: Session = Depends(get_db),
 ) -> UserResponse:
     """
-    Create a new voter account.
+    Create a new internal member account.
 
     - Password is bcrypt-hashed before storage.
     - An OTP is generated and stored; in production it would be e-mailed to
