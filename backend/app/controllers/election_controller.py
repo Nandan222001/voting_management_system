@@ -29,7 +29,7 @@ from app.schemas.election import ElectionCreate, ElectionResponse, ElectionUpdat
 from app.services.election_service import election_service
 from app.utils.response import paginated_response, success_response
 
-router = APIRouter(prefix="/api/v1/elections", tags=["Elections"])
+router = APIRouter(prefix="/elections", tags=["Elections"])
 
 
 # ---------------------------------------------------------------------------
@@ -231,10 +231,10 @@ def delete_election(
 
 
 # ---------------------------------------------------------------------------
-# POST /{election_id}/activate
+# PATCH /{election_id}/activate
 # ---------------------------------------------------------------------------
 
-@router.post(
+@router.patch(
     "/{election_id}/activate",
     response_model=ElectionResponse,
     summary="Activate a draft election (admin only)",
@@ -257,10 +257,10 @@ def activate_election(
 
 
 # ---------------------------------------------------------------------------
-# POST /{election_id}/close
+# PATCH /{election_id}/close
 # ---------------------------------------------------------------------------
 
-@router.post(
+@router.patch(
     "/{election_id}/close",
     response_model=ElectionResponse,
     summary="Close an active election (admin only)",
