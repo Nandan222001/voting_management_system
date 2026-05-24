@@ -12,6 +12,14 @@ function SkeletonRow({ cols }) {
   );
 }
 
+function getColumnHeader(col) {
+  if (col.header || col.label) return col.header || col.label;
+  if (!col.key) return '';
+  return String(col.key)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export default function DataTable({
   columns = [],
   data = [],
@@ -31,15 +39,18 @@ export default function DataTable({
           {/* Head */}
           <thead className="bg-gray-50">
             <tr>
-              {columns.map((col) => (
-                <th
-                  key={col.key || col.header}
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                  style={col.width ? { width: col.width } : {}}
-                >
-                  {col.header}
-                </th>
-              ))}
+              {columns.map((col) => {
+                const header = getColumnHeader(col);
+                return (
+                  <th
+                    key={col.key || header}
+                    className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                    style={col.width ? { width: col.width } : {}}
+                  >
+                    {header}
+                  </th>
+                );
+              })}
               {showActions && (
                 <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Actions

@@ -40,6 +40,15 @@ class Election(Base):
     # Schedule
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
+    target_district = Column(String(100), nullable=True, index=True)
+
+    # Scoping – link to structured geographical target
+    target_id = Column(
+        Integer,
+        ForeignKey("targets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Lifecycle
     status = Column(
@@ -82,6 +91,7 @@ class Election(Base):
     # Relationships
     creator = relationship("User", back_populates="elections_created", lazy="select")
     tenant = relationship("Tenant", back_populates="elections", lazy="select")
+    target = relationship("Target", back_populates="elections", lazy="select")
     candidates = relationship(
         "Candidate",
         back_populates="election",

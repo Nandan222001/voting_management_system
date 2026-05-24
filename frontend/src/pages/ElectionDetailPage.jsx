@@ -19,10 +19,13 @@ import {
   updateCandidate,
   deleteCandidate
 } from '../store/slices/candidateSlice'
+import { fetchCandidateCommittees } from '../store/slices/candidateCommitteeSlice'
+import { fetchTargets } from '../store/slices/targetSlice'
+import { getInitials } from '../utils/helpers'
 
 const CHART_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
 
-const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '' }
+const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
 
 export default function ElectionDetailPage() {
   const { id } = useParams()
@@ -31,10 +34,12 @@ export default function ElectionDetailPage() {
 
   const { currentElection, loading: electionLoading } = useSelector(s => s.elections)
   const { candidates, results, loading: candLoading } = useSelector(s => s.candidates)
+  const { committees } = useSelector(s => s.candidateCommittees)
+  const { targets } = useSelector(s => s.targets)
 
   const [showModal, setShowModal] = useState(false)
-  const [editTarget, setEditTarget] = useState(null)
-  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editCandidateTarget, setEditCandidateTarget] = useState(null)
+  const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
 
@@ -42,17 +47,27 @@ export default function ElectionDetailPage() {
     dispatch(fetchElectionById(id))
     dispatch(fetchCandidatesByElection(id))
     dispatch(fetchElectionResults(id))
+    dispatch(fetchCandidateCommittees())
+    dispatch(fetchTargets())
   }, [id, dispatch])
 
   function openCreate() {
-    setEditTarget(null)
+    setEditCandidateTarget(null)
     setForm(emptyForm)
     setShowModal(true)
   }
 
   function openEdit(c) {
-    setEditTarget(c)
-    setForm({ full_name: c.full_name, party: c.party, symbol: c.symbol, bio: c.bio || '', image_url: c.image_url || '' })
+    setEditCandidateTarget(c)
+    setForm({
+      full_name: c.full_name,
+      party: c.party,
+      symbol: c.symbol,
+      bio: c.bio || '',
+      image_url: c.image_url || '',
+      committee_id: c.committee_id || '',
+      target_id: c.target_id || ''
+    })
     setShowModal(true)
   }
 
@@ -60,8 +75,8 @@ export default function ElectionDetailPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
-      if (editTarget) {
-        await dispatch(updateCandidate({ id: editTarget.id, data: form })).unwrap()
+      if (editCandidateTarget) {
+        await dispatch(updateCandidate({ id: editCandidateTarget.id, data: form })).unwrap()
         toast.success('Candidate updated')
       } else {
         await dispatch(addCandidate({ ...form, election_id: parseInt(id) })).unwrap()
@@ -79,9 +94,9 @@ export default function ElectionDetailPage() {
 
   async function handleDelete() {
     try {
-      await dispatch(deleteCandidate(deleteTarget.id)).unwrap()
+      await dispatch(deleteCandidate(deleteCandidateTarget.id)).unwrap()
       toast.success('Candidate removed')
-      setDeleteTarget(null)
+      setDeleteCandidateTarget(null)
       dispatch(fetchCandidatesByElection(id))
       dispatch(fetchElectionResults(id))
     } catch (err) {
@@ -117,13 +132,13 @@ export default function ElectionDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
             { label: 'Status', value: <Badge status={currentElection?.status} /> },
+            { label: 'Target Area', value: currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'All Regions' },
             { label: 'Start Date', value: currentElection?.start_date ? new Date(currentElection.start_date).toLocaleDateString() : '—' },
-            { label: 'End Date', value: currentElection?.end_date ? new Date(currentElection.end_date).toLocaleDateString() : '—' },
             { label: 'Total Votes', value: results?.total_votes ?? 0 },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
+              <div className="mt-1 text-sm font-semibold text-gray-900 truncate">{value}</div>
             </div>
           ))}
         </div>
@@ -178,12 +193,32 @@ export default function ElectionDetailPage() {
                       <span className="absolute top-3 right-3 text-yellow-500"><FaTrophy /></span>
                     )}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
-                        {c.symbol || c.full_name[0]}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{c.full_name}</p>
-                        <p className="text-sm text-gray-500">{c.party}</p>
+                      {c.image_url ? (
+                        <img
+                          src={c.image_url}
+                          alt={c.full_name}
+                          className="w-12 h-12 rounded-full object-cover ring-1 ring-gray-200"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                          {getInitials(c.full_name)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{c.full_name}</p>
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">{c.party}</span>
+                          {c.committee && (
+                            <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium truncate italic">
+                              {c.committee.name}
+                            </span>
+                          )}
+                          {c.target && (
+                            <span className="text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-medium truncate border border-gray-100">
+                              {c.target.name}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {c.bio && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{c.bio}</p>}
@@ -206,7 +241,7 @@ export default function ElectionDetailPage() {
                         <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
                           <FaEdit /> Edit
                         </button>
-                        <button onClick={() => setDeleteTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
+                        <button onClick={() => setDeleteCandidateTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
                           <FaTrash /> Remove
                         </button>
                       </div>
@@ -220,7 +255,7 @@ export default function ElectionDetailPage() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Edit Candidate' : 'Add Candidate'}>
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { name: 'full_name', label: 'Full Name', required: true },
@@ -239,6 +274,34 @@ export default function ElectionDetailPage() {
               />
             </div>
           ))}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
+              <select
+                value={form.committee_id}
+                onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">-- No specific committee --</option>
+                {committees.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Target / Area</label>
+              <select
+                value={form.target_id}
+                onChange={e => setForm(f => ({ ...f, target_id: e.target.value }))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">-- No specific area --</option>
+                {targets.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
             <textarea
@@ -253,18 +316,18 @@ export default function ElectionDetailPage() {
               Cancel
             </button>
             <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60">
-              {submitting ? 'Saving…' : editTarget ? 'Update' : 'Add'}
+              {submitting ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
             </button>
           </div>
         </form>
       </Modal>
 
       <ConfirmDialog
-        isOpen={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        isOpen={!!deleteCandidateTarget}
+        onClose={() => setDeleteCandidateTarget(null)}
         onConfirm={handleDelete}
         title="Remove Candidate"
-        message={`Remove "${deleteTarget?.full_name}" from this election?`}
+        message={`Remove "${deleteCandidateTarget?.full_name}" from this election?`}
         confirmLabel="Remove"
         variant="danger"
       />

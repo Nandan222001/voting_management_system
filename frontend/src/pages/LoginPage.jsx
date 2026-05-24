@@ -19,9 +19,9 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === 'superadmin') navigate('/superadmin', { replace: true })
-      else navigate('/dashboard', { replace: true })
+    if (isAuthenticated && user) {
+      if (user.role === 'superadmin') navigate('/dashboard', { replace: true })
+      else navigate('/', { replace: true })
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -61,8 +61,8 @@ export default function LoginPage() {
     if (loginUser.fulfilled.match(result)) {
       toast.success('Welcome back!');
       const returnedUser = result.payload?.user
-      if (returnedUser?.role === 'superadmin') navigate('/superadmin', { replace: true })
-      else navigate('/dashboard', { replace: true })
+      if (returnedUser?.role === 'superadmin') navigate('/dashboard', { replace: true })
+      else navigate('/', { replace: true })
     }
   };
 

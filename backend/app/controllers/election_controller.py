@@ -3,7 +3,7 @@ Election controller.
 
 Provides the /api/v1/elections router with endpoints for listing, creating,
 retrieving, updating, deleting, activating, closing elections, and statistics.
-Public listing and retrieval are available without authentication.
+Listing and retrieval are tenant-scoped for authenticated users.
 Create, update, delete, activate, close, and stats require admin privileges.
 
 Multi-tenancy: every write operation and admin-only read is scoped to the
@@ -13,14 +13,13 @@ optionally filter by an explicit ``tenant_id`` query parameter.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.middlewares.auth_middleware import (
     get_current_user,
-    get_optional_current_user,
     require_admin,
 )
 from app.models.election import ElectionStatus
@@ -70,7 +69,7 @@ def election_stats(
 
 @router.get(
     "/",
-    summary="List elections (public, filterable by status)",
+    summary="List elections (authenticated, filterable by status)",
 )
 def list_elections(
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
@@ -83,7 +82,7 @@ def list_elections(
         description="Filter elections by tenant (superadmin) or auto-scoped.",
     ),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return a paginated list of elections.
@@ -95,16 +94,18 @@ def list_elections(
     - **tenant_id**: Superadmin may supply this to scope to a specific tenant;
       all other authenticated users are automatically scoped to their own tenant.
 
-    Authenticated users see only their tenant's elections.
+    Members see only their tenant's elections, filtered by their district scope.
     """
     # Determine effective tenant scope.
-    if current_user is not None:
-        if current_user.role == UserRole.superadmin:
-            effective_tenant_id = tenant_id  # superadmin may or may not filter
-        else:
-            effective_tenant_id = current_user.tenant_id
+    if current_user.role == UserRole.superadmin:
+        effective_tenant_id = tenant_id  # superadmin may or may not filter
     else:
-        effective_tenant_id = tenant_id  # unauthenticated: use explicit param
+        effective_tenant_id = current_user.tenant_id
+    member_district = (
+        current_user.district
+        if current_user.role == UserRole.voter
+        else None
+    )
 
     skip = (page - 1) * per_page
     elections, total = election_service.get_all(
@@ -113,6 +114,7 @@ def list_elections(
         limit=per_page,
         status_filter=status,
         tenant_id=effective_tenant_id,
+        member_district=member_district,
     )
     data = []
     for election in elections:
@@ -133,6 +135,10 @@ def list_elections(
 )
 def create_election(
     payload: ElectionCreate,
+    tenant_id: Optional[int] = Query(
+        default=None,
+        description="Required for superadmin users. Tenant admins are always scoped to their own tenant.",
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> ElectionResponse:
@@ -140,11 +146,17 @@ def create_election(
     Create a new election. Requires admin privileges.
     The election starts in ``draft`` status and is scoped to the caller's tenant.
     """
+    effective_tenant_id = (
+        election_service.resolve_superadmin_tenant_id(db, tenant_id)
+        if current_user.role == UserRole.superadmin
+        else current_user.tenant_id
+    )
+
     election = election_service.create_election(
         db,
         payload,
         current_user.id,
-        tenant_id=current_user.tenant_id,
+        tenant_id=effective_tenant_id,
     )
     return ElectionResponse.model_validate(election)
 
@@ -156,12 +168,12 @@ def create_election(
 @router.get(
     "/{election_id}",
     response_model=ElectionResponse,
-    summary="Get a single election by ID (public)",
+    summary="Get a single election by ID (authenticated)",
 )
 def get_election(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> ElectionResponse:
     """
     Fetch a single election by primary key.
@@ -169,10 +181,19 @@ def get_election(
     Raises 404 if not found or not accessible.
     """
     effective_tenant_id: Optional[int] = None
-    if current_user is not None and current_user.role != UserRole.superadmin:
+    if current_user.role != UserRole.superadmin:
         effective_tenant_id = current_user.tenant_id
 
     election = election_service.get_by_id(db, election_id, tenant_id=effective_tenant_id)
+    if (
+        current_user.role == UserRole.voter
+        and election.target_district
+        and election.target_district != current_user.district
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Election with id={election_id} not found.",
+        )
     return ElectionResponse.model_validate(election)
 
 

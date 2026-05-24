@@ -12,8 +12,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config.database import Base, engine
 from app.controllers.auth_controller import router as auth_router
 from app.controllers.candidate_controller import router as candidate_router
+from app.controllers.candidate_committee_controller import router as candidate_committee_router
 from app.controllers.election_controller import router as election_router
 from app.controllers.report_controller import router as report_router
+from app.controllers.target_controller import router as target_router
 from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
 from app.controllers.vote_controller import router as vote_router
@@ -65,6 +67,8 @@ app.include_router(tenant_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
 app.include_router(election_router, prefix="/api/v1")
 app.include_router(candidate_router, prefix="/api/v1")
+app.include_router(candidate_committee_router, prefix="/api/v1")
+app.include_router(target_router, prefix="/api/v1")
 app.include_router(vote_router, prefix="/api/v1")
 app.include_router(report_router, prefix="/api/v1")
 

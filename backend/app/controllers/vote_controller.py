@@ -4,8 +4,8 @@ Vote controller.
 Provides the /api/v1/votes router.
 - POST /cast          — authenticated voters only.
 - GET  /my-vote/{id}  — authenticated voters only.
-- GET  /results/{id}  — public (tenant-scoped for authenticated users).
-- GET  /live/{id}     — public (tenant-scoped for authenticated users).
+- GET  /results/{id}  — authenticated members only.
+- GET  /live/{id}     — authenticated members only.
 
 Multi-tenancy: cast_vote verifies that the election and candidate belong to
 the same tenant as the voter.  Results and live-stats endpoints accept an
@@ -15,12 +15,13 @@ auto-scoped to their own tenant.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, get_optional_current_user
+from app.middlewares.auth_middleware import get_current_user
+from app.models.election import Election
 from app.models.user import User, UserRole
 from app.schemas.vote import VoteCreate, VoteResponse
 from app.services.vote_service import vote_service
@@ -28,6 +29,30 @@ from app.utils.helpers import get_client_ip
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/votes", tags=["Votes"])
+
+
+def _assert_member_can_access_election(
+    db: Session,
+    current_user: User,
+    election_id: int,
+) -> None:
+    if current_user.role == UserRole.superadmin:
+        return
+    election = db.query(Election).filter(Election.id == election_id).first()
+    if election is None or election.tenant_id != current_user.tenant_id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Election with id={election_id} not found.",
+        )
+    if (
+        current_user.role == UserRole.voter
+        and election.target_district
+        and election.target_district != current_user.district
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Election with id={election_id} not found.",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -105,12 +130,12 @@ def get_my_vote(
 
 @router.get(
     "/results/{election_id}",
-    summary="Get aggregated results for an election (public)",
+    summary="Get aggregated results for an election (authenticated)",
 )
 def get_results(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return aggregated vote results for the specified election,
@@ -119,8 +144,9 @@ def get_results(
     Authenticated non-superadmin users are automatically scoped to their tenant.
     """
     effective_tenant_id: Optional[int] = None
-    if current_user is not None and current_user.role != UserRole.superadmin:
+    if current_user.role != UserRole.superadmin:
         effective_tenant_id = current_user.tenant_id
+    _assert_member_can_access_election(db, current_user, election_id)
 
     results = vote_service.get_election_results(
         db, election_id, tenant_id=effective_tenant_id
@@ -137,12 +163,12 @@ def get_results(
 
 @router.get(
     "/live/{election_id}",
-    summary="Get live voting statistics for an election (public)",
+    summary="Get live voting statistics for an election (authenticated)",
 )
 def get_live_stats(
     election_id: int,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
     Return real-time voting statistics for the specified election.
@@ -151,8 +177,9 @@ def get_live_stats(
     Authenticated non-superadmin users are automatically scoped to their tenant.
     """
     effective_tenant_id: Optional[int] = None
-    if current_user is not None and current_user.role != UserRole.superadmin:
+    if current_user.role != UserRole.superadmin:
         effective_tenant_id = current_user.tenant_id
+    _assert_member_can_access_election(db, current_user, election_id)
 
     stats = vote_service.get_live_stats(
         db, election_id, tenant_id=effective_tenant_id

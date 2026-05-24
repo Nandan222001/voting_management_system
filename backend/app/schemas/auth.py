@@ -17,12 +17,19 @@ class RegisterRequest(BaseModel):
         examples=["Jane Doe"],
     )
     email: EmailStr = Field(..., examples=["jane@example.com"])
-    phone: str | None = Field(
-        default=None,
+    phone: str = Field(
+        ...,
         max_length=20,
         pattern=r"^\+?[0-9\s\-()]{7,20}$",
         examples=["+1-800-555-0199"],
     )
+    designation: str = Field(..., min_length=2, max_length=100, examples=["Vice President"])
+    street_address: str = Field(..., min_length=3, max_length=300, examples=["12 Park Street"])
+    city: str = Field(..., min_length=2, max_length=100, examples=["Mumbai"])
+    district: str = Field(..., min_length=2, max_length=100, examples=["Maharashtra"])
+    state: str = Field(..., min_length=2, max_length=100, examples=["Maharashtra"])
+    country: str = Field(..., min_length=2, max_length=100, examples=["India"])
+    pincode: str = Field(..., min_length=3, max_length=20, examples=["400001"])
     password: str = Field(
         ...,
         min_length=8,
@@ -69,6 +76,8 @@ class AuthUserInfo(BaseModel):
     role: str
     is_verified: bool
     tenant_id: Optional[int] = None
+    designation: Optional[str] = None
+    district: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

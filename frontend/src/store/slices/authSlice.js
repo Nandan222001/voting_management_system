@@ -24,9 +24,9 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
   'auth/registerUser',
-  async ({ full_name, email, password, phone = null, tenant_id = null }, { rejectWithValue }) => {
+  async (data, { rejectWithValue }) => {
     try {
-      const response = await authService.register(full_name, email, password, phone, tenant_id)
+      const response = await authService.register(data)
       // backend returns the created user object
       return response.data
     } catch (error) {
@@ -87,7 +87,7 @@ const initialState = {
   user: null,
   token: localStorage.getItem('token') || null,
   isAuthenticated: false,
-  loading: !!localStorage.getItem('token'), // loading if we have a token (getMe pending)
+  loading: false,
   error: null,
 }
 

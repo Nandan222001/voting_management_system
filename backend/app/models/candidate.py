@@ -38,6 +38,22 @@ class Candidate(Base):
         index=True,
     )
 
+    # Candidate position / committee
+    committee_id = Column(
+        Integer,
+        ForeignKey("candidate_committees.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Scoping – link to structured geographical target
+    target_id = Column(
+        Integer,
+        ForeignKey("targets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Candidate details
     full_name = Column(String(150), nullable=False)
     party = Column(String(150), nullable=True)
@@ -65,6 +81,8 @@ class Candidate(Base):
 
     # Relationships
     election = relationship("Election", back_populates="candidates", lazy="select")
+    committee = relationship("CandidateCommittee", back_populates="candidates", lazy="select")
+    target = relationship("Target", back_populates="candidates", lazy="select")
     votes = relationship(
         "Vote",
         back_populates="candidate",

@@ -103,6 +103,17 @@ class Tenant(Base):
         back_populates="tenant",
         lazy="select",
     )
+    candidate_committees = relationship(
+        "CandidateCommittee",
+        back_populates="tenant",
+        lazy="select",
+    )
+    targets = relationship(
+        "Target",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Tenant id={self.id} slug={self.slug!r} plan={self.plan}>"

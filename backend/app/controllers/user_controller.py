@@ -42,6 +42,8 @@ def list_users(
     per_page: int = Query(default=20, ge=1, le=100, description="Items per page"),
     role: Optional[UserRole] = Query(default=None, description="Filter by role"),
     status: Optional[UserStatus] = Query(default=None, description="Filter by status"),
+    designation: Optional[str] = Query(default=None, description="Filter by member designation"),
+    district: Optional[str] = Query(default=None, description="Filter by member district"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> JSONResponse:
@@ -53,6 +55,8 @@ def list_users(
     - **per_page**: Number of users per page (max 100).
     - **role**: Optional ``admin`` or ``voter`` filter.
     - **status**: Optional ``active``, ``pending``, or ``blocked`` filter.
+    - **designation**: Optional member designation filter.
+    - **district**: Optional member district filter.
 
     Superadmin callers (``tenant_id=None``) see users from all tenants.
     """
@@ -64,6 +68,8 @@ def list_users(
         role=role,
         status_filter=status,
         tenant_id=current_user.tenant_id,
+        designation=designation,
+        district=district,
     )
     data = [UserResponse.model_validate(u).model_dump(mode="json") for u in users]
     return paginated_response(data=data, total=total, page=page, per_page=per_page)

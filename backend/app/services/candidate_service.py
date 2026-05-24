@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.models.candidate import Candidate
 from app.models.election import ElectionStatus
 from app.repositories.candidate_repository import CandidateRepository
+from app.repositories.candidate_committee_repository import CandidateCommitteeRepository
 from app.repositories.election_repository import ElectionRepository
 from app.schemas.candidate import CandidateCreate, CandidateUpdate
 
@@ -32,28 +33,27 @@ class CandidateService:
     # Create
     # ------------------------------------------------------------------
 
-    def add_candidate(self, db: Session, data: CandidateCreate) -> Candidate:
+    def add_candidate(
+        self,
+        db: Session,
+        data: CandidateCreate,
+        tenant_id: Optional[int] = None,
+    ) -> Candidate:
         """
         Add a candidate to an election.
 
         Candidates may only be added to elections in ``draft`` or ``active``
         status (not ``closed`` or ``cancelled``).
-
-        Args:
-            db:   Active database session.
-            data: Validated creation payload including the target election id.
-
-        Returns:
-            The newly-created ``Candidate`` ORM instance.
-
-        Raises:
-            HTTPException 404: If the target election does not exist.
-            HTTPException 400: If the election is closed or cancelled.
         """
         election_repo = ElectionRepository(db)
         election = election_repo.get_by_id(data.election_id)
 
         if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={data.election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Election with id={data.election_id} not found.",
@@ -68,8 +68,25 @@ class CandidateService:
                 ),
             )
 
+        # Validate committee_id if provided
+        if data.committee_id is not None:
+            committee_repo = CandidateCommitteeRepository(db)
+            committee = committee_repo.get_by_id(data.committee_id)
+            if not committee:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Candidate committee with id={data.committee_id} not found.",
+                )
+            if committee.tenant_id != election.tenant_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The selected committee does not belong to this organization.",
+                )
+
         candidate_repo = CandidateRepository(db)
-        return candidate_repo.create(data)
+        candidate_data = data.model_dump()
+        candidate_data["tenant_id"] = election.tenant_id
+        return candidate_repo.create(candidate_data)
 
     # ------------------------------------------------------------------
     # Read operations
@@ -133,18 +150,6 @@ class CandidateService:
     ) -> Candidate:
         """
         Apply a partial update to a candidate's profile.
-
-        Args:
-            db:           Active database session.
-            candidate_id: Primary key of the candidate to update.
-            data:         Pydantic schema with only the fields to change.
-
-        Returns:
-            The updated ``Candidate`` instance.
-
-        Raises:
-            HTTPException 404: If the candidate does not exist.
-            HTTPException 400: If the parent election is closed or cancelled.
         """
         repo = CandidateRepository(db)
         candidate = self.get_by_id(db, candidate_id)
@@ -163,6 +168,21 @@ class CandidateService:
                     f"'{election.status.value}' status."
                 ),
             )
+
+        # Validate committee_id if provided
+        if data.committee_id is not None:
+            committee_repo = CandidateCommitteeRepository(db)
+            committee = committee_repo.get_by_id(data.committee_id)
+            if not committee:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Candidate committee with id={data.committee_id} not found.",
+                )
+            if committee.tenant_id != election.tenant_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="The selected committee does not belong to this organization.",
+                )
 
         return repo.update(candidate, data)
 
