@@ -14,7 +14,7 @@ from app.models.user import User
 from app.services.report_service import report_service
 from app.utils.response import success_response
 
-router = APIRouter(prefix="/api/v1/reports", tags=["Reports"])
+router = APIRouter(prefix="/reports", tags=["Reports"])
 
 
 # ---------------------------------------------------------------------------
