@@ -74,6 +74,9 @@ class AuthService:
         """
         repo = UserRepository(db)
 
+        # Normalize email to lowercase for consistent storage and lookup
+        normalized_email = register_data.email.lower()
+
         # Resolve tenant_id — prefer the value carried in the request body,
         # then fall back to the parameter (caller override).
         resolved_tenant_id: Optional[int] = (
@@ -104,7 +107,7 @@ class AuthService:
                     ),
                 )
 
-        if repo.get_by_email(register_data.email):
+        if repo.get_by_email(normalized_email):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email address already exists.",
@@ -115,7 +118,7 @@ class AuthService:
 
         user = User(
             full_name=register_data.full_name,
-            email=register_data.email,
+            email=normalized_email,
             phone=register_data.phone,
             hashed_password=hash_password(register_data.password),
             role=UserRole.voter,
@@ -152,6 +155,7 @@ class AuthService:
             HTTPException 403: If the account is pending admin approval.
         """
         repo = UserRepository(db)
+        # Email is normalized to lowercase in get_by_email for case-insensitive lookup
         user: Optional[User] = repo.get_by_email(email)
 
         if user is None or not verify_password(password, user.hashed_password):

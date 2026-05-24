@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -32,6 +33,7 @@ class TenantUpdate(BaseModel):
     logo_url: Optional[str] = Field(None, max_length=500)
     primary_color: Optional[str] = Field(None, max_length=7)
     contact_email: Optional[EmailStr] = None
+    plan: Optional[str] = Field(None, description="Subscription plan tier.")
 
 
 class TenantResponse(BaseModel):
@@ -51,6 +53,8 @@ class TenantResponse(BaseModel):
     max_voters: int
     contact_email: Optional[str] = None
     created_by: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     # Computed / annotated counts — populated by the service layer
     user_count: int = 0
