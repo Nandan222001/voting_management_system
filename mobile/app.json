@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "scheme": "civicvote",
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#003fd2"
@@ -17,10 +18,11 @@
       "adaptiveIcon": {
         "backgroundColor": "#003fd2"
       },
-      "package": "com.civicvote.mobile"
+      "package": "com.civicvote.mobile",
+      "permissions": []
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

@@ -16,6 +16,8 @@ build/
 # Node
 node_modules/
 dist/
+.expo/
+mobile/.expo/
 .env.local
 .env.development.local
 .env.test.local
