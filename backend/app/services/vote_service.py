@@ -217,7 +217,12 @@ class VoteService:
         candidates = candidate_repo.get_election_results(election_id)
 
         result_items: list[VoteResultItem] = []
-        for candidate in candidates:
+        previous_votes: int | None = None
+        current_rank = 0
+        for index, candidate in enumerate(candidates, start=1):
+            if previous_votes is None or candidate.vote_count < previous_votes:
+                current_rank = index
+                previous_votes = candidate.vote_count
             percentage = (
                 round((candidate.vote_count / total_votes) * 100, 2)
                 if total_votes > 0
@@ -229,16 +234,33 @@ class VoteService:
                     candidate_name=candidate.full_name,
                     party=candidate.party,
                     symbol=candidate.symbol,
+                    image_url=candidate.image_url,
+                    rank=current_rank,
                     vote_count=candidate.vote_count,
                     percentage=percentage,
                 )
             )
+
+        can_declare_winner = election.status == ElectionStatus.closed
+        top_vote_count = result_items[0].vote_count if result_items else 0
+        top_candidates = [
+            item for item in result_items
+            if can_declare_winner and total_votes > 0 and item.vote_count == top_vote_count
+        ]
+        is_tie = len(top_candidates) > 1
+        winner = top_candidates[0] if len(top_candidates) == 1 else None
+        for item in result_items:
+            item.is_winner = bool(winner and item.candidate_id == winner.candidate_id)
 
         return ElectionResultResponse(
             election_id=election_id,
             election_title=election.title,
             total_votes=total_votes,
             results=result_items,
+            winner=winner,
+            winners=top_candidates,
+            is_tie=is_tie,
+            winner_declared=winner is not None,
         )
 
     # ------------------------------------------------------------------
@@ -290,20 +312,34 @@ class VoteService:
         total_votes: int = vote_repo.get_election_vote_count(election_id)
         candidates = candidate_repo.get_election_results(election_id)
 
-        candidate_stats = [
-            {
+        candidate_stats = []
+        previous_votes: int | None = None
+        current_rank = 0
+        for index, c in enumerate(candidates, start=1):
+            if previous_votes is None or c.vote_count < previous_votes:
+                current_rank = index
+                previous_votes = c.vote_count
+            candidate_stats.append({
                 "candidate_id": c.id,
                 "candidate_name": c.full_name,
                 "party": c.party,
+                "image_url": c.image_url,
+                "rank": current_rank,
                 "vote_count": c.vote_count,
                 "percentage": (
                     round((c.vote_count / total_votes) * 100, 2)
                     if total_votes > 0
                     else 0.0
                 ),
-            }
-            for c in candidates
+            })
+
+        can_declare_winner = election.status == ElectionStatus.closed
+        top_vote_count = candidate_stats[0]["vote_count"] if candidate_stats else 0
+        winners = [
+            item for item in candidate_stats
+            if can_declare_winner and total_votes > 0 and item["vote_count"] == top_vote_count
         ]
+        is_tie = len(winners) > 1
 
         return {
             "election_id": election_id,
@@ -311,6 +347,10 @@ class VoteService:
             "status": election.status.value,
             "total_votes": total_votes,
             "candidate_stats": candidate_stats,
+            "winner": winners[0] if len(winners) == 1 else None,
+            "winners": winners,
+            "is_tie": is_tie,
+            "winner_declared": len(winners) == 1,
         }
 
 

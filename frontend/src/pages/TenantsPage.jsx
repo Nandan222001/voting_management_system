@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -40,6 +40,8 @@ import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { format, parseISO } from 'date-fns';
+import ImageUpload from '../components/common/ImageUpload';
+import ImageAvatar from '../components/common/ImageAvatar';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,15 +61,6 @@ function slugify(str) {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
-}
-
-// Resolve logo URL returned by backend (which may be a relative path like '/static/...')
-function resolveLogoUrl(url) {
-  if (!url) return null;
-  if (/^https?:\/\//.test(url)) return url;
-  const apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
-  const origin = apiBase.replace(/\/api\/v1\/?$/, '');
-  return origin + url;
 }
 
 function getTenantId(tenant) {
@@ -133,6 +126,7 @@ const EMPTY_FORM = {
   contact_email: '',
   plan: 'starter',
   logo_file: null,
+  logo_url: '',
   admin_name: '',
   admin_email: '',
   admin_password: '',
@@ -154,6 +148,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         contact_email: editTenant.contact_email || editTenant.email || '',
         plan: editTenant.plan || 'starter',
         logo_file: null,
+        logo_url: editTenant.logo_url || '',
         admin_name: '',
         admin_email: '',
         admin_password: '',
@@ -292,59 +287,15 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Field label="Logo" hint="Upload a PNG/JPEG logo file (optional)">
-              <div
-                className="border-2 border-dashed rounded-lg p-3 flex items-center justify-center cursor-pointer hover:border-indigo-400 transition-colors"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const f = e.dataTransfer.files && e.dataTransfer.files[0];
-                  if (f) setForm((prev) => ({ ...prev, logo_file: f }));
-                }}
-                onClick={() => {
-                  // trigger hidden input
-                  document.getElementById('tenant-logo-input')?.click();
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0l4-4m-4 4-4-4" />
-                  </svg>
-                  <div>
-                    <div className="text-sm font-medium text-gray-700">Drag & drop an image, or click to select</div>
-                    <div className="text-xs text-gray-400">PNG, JPG — up to 2MB</div>
-                  </div>
-                </div>
-              </div>
-              <input
-                id="tenant-logo-input"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => setForm((prev) => ({ ...prev, logo_file: e.target.files && e.target.files[0] ? e.target.files[0] : null }))}
+          <div className="grid grid-cols-1 gap-4 mt-4">
+            <Field label="Logo">
+              <ImageUpload
+                file={form.logo_file}
+                existingUrl={form.logo_url}
+                onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
+                id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
+                helperText="Upload a PNG/JPEG logo file (optional) up to 2 MB"
               />
-
-              {form.logo_file && (
-                <div className="mt-3 flex items-center gap-3">
-                  <img
-                    src={URL.createObjectURL(form.logo_file)}
-                    alt="preview"
-                    className="w-16 h-16 object-cover rounded-md border border-gray-200"
-                  />
-                  <div className="flex flex-col">
-                    <div className="text-sm font-medium">{form.logo_file.name}</div>
-                    <div className="text-xs text-gray-400">{(form.logo_file.size / 1024).toFixed(1)} KB</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, logo_file: null }))}
-                    className="ml-auto text-xs text-red-600 hover:underline"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
             </Field>
           </div>
         </div>
@@ -531,20 +482,15 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-          {tenant.logo_url ? (
-            <img
-              src={resolveLogoUrl(tenant.logo_url)}
-              alt={tenant.name}
-              className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-200"
-            />
-          ) : (
-            <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
-            >
-              {tenant.name?.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <ImageAvatar
+            src={tenant.logo_url}
+            name={tenant.name}
+            sizeClass="w-14 h-14"
+            shapeClass="rounded-xl"
+            imageClassName="border border-gray-200"
+            fallbackClassName="text-white text-2xl shadow-sm"
+            style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
+          />
           <div className="min-w-0">
             <h3 className="text-lg font-bold text-gray-900 truncate">{tenant.name}</h3>
             <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
@@ -1018,20 +964,15 @@ export default function TenantsPage() {
                           {/* Organisation */}
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
-                              {tenant.logo_url ? (
-                                <img
-                                  src={resolveLogoUrl(tenant.logo_url)}
-                                  alt={tenant.name}
-                                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-gray-200"
-                                />
-                              ) : (
-                                <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
-                                  style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
-                                >
-                                  {tenant.name?.charAt(0).toUpperCase()}
-                                </div>
-                              )}
+                              <ImageAvatar
+                                src={tenant.logo_url}
+                                name={tenant.name}
+                                sizeClass="w-10 h-10"
+                                shapeClass="rounded-xl"
+                                imageClassName="border border-gray-200"
+                                fallbackClassName="text-white text-sm shadow-sm"
+                                style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
+                              />
                               <div className="min-w-0">
                                 <p className="font-semibold text-gray-800 truncate max-w-[160px]">
                                   {tenant.name}

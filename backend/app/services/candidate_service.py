@@ -13,7 +13,7 @@ Dependency Inversion: Depends on ``CandidateRepository`` and
 
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
 
 from app.models.candidate import Candidate
@@ -22,6 +22,7 @@ from app.repositories.candidate_repository import CandidateRepository
 from app.repositories.candidate_committee_repository import CandidateCommitteeRepository
 from app.repositories.election_repository import ElectionRepository
 from app.schemas.candidate import CandidateCreate, CandidateUpdate
+from app.utils.uploads import delete_uploaded_file, save_uploaded_image
 
 
 class CandidateService:
@@ -37,6 +38,7 @@ class CandidateService:
         self,
         db: Session,
         data: CandidateCreate,
+        image_file: UploadFile | None = None,
         tenant_id: Optional[int] = None,
     ) -> Candidate:
         """
@@ -86,6 +88,15 @@ class CandidateService:
         candidate_repo = CandidateRepository(db)
         candidate_data = data.model_dump()
         candidate_data["tenant_id"] = election.tenant_id
+
+        # Handle uploaded image file if provided
+        if image_file is not None:
+            candidate_data["image_url"] = save_uploaded_image(
+                image_file,
+                subdir="candidates",
+                filename_prefix="candidate",
+            )
+
         return candidate_repo.create(candidate_data)
 
     # ------------------------------------------------------------------
@@ -146,7 +157,7 @@ class CandidateService:
     # ------------------------------------------------------------------
 
     def update_candidate(
-        self, db: Session, candidate_id: int, data: CandidateUpdate
+        self, db: Session, candidate_id: int, data: CandidateUpdate, image_file: UploadFile | None = None
     ) -> Candidate:
         """
         Apply a partial update to a candidate's profile.
@@ -184,7 +195,18 @@ class CandidateService:
                     detail="The selected committee does not belong to this organization.",
                 )
 
-        return repo.update(candidate, data)
+        # Handle image replacement
+        update_dict = data.model_dump(exclude_unset=True)
+        if image_file is not None:
+            served_path = save_uploaded_image(
+                image_file,
+                subdir="candidates",
+                filename_prefix=f"candidate_{candidate_id}",
+            )
+            delete_uploaded_file(candidate.image_url)
+            update_dict["image_url"] = served_path
+
+        return repo.update(candidate, update_dict)
 
     def delete_candidate(self, db: Session, candidate_id: int) -> bool:
         """

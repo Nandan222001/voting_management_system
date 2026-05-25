@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import Badge from '../components/common/Badge'
+import FancySelect from '../components/common/FancySelect'
 import DataTable from '../components/common/DataTable'
 import EmptyState from '../components/common/EmptyState'
 import Modal from '../components/common/Modal'
@@ -29,7 +30,8 @@ import {
 } from '../store/slices/candidateSlice'
 import { fetchCandidateCommittees } from '../store/slices/candidateCommitteeSlice'
 import { fetchTargets } from '../store/slices/targetSlice'
-import { getInitials } from '../utils/helpers'
+import ImageUpload from '../components/common/ImageUpload'
+import ImageAvatar from '../components/common/ImageAvatar'
 
 const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
 
@@ -79,6 +81,7 @@ export default function CandidatesPage() {
       symbol: c.symbol || '',
       bio: c.bio || '',
       image_url: c.image_url || '',
+      image_file: null,
       committee_id: c.committee_id || '',
       target_id: c.target_id || ''
     })
@@ -88,11 +91,30 @@ export default function CandidatesPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      let payload = form
+      // If an image file is present, build FormData
+      if (form.image_file) {
+        payload = new FormData()
+        payload.append('full_name', form.full_name)
+        payload.append('party', form.party || '')
+        payload.append('symbol', form.symbol || '')
+        payload.append('bio', form.bio || '')
+        if (form.committee_id) payload.append('committee_id', String(form.committee_id))
+        if (form.target_id) payload.append('target_id', String(form.target_id))
+        payload.append('image', form.image_file)
+        if (!editCandidateTarget) payload.append('election_id', String(parseInt(selectedElectionId)))
+      } else {
+        // remove local-only fields
+        const copy = { ...form }
+        delete copy.image_file
+        payload = copy
+      }
+
       if (editCandidateTarget) {
-        await dispatch(updateCandidate({ id: editCandidateTarget.id, data: form })).unwrap()
+        await dispatch(updateCandidate({ id: editCandidateTarget.id, data: payload })).unwrap()
         toast.success('Candidate updated')
       } else {
-        await dispatch(addCandidate({ ...form, election_id: parseInt(selectedElectionId) })).unwrap()
+        await dispatch(addCandidate(payload instanceof FormData ? payload : { ...payload, election_id: parseInt(selectedElectionId) })).unwrap()
         toast.success('Candidate added')
       }
       setShowModal(false)
@@ -262,7 +284,6 @@ export default function CandidatesPage() {
             { name: 'full_name', label: 'Full Name', required: true },
             { name: 'party', label: 'Party', required: true },
             { name: 'symbol', label: 'Symbol / Initial', required: false },
-            { name: 'image_url', label: 'Image URL', required: false },
           ].map(({ name, label, required }) => (
             <div key={name}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -275,6 +296,16 @@ export default function CandidatesPage() {
               />
             </div>
           ))}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+            <ImageUpload
+              file={form.image_file}
+              existingUrl={form.image_url}
+              onFileChange={(f) => setForm(prev => ({ ...prev, image_file: f }))}
+              id="candidate-image-input"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
@@ -347,17 +378,13 @@ export default function CandidatesPage() {
 function CandidateIdentity({ candidate }) {
   return (
     <div className="flex items-center gap-3 min-w-[220px]">
-      {candidate.image_url ? (
-        <img
-          src={candidate.image_url}
-          alt={candidate.full_name}
-          className="w-10 h-10 rounded-full object-cover ring-1 ring-gray-200 shrink-0"
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 text-sm font-bold ring-1 ring-indigo-100 shrink-0">
-          {getInitials(candidate.full_name)}
-        </div>
-      )}
+      <ImageAvatar
+        src={candidate.image_url}
+        name={candidate.full_name}
+        sizeClass="w-10 h-10"
+        imageClassName="ring-1 ring-gray-200"
+        fallbackClassName="bg-indigo-50 text-indigo-700 text-sm ring-1 ring-indigo-100"
+      />
       <div className="min-w-0">
         <p className="font-semibold text-gray-900 truncate">{candidate.full_name}</p>
         {candidate.bio && <p className="text-xs text-gray-500 truncate max-w-xs">{candidate.bio}</p>}

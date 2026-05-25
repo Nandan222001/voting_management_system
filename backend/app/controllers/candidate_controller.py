@@ -6,7 +6,7 @@ Provides the /api/v1/candidates router.
 - Admin-only: add, update, delete candidates.
 """
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -111,7 +111,14 @@ def list_candidates(
     summary="Add a new candidate to an election (admin-only)",
 )
 def add_candidate(
-    payload: CandidateCreate,
+    full_name: str = Form(...),
+    party: str | None = Form(None),
+    symbol: str | None = Form(None),
+    image: UploadFile | None = File(None),
+    bio: str | None = Form(None),
+    committee_id: int | None = Form(None),
+    target_id: int | None = Form(None),
+    election_id: int = Form(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> CandidateResponse:
@@ -120,8 +127,23 @@ def add_candidate(
     Requires admin privileges.
     Raises 400 if the parent election is not in draft status.
     """
+    # Build CandidateCreate-like object
+    payload = CandidateCreate(
+        full_name=full_name,
+        party=party,
+        symbol=symbol,
+        image_url=None,
+        bio=bio,
+        committee_id=committee_id,
+        target_id=target_id,
+        election_id=election_id,
+    )
+
     candidate = candidate_service.add_candidate(
-        db, payload, tenant_id=current_user.tenant_id if current_user.role != "superadmin" else None
+        db,
+        payload,
+        image_file=image,
+        tenant_id=current_user.tenant_id if current_user.role != "superadmin" else None,
     )
     return CandidateResponse.model_validate(candidate)
 
@@ -133,7 +155,13 @@ def add_candidate(
 )
 def update_candidate(
     candidate_id: int,
-    payload: CandidateUpdate,
+    full_name: str | None = Form(None),
+    party: str | None = Form(None),
+    symbol: str | None = Form(None),
+    image: UploadFile | None = File(None),
+    bio: str | None = Form(None),
+    committee_id: int | None = Form(None),
+    target_id: int | None = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> CandidateResponse:
@@ -142,7 +170,23 @@ def update_candidate(
     Requires admin privileges.
     Raises 400 if the parent election is not in draft status.
     """
-    candidate = candidate_service.update_candidate(db, candidate_id, payload)
+    # Build CandidateUpdate from supplied form fields
+    update_data = {}
+    if full_name is not None:
+        update_data['full_name'] = full_name
+    if party is not None:
+        update_data['party'] = party
+    if symbol is not None:
+        update_data['symbol'] = symbol
+    if bio is not None:
+        update_data['bio'] = bio
+    if committee_id is not None:
+        update_data['committee_id'] = committee_id
+    if target_id is not None:
+        update_data['target_id'] = target_id
+
+    body = CandidateUpdate(**update_data) if update_data else CandidateUpdate()
+    candidate = candidate_service.update_candidate(db, candidate_id, body, image_file=image)
     return CandidateResponse.model_validate(candidate)
 
 

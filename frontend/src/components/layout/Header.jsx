@@ -10,6 +10,9 @@ const ROLE_COLORS = {
 
 export default function Header({ title }) {
   const { user } = useSelector((state) => state.auth);
+  // Toggle to hide/show notifications in the UI (don't remove backend logic).
+  // Set to false to hide notification icon/badge/dropdown while preserving layout.
+  const SHOW_NOTIFICATIONS = false;
   const [notifOpen, setNotifOpen] = useState(false);
 
   const roleLabel = user?.role ?? 'Admin';
@@ -24,44 +27,49 @@ export default function Header({ title }) {
 
       {/* Right Side */}
       <div className="flex items-center gap-4">
-        {/* Notification Bell */}
-        <div className="relative">
-          <button
-            onClick={() => setNotifOpen((v) => !v)}
-            className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Notifications"
-          >
-            <FaBell className="text-gray-500 text-lg" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
-          </button>
+        {/* Notification Bell (hidden when SHOW_NOTIFICATIONS=false) */}
+        {SHOW_NOTIFICATIONS ? (
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen((v) => !v)}
+              className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Notifications"
+            >
+              <FaBell className="text-gray-500 text-lg" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+            </button>
 
-          {notifOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <p className="font-semibold text-gray-800 text-sm">Notifications</p>
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="font-semibold text-gray-800 text-sm">Notifications</p>
+                </div>
+                <ul className="divide-y divide-gray-50">
+                  <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <p className="font-medium">New user registered</p>
+                    <p className="text-gray-400 text-xs mt-0.5">2 minutes ago</p>
+                  </li>
+                  <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <p className="font-medium">Election "City Council 2026" started</p>
+                    <p className="text-gray-400 text-xs mt-0.5">1 hour ago</p>
+                  </li>
+                  <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                    <p className="font-medium">3 pending approvals</p>
+                    <p className="text-gray-400 text-xs mt-0.5">3 hours ago</p>
+                  </li>
+                </ul>
+                <div className="px-4 py-2 border-t border-gray-100">
+                  <button className="text-indigo-600 text-xs font-semibold hover:underline">
+                    View all notifications
+                  </button>
+                </div>
               </div>
-              <ul className="divide-y divide-gray-50">
-                <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-medium">New user registered</p>
-                  <p className="text-gray-400 text-xs mt-0.5">2 minutes ago</p>
-                </li>
-                <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-medium">Election "City Council 2026" started</p>
-                  <p className="text-gray-400 text-xs mt-0.5">1 hour ago</p>
-                </li>
-                <li className="px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                  <p className="font-medium">3 pending approvals</p>
-                  <p className="text-gray-400 text-xs mt-0.5">3 hours ago</p>
-                </li>
-              </ul>
-              <div className="px-4 py-2 border-t border-gray-100">
-                <button className="text-indigo-600 text-xs font-semibold hover:underline">
-                  View all notifications
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          // Render an invisible placeholder that keeps layout spacing intact
+          <div className="w-10 h-10" aria-hidden />
+        )}
 
         {/* Divider */}
         <div className="h-8 w-px bg-gray-200" />

@@ -11,7 +11,7 @@ import Modal from '../components/common/Modal'
 import StatsCard from '../components/common/StatsCard'
 import { fetchUsers, approveUser, blockUser, deleteUser, fetchUserStats } from '../store/slices/userSlice'
 import { fetchTargets } from '../store/slices/targetSlice'
-import { getInitials } from '../utils/helpers'
+import ImageAvatar from '../components/common/ImageAvatar'
 
 const TABS = [
   { key: '', label: 'All Users' },
@@ -80,17 +80,13 @@ export default function UsersPage() {
       key: 'full_name',
       render: (_, u) => (
         <div className="flex items-center gap-3">
-          {u.image_url ? (
-            <img
-              src={u.image_url}
-              alt={u.full_name}
-              className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-200"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
-              {getInitials(u.full_name)}
-            </div>
-          )}
+          <ImageAvatar
+            src={u.image_url || u.profile_image}
+            name={u.full_name}
+            sizeClass="w-9 h-9"
+            imageClassName="ring-1 ring-gray-200"
+            fallbackClassName="bg-indigo-100 text-indigo-600 text-sm"
+          />
           <div>
             <p className="font-medium text-gray-900 text-sm">
               {u?.full_name || '—'}

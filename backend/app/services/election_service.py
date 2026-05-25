@@ -17,6 +17,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.election import Election, ElectionStatus
+from app.models.candidate import Candidate
 from app.repositories.election_repository import ElectionRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.schemas.election import ElectionCreate, ElectionUpdate
@@ -51,6 +52,45 @@ class ElectionService:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="tenant_id is required when a superadmin creates an election.",
         )
+
+    def attach_winner_summary(self, db: Session, election: Election) -> Election:
+        candidates = (
+            db.query(Candidate)
+            .filter(Candidate.election_id == election.id)
+            .order_by(Candidate.vote_count.desc(), Candidate.full_name.asc())
+            .all()
+        )
+        total_votes = sum(c.vote_count or 0 for c in candidates)
+        setattr(election, "candidate_count", len(candidates))
+        setattr(election, "total_votes", total_votes)
+        setattr(election, "winner", None)
+        setattr(election, "winners", [])
+        setattr(election, "is_tie", False)
+        setattr(election, "winner_declared", False)
+
+        if election.status != ElectionStatus.closed or total_votes <= 0 or not candidates:
+            return election
+
+        top_vote_count = candidates[0].vote_count or 0
+        top_candidates = [c for c in candidates if (c.vote_count or 0) == top_vote_count]
+        winners = [
+            {
+                "candidate_id": c.id,
+                "candidate_name": c.full_name,
+                "party": c.party,
+                "image_url": c.image_url,
+                "vote_count": c.vote_count or 0,
+                "percentage": round(((c.vote_count or 0) / total_votes) * 100, 2),
+                "rank": 1,
+            }
+            for c in top_candidates
+        ]
+        is_tie = len(winners) > 1
+        setattr(election, "winners", winners)
+        setattr(election, "is_tie", is_tie)
+        setattr(election, "winner", winners[0] if not is_tie and winners else None)
+        setattr(election, "winner_declared", bool(winners and not is_tie))
+        return election
 
     # ------------------------------------------------------------------
     # Create
@@ -155,6 +195,8 @@ class ElectionService:
             .limit(limit)
             .all()
         )
+        for election in elections:
+            self.attach_winner_summary(db, election)
         return elections, total
 
     def get_by_id(
@@ -191,7 +233,7 @@ class ElectionService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Election with id={election_id} not found.",
             )
-        return election
+        return self.attach_winner_summary(db, election)
 
     # ------------------------------------------------------------------
     # Update / Delete
