@@ -8,8 +8,11 @@ Dependency Inversion: Depends on TenantRepository and UserRepository abstraction
 import re
 from datetime import datetime, timezone
 from typing import Optional
+from pathlib import Path
+import shutil
+import time
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
 
 from app.models.tenant import Tenant, TenantStatus
@@ -36,7 +39,7 @@ class TenantService:
 
     def create_tenant(
         self, db: Session, data: TenantCreate, created_by: int
-    ) -> Tenant:
+    , logo: UploadFile | None = None) -> Tenant:
         repo = TenantRepository(db)
 
         slug = data.slug or _slugify(data.name)
@@ -56,7 +59,7 @@ class TenantService:
             contact_email=data.contact_email,
             plan=data.plan or "starter",
             logo_url=data.logo_url,
-            primary_color=data.primary_color or "#4f46e5",
+            primary_color=getattr(data, 'primary_color', None) or "#4f46e5",
             max_elections=max_e,
             max_voters=max_v,
             status=TenantStatus.trial,
@@ -64,6 +67,26 @@ class TenantService:
         )
         db.add(tenant)
         db.flush()  # get tenant.id before creating the admin user
+
+        # If a logo file was uploaded, save it and update tenant.logo_url
+        if logo is not None:
+            uploads_dir = Path(__file__).resolve().parents[2] / 'static' / 'uploads'
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+
+            # sanitize filename
+            original_name = Path(logo.filename).name
+            safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
+            timestamp = int(time.time() * 1000)
+            filename = f"tenant_{tenant.id}_{timestamp}_{safe_name}"
+            dest_path = uploads_dir / filename
+
+            with dest_path.open('wb') as buffer:
+                shutil.copyfileobj(logo.file, buffer)
+
+            tenant.logo_url = f"/static/uploads/{filename}"
+            db.add(tenant)
+            db.commit()
+            db.refresh(tenant)
 
         # Create first admin user for the tenant
         user_repo = UserRepository(db)
@@ -126,7 +149,7 @@ class TenantService:
 
     def update_tenant(
         self, db: Session, tenant_id: int, data: TenantUpdate
-    ) -> Tenant:
+    , logo: UploadFile | None = None) -> Tenant:
         tenant = self.get_tenant_by_id(db, tenant_id)
         repo = TenantRepository(db)
         update_dict = data.model_dump(exclude_unset=True)
@@ -139,6 +162,23 @@ class TenantService:
             max_e, max_v = plan_limits.get(update_dict["plan"], (5, 1000))
             update_dict["max_elections"] = max_e
             update_dict["max_voters"] = max_v
+        # handle uploaded logo if provided — save file and include in update dict
+        if logo is not None:
+            uploads_dir = Path(__file__).resolve().parents[2] / 'static' / 'uploads'
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+
+            original_name = Path(logo.filename).name
+            safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
+            timestamp = int(time.time() * 1000)
+            filename = f"tenant_{tenant.id}_{timestamp}_{safe_name}"
+            dest_path = uploads_dir / filename
+
+            with dest_path.open('wb') as buffer:
+                shutil.copyfileobj(logo.file, buffer)
+
+            served_path = f"/static/uploads/{filename}"
+            update_dict['logo_url'] = served_path
+
         return repo.update(tenant, update_dict)
 
     # ------------------------------------------------------------------

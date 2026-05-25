@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config.database import Base, engine
 from app.controllers.auth_controller import router as auth_router
@@ -71,6 +72,9 @@ app.include_router(candidate_committee_router, prefix="/api/v1")
 app.include_router(target_router, prefix="/api/v1")
 app.include_router(vote_router, prefix="/api/v1")
 app.include_router(report_router, prefix="/api/v1")
+
+# Serve uploaded static files (tenant logos etc.)
+app.mount("/static", StaticFiles(directory="./static"), name="static")
 
 
 # ---------------------------------------------------------------------------

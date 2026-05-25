@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -58,6 +58,15 @@ function slugify(str) {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
+}
+
+// Resolve logo URL returned by backend (which may be a relative path like '/static/...')
+function resolveLogoUrl(url) {
+  if (!url) return null;
+  if (/^https?:\/\//.test(url)) return url;
+  const apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+  const origin = apiBase.replace(/\/api\/v1\/?$/, '');
+  return origin + url;
 }
 
 function getTenantId(tenant) {
@@ -122,8 +131,7 @@ const EMPTY_FORM = {
   slug: '',
   contact_email: '',
   plan: 'starter',
-  logo_url: '',
-  primary_color: '#4f46e5',
+  logo_file: null,
   admin_name: '',
   admin_email: '',
   admin_password: '',
@@ -144,8 +152,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         slug: editTenant.slug || '',
         contact_email: editTenant.contact_email || editTenant.email || '',
         plan: editTenant.plan || 'starter',
-        logo_url: editTenant.logo_url || '',
-        primary_color: editTenant.primary_color || '#4f46e5',
+        logo_file: null,
         admin_name: '',
         admin_email: '',
         admin_password: '',
@@ -198,20 +205,34 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
       return;
     }
 
-    const payload = {
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-      contact_email: form.contact_email.trim(),
-      plan: form.plan,
-      logo_url: form.logo_url.trim() || undefined,
-      primary_color: form.primary_color,
-    };
+    let payload;
+    if (form.logo_file) {
+      payload = new FormData();
+      payload.append('name', form.name.trim());
+      payload.append('slug', form.slug.trim());
+      payload.append('contact_email', form.contact_email.trim());
+      payload.append('plan', form.plan);
+      payload.append('logo', form.logo_file);
+    } else {
+      payload = {
+        name: form.name.trim(),
+        slug: form.slug.trim(),
+        contact_email: form.contact_email.trim(),
+        plan: form.plan,
+      };
+    }
 
     if (!isEdit) {
       // Flat admin fields matching backend TenantCreate schema
-      payload.admin_full_name = form.admin_name.trim();
-      payload.admin_email = form.admin_email.trim();
-      payload.admin_password = form.admin_password;
+      if (payload instanceof FormData) {
+        payload.append('admin_full_name', form.admin_name.trim());
+        payload.append('admin_email', form.admin_email.trim());
+        payload.append('admin_password', form.admin_password);
+      } else {
+        payload.admin_full_name = form.admin_name.trim();
+        payload.admin_email = form.admin_email.trim();
+        payload.admin_password = form.admin_password;
+      }
     }
 
     onSave(payload);
@@ -271,28 +292,58 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <Field label="Logo URL" hint="Optional. Must be a valid image URL.">
-              <Input
-                type="url"
-                value={form.logo_url}
-                onChange={set('logo_url')}
-                placeholder="https://example.com/logo.png"
-              />
-            </Field>
-            <Field label="Brand Color" hint="Hex color for the tenant brand.">
-              <div className="flex gap-2 items-center">
-                <input
-                  type="color"
-                  value={form.primary_color}
-                  onChange={set('primary_color')}
-                  className="h-[38px] w-12 rounded-lg border border-gray-300 cursor-pointer p-0.5"
-                />
-                <Input
-                  value={form.primary_color}
-                  onChange={set('primary_color')}
-                  placeholder="#4f46e5"
-                />
+            <Field label="Logo" hint="Upload a PNG/JPEG logo file (optional)">
+              <div
+                className="border-2 border-dashed rounded-lg p-3 flex items-center justify-center cursor-pointer hover:border-indigo-400 transition-colors"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+                  if (f) setForm((prev) => ({ ...prev, logo_file: f }));
+                }}
+                onClick={() => {
+                  // trigger hidden input
+                  document.getElementById('tenant-logo-input')?.click();
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0l4-4m-4 4-4-4" />
+                  </svg>
+                  <div>
+                    <div className="text-sm font-medium text-gray-700">Drag & drop an image, or click to select</div>
+                    <div className="text-xs text-gray-400">PNG, JPG — up to 2MB</div>
+                  </div>
+                </div>
               </div>
+              <input
+                id="tenant-logo-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setForm((prev) => ({ ...prev, logo_file: e.target.files && e.target.files[0] ? e.target.files[0] : null }))}
+              />
+
+              {form.logo_file && (
+                <div className="mt-3 flex items-center gap-3">
+                  <img
+                    src={URL.createObjectURL(form.logo_file)}
+                    alt="preview"
+                    className="w-16 h-16 object-cover rounded-md border border-gray-200"
+                  />
+                  <div className="flex flex-col">
+                    <div className="text-sm font-medium">{form.logo_file.name}</div>
+                    <div className="text-xs text-gray-400">{(form.logo_file.size / 1024).toFixed(1)} KB</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, logo_file: null }))}
+                    className="ml-auto text-xs text-red-600 hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
             </Field>
           </div>
         </div>
@@ -436,7 +487,6 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
     { label: 'Domain', value: tenant.domain },
     { label: 'Plan', value: <PlanBadge plan={tenant.plan} /> },
     { label: 'Status', value: <Badge status={tenant.status} /> },
-    { label: 'Brand Color', value: tenant.primary_color || '#4f46e5' },
     { label: 'Max Elections', value: tenant.max_elections != null ? tenant.max_elections.toLocaleString() : '—' },
     { label: 'Max Voters', value: tenant.max_voters != null ? tenant.max_voters.toLocaleString() : '—' },
     { label: 'Created', value: safeFormat(tenant.created_at || tenant.createdAt) },
@@ -482,14 +532,14 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
         <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
           {tenant.logo_url ? (
             <img
-              src={tenant.logo_url}
+              src={resolveLogoUrl(tenant.logo_url)}
               alt={tenant.name}
               className="w-14 h-14 rounded-xl object-cover flex-shrink-0 border border-gray-200"
             />
           ) : (
             <div
               className="w-14 h-14 rounded-xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
+              style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
             >
               {tenant.name?.charAt(0).toUpperCase()}
             </div>
@@ -969,14 +1019,14 @@ export default function TenantsPage() {
                             <div className="flex items-center gap-3">
                               {tenant.logo_url ? (
                                 <img
-                                  src={tenant.logo_url}
+                                  src={resolveLogoUrl(tenant.logo_url)}
                                   alt={tenant.name}
                                   className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-gray-200"
                                 />
                               ) : (
                                 <div
                                   className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
-                                  style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
+                                  style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
                                 >
                                   {tenant.name?.charAt(0).toUpperCase()}
                                 </div>
