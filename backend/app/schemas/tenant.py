@@ -17,7 +17,6 @@ class TenantCreate(BaseModel):
     contact_email: Optional[EmailStr] = None
     plan: str = Field(default="starter")
     logo_url: Optional[str] = Field(None, max_length=500)
-    primary_color: str = Field(default="#4f46e5", max_length=7)
 
     # First admin user fields
     admin_full_name: str = Field(..., min_length=1, max_length=150)
@@ -31,7 +30,6 @@ class TenantUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     domain: Optional[str] = Field(None, max_length=255)
     logo_url: Optional[str] = Field(None, max_length=500)
-    primary_color: Optional[str] = Field(None, max_length=7)
     contact_email: Optional[EmailStr] = None
     plan: Optional[str] = Field(None, description="Subscription plan tier.")
 

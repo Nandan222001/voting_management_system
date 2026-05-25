@@ -5,9 +5,9 @@ All routes require superadmin privileges. Regular tenant admins and voters
 have no access to these endpoints.
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
@@ -77,11 +77,29 @@ def list_tenants(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, summary="Create a new tenant")
 def create_tenant(
-    body: TenantCreate,
+    name: str = Form(...),
+    slug: str | None = Form(None),
+    contact_email: EmailStr | None = Form(None),
+    plan: str = Form('starter'),
+    admin_full_name: str = Form(...),
+    admin_email: EmailStr = Form(...),
+    admin_password: str = Form(...),
+    logo: UploadFile | None = File(None),
     current_user: User = Depends(require_superadmin),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
-    tenant = tenant_service.create_tenant(db, body, created_by=current_user.id)
+    # Build TenantCreate-like object from form fields
+    body = TenantCreate(
+        name=name,
+        slug=slug,
+        contact_email=contact_email,
+        plan=plan,
+        logo_url=None,
+        admin_full_name=admin_full_name,
+        admin_email=admin_email,
+        admin_password=admin_password,
+    )
+    tenant = tenant_service.create_tenant(db, body, created_by=current_user.id, logo=logo)
     return success_response(
         data=TenantResponse.model_validate(tenant).model_dump(mode="json"),
         message=f"Tenant '{tenant.name}' created successfully.",
@@ -104,11 +122,27 @@ def get_tenant(
 @router.put("/{tenant_id}", summary="Update tenant branding / settings")
 def update_tenant(
     tenant_id: int,
-    body: TenantUpdate,
+    name: str | None = Form(None),
+    slug: str | None = Form(None),
+    contact_email: EmailStr | None = Form(None),
+    plan: str | None = Form(None),
+    logo: UploadFile | None = File(None),
     _: User = Depends(require_superadmin),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
-    tenant = tenant_service.update_tenant(db, tenant_id, body)
+    # Build a TenantUpdate model from supplied form fields
+    update_data = {}
+    if name is not None:
+        update_data['name'] = name
+    if slug is not None:
+        update_data['slug'] = slug
+    if contact_email is not None:
+        update_data['contact_email'] = contact_email
+    if plan is not None:
+        update_data['plan'] = plan
+
+    body = TenantUpdate(**update_data) if update_data else TenantUpdate()
+    tenant = tenant_service.update_tenant(db, tenant_id, body, logo=logo)
     return success_response(
         data=TenantResponse.model_validate(tenant).model_dump(mode="json"),
         message="Tenant updated.",

@@ -198,7 +198,7 @@ export default function SuperAdminDashboard() {
                             ) : (
                               <div
                                 className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                                style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
+                                style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
                               >
                                 {tenant.name?.charAt(0).toUpperCase()}
                               </div>
