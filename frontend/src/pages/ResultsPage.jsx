@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -19,10 +20,17 @@ const COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706'
 
 export default function ResultsPage() {
   const dispatch = useDispatch()
+  const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const { elections } = useSelector(s => s.elections)
   const { results, loading } = useSelector(s => s.candidates)
 
-  const [selectedElectionId, setSelectedElectionId] = useState('')
+  const [selectedElectionId, setSelectedElectionId] = useState(id || searchParams.get('election') || '')
+
+  useEffect(() => {
+    const requestedElectionId = id || searchParams.get('election') || ''
+    if (requestedElectionId) setSelectedElectionId(requestedElectionId)
+  }, [id, searchParams])
 
   useEffect(() => {
     dispatch(fetchElections({}))

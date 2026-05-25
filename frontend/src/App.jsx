@@ -103,6 +103,15 @@ export default function App() {
         />
 
         <Route 
+          path="/results" 
+          element={
+            <PrivateRoute>
+              <ResultsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
           path="/results/:id" 
           element={
             <PrivateRoute>

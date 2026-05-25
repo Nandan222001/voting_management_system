@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   FaPlus,
-  FaVoteYea,
+  FaChartBar,
   FaSearch,
   FaTrophy,
 } from 'react-icons/fa';
@@ -211,6 +211,20 @@ export default function ElectionsPage() {
         <span className="font-semibold text-gray-700">
           {val ?? row.candidatesCount ?? 0}
         </span>
+      ),
+    },
+    {
+      key: 'results',
+      label: 'Results',
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={() => navigate(`/results?election=${row._id || row.id}`)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
+        >
+          <FaChartBar className="text-[11px]" />
+          View Results
+        </button>
       ),
     },
   ];
