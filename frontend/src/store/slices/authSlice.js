@@ -22,20 +22,7 @@ export const loginUser = createAsyncThunk(
   }
 )
 
-export const registerUser = createAsyncThunk(
-  'auth/registerUser',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await authService.register(data)
-      // backend returns the created user object
-      return response.data
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Registration failed. Please check your input.'
-      )
-    }
-  }
-)
+// registration disabled on frontend
 
 export const getMe = createAsyncThunk(
   'auth/getMe',
@@ -145,21 +132,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false
       })
 
-    // registerUser
-    builder
-      .addCase(registerUser.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(registerUser.fulfilled, (state, action) => {
-        // After registration, user is created but not logged in automatically
-        state.loading = false
-        state.error = null
-      })
-      .addCase(registerUser.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload
-      })
+    // registration is disabled in frontend
 
     // getMe
     builder

@@ -192,16 +192,7 @@ export default function LoginPage() {
                 )}
               </button>
 
-              {/* Register link */}
-              <div className="mt-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => navigate('/register')}
-                  className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
-                >
-                  Create account
-                </button>
-              </div>
+              {/* Register link removed - registration disabled */}
             </form>
           </div>
         </div>
