@@ -227,16 +227,11 @@ export default function CandidatesPage() {
 
             <div className="relative">
               <FaPoll className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <select
-                className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all appearance-none"
-                value={selectedElectionId}
-                onChange={(e) => setSelectedElectionId(e.target.value)}
-              >
-                <option value="">Choose an Election...</option>
-                {elections.map((e) => (
-                  <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
-                ))}
-              </select>
+                <FancySelect
+                  value={selectedElectionId}
+                  onChange={(e) => setSelectedElectionId(e.target.value)}
+                  options={[{ value: '', label: 'Choose an Election...' }, ...elections.map(e => ({ value: e.id, label: `${e.title} (${e.status})` }))]}
+                />
             </div>
           </div>
         </div>

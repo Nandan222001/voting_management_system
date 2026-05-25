@@ -35,6 +35,7 @@ import {
   clearError,
 } from '../store/slices/tenantSlice';
 import MainLayout from '../components/layout/MainLayout';
+import FancySelect from '../components/common/FancySelect';
 import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -279,15 +280,15 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
               />
             </Field>
             <Field label="Plan">
-              <select
-                value={form.plan}
-                onChange={set('plan')}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="starter">Starter — 5 elections, 1,000 voters</option>
-                <option value="professional">Professional — 25 elections, 10,000 voters</option>
-                <option value="enterprise">Enterprise — Unlimited</option>
-              </select>
+                <FancySelect
+                  value={form.plan}
+                  onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
+                  options={[
+                    { value: 'starter', label: 'Starter — 5 elections, 1,000 voters' },
+                    { value: 'professional', label: 'Professional — 25 elections, 10,000 voters' },
+                    { value: 'enterprise', label: 'Enterprise — Unlimited' },
+                  ]}
+                />
             </Field>
           </div>
 

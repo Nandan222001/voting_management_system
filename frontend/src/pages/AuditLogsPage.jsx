@@ -6,6 +6,7 @@ import Pagination from '../components/common/Pagination'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import EmptyState from '../components/common/EmptyState'
 import { fetchAuditLogs } from '../store/slices/voteSlice'
+import FancySelect from '../components/common/FancySelect'
 
 const ACTION_COLORS = {
   login: 'bg-blue-100 text-blue-700',
@@ -96,22 +97,14 @@ export default function AuditLogsPage() {
           <div className="flex items-center gap-2">
             <FaFilter className="h-4 w-4 text-gray-400" />
 
-            <select
+            <FancySelect
               value={actionFilter}
-              onChange={e => {
+              onChange={(e) => {
                 setActionFilter(e.target.value)
                 setPage(1)
               }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">All Actions</option>
-
-              {Object.keys(ACTION_COLORS).map(a => (
-                <option key={a} value={a}>
-                  {a.charAt(0).toUpperCase() + a.slice(1)}
-                </option>
-              ))}
-            </select>
+              options={[{ value: '', label: 'All Actions' }, ...Object.keys(ACTION_COLORS).map(a => ({ value: a, label: a.charAt(0).toUpperCase() + a.slice(1) }))]}
+            />
           </div>
 
           <span className="text-sm text-gray-500 ml-auto">

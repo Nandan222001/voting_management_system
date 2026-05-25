@@ -59,16 +59,11 @@ export default function ResultsPage() {
         {/* Election selector */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Select Election</label>
-          <select
-            value={selectedElectionId}
-            onChange={e => setSelectedElectionId(e.target.value)}
-            className="w-full md:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="">-- Choose an election to view results --</option>
-            {elections.map(e => (
-              <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
-            ))}
-          </select>
+            <FancySelect
+              value={selectedElectionId}
+              onChange={(e) => setSelectedElectionId(e.target.value)}
+              options={[{ value: '', label: '-- Choose an election to view results --' }, ...elections.map(e => ({ value: e.id, label: `${e.title} (${e.status})` }))]}
+            />
         </div>
 
         {!selectedElectionId ? (

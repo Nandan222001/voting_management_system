@@ -8,6 +8,7 @@ import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaTrophy } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import Modal from '../components/common/Modal'
+import FancySelect from '../components/common/FancySelect'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import Badge from '../components/common/Badge'
 import LoadingSpinner from '../components/common/LoadingSpinner'
@@ -277,29 +278,19 @@ export default function ElectionDetailPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
-              <select
+              <FancySelect
                 value={form.committee_id}
                 onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">-- No specific committee --</option>
-                {committees.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                options={[{ value: '', label: '-- No specific committee --' }, ...committees.map(c => ({ value: c.id, label: c.name }))]}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Target / Area</label>
-              <select
+              <FancySelect
                 value={form.target_id}
                 onChange={e => setForm(f => ({ ...f, target_id: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">-- No specific area --</option>
-                {targets.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
-                ))}
-              </select>
+                options={[{ value: '', label: '-- No specific area --' }, ...targets.map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))]}
+              />
             </div>
           </div>
           <div>
