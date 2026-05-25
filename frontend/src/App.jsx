@@ -123,7 +123,7 @@ export default function App() {
         <Route 
           path="/audit-logs" 
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={["superadmin"]}>
               <AuditLogsPage />
             </PrivateRoute>
           } 

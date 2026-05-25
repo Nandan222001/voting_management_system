@@ -13,6 +13,7 @@ import {
   FaArrowRight,
 } from 'react-icons/fa';
 import { fetchDashboardOverview, selectDashboardOverview, selectVoteLoading } from '../store/slices/voteSlice';
+import { selectCurrentUser } from '../store/slices/authSlice';
 import { fetchElections, selectElections, selectElectionLoading } from '../store/slices/electionSlice';
 import StatsCard from '../components/common/StatsCard';
 import Badge from '../components/common/Badge';
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const dashLoading = useSelector(selectVoteLoading);
   const elections = useSelector(selectElections);
   const elecLoading = useSelector(selectElectionLoading);
+  const user = useSelector(selectCurrentUser);
 
   useEffect(() => {
     dispatch(fetchDashboardOverview());
@@ -56,7 +58,8 @@ export default function DashboardPage() {
     { label: 'Create Election', icon: FaPlus, color: 'bg-indigo-600 hover:bg-indigo-700', path: '/elections' },
     { label: 'Manage Users', icon: FaUserCog, color: 'bg-blue-600 hover:bg-blue-700', path: '/users' },
     { label: 'View Results', icon: FaChartBar, color: 'bg-green-600 hover:bg-green-700', path: '/results' },
-    { label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-purple-600 hover:bg-purple-700', path: '/audit-logs' },
+    // Audit Logs quick action available only to superadmin
+    ...(user?.role === 'superadmin' ? [{ label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-purple-600 hover:bg-purple-700', path: '/audit-logs' }] : []),
   ];
 
   return (

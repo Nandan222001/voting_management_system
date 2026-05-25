@@ -23,7 +23,7 @@ const navLinks = [
   { to: '/candidate-committees', icon: FaUserShield, label: 'Committees', roles: ['admin'] },
   { to: '/targets', icon: FaMapMarkerAlt, label: 'Targets', roles: ['admin'] },
   { to: '/users', icon: FaUserCog, label: 'Users', roles: ['admin'] },
-  { to: '/audit-logs', icon: FaHistory, label: 'Audit Logs', roles: ['admin', 'superadmin'] },
+  { to: '/audit-logs', icon: FaHistory, label: 'Audit Logs', roles: ['superadmin'] },
 ];
 
 const superAdminLinks = [
