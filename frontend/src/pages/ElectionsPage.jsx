@@ -24,6 +24,7 @@ import {
 import { fetchTargets } from '../store/slices/targetSlice';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';
+import FancySelect from '../components/common/FancySelect';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Pagination from '../components/common/Pagination';
@@ -358,16 +359,11 @@ return (
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">
               Geographical Scope (Target)
             </label>
-            <select
+            <FancySelect
               value={form.target_id}
               onChange={(e) => setForm((p) => ({ ...p, target_id: e.target.value }))}
-              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-            >
-              <option value="">-- All Regions --</option>
-              {targets.map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
-              ))}
-            </select>
+              options={[{ value: '', label: '-- All Regions --' }, ...targets.map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))]}
+            />
           </div>
 
           {/* Actions */}

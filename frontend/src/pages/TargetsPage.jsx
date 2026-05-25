@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { FaPlus, FaEdit, FaTrash, FaMapMarkerAlt } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
+import FancySelect from '../components/common/FancySelect'
 import DataTable from '../components/common/DataTable'
 import Modal from '../components/common/Modal'
 import ConfirmDialog from '../components/common/ConfirmDialog'
@@ -176,30 +177,19 @@ export default function TargetsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select
+            <FancySelect
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {TARGET_TYPES.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
-              ))}
-            </select>
+              options={TARGET_TYPES}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Parent Target (Optional)</label>
-            <select
+            <FancySelect
               value={form.parent_id}
               onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">-- No Parent --</option>
-              {targets
-                .filter(t => t.id !== editTarget?.id) // Prevent self-parenting
-                .map(t => (
-                <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
-              ))}
-            </select>
+              options={[{ value: '', label: '-- No Parent --' }, ...targets.filter(t => t.id !== editTarget?.id).map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))]}
+            />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button
