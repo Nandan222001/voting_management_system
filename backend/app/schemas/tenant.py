@@ -32,6 +32,17 @@ class TenantUpdate(BaseModel):
     logo_url: Optional[str] = Field(None, max_length=500)
     contact_email: Optional[EmailStr] = None
     plan: Optional[str] = Field(None, description="Subscription plan tier.")
+    
+    # Optional Razorpay updates via main update schema
+    razorpay_key_id: Optional[str] = None
+    razorpay_key_secret: Optional[str] = None
+
+
+class TenantPaymentSettings(BaseModel):
+    """Surgical update schema for payment credentials."""
+
+    razorpay_key_id: str = Field(..., min_length=1)
+    razorpay_key_secret: str = Field(..., min_length=1)
 
 
 class TenantResponse(BaseModel):
@@ -50,6 +61,11 @@ class TenantResponse(BaseModel):
     max_elections: int
     max_voters: int
     contact_email: Optional[str] = None
+    
+    # Razorpay settings (Included in response for admin management)
+    razorpay_key_id: Optional[str] = None
+    razorpay_key_secret: Optional[str] = None
+
     created_by: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

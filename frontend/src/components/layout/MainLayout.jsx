@@ -11,6 +11,7 @@ const PAGE_TITLES = {
   '/audit-logs': 'Audit Logs',
   '/superadmin': 'Platform Overview',
   '/tenants': 'Tenant Management',
+  '/targets': 'Geography',
 };
 
 function getTitle(pathname) {

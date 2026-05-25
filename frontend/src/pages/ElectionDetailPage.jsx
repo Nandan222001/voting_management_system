@@ -12,6 +12,7 @@ import FancySelect from '../components/common/FancySelect'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import Badge from '../components/common/Badge'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import useAuth from '../hooks/useAuth'
 import { fetchElectionById } from '../store/slices/electionSlice'
 import {
   fetchCandidatesByElection,
@@ -28,12 +29,13 @@ import WinnerCard from '../components/common/WinnerCard'
 
 const CHART_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
 
-const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
+const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
 
 export default function ElectionDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { isAdmin } = useAuth()
 
   const { currentElection, loading: electionLoading } = useSelector(s => s.elections)
   const { candidates, results, loading: candLoading } = useSelector(s => s.candidates)
@@ -64,7 +66,6 @@ export default function ElectionDetailPage() {
     setEditCandidateTarget(c)
     setForm({
       full_name: c.full_name,
-      party: c.party,
       symbol: c.symbol,
       bio: c.bio || '',
       image_url: c.image_url || '',
@@ -83,7 +84,6 @@ export default function ElectionDetailPage() {
       if (form.image_file) {
         payload = new FormData()
         payload.append('full_name', form.full_name)
-        payload.append('party', form.party || '')
         payload.append('symbol', form.symbol || '')
         payload.append('bio', form.bio || '')
         if (form.committee_id) payload.append('committee_id', String(form.committee_id))
@@ -212,7 +212,7 @@ export default function ElectionDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900">
             Candidates ({displayCandidates.length})
             </h2>
-            {currentElection?.status === 'draft' && (
+            {isAdmin && currentElection?.status === 'draft' && (
               <button
                 onClick={openCreate}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
@@ -264,7 +264,6 @@ export default function ElectionDetailPage() {
                               Winner
                             </span>
                           )}
-                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">{c.party || 'Independent'}</span>
                           {c.committee && (
                             <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium truncate italic">
                               {c.committee.name}
@@ -293,7 +292,7 @@ export default function ElectionDetailPage() {
                         </div>
                       </div>
                     )}
-                    {currentElection?.status === 'draft' && (
+                    {isAdmin && currentElection?.status === 'draft' && (
                       <div className="flex gap-2">
                         <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
                           <FaEdit /> Edit
@@ -316,7 +315,6 @@ export default function ElectionDetailPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
                   {[
                     { name: 'full_name', label: 'Full Name', required: true },
-                    { name: 'party', label: 'Party', required: true },
                     { name: 'symbol', label: 'Symbol / Initial', required: false },
                   ].map(({ name, label, required }) => (
                     <div key={name}>

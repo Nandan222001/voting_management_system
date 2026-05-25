@@ -53,13 +53,12 @@ export default function ResultsPage() {
 
   const chartData = candidates.map(c => ({
     name: c.candidate_name,
-    party: c.party,
     votes: c.vote_count,
     percentage: parseFloat(c.percentage.toFixed(1))
   }))
 
   const pieData = candidates.filter(c => c.vote_count > 0).map(c => ({
-    name: `${c.candidate_name} (${c.party})`,
+    name: c.candidate_name,
     value: c.vote_count
   }))
 
@@ -87,15 +86,9 @@ export default function ResultsPage() {
         ) : (
           <>
             {/* Summary stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <StatsCard title="Total Votes" value={totalVotes} icon={FaVoteYea} color="indigo" />
               <StatsCard title="Candidates" value={candidates.length} icon={FaUsers} color="blue" />
-              <StatsCard
-                title="Participation"
-                value={results?.participation_rate ? `${results.participation_rate.toFixed(1)}%` : `${totalVotes}`}
-                icon={FaChartPie}
-                color="green"
-              />
               <StatsCard
                 title="Winner"
                 value={winnerDeclared ? winner.candidate_name.split(' ')[0] : '—'}
@@ -188,7 +181,6 @@ export default function ResultsPage() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500">{c.party}</p>
                         </div>
                         <div className="w-40 hidden md:block">
                           <div className="flex justify-between text-xs text-gray-500 mb-1">

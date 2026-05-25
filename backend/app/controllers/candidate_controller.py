@@ -65,7 +65,7 @@ def get_candidate(
 
 
 # ---------------------------------------------------------------------------
-# Admin Operations
+# Admin Operations (Candidate Management)
 # ---------------------------------------------------------------------------
 
 @router.get(
@@ -81,10 +81,7 @@ def list_candidates(
 ) -> CandidateListResponse:
     """
     Returns a paginated list of all candidates across all elections.
-    Requires admin privileges.
     """
-    # Note: Currently uses the base repository list; could be filtered
-    # by tenant in a future enhancement.
     from app.repositories.candidate_repository import CandidateRepository
     repo = CandidateRepository(db)
     
@@ -108,29 +105,25 @@ def list_candidates(
     "/",
     response_model=CandidateResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Add a new candidate to an election (admin-only)",
+    summary="Add a new candidate (admin-only)",
 )
 def add_candidate(
     full_name: str = Form(...),
-    party: str | None = Form(None),
     symbol: str | None = Form(None),
     image: UploadFile | None = File(None),
     bio: str | None = Form(None),
     committee_id: int | None = Form(None),
     target_id: int | None = Form(None),
     election_id: int = Form(...),
+    tenant_id: int | None = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ) -> CandidateResponse:
     """
-    Registers a new candidate.
-    Requires admin privileges.
-    Raises 400 if the parent election is not in draft status.
+    Registers a new candidate. Requires admin privileges.
     """
-    # Build CandidateCreate-like object
     payload = CandidateCreate(
         full_name=full_name,
-        party=party,
         symbol=symbol,
         image_url=None,
         bio=bio,
@@ -139,11 +132,14 @@ def add_candidate(
         election_id=election_id,
     )
 
+    # If tenant_id not provided by superadmin, use current user's tenant
+    effective_tenant_id = tenant_id if current_user.role == "superadmin" else current_user.tenant_id
+
     candidate = candidate_service.add_candidate(
         db,
         payload,
         image_file=image,
-        tenant_id=current_user.tenant_id if current_user.role != "superadmin" else None,
+        tenant_id=effective_tenant_id,
     )
     return CandidateResponse.model_validate(candidate)
 
@@ -156,7 +152,6 @@ def add_candidate(
 def update_candidate(
     candidate_id: int,
     full_name: str | None = Form(None),
-    party: str | None = Form(None),
     symbol: str | None = Form(None),
     image: UploadFile | None = File(None),
     bio: str | None = Form(None),
@@ -166,16 +161,11 @@ def update_candidate(
     current_user: User = Depends(require_admin),
 ) -> CandidateResponse:
     """
-    Modify an existing candidate's information.
-    Requires admin privileges.
-    Raises 400 if the parent election is not in draft status.
+    Modify an existing candidate. Requires admin privileges.
     """
-    # Build CandidateUpdate from supplied form fields
     update_data = {}
     if full_name is not None:
         update_data['full_name'] = full_name
-    if party is not None:
-        update_data['party'] = party
     if symbol is not None:
         update_data['symbol'] = symbol
     if bio is not None:
@@ -200,9 +190,7 @@ def delete_candidate(
     current_user: User = Depends(require_admin),
 ) -> JSONResponse:
     """
-    Permanently delete a candidate record.
-    Requires admin privileges.
-    Raises 400 if the parent election is not in draft status.
+    Permanently delete a candidate. Requires admin privileges.
     """
     candidate_service.delete_candidate(db, candidate_id)
     return success_response(message=f"Candidate {candidate_id} deleted successfully.")

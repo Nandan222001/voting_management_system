@@ -11,7 +11,7 @@ const toCandidateFormData = (data = {}) => {
   if (data instanceof FormData) return data;
   const sanitized = sanitizeCandidateData(data);
   const form = new FormData();
-  ['full_name', 'party', 'symbol', 'bio', 'election_id', 'committee_id', 'target_id'].forEach((key) => {
+  ['full_name', 'symbol', 'bio', 'election_id', 'committee_id', 'target_id'].forEach((key) => {
     const value = sanitized[key];
     if (value !== undefined && value !== null && value !== '') {
       form.append(key, String(value));

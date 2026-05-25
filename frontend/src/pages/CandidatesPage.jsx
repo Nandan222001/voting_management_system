@@ -9,11 +9,9 @@ import {
   FaSearch,
   FaTrash,
   FaUserTie,
-  FaUsers,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
-import Badge from '../components/common/Badge'
 import FancySelect from '../components/common/FancySelect'
 import DataTable from '../components/common/DataTable'
 import EmptyState from '../components/common/EmptyState'
@@ -33,7 +31,7 @@ import { fetchTargets } from '../store/slices/targetSlice'
 import ImageUpload from '../components/common/ImageUpload'
 import ImageAvatar from '../components/common/ImageAvatar'
 
-const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
+const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
 
 export default function CandidatesPage() {
   const dispatch = useDispatch()
@@ -77,7 +75,6 @@ export default function CandidatesPage() {
     setEditCandidateTarget(c)
     setForm({
       full_name: c.full_name,
-      party: c.party || '',
       symbol: c.symbol || '',
       bio: c.bio || '',
       image_url: c.image_url || '',
@@ -96,7 +93,6 @@ export default function CandidatesPage() {
       if (form.image_file) {
         payload = new FormData()
         payload.append('full_name', form.full_name)
-        payload.append('party', form.party || '')
         payload.append('symbol', form.symbol || '')
         payload.append('bio', form.bio || '')
         if (form.committee_id) payload.append('committee_id', String(form.committee_id))
@@ -137,7 +133,7 @@ export default function CandidatesPage() {
   const normalizedSearch = search.trim().toLowerCase()
   const visibleCandidates = candidates.filter(candidate => {
     if (!normalizedSearch) return true
-    return [candidate.full_name, candidate.party, candidate.symbol]
+    return [candidate.full_name, candidate.symbol]
       .some(val => val?.toLowerCase().includes(normalizedSearch))
   })
 
@@ -151,11 +147,6 @@ export default function CandidatesPage() {
       key: 'full_name',
       header: 'Candidate',
       render: (_, row) => <CandidateIdentity candidate={row} />,
-    },
-    {
-      key: 'party',
-      header: 'Party',
-      render: val => val || 'Independent',
     },
     {
       key: 'committee',
@@ -201,13 +192,13 @@ export default function CandidatesPage() {
   ]
 
   return (
-    <MainLayout title="Candidates">
+    <MainLayout title="Candidates Management">
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Candidates</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              {selectedElection ? `${visibleCandidates.length} candidate${visibleCandidates.length !== 1 ? 's' : ''} shown` : 'Select an election to view candidates'}
+              {selectedElection ? `${visibleCandidates.length} candidate${visibleCandidates.length !== 1 ? 's' : ''} shown` : 'Select an election to manage candidates'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -239,7 +230,7 @@ export default function CandidatesPage() {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search by name, party or symbol..."
+                  placeholder="Search by name or symbol..."
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -282,7 +273,6 @@ export default function CandidatesPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {[
             { name: 'full_name', label: 'Full Name', required: true },
-            { name: 'party', label: 'Party', required: true },
             { name: 'symbol', label: 'Symbol / Initial', required: false },
           ].map(({ name, label, required }) => (
             <div key={name}>
@@ -309,29 +299,21 @@ export default function CandidatesPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
-              <select
+              <FancySelect
                 value={form.committee_id}
                 onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">-- No specific committee --</option>
-                {committees.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+                placeholder="-- No specific committee --"
+                options={committees.map(c => ({ value: c.id, label: c.name }))}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Target / Area</label>
-              <select
+              <FancySelect
                 value={form.target_id}
                 onChange={e => setForm(f => ({ ...f, target_id: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="">-- No specific area --</option>
-                {targets.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
-                ))}
-              </select>
+                placeholder="-- No specific area --"
+                options={targets.map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))}
+              />
             </div>
           </div>
           <div>

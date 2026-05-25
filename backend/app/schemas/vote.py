@@ -43,7 +43,6 @@ class VoteResultItem(BaseModel):
 
     candidate_id: int
     candidate_name: str
-    party: Optional[str] = None
     symbol: Optional[str] = None
     image_url: Optional[str] = None
     rank: int = Field(default=0, examples=[1])

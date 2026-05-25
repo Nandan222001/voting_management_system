@@ -87,10 +87,7 @@ export default function WinnerCard({
                 Rank #{winner.rank || 1}
               </span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 truncate">{name}</h2>
-            <p className="mt-1 text-sm font-medium text-gray-600">
-              {winner.party || 'Independent'}
-            </p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 truncate">{name}</h2>
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="rounded-xl bg-white/80 border border-white px-4 py-3 shadow-sm">
                 <p className="text-xs text-gray-400 font-semibold uppercase">Votes</p>
