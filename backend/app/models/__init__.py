@@ -11,6 +11,7 @@ from app.models.target import Target, TargetType                            # no
 from app.models.candidate_committee import CandidateCommittee                # noqa: F401
 from app.models.candidate import Candidate                                  # noqa: F401
 from app.models.vote import Vote                                            # noqa: F401
+from app.models.payment import Payment, PaymentStatus                       # noqa: F401
 from app.models.audit_log import AuditLog                                   # noqa: F401
 
 __all__ = [
@@ -28,5 +29,7 @@ __all__ = [
     "CandidateCommittee",
     "Candidate",
     "Vote",
+    "Payment",
+    "PaymentStatus",
     "AuditLog",
 ]

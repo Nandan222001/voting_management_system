@@ -20,6 +20,7 @@ from app.controllers.target_controller import router as target_router
 from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
 from app.controllers.vote_controller import router as vote_router
+from app.controllers.payment_controller import router as payment_router
 from app.utils.uploads import STATIC_ROOT
 
 
@@ -57,13 +58,6 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-# app.include_router(auth_router)
-# app.include_router(tenant_router)   # SuperAdmin — platform management
-# app.include_router(user_router)
-# app.include_router(election_router)
-# app.include_router(candidate_router)
-# app.include_router(vote_router)
-# app.include_router(report_router)
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(tenant_router, prefix="/api/v1")
 app.include_router(user_router, prefix="/api/v1")
@@ -72,6 +66,7 @@ app.include_router(candidate_router, prefix="/api/v1")
 app.include_router(candidate_committee_router, prefix="/api/v1")
 app.include_router(target_router, prefix="/api/v1")
 app.include_router(vote_router, prefix="/api/v1")
+app.include_router(payment_router, prefix="/api/v1")
 app.include_router(report_router, prefix="/api/v1")
 
 # Serve uploaded static files from an absolute path so it works regardless of

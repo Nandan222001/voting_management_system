@@ -232,7 +232,6 @@ class VoteService:
                 VoteResultItem(
                     candidate_id=candidate.id,
                     candidate_name=candidate.full_name,
-                    party=candidate.party,
                     symbol=candidate.symbol,
                     image_url=candidate.image_url,
                     rank=current_rank,
@@ -322,7 +321,6 @@ class VoteService:
             candidate_stats.append({
                 "candidate_id": c.id,
                 "candidate_name": c.full_name,
-                "party": c.party,
                 "image_url": c.image_url,
                 "rank": current_rank,
                 "vote_count": c.vote_count,

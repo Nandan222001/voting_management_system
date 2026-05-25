@@ -13,40 +13,48 @@ class TargetService:
     Handles business logic for geographical/administrative targets 
     (States, Districts, etc.).
     """
+    TargetRepository = TargetRepository
 
     def create_target(
-        self, db: Session, data: TargetCreate, tenant_id: int
+        self, db: Session, data: TargetCreate, tenant_id: Optional[int] = None
     ) -> Target:
         """
-        Define a new target for a tenant.
+        Define a new target. Can be platform-wide (tenant_id=None) or tenant-specific.
         """
-        repo = TargetRepository(db)
+        repo = self.TargetRepository(db)
         
-        # Optional: Validate parent_id belongs to same tenant
+        # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
-            if not parent or parent.tenant_id != tenant_id:
+            if not parent:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Parent target not found or unauthorized.",
+                    detail="Parent target not found.",
                 )
 
         target_data = data.model_dump()
         target_data["tenant_id"] = tenant_id
         return repo.create(target_data)
 
-    def get_targets_by_tenant(self, db: Session, tenant_id: int) -> list[Target]:
+    def get_targets_by_tenant(self, db: Session, tenant_id: Optional[int]) -> list[Target]:
         """
-        Fetch all targets available for a tenant.
+        Fetch all targets available for a tenant (including global ones).
         """
-        repo = TargetRepository(db)
-        return repo.get_by_tenant(tenant_id)
+        repo = self.TargetRepository(db)
+        # If tenant_id is None (SuperAdmin), return all.
+        # If tenant_id is set, return targets for that tenant AND global targets (tenant_id IS NULL)
+        query = db.query(Target)
+        if tenant_id is not None:
+            from sqlalchemy import or_
+            query = query.filter(or_(Target.tenant_id == tenant_id, Target.tenant_id == None))
+        
+        return query.all()
 
     def get_target_by_id(self, db: Session, target_id: int) -> Target:
         """
         Fetch a single target by ID.
         """
-        repo = TargetRepository(db)
+        repo = self.TargetRepository(db)
         target = repo.get_by_id(target_id)
         if not target:
             raise HTTPException(
@@ -56,49 +64,38 @@ class TargetService:
         return target
 
     def update_target(
-        self, db: Session, target_id: int, data: TargetUpdate, tenant_id: int
+        self, db: Session, target_id: int, data: TargetUpdate
     ) -> Target:
         """
-        Update a target's details. Ensures the target belongs to the tenant.
+        Update a target's details. (SuperAdmin only)
         """
         target = self.get_target_by_id(db, target_id)
-        if target.tenant_id != tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to update this target.",
-            )
+        repo = self.TargetRepository(db)
         
-        # Optional: Validate parent_id belongs to same tenant
+        # Optional: Validate parent_id
         if data.parent_id:
-            repo = TargetRepository(db)
             parent = repo.get_by_id(data.parent_id)
-            if not parent or parent.tenant_id != tenant_id:
+            if not parent:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Parent target not found or unauthorized.",
+                    detail="Parent target not found.",
                 )
         
-        repo = TargetRepository(db)
         return repo.update(target, data)
 
-    def delete_target(self, db: Session, target_id: int, tenant_id: int) -> bool:
+    def delete_target(self, db: Session, target_id: int) -> bool:
         """
-        Permanently delete a target. Ensures the target belongs to the tenant.
+        Permanently delete a target. (SuperAdmin only)
         """
         target = self.get_target_by_id(db, target_id)
-        if target.tenant_id != tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to delete this target.",
-            )
         
         # Check if target has children
-        repo = TargetRepository(db)
+        repo = self.TargetRepository(db)
         children = db.query(Target).filter(Target.parent_id == target_id).first()
         if children:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot delete a target that has sub-targets (districts/wards).",
+                detail="Cannot delete a target that has sub-targets.",
             )
 
         return repo.delete(target_id)

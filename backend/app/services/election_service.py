@@ -77,7 +77,6 @@ class ElectionService:
             {
                 "candidate_id": c.id,
                 "candidate_name": c.full_name,
-                "party": c.party,
                 "image_url": c.image_url,
                 "vote_count": c.vote_count or 0,
                 "percentage": round(((c.vote_count or 0) / total_votes) * 100, 2),

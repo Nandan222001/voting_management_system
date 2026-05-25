@@ -145,7 +145,6 @@ class ReportService:
                 {
                     "candidate_id": candidate.id,
                     "full_name": candidate.full_name,
-                    "party": candidate.party,
                     "symbol": candidate.symbol,
                     "vote_count": candidate.vote_count,
                     "percentage": percentage,

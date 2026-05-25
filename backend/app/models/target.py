@@ -21,8 +21,9 @@ class TargetType(str, enum.Enum):
 
     state = "state"
     district = "district"
-    zone = "zone"
-    ward = "ward"
+    taluka = "taluka"
+    city = "city"
+    village = "village"
     other = "other"
 
 
@@ -37,11 +38,11 @@ class Target(Base):
     # Primary key
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
-    # Multi-tenancy – targets are defined per tenant
+    # Multi-tenancy – targets can be platform-wide or per-tenant
     tenant_id = Column(
         Integer,
         ForeignKey("tenants.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 

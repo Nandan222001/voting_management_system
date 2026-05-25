@@ -13,6 +13,7 @@ import {
   FaShieldAlt,
   FaHistory,
   FaTrophy,
+  FaWallet,
 } from 'react-icons/fa';
 
 import { logoutUser, selectCurrentUser } from '../../store/slices/authSlice';
@@ -48,13 +49,6 @@ const navLinks = [
   },
 
   {
-    to: '/targets',
-    icon: FaMapMarkerAlt,
-    label: 'Targets',
-    roles: ['admin'],
-  },
-
-  {
     to: '/users',
     icon: FaUserCog,
     label: 'Users',
@@ -66,6 +60,13 @@ const navLinks = [
     icon: FaTrophy,
     label: 'Results',
     roles: ['admin', 'moderator', 'voter'],
+  },
+
+  {
+    to: '/revenue',
+    icon: FaWallet,
+    label: 'Revenue',
+    roles: ['admin'],
   },
 ];
 
@@ -80,6 +81,11 @@ const superAdminLinks = [
     to: '/tenants',
     icon: FaBalanceScale,
     label: 'Tenants',
+  },
+  {
+    to: '/targets',
+    icon: FaMapMarkerAlt,
+    label: 'Geography',
   },
    {
     to: '/audit-logs',

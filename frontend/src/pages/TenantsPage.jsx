@@ -102,7 +102,7 @@ function Field({ label, required, children, hint, error }) {
   );
 }
 
-function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError }) {
+function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, ...props }) {
   return (
     <input
       type={type}
@@ -111,6 +111,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
+      {...props}
       className={`block w-full px-3 py-2 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
@@ -236,7 +237,15 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Tenant' : 'Create New Tenant'} size="2xl">
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+        {/* Anti-Autofill Honeypot */}
+        {!isEdit && (
+          <div className="sr-only" aria-hidden="true" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, zIndex: -1 }}>
+            <input type="text" name="prevent_autofill_email" tabIndex="-1" autoComplete="username" />
+            <input type="password" name="prevent_autofill_pass" tabIndex="-1" autoComplete="current-password" />
+          </div>
+        )}
+
         {/* Tenant Details Section */}
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
@@ -245,18 +254,22 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Organization Name" required error={errors.name}>
               <Input
+                name="tenant_name_field"
                 value={form.name}
                 onChange={set('name')}
                 placeholder="Acme Corp"
+                autoComplete="off"
                 required
                 hasError={!!errors.name}
               />
             </Field>
             <Field label="Slug" required hint="Auto-generated from name. Used in URLs." error={errors.slug}>
               <Input
+                name="tenant_slug_field"
                 value={form.slug}
                 onChange={handleSlugChange}
                 placeholder="acme-corp"
+                autoComplete="off"
                 required
                 hasError={!!errors.slug}
               />
@@ -267,9 +280,11 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             <Field label="Contact Email" required error={errors.contact_email}>
               <Input
                 type="email"
+                name="tenant_contact_email_field"
                 value={form.contact_email}
                 onChange={set('contact_email')}
                 placeholder="admin@acme.com"
+                autoComplete="off"
                 required
                 hasError={!!errors.contact_email}
               />
@@ -309,18 +324,22 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Full Name" required error={errors.admin_name}>
                 <Input
+                  name="new_tenant_admin_fullname"
                   value={form.admin_name}
                   onChange={set('admin_name')}
                   placeholder="Jane Smith"
+                  autoComplete="off"
                   hasError={!!errors.admin_name}
                 />
               </Field>
               <Field label="Email Address" required error={errors.admin_email}>
                 <Input
                   type="email"
+                  name="new_tenant_admin_email_field"
                   value={form.admin_email}
                   onChange={set('admin_email')}
                   placeholder="jane@acme.com"
+                  autoComplete="new-user-email"
                   hasError={!!errors.admin_email}
                 />
               </Field>
@@ -329,9 +348,11 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
               <Field label="Password" required hint="Minimum 8 characters." error={errors.admin_password}>
                 <Input
                   type="password"
+                  name="new_tenant_admin_password_field"
                   value={form.admin_password}
                   onChange={set('admin_password')}
                   placeholder="Min. 8 characters"
+                  autoComplete="new-password"
                   hasError={!!errors.admin_password}
                 />
               </Field>

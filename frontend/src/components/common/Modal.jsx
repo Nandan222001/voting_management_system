@@ -43,7 +43,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full ${sizeClass} bg-white rounded-2xl shadow-2xl transform transition-all overflow-hidden`}
+                className={`w-full ${sizeClass} bg-white rounded-2xl shadow-2xl transform transition-all`}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

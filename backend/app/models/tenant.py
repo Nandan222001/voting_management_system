@@ -68,6 +68,10 @@ class Tenant(Base):
     # Contact
     contact_email = Column(String(255), nullable=True)
 
+    # Payment Gateway (Razorpay)
+    razorpay_key_id = Column(String(255), nullable=True)
+    razorpay_key_secret = Column(String(255), nullable=True)
+
     # Ownership – SET NULL when creator account is deleted
     created_by = Column(
         Integer,
@@ -110,6 +114,12 @@ class Tenant(Base):
     )
     targets = relationship(
         "Target",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+    payments = relationship(
+        "Payment",
         back_populates="tenant",
         cascade="all, delete-orphan",
         lazy="select",

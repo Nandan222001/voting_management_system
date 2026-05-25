@@ -11,6 +11,7 @@ import ResultsPage from './pages/ResultsPage'
 import AuditLogsPage from './pages/AuditLogsPage'
 import CandidateCommitteesPage from './pages/CandidateCommitteesPage'
 import TargetsPage from './pages/TargetsPage'
+import RevenuePage from './pages/RevenuePage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ElectionDetailPage from './pages/ElectionDetailPage'
 import { selectIsAuthenticated, selectCurrentUser, getMe } from './store/slices/authSlice'
@@ -96,7 +97,7 @@ export default function App() {
         <Route 
           path="/candidates" 
           element={
-            <PrivateRoute>
+            <PrivateRoute roles={['admin', 'moderator']}>
               <CandidatesPage />
             </PrivateRoute>
           } 
@@ -116,6 +117,15 @@ export default function App() {
           element={
             <PrivateRoute>
               <ResultsPage />
+            </PrivateRoute>
+          } 
+        />
+
+        <Route 
+          path="/revenue" 
+          element={
+            <PrivateRoute roles={['admin']}>
+              <RevenuePage />
             </PrivateRoute>
           } 
         />
@@ -150,7 +160,7 @@ export default function App() {
         <Route 
           path="/targets" 
           element={
-            <PrivateRoute roles={['admin']}>
+            <PrivateRoute roles={['superadmin', 'admin']}>
               <TargetsPage />
             </PrivateRoute>
           } 

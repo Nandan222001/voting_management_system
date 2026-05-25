@@ -20,11 +20,6 @@ class CandidateBase(BaseModel):
         max_length=150,
         examples=["Alice Johnson"],
     )
-    party: Optional[str] = Field(
-        default=None,
-        max_length=150,
-        examples=["Progressive Party"],
-    )
     symbol: Optional[str] = Field(
         default=None,
         max_length=100,
@@ -37,7 +32,7 @@ class CandidateBase(BaseModel):
     )
     bio: Optional[str] = Field(
         default=None,
-        examples=["Experienced party member with 10 years of organizational service."],
+        examples=["Experienced candidate with 10 years of service."],
     )
     committee_id: Optional[int] = Field(
         default=None,
@@ -82,7 +77,6 @@ class CandidateUpdate(BaseModel):
     """All fields optional for partial updates."""
 
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
-    party: Optional[str] = Field(default=None, max_length=150)
     symbol: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = None
