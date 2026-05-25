@@ -9,7 +9,6 @@ const authService = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
   },
-  register: (data) => api.post('/auth/register', data),
   getMe: () => api.get('/auth/me'),
   verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
   logout: () => api.post('/auth/logout'),

@@ -40,6 +40,7 @@ pip install -r requirements.txt
 cp .env.example .env          # Edit with your DB credentials
 alembic upgrade head          # Run all migrations (creates tables + seeds admin)
 python main.py                # Start API server on :8000
+uvicorn app.main:app --reload
 ```
 
 ### Frontend Setup
