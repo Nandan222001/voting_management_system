@@ -9,10 +9,11 @@ import MainLayout from '../components/layout/MainLayout'
 import StatsCard from '../components/common/StatsCard'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import EmptyState from '../components/common/EmptyState'
-import Badge from '../components/common/Badge'
 import { fetchElections } from '../store/slices/electionSlice'
 import { fetchElectionResults } from '../store/slices/candidateSlice'
-import { getInitials } from '../utils/helpers'
+import FancySelect from '../components/common/FancySelect'
+import ImageAvatar from '../components/common/ImageAvatar'
+import WinnerCard from '../components/common/WinnerCard'
 
 const COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
 
@@ -34,12 +35,13 @@ export default function ResultsPage() {
   }, [selectedElectionId, dispatch])
 
   const selectedElection = elections.find(e => String(e.id) === String(selectedElectionId))
-  const candidates = results?.candidates || []
+  const candidates = (results?.candidates || [])
+    .slice()
+    .sort((a, b) => (a.rank || 999) - (b.rank || 999) || b.vote_count - a.vote_count)
   const totalVotes = results?.total_votes || 0
 
-  const winner = candidates.reduce((best, c) =>
-    (!best || c.vote_count > best.vote_count) ? c : best, null
-  )
+  const winner = results?.winner || null
+  const winnerDeclared = Boolean(results?.winner_declared && winner)
 
   const chartData = candidates.map(c => ({
     name: c.candidate_name,
@@ -88,26 +90,20 @@ export default function ResultsPage() {
               />
               <StatsCard
                 title="Winner"
-                value={winner ? winner.candidate_name.split(' ')[0] : '—'}
+                value={winnerDeclared ? winner.candidate_name.split(' ')[0] : '—'}
                 icon={FaTrophy}
                 color="yellow"
               />
             </div>
 
-            {/* Winner banner */}
-            {winner && totalVotes > 0 && (
-              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-5 flex items-center gap-4">
-                <FaTrophy className="h-8 w-8 text-yellow-500 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wide">Leading Candidate</p>
-                  <p className="text-xl font-bold text-gray-900">{winner.candidate_name}</p>
-                  <p className="text-sm text-gray-600">{winner.party} · {winner.vote_count} votes ({winner.percentage.toFixed(1)}%)</p>
-                </div>
-                <div className="ml-auto">
-                  <Badge status={selectedElection?.status} />
-                </div>
-              </div>
-            )}
+            <WinnerCard
+              winner={winner}
+              winners={results?.winners || []}
+              isTie={results?.is_tie}
+              winnerDeclared={winnerDeclared}
+              totalVotes={totalVotes}
+              electionStatus={selectedElection?.status}
+            />
 
             {/* Charts */}
             {chartData.length > 0 && (
@@ -161,29 +157,29 @@ export default function ResultsPage() {
                 <div className="py-12 text-center text-gray-400 text-sm">No candidates in this election.</div>
               ) : (
                 <div className="divide-y divide-gray-50">
-                  {candidates
-                    .slice()
-                    .sort((a, b) => b.vote_count - a.vote_count)
-                    .map((c, i) => (
-                      <div key={c.candidate_id} className="flex items-center gap-4 px-6 py-4">
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${i === 0 && totalVotes > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
-                          {i + 1}
+                  {candidates.map((c, i) => (
+                      <div key={c.candidate_id} className={`flex items-center gap-4 px-6 py-4 ${c.is_winner ? 'bg-amber-50/60' : ''}`}>
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${c.is_winner ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                          #{c.rank || i + 1}
                         </span>
                         
-                        {c.image_url ? (
-                          <img
-                            src={c.image_url}
-                            alt={c.candidate_name}
-                            className="w-9 h-9 rounded-full object-cover ring-1 ring-gray-100 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-700 text-xs font-bold ring-1 ring-indigo-100 shrink-0">
-                            {getInitials(c.candidate_name)}
-                          </div>
-                        )}
+                        <ImageAvatar
+                          src={c.image_url}
+                          name={c.candidate_name}
+                          sizeClass="w-9 h-9"
+                          imageClassName="ring-1 ring-gray-100"
+                          fallbackClassName="bg-indigo-50 text-indigo-700 text-xs ring-1 ring-indigo-100"
+                        />
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm truncate">{c.candidate_name}</p>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm truncate">{c.candidate_name}</p>
+                            {c.is_winner && (
+                              <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                                Winner
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">{c.party}</p>
                         </div>
                         <div className="w-40 hidden md:block">

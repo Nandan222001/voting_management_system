@@ -8,9 +8,6 @@ Dependency Inversion: Depends on TenantRepository and UserRepository abstraction
 import re
 from datetime import datetime, timezone
 from typing import Optional
-from pathlib import Path
-import shutil
-import time
 
 from fastapi import HTTPException, status, UploadFile
 from sqlalchemy.orm import Session
@@ -21,6 +18,7 @@ from app.repositories.tenant_repository import TenantRepository
 from app.repositories.user_repository import UserRepository
 from app.schemas.tenant import TenantCreate, TenantUpdate
 from app.utils.security import generate_otp, hash_password
+from app.utils.uploads import delete_uploaded_file, save_uploaded_image
 
 
 def _slugify(name: str) -> str:
@@ -70,20 +68,11 @@ class TenantService:
 
         # If a logo file was uploaded, save it and update tenant.logo_url
         if logo is not None:
-            uploads_dir = Path(__file__).resolve().parents[2] / 'static' / 'uploads'
-            uploads_dir.mkdir(parents=True, exist_ok=True)
-
-            # sanitize filename
-            original_name = Path(logo.filename).name
-            safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
-            timestamp = int(time.time() * 1000)
-            filename = f"tenant_{tenant.id}_{timestamp}_{safe_name}"
-            dest_path = uploads_dir / filename
-
-            with dest_path.open('wb') as buffer:
-                shutil.copyfileobj(logo.file, buffer)
-
-            tenant.logo_url = f"/static/uploads/{filename}"
+            tenant.logo_url = save_uploaded_image(
+                logo,
+                subdir="",
+                filename_prefix=f"tenant_{tenant.id}",
+            )
             db.add(tenant)
             db.commit()
             db.refresh(tenant)
@@ -164,20 +153,13 @@ class TenantService:
             update_dict["max_voters"] = max_v
         # handle uploaded logo if provided — save file and include in update dict
         if logo is not None:
-            uploads_dir = Path(__file__).resolve().parents[2] / 'static' / 'uploads'
-            uploads_dir.mkdir(parents=True, exist_ok=True)
-
-            original_name = Path(logo.filename).name
-            safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
-            timestamp = int(time.time() * 1000)
-            filename = f"tenant_{tenant.id}_{timestamp}_{safe_name}"
-            dest_path = uploads_dir / filename
-
-            with dest_path.open('wb') as buffer:
-                shutil.copyfileobj(logo.file, buffer)
-
-            served_path = f"/static/uploads/{filename}"
-            update_dict['logo_url'] = served_path
+            served_path = save_uploaded_image(
+                logo,
+                subdir="",
+                filename_prefix=f"tenant_{tenant.id}",
+            )
+            delete_uploaded_file(tenant.logo_url)
+            update_dict["logo_url"] = served_path
 
         return repo.update(tenant, update_dict)
 

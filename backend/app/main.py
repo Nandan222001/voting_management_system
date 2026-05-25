@@ -20,6 +20,7 @@ from app.controllers.target_controller import router as target_router
 from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
 from app.controllers.vote_controller import router as vote_router
+from app.utils.uploads import STATIC_ROOT
 
 
 @asynccontextmanager
@@ -73,8 +74,10 @@ app.include_router(target_router, prefix="/api/v1")
 app.include_router(vote_router, prefix="/api/v1")
 app.include_router(report_router, prefix="/api/v1")
 
-# Serve uploaded static files (tenant logos etc.)
-app.mount("/static", StaticFiles(directory="./static"), name="static")
+# Serve uploaded static files from an absolute path so it works regardless of
+# the process working directory.
+STATIC_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(STATIC_ROOT)), name="static")
 
 
 # ---------------------------------------------------------------------------

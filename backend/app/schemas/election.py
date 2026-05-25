@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -90,6 +90,10 @@ class ElectionResponse(ElectionBase):
     # Computed / aggregated fields populated by the service layer
     candidate_count: int = Field(default=0, examples=[4])
     total_votes: int = Field(default=0, examples=[120])
+    winner: Optional[dict[str, Any]] = None
+    winners: List[dict[str, Any]] = Field(default_factory=list)
+    is_tie: bool = False
+    winner_declared: bool = False
 
     target: Optional[TargetResponse] = None
 

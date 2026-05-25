@@ -22,11 +22,13 @@ import {
 } from '../store/slices/candidateSlice'
 import { fetchCandidateCommittees } from '../store/slices/candidateCommitteeSlice'
 import { fetchTargets } from '../store/slices/targetSlice'
-import { getInitials } from '../utils/helpers'
+import ImageUpload from '../components/common/ImageUpload'
+import ImageAvatar from '../components/common/ImageAvatar'
+import WinnerCard from '../components/common/WinnerCard'
 
 const CHART_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
 
-const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
+const emptyForm = { full_name: '', party: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
 
 export default function ElectionDetailPage() {
   const { id } = useParams()
@@ -66,6 +68,7 @@ export default function ElectionDetailPage() {
       symbol: c.symbol,
       bio: c.bio || '',
       image_url: c.image_url || '',
+      image_file: null,
       committee_id: c.committee_id || '',
       target_id: c.target_id || ''
     })
@@ -76,11 +79,28 @@ export default function ElectionDetailPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
+      let payload = form
+      if (form.image_file) {
+        payload = new FormData()
+        payload.append('full_name', form.full_name)
+        payload.append('party', form.party || '')
+        payload.append('symbol', form.symbol || '')
+        payload.append('bio', form.bio || '')
+        if (form.committee_id) payload.append('committee_id', String(form.committee_id))
+        if (form.target_id) payload.append('target_id', String(form.target_id))
+        payload.append('image', form.image_file)
+        if (!editCandidateTarget) payload.append('election_id', String(parseInt(id)))
+      } else {
+        const copy = { ...form }
+        delete copy.image_file
+        payload = copy
+      }
+
       if (editCandidateTarget) {
-        await dispatch(updateCandidate({ id: editCandidateTarget.id, data: form })).unwrap()
+        await dispatch(updateCandidate({ id: editCandidateTarget.id, data: payload })).unwrap()
         toast.success('Candidate updated')
       } else {
-        await dispatch(addCandidate({ ...form, election_id: parseInt(id) })).unwrap()
+        await dispatch(addCandidate(payload instanceof FormData ? payload : { ...payload, election_id: parseInt(id) })).unwrap()
         toast.success('Candidate added')
       }
       setShowModal(false)
@@ -106,11 +126,24 @@ export default function ElectionDetailPage() {
   }
 
   const showResults = currentElection?.status === 'active' || currentElection?.status === 'closed'
-  const chartData = (results?.candidates || []).map(c => ({
+  const rankedResults = (results?.candidates || [])
+    .slice()
+    .sort((a, b) => (a.rank || 999) - (b.rank || 999) || b.vote_count - a.vote_count)
+  const totalVotes = results?.total_votes ?? 0
+  const winnerDeclared = Boolean(results?.winner_declared && results?.winner)
+  const chartData = rankedResults.map(c => ({
     name: c.candidate_name,
     votes: c.vote_count,
     percentage: c.percentage
   }))
+  const displayCandidates = rankedResults.length > 0
+    ? rankedResults.map(result => ({
+        ...candidates.find(c => c.id === result.candidate_id),
+        ...result,
+        id: result.candidate_id,
+        full_name: result.candidate_name,
+      }))
+    : candidates
 
   if (electionLoading) return <MainLayout title="Election Detail"><LoadingSpinner message="Loading election..." /></MainLayout>
 
@@ -135,7 +168,7 @@ export default function ElectionDetailPage() {
             { label: 'Status', value: <Badge status={currentElection?.status} /> },
             { label: 'Target Area', value: currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'All Regions' },
             { label: 'Start Date', value: currentElection?.start_date ? new Date(currentElection.start_date).toLocaleDateString() : '—' },
-            { label: 'Total Votes', value: results?.total_votes ?? 0 },
+            { label: 'Total Votes', value: totalVotes },
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
@@ -143,6 +176,15 @@ export default function ElectionDetailPage() {
             </div>
           ))}
         </div>
+
+        <WinnerCard
+          winner={results?.winner}
+          winners={results?.winners || []}
+          isTie={results?.is_tie}
+          winnerDeclared={winnerDeclared}
+          totalVotes={totalVotes}
+          electionStatus={currentElection?.status}
+        />
 
         {/* Results chart */}
         {showResults && chartData.length > 0 && (
@@ -168,7 +210,7 @@ export default function ElectionDetailPage() {
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">
-              Candidates ({candidates.length})
+            Candidates ({displayCandidates.length})
             </h2>
             {currentElection?.status === 'draft' && (
               <button
@@ -182,33 +224,47 @@ export default function ElectionDetailPage() {
 
           {candLoading ? (
             <LoadingSpinner message="Loading candidates..." />
-          ) : candidates.length === 0 ? (
+          ) : displayCandidates.length === 0 ? (
             <div className="py-16 text-center text-gray-400">No candidates added yet.</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-              {candidates.map((c, i) => {
-                const result = results?.candidates?.find(r => r.candidate_id === c.id)
+              {displayCandidates.map((c, i) => {
+                const result = rankedResults.find(r => r.candidate_id === c.id)
+                const isWinner = Boolean(result?.is_winner)
                 return (
-                  <div key={c.id} className="border border-gray-200 rounded-lg p-4 relative">
-                    {result && result.percentage === Math.max(...(results?.candidates || []).map(r => r.percentage)) && results.total_votes > 0 && (
-                      <span className="absolute top-3 right-3 text-yellow-500"><FaTrophy /></span>
+                  <div
+                    key={c.id}
+                    className={`border rounded-xl p-4 relative transition-shadow ${
+                      isWinner
+                        ? 'border-amber-300 bg-amber-50/40 shadow-md shadow-amber-100'
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold ${
+                      isWinner ? 'bg-amber-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      #{result?.rank || i + 1}
+                    </div>
+                    {isWinner && (
+                      <span className="absolute top-12 right-3 text-amber-500"><FaTrophy /></span>
                     )}
                     <div className="flex items-center gap-3 mb-3">
-                      {c.image_url ? (
-                        <img
-                          src={c.image_url}
-                          alt={c.full_name}
-                          className="w-12 h-12 rounded-full object-cover ring-1 ring-gray-200"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
-                          {getInitials(c.full_name)}
-                        </div>
-                      )}
+                      <ImageAvatar
+                        src={c.image_url || result?.image_url}
+                        name={c.full_name}
+                        sizeClass="w-12 h-12"
+                        imageClassName="ring-1 ring-gray-200"
+                        fallbackClassName="bg-indigo-100 text-indigo-600 text-lg"
+                      />
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 truncate">{c.full_name}</p>
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">{c.party}</span>
+                          {isWinner && (
+                            <span className="text-[10px] text-white bg-amber-500 px-1.5 py-0.5 rounded font-bold uppercase">
+                              Winner
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded truncate">{c.party || 'Independent'}</span>
                           {c.committee && (
                             <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium truncate italic">
                               {c.committee.name}
@@ -258,23 +314,31 @@ export default function ElectionDetailPage() {
       {/* Add/Edit Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {[
-            { name: 'full_name', label: 'Full Name', required: true },
-            { name: 'party', label: 'Party', required: true },
-            { name: 'symbol', label: 'Symbol / Initial', required: false },
-            { name: 'image_url', label: 'Image URL', required: false },
-          ].map(({ name, label, required }) => (
-            <div key={name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type="text"
-                value={form[name]}
-                onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-                required={required}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-          ))}
+                  {[
+                    { name: 'full_name', label: 'Full Name', required: true },
+                    { name: 'party', label: 'Party', required: true },
+                    { name: 'symbol', label: 'Symbol / Initial', required: false },
+                  ].map(({ name, label, required }) => (
+                    <div key={name}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                      <input
+                        type="text"
+                        value={form[name]}
+                        onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+                        required={required}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  ))}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                    <ImageUpload
+                      file={form.image_file}
+                      existingUrl={form.image_url}
+                      onFileChange={(f) => setForm(prev => ({ ...prev, image_file: f }))}
+                      id="election-candidate-image-input"
+                    />
+                  </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>

@@ -11,6 +11,7 @@ import {
   FaUserCog,
   FaShieldAlt,
   FaArrowRight,
+  FaTrophy,
 } from 'react-icons/fa';
 import { fetchDashboardOverview, selectDashboardOverview, selectVoteLoading } from '../store/slices/voteSlice';
 import { selectCurrentUser } from '../store/slices/authSlice';
@@ -155,9 +156,17 @@ export default function DashboardPage() {
                         <FaVoteYea className="text-indigo-500 text-sm" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-700 transition-colors">
-                          {election.title}
-                        </p>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-700 transition-colors">
+                            {election.title}
+                          </p>
+                          {election.winner_declared && election.winner && (
+                            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
+                              <FaTrophy className="text-[9px]" />
+                              {election.winner.candidate_name}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400 mt-0.5">
                           {safeFormat(election.start_date || election.startDate)} &mdash;{' '}
                           {safeFormat(election.end_date || election.endDate)}

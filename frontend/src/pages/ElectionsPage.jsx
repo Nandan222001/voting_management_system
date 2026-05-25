@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   FaPlus,
   FaVoteYea,
-  FaPlay,
-  FaTimes,
   FaSearch,
+  FaTrophy,
 } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import {
@@ -176,6 +175,24 @@ export default function ElectionsPage() {
       key: 'status',
       label: 'Status',
       render: (val) => <Badge status={val} />,
+    },
+    {
+      key: 'winner',
+      label: 'Winner',
+      render: (_, row) => {
+        if (row.winner_declared && row.winner) {
+          return (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+              <FaTrophy className="text-[10px]" />
+              {row.winner.candidate_name}
+            </span>
+          );
+        }
+        if (row.is_tie) {
+          return <span className="text-xs font-semibold text-amber-700">Tie</span>;
+        }
+        return <span className="text-xs text-gray-400">Not declared</span>;
+      },
     },
     {
       key: 'start_date',

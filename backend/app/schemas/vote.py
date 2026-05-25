@@ -45,6 +45,9 @@ class VoteResultItem(BaseModel):
     candidate_name: str
     party: Optional[str] = None
     symbol: Optional[str] = None
+    image_url: Optional[str] = None
+    rank: int = Field(default=0, examples=[1])
+    is_winner: bool = False
     vote_count: int = Field(default=0, examples=[42])
     percentage: float = Field(
         default=0.0,
@@ -64,5 +67,9 @@ class ElectionResultResponse(BaseModel):
     election_title: str
     total_votes: int = Field(default=0, examples=[120])
     results: List[VoteResultItem]
+    winner: Optional[VoteResultItem] = None
+    winners: List[VoteResultItem] = Field(default_factory=list)
+    is_tie: bool = False
+    winner_declared: bool = False
 
     model_config = ConfigDict(from_attributes=True)

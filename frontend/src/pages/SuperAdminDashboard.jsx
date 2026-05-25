@@ -21,6 +21,7 @@ import StatsCard from '../components/common/StatsCard';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import MainLayout from '../components/layout/MainLayout';
+import ImageAvatar from '../components/common/ImageAvatar';
 import { format, parseISO } from 'date-fns';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -189,20 +190,14 @@ export default function SuperAdminDashboard() {
                         {/* Organization Name */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            {tenant.logo_url ? (
-                              <img
-                                src={tenant.logo_url}
-                                alt={tenant.name}
-                                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
-                              />
-                            ) : (
-                              <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                                style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
-                              >
-                                {tenant.name?.charAt(0).toUpperCase()}
-                              </div>
-                            )}
+                            <ImageAvatar
+                              src={tenant.logo_url}
+                              name={tenant.name}
+                              sizeClass="w-8 h-8"
+                              shapeClass="rounded-lg"
+                              fallbackClassName="text-white text-sm"
+                              style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
+                            />
                             <span className="font-semibold text-gray-800 truncate max-w-[160px]">
                               {tenant.name}
                             </span>
