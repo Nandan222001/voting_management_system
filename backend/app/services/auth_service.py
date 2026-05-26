@@ -121,6 +121,8 @@ class AuthService:
             full_name=register_data.full_name,
             email=normalized_email,
             phone=register_data.phone,
+            date_of_birth=register_data.date_of_birth,
+            voter_id=register_data.voter_id,
             designation=register_data.designation,
             street_address=register_data.street_address,
             city=register_data.city,

@@ -9,23 +9,84 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
   ScrollView,
   SafeAreaView,
   Modal,
   FlatList,
+  Dimensions,
 } from 'react-native';
 import { authService } from '../services/authService';
 import { tenantService } from '../services/tenantService';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
+
+// --- HELPER COMPONENTS (Defined outside to prevent focus loss) ---
+
+const UserInitials = () => (
+  <View style={styles.initialsContainer}>
+    <Text style={styles.initialsText}>CV</Text>
+  </View>
+);
+
+const InputField = ({
+  name,
+  icon,
+  label,
+  placeholder,
+  value,
+  keyboardType,
+  autoCapitalize,
+  secureTextEntry,
+  onRightIconPress,
+  rightIcon,
+  focusedField,
+  setFocusedField,
+  errors,
+  onChangeText,
+}: any) => (
+  <View style={styles.inputGroup}>
+    <Text style={styles.label}>{label}</Text>
+    <View
+      style={[
+        styles.inputWrapper,
+        focusedField === name && styles.inputWrapperFocused,
+        errors[name] && styles.inputWrapperError,
+      ]}>
+      <Ionicons name={icon} size={18} color="#9ca3af" style={styles.inputIcon} />
+      <TextInput
+        style={styles.input}
+        placeholder={placeholder}
+        placeholderTextColor="#9ca3af"
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={() => setFocusedField(name)}
+        onBlur={() => setFocusedField(null)}
+        keyboardType={keyboardType || 'default'}
+        autoCapitalize={autoCapitalize || 'none'}
+        secureTextEntry={secureTextEntry}
+      />
+      {rightIcon && (
+        <TouchableOpacity onPress={onRightIconPress}>
+          <MaterialIcons name={rightIcon} size={20} color="#64748b" />
+        </TouchableOpacity>
+      )}
+    </View>
+    {errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
+  </View>
+);
+
+// --- MAIN COMPONENT ---
 
 const RegisterScreen = ({ navigation }: any) => {
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
+    date_of_birth: '',
+    voter_id: '',
     phone: '',
     street_address: '',
     city: '',
@@ -34,18 +95,17 @@ const RegisterScreen = ({ navigation }: any) => {
     country: 'India',
     pincode: '',
     password: '',
-    designation: 'Member',
+    designation: 'voter',
     tenant_id: null as number | null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  const [loading, setLoading] = useState(false);
   const [tenants, setTenants] = useState<any[]>([]);
   const [selectedTenantName, setSelectedTenantName] = useState('Select Tenant');
-  const [loading, setLoading] = useState(false);
   const [tenantsLoading, setTenantsLoading] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
   const [showTenantModal, setShowTenantModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,6 +127,14 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const handleChange = (name: string, value: any) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const selectTenant = (tenant: any) => {
@@ -75,48 +143,50 @@ const RegisterScreen = ({ navigation }: any) => {
     setShowTenantModal(false);
   };
 
-  const validateForm = () => {
+  const validateStep1 = () => {
     let newErrors: Record<string, string> = {};
 
-    // Tenant Validation
-    if (!formData.tenant_id) {
-      newErrors.tenant = 'Please select a tenant';
+    if (!formData.tenant_id) newErrors.tenant = 'Please select a tenant';
+    if (!formData.full_name || formData.full_name.trim().length < 2) {
+      newErrors.full_name = 'Enter your full legal name';
     }
 
-    // Full Name
-    if (!formData.full_name || formData.full_name.length < 2) {
-      newErrors.full_name = 'Enter a valid full name (min 2 chars)';
+    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/\d{4}$/; // mm/dd/yyyy
+    if (!formData.date_of_birth || !dateRegex.test(formData.date_of_birth)) {
+      newErrors.date_of_birth = 'Enter DOB in mm/dd/yyyy format';
     }
 
-    // Email Validation (Proper Mail Format)
+    if (!formData.voter_id || formData.voter_id.trim().length === 0) {
+      newErrors.voter_id = 'Enter registration number';
+    }
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!formData.email || !emailRegex.test(formData.email)) {
       newErrors.email = 'Enter a valid email address';
     }
 
-    // Phone Validation (Indian/IN Format: +91 followed by 10 digits or just 10 digits)
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    let newErrors: Record<string, string> = {};
+
     const phoneRegex = /^(?:(?:\+|0{0,2})91[\s-]?)?[6-9]\d{9}$/;
     if (!formData.phone || !phoneRegex.test(formData.phone)) {
-      newErrors.phone = 'Enter a valid 10-digit Indian phone number';
+      newErrors.phone = 'Enter valid 10-digit Indian number';
     }
 
-    // Address
-    if (!formData.street_address || formData.street_address.length < 3) {
-      newErrors.street_address = 'Address must be at least 3 characters';
-    }
-
-    // City, District, State
+    if (!formData.street_address) newErrors.street_address = 'Required';
     if (!formData.city) newErrors.city = 'Required';
     if (!formData.district) newErrors.district = 'Required';
     if (!formData.state) newErrors.state = 'Required';
 
-    // Pincode (Indian Format: 6 digits)
     const pincodeRegex = /^[1-9][0-9]{5}$/;
     if (!formData.pincode || !pincodeRegex.test(formData.pincode)) {
-      newErrors.pincode = 'Enter a valid 6-digit pincode';
+      newErrors.pincode = 'Enter valid 6-digit pincode';
     }
 
-    // Password
     if (!formData.password || formData.password.length < 8) {
       newErrors.password = 'Min 8 characters';
     } else {
@@ -125,7 +195,7 @@ const RegisterScreen = ({ navigation }: any) => {
       const hasNumber = /[0-9]/.test(formData.password);
       const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
       if (!(hasUpper && hasLower && hasNumber && hasSpecial)) {
-        newErrors.password = 'Must include A-z, 0-9, and symbols';
+        newErrors.password = 'Include A-z, 0-9, and symbols';
       }
     }
 
@@ -133,39 +203,36 @@ const RegisterScreen = ({ navigation }: any) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleNextStep = () => {
+    if (validateStep1()) {
+      setStep(2);
+    } else {
+      Alert.alert('Missing Information', 'Please complete all required identity details.');
+    }
+  };
+
   const handleRegister = async () => {
-    if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please correct the errors highlighted in the form.');
+    if (!validateStep2()) {
+      Alert.alert('Incomplete Form', 'Please complete all required fields.');
       return;
     }
 
     setLoading(true);
     try {
       await authService.register(formData);
-      
       Alert.alert(
         'Registration Successful',
-        'Your account has been created successfully and is now awaiting administrator approval.\n\nYou will be redirected to the login page.',
-        [{ text: 'Proceed to Login', onPress: () => navigation.navigate('Login') }],
+        'Your account has been created and is now awaiting administrator approval.\n\nYou will be redirected to the login page.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }],
         { cancelable: false }
       );
-
-      // Automatic redirect after a delay
-      setTimeout(() => {
-        navigation.navigate('Login');
-      }, 3000);
-
+      setTimeout(() => navigation.navigate('Login'), 4000);
     } catch (error: any) {
-      console.error('Registration API Error:', error.response?.data || error.message);
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
       if (error.response?.status === 409) {
-        errorMessage = 'This email is already registered.';
-        setErrors(prev => ({ ...prev, email: 'Email already exists' }));
+        errorMessage = 'This email or voter ID is already registered.';
       } else if (error.response?.data?.detail) {
-        errorMessage = Array.isArray(error.response.data.detail) 
-          ? error.response.data.detail[0].msg 
-          : error.response.data.detail;
+        errorMessage = Array.isArray(error.response.data.detail) ? error.response.data.detail[0].msg : error.response.data.detail;
       }
       Alert.alert('Registration Failed', errorMessage);
     } finally {
@@ -175,339 +242,241 @@ const RegisterScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header 
-        title="Registration" 
-        showBack={true} 
-        onBack={() => navigation.goBack()} 
-      />
-      
-      <KeyboardAvoidingView 
+      <Header />
+
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
-        enabled={Platform.OS !== 'web'} // Usually not needed on web
-      >
-        <ScrollView 
+        enabled={Platform.OS !== 'web'}>
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={Platform.OS === 'web'} // Show it on web
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.backgroundDecoration}>
-            <View style={styles.circle1} />
-            <View style={styles.circle2} />
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          
+          {/* Title & Progress */}
+          <View style={styles.mainTitleContainer}>
+            <Text style={styles.mainTitleText}>Voter Registration</Text>
+            <Text style={styles.subtitleText}>
+              Step {step} of 2: {step === 1 ? 'Create your secure identity profile.' : 'Complete your registration details.'}
+            </Text>
+            <View style={styles.progressBarBg}>
+              <View style={[styles.progressBarFilled, { width: step === 1 ? '50%' : '100%' }]} />
+            </View>
           </View>
 
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Join CivicVote</Text>
-            <Text style={styles.headerSubtitle}>Create your account to start voting</Text>
-          </View>
-
+          {/* Form Content */}
           <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Select Tenant</Text>
-              <TouchableOpacity 
-                style={[
-                  styles.inputWrapper,
-                  focusedField === 'tenant' && styles.inputWrapperFocused,
-                  errors.tenant && styles.inputWrapperError
-                ]}
-                onPress={() => setShowTenantModal(true)}
-                disabled={tenantsLoading}
-              >
-                <MaterialIcons 
-                  name="business" 
-                  size={20} 
-                  color={formData.tenant_id ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
-                />
-                <Text style={[
-                  styles.pickerText, 
-                  !formData.tenant_id && { color: '#9ca3af' }
-                ]}>
-                  {tenantsLoading ? 'Loading tenants...' : selectedTenantName}
-                </Text>
-                {tenantsLoading ? (
-                  <ActivityIndicator size="small" color="#4f46e5" />
-                ) : (
-                  <MaterialIcons name="arrow-drop-down" size={24} color="#9ca3af" />
-                )}
-              </TouchableOpacity>
-              {errors.tenant && <Text style={styles.errorText}>{errors.tenant}</Text>}
-            </View>
+            {step === 1 ? (
+              <>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Select Tenant</Text>
+                  <TouchableOpacity 
+                    style={[styles.inputWrapper, errors.tenant && styles.inputWrapperError]}
+                    onPress={() => setShowTenantModal(true)}
+                    disabled={tenantsLoading}
+                  >
+                    <Ionicons name="business-outline" size={18} color="#9ca3af" style={styles.inputIcon} />
+                    <Text style={[styles.pickerText, !formData.tenant_id && { color: '#9ca3af' }]}>
+                      {tenantsLoading ? 'Loading tenants...' : selectedTenantName}
+                    </Text>
+                    <MaterialIcons name="arrow-drop-down" size={24} color="#94a3b8" />
+                  </TouchableOpacity>
+                  {errors.tenant && <Text style={styles.errorText}>{errors.tenant}</Text>}
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'full_name' && styles.inputWrapperFocused,
-                errors.full_name && styles.inputWrapperError
-              ]}>
-                <MaterialIcons 
-                  name="person-outline" 
-                  size={20} 
-                  color={focusedField === 'full_name' ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor="#9ca3af"
+                <InputField
+                  name="full_name"
+                  icon="person-outline"
+                  label="Full Name"
+                  placeholder="Legal name as on ID"
                   value={formData.full_name}
-                  onChangeText={(val) => handleChange('full_name', val)}
-                  onFocus={() => setFocusedField('full_name')}
-                  onBlur={() => setFocusedField(null)}
+                  onChangeText={(val: string) => handleChange('full_name', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                  autoCapitalize="words"
                 />
-              </View>
-              {errors.full_name && <Text style={styles.errorText}>{errors.full_name}</Text>}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email Address</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'email' && styles.inputWrapperFocused,
-                errors.email && styles.inputWrapperError
-              ]}>
-                <MaterialIcons 
-                  name="mail-outline" 
-                  size={20} 
-                  color={focusedField === 'email' ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
+                <InputField
+                  name="date_of_birth"
+                  icon="calendar-outline"
+                  label="Date of Birth"
+                  placeholder="mm/dd/yyyy"
+                  value={formData.date_of_birth}
+                  onChangeText={(val: string) => handleChange('date_of_birth', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                  keyboardType="numbers-and-punctuation"
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="example@mail.com"
-                  placeholderTextColor="#9ca3af"
+
+                <InputField
+                  name="voter_id"
+                  icon="card-outline"
+                  label="Voter ID / National ID Number"
+                  placeholder="Enter registration number"
+                  value={formData.voter_id}
+                  onChangeText={(val: string) => handleChange('voter_id', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                  autoCapitalize="characters"
+                />
+
+                <InputField
+                  name="email"
+                  icon="mail-outline"
+                  label="Email Address"
+                  placeholder="name@example.com"
                   value={formData.email}
-                  onChangeText={(val) => handleChange('email', val)}
+                  onChangeText={(val: string) => handleChange('email', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
                   keyboardType="email-address"
-                  autoCapitalize="none"
-                  onFocus={() => setFocusedField('email')}
-                  onBlur={() => setFocusedField(null)}
                 />
-              </View>
-              {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-            </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone Number</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'phone' && styles.inputWrapperFocused,
-                errors.phone && styles.inputWrapperError
-              ]}>
-                <MaterialIcons 
-                  name="phone-android" 
-                  size={20} 
-                  color={focusedField === 'phone' ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="+91 00000 00000"
-                  placeholderTextColor="#9ca3af"
-                  value={formData.phone}
-                  onChangeText={(val) => handleChange('phone', val)}
-                  keyboardType="phone-pad"
-                  onFocus={() => setFocusedField('phone')}
-                  onBlur={() => setFocusedField(null)}
-                />
-              </View>
-              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-            </View>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ADDRESS DETAILS</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Street Address</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'street_address' && styles.inputWrapperFocused,
-                errors.street_address && styles.inputWrapperError
-              ]}>
-                <MaterialIcons 
-                  name="map" 
-                  size={20} 
-                  color={focusedField === 'street_address' ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="House No, Building, Street"
-                  placeholderTextColor="#9ca3af"
-                  value={formData.street_address}
-                  onChangeText={(val) => handleChange('street_address', val)}
-                  onFocus={() => setFocusedField('street_address')}
-                  onBlur={() => setFocusedField(null)}
-                />
-              </View>
-              {errors.street_address && <Text style={styles.errorText}>{errors.street_address}</Text>}
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.label}>City</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  focusedField === 'city' && styles.inputWrapperFocused,
-                  errors.city && styles.inputWrapperError
-                ]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="City"
-                    placeholderTextColor="#9ca3af"
-                    value={formData.city}
-                    onChangeText={(val) => handleChange('city', val)}
-                    onFocus={() => setFocusedField('city')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-              </View>
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>District</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  focusedField === 'district' && styles.inputWrapperFocused,
-                  errors.district && styles.inputWrapperError
-                ]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="District"
-                    placeholderTextColor="#9ca3af"
-                    value={formData.district}
-                    onChangeText={(val) => handleChange('district', val)}
-                    onFocus={() => setFocusedField('district')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                {errors.district && <Text style={styles.errorText}>{errors.district}</Text>}
-              </View>
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.label}>State</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  focusedField === 'state' && styles.inputWrapperFocused,
-                  errors.state && styles.inputWrapperError
-                ]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="State"
-                    placeholderTextColor="#9ca3af"
-                    value={formData.state}
-                    onChangeText={(val) => handleChange('state', val)}
-                    onFocus={() => setFocusedField('state')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                {errors.state && <Text style={styles.errorText}>{errors.state}</Text>}
-              </View>
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>Pincode</Text>
-                <View style={[
-                  styles.inputWrapper,
-                  focusedField === 'pincode' && styles.inputWrapperFocused,
-                  errors.pincode && styles.inputWrapperError
-                ]}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="000000"
-                    placeholderTextColor="#9ca3af"
-                    value={formData.pincode}
-                    onChangeText={(val) => handleChange('pincode', val)}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                    onFocus={() => setFocusedField('pincode')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </View>
-                {errors.pincode && <Text style={styles.errorText}>{errors.pincode}</Text>}
-              </View>
-            </View>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>SECURITY</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'password' && styles.inputWrapperFocused,
-                errors.password && styles.inputWrapperError
-              ]}>
-                <MaterialIcons 
-                  name="lock-outline" 
-                  size={20} 
-                  color={focusedField === 'password' ? '#4f46e5' : '#9ca3af'} 
-                  style={styles.inputIcon} 
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Min 8 characters"
-                  placeholderTextColor="#9ca3af"
-                  value={formData.password}
-                  onChangeText={(val) => handleChange('password', val)}
-                  secureTextEntry={!showPassword}
-                  onFocus={() => setFocusedField('password')}
-                  onBlur={() => setFocusedField(null)}
-                />
-                <TouchableOpacity 
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <MaterialIcons 
-                    name={showPassword ? "visibility-off" : "visibility"} 
-                    size={20} 
-                    color="#9ca3af" 
-                  />
+                <TouchableOpacity style={styles.primaryButton} onPress={handleNextStep}>
+                  <Text style={styles.buttonText}>Continue to Step 2</Text>
                 </TouchableOpacity>
-              </View>
-              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-            </View>
+              </>
+            ) : (
+              <>
+                <InputField
+                  name="phone"
+                  icon="call-outline"
+                  label="Phone Number"
+                  placeholder="+91 00000 00000"
+                  value={formData.phone}
+                  onChangeText={(val: string) => handleChange('phone', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                  keyboardType="phone-pad"
+                />
 
-            <TouchableOpacity
-              style={[styles.registerButton, loading && styles.registerButtonDisabled]}
-              onPress={handleRegister}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <View style={styles.buttonContent}>
-                  <Text style={styles.registerButtonText}>Create Account</Text>
-                  <MaterialIcons name="arrow-forward" size={20} color="#fff" style={{ marginLeft: 8 }} />
+                <InputField
+                  name="street_address"
+                  icon="location-outline"
+                  label="Street Address"
+                  placeholder="House, Area, Road"
+                  value={formData.street_address}
+                  onChangeText={(val: string) => handleChange('street_address', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                />
+
+                <View style={styles.row}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <InputField
+                      name="city"
+                      icon="map-outline"
+                      label="City"
+                      placeholder="City"
+                      value={formData.city}
+                      onChangeText={(val: string) => handleChange('city', val)}
+                      focusedField={focusedField}
+                      setFocusedField={setFocusedField}
+                      errors={errors}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <InputField
+                      name="pincode"
+                      icon="navigate-outline"
+                      label="Pincode"
+                      placeholder="6 digits"
+                      value={formData.pincode}
+                      onChangeText={(val: string) => handleChange('pincode', val)}
+                      focusedField={focusedField}
+                      setFocusedField={setFocusedField}
+                      errors={errors}
+                      keyboardType="number-pad"
+                    />
+                  </View>
                 </View>
-              )}
-            </TouchableOpacity>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already part of the community?</Text>
+                <View style={styles.row}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <InputField
+                      name="district"
+                      icon="locate-outline"
+                      label="District"
+                      placeholder="District"
+                      value={formData.district}
+                      onChangeText={(val: string) => handleChange('district', val)}
+                      focusedField={focusedField}
+                      setFocusedField={setFocusedField}
+                      errors={errors}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <InputField
+                      name="state"
+                      icon="globe-outline"
+                      label="State"
+                      placeholder="State"
+                      value={formData.state}
+                      onChangeText={(val: string) => handleChange('state', val)}
+                      focusedField={focusedField}
+                      setFocusedField={setFocusedField}
+                      errors={errors}
+                    />
+                  </View>
+                </View>
+
+                <InputField
+                  name="password"
+                  icon="lock-closed-outline"
+                  label="Secure Password"
+                  placeholder="Min 8 characters"
+                  value={formData.password}
+                  onChangeText={(val: string) => handleChange('password', val)}
+                  focusedField={focusedField}
+                  setFocusedField={setFocusedField}
+                  errors={errors}
+                  secureTextEntry={!showPassword}
+                  rightIcon={showPassword ? "visibility-off" : "visibility"}
+                  onRightIconPress={() => setShowPassword(!showPassword)}
+                />
+
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
+                    <Text style={styles.backButtonText}>Back</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.primaryButton, { flex: 2, marginTop: 0 }, loading && styles.buttonDisabled]} 
+                    onPress={handleRegister}
+                    disabled={loading}
+                  >
+                    {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Complete Registry</Text>}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            <View style={styles.footerContainer}>
+              <Text style={styles.alreadyText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.signInText}> Sign In</Text>
+                <Text style={styles.loginText}>Login</Text>
               </TouchableOpacity>
             </View>
+
+            <View style={styles.securityBadge}>
+              <Ionicons name="checkmark-circle-outline" size={14} color="#10b981" />
+              <Text style={styles.securityText}>SOVEREIGN IDENTITY PROTOCOL ACTIVE</Text>
+            </View>
+
+            <Text style={styles.disclaimerText}>
+              By creating an account, you agree to our Terms of Democratic Participation and Privacy Policy. Your vote remains anonymous and private.
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Tenant Selection Modal */}
-      <Modal
-        visible={showTenantModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowTenantModal(false)}
-      >
+      <Modal visible={showTenantModal} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -520,24 +489,12 @@ const RegisterScreen = ({ navigation }: any) => {
               data={tenants}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
-                <TouchableOpacity 
-                  style={styles.tenantItem} 
-                  onPress={() => selectTenant(item)}
-                >
-                  <View style={styles.tenantIcon}>
-                    <MaterialIcons name="business" size={24} color="#4f46e5" />
-                  </View>
+                <TouchableOpacity style={styles.tenantItem} onPress={() => selectTenant(item)}>
+                  <Ionicons name="business-outline" size={20} color="#0058e7" style={{ marginRight: 12 }} />
                   <Text style={styles.tenantName}>{item.name}</Text>
-                  {formData.tenant_id === item.id && (
-                    <MaterialIcons name="check-circle" size={20} color="#4f46e5" />
-                  )}
+                  {formData.tenant_id === item.id && <Ionicons name="checkmark-circle" size={20} color="#0058e7" />}
                 </TouchableOpacity>
               )}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No active tenants found.</Text>
-                </View>
-              }
             />
           </View>
         </View>
@@ -547,259 +504,48 @@ const RegisterScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 60,
-    flexGrow: 1,
-  },
-  backgroundDecoration: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 400,
-    overflow: 'hidden',
-    zIndex: -1,
-  },
-  circle1: {
-    position: 'absolute',
-    top: -150,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: '#4f46e505',
-  },
-  circle2: {
-    position: 'absolute',
-    top: 100,
-    left: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: '#4f46e503',
-  },
-  headerInfo: {
-    paddingHorizontal: 24,
-    paddingTop: 30,
-    paddingBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#111827',
-    letterSpacing: -0.5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginTop: 6,
-  },
-  formContainer: {
-    paddingHorizontal: 24,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
-    marginBottom: 8,
-    marginLeft: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 58,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  inputWrapperFocused: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#fff',
-    borderWidth: 2,
-  },
-  inputWrapperError: {
-    borderColor: '#ef4444',
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
-    fontWeight: '600',
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '500',
-    ...Platform.select({
-      web: {
-        outlineStyle: 'none',
-      },
-    }),
-  },
-  pickerText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '500',
-  },
-  row: {
-    flexDirection: 'row',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#f3f4f6',
-  },
-  dividerText: {
-    paddingHorizontal: 12,
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#9ca3af',
-    letterSpacing: 1.5,
-  },
-  registerButton: {
-    backgroundColor: '#4f46e5',
-    height: 60,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#4f46e5',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 6,
-      },
-      web: {
-        cursor: 'pointer',
-      },
-    }),
-  },
-  registerButtonDisabled: {
-    backgroundColor: '#a5b4fc',
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  registerButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 32,
-    marginBottom: 20,
-  },
-  footerText: {
-    color: '#6b7280',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  signInText: {
-    color: '#4f46e5',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: height * 0.6,
-    paddingTop: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  tenantItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    paddingHorizontal: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f9fafb',
-  },
-  tenantIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#4f46e510',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  tenantName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#9ca3af',
-    fontSize: 14,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: 40, flexGrow: 1 },
+  mainTitleContainer: { paddingHorizontal: 20, paddingTop: 30, paddingBottom: 20 },
+  mainTitleText: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
+  subtitleText: { fontSize: 14, color: '#6b7280', marginTop: 6, lineHeight: 20 },
+  progressBarBg: { height: 6, backgroundColor: '#eff6ff', borderRadius: 3, marginTop: 18, width: '100%', overflow: 'hidden' },
+  progressBarFilled: { height: 6, backgroundColor: '#0058e7', borderRadius: 3 },
+  formContainer: { paddingHorizontal: 20 },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 12, height: 48 },
+  inputWrapperFocused: { borderColor: '#3b82f6', borderWidth: 1.5 },
+  inputWrapperError: { borderColor: '#ef4444', borderWidth: 1.5 },
+  errorText: { color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 2 },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 15, color: '#1f2937', ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  pickerText: { flex: 1, fontSize: 15, color: '#1f2937' },
+  row: { flexDirection: 'row' },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
+  dividerText: { paddingHorizontal: 10, fontSize: 10, fontWeight: '800', color: '#9ca3af' },
+  primaryButton: { backgroundColor: '#0058e7', height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  buttonDisabled: { backgroundColor: '#d1d5db' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
+  backButton: { flex: 1, height: 50, justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8 },
+  backButtonText: { color: '#4b5563', fontSize: 16, fontWeight: '600' },
+  footerContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24, marginBottom: 20 },
+  alreadyText: { color: '#4b5563', fontSize: 14 },
+  loginText: { color: '#3b82f6', fontWeight: '700', fontSize: 14 },
+  securityBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', alignSelf: 'center', marginVertical: 16 },
+  securityText: { fontSize: 11, fontWeight: '700', color: '#047857', marginLeft: 6, textTransform: 'uppercase' },
+  disclaimerText: { textAlign: 'center', color: '#6b7280', fontSize: 12, lineHeight: 18, paddingHorizontal: 10 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: height * 0.5, padding: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '700' },
+  tenantItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  tenantName: { flex: 1, fontSize: 15, fontWeight: '500' },
+  initialsContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dbeafe' },
+  initialsText: { fontSize: 12, fontWeight: '600', color: '#3b82f6' },
 });
 
 export default RegisterScreen;
