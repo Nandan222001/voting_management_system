@@ -1,32 +1,64 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { authService } from '../../services/authService';
 
 interface HeaderProps {
-  title: string;
   showBack?: boolean;
   onBack?: () => void;
-  rightElement?: React.ReactNode;
+  title?: string; // Optional custom title, defaults to SecureVote
 }
 
-const Header = ({ title, showBack, onBack, rightElement }: HeaderProps) => {
+const UserInitials = () => {
+  const [initials, setInitials] = useState('??');
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const user = await authService.getCurrentUser();
+      if (user && user.full_name) {
+        const names = user.full_name.split(' ');
+        const initials = names.length > 1 
+          ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+          : names[0][0].toUpperCase();
+        setInitials(initials);
+      } else {
+        setInitials('CV');
+      }
+    };
+    loadUser();
+  }, []);
+
+  return (
+    <View style={styles.initialsContainer}>
+      <Text style={styles.initialsText}>{initials}</Text>
+    </View>
+  );
+};
+
+const Header = ({ showBack, onBack, title }: HeaderProps) => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.content}>
-        <View style={styles.left}>
-          {showBack && (
+        <View style={styles.leftSection}>
+          {showBack ? (
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={24} color="#fff" />
+              <MaterialIcons name="arrow-back" size={24} color="#111827" />
             </TouchableOpacity>
+          ) : (
+            <View style={styles.brandRow}>
+              <FontAwesome5 name="shield-alt" size={20} color="#111827" />
+              <Text style={styles.brandText}>{title || 'SecureVote'}</Text>
+            </View>
+          )}
+          {showBack && title && (
+             <Text style={[styles.brandText, { marginLeft: 10 }]}>{title}</Text>
           )}
         </View>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.right}>
-          {rightElement}
-        </View>
+        
+        <UserInitials />
       </View>
     </View>
   );
@@ -34,47 +66,50 @@ const Header = ({ title, showBack, onBack, rightElement }: HeaderProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#4f46e5',
-    paddingBottom: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingBottom: 12,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 8,
-      },
-      web: {
-        boxShadow: '0px 4px 5px rgba(0, 0, 0, 0.2)',
-      },
-    }),
+    zIndex: 100,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  left: {
-    width: 40,
-  },
-  right: {
-    width: 40,
-    alignItems: 'flex-end',
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
-    padding: 5,
+    marginRight: 8,
+    padding: 4,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    flex: 1,
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  brandText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111827',
+    marginLeft: 10,
+  },
+  initialsContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  initialsText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3b82f6',
   },
 });
 

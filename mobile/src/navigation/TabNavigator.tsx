@@ -6,6 +6,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import DashboardScreen from '../screens/DashboardScreen';
 import VotingScreen from '../screens/VotingScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import AnalyticsScreen from '../screens/AnalyticsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -18,8 +19,10 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
 
           if (route.name === 'Dashboard') {
             iconName = 'dashboard';
-          } else if (route.name === 'Voting') {
+          } else if (route.name === 'Elections') {
             iconName = 'how-to-vote';
+          } else if (route.name === 'Analytics') {
+            iconName = 'bar-chart';
           } else if (route.name === 'Profile') {
             iconName = 'person';
           }
@@ -42,7 +45,8 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Voting" component={VotingScreen} />
+      <Tab.Screen name="Elections" component={VotingScreen} />
+      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
       <Tab.Screen name="Profile">
         {(props) => <ProfileScreen {...props} onLogout={onLogout} />}
       </Tab.Screen>
@@ -58,11 +62,20 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 88 : 65,
     paddingBottom: Platform.OS === 'ios' ? 30 : 10,
     paddingTop: 10,
-    elevation: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 20,
+      },
+      web: {
+        boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.05)',
+      },
+    }),
   },
   tabLabel: {
     fontSize: 12,
