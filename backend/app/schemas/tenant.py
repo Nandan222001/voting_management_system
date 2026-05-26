@@ -87,3 +87,13 @@ class TenantStatusUpdate(BaseModel):
 
     status: str
     reason: Optional[str] = None
+
+
+class TenantPublicResponse(BaseModel):
+    """Minimal tenant info for public selection (e.g. registration)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    logo_url: Optional[str] = None

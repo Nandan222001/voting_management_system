@@ -52,6 +52,10 @@ cp .env.example .env.local    # Edit if needed
 npm run dev                   # Start dev server on :5173
 ```
 
+### Mobile App Setup
+<!-- cd mobile -->
+<!-- npm run web -->
+
 ### Default Admin Credentials
 - **Email:** admin@voting.com
 - **Password:** Admin@123

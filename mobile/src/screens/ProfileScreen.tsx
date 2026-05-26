@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { authService } from '../services/authService';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -23,17 +24,33 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
   }, []);
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          await authService.logout();
-          onLogout();
+    const performLogout = async () => {
+      try {
+        console.log('Starting logout process...');
+        await authService.logout();
+        console.log('Auth service logout complete');
+        onLogout();
+        console.log('onLogout prop callback complete');
+      } catch (error) {
+        console.error('Logout error:', error);
+        Alert.alert('Error', 'Failed to sign out. Please try again.');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Are you sure you want to sign out of your account?')) {
+        performLogout();
+      }
+    } else {
+      Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: performLogout,
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   return (
@@ -130,11 +147,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#4f46e5',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#4f46e5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4f46e5',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 4px 8px rgba(79, 70, 229, 0.3)',
+      },
+    }),
   },
   editAvatar: {
     position: 'absolute',

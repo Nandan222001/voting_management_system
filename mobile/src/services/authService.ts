@@ -23,6 +23,11 @@ export const authService = {
     await AsyncStorage.removeItem('user');
   },
 
+  register: async (userData: any) => {
+    const response = await api.post('/auth/register', userData);
+    return response.data;
+  },
+
   getCurrentUser: async () => {
     const user = await AsyncStorage.getItem('user');
     return user ? JSON.parse(user) : null;
