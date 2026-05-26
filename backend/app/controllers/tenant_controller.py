@@ -13,11 +13,25 @@ from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.middlewares.auth_middleware import require_superadmin
 from app.models.user import User
-from app.schemas.tenant import TenantCreate, TenantResponse, TenantUpdate
+from app.schemas.tenant import TenantCreate, TenantResponse, TenantUpdate, TenantPublicResponse
 from app.services.tenant_service import tenant_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/tenants", tags=["Tenants (SuperAdmin)"])
+
+
+@router.get("/public", summary="List all active tenants for selection")
+def list_public_tenants(
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Returns a minimal list of active tenants for public registration selection.
+    No authentication required.
+    """
+    from app.models.tenant import Tenant as TenantModel
+    tenants = db.query(TenantModel).filter(TenantModel.status == "active").all()
+    data = [TenantPublicResponse.model_validate(t).model_dump(mode="json") for t in tenants]
+    return success_response(data=data, message="Public tenants retrieved.")
 
 
 class SuspendRequest(BaseModel):

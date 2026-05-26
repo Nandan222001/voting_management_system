@@ -4,8 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import LoginScreen from './src/screens/LoginScreen';
 import TabNavigator from './src/navigation/TabNavigator';
+import AuthNavigator from './src/navigation/AuthNavigator';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function App() {
       {userToken ? (
         <TabNavigator onLogout={handleLogout} />
       ) : (
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
+        <AuthNavigator onLoginSuccess={handleLoginSuccess} />
       )}
     </NavigationContainer>
   );

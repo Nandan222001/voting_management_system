@@ -16,7 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
-const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
+const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginSuccess: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -113,7 +113,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
               <Text style={styles.signUpText}> Register Now</Text>
             </TouchableOpacity>
           </View>
@@ -210,6 +210,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#111827',
+    ...Platform.select({
+      web: {
+        outlineStyle: 'none',
+      },
+    }),
   },
   forgotPassword: {
     alignSelf: 'flex-end',
