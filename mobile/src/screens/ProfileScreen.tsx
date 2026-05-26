@@ -1,273 +1,244 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { authService } from '../services/authService';
 import { MaterialIcons } from '@expo/vector-icons';
-import TopAppBar from '../components/common/TopAppBar';
-import { colors, typography, spacing } from '../theme';
-import { currentUser } from '../data/mockData';
+import Header from '../components/common/Header';
 
-interface ProfileRowProps {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  label: string;
-  value: string;
-}
+const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
+  const [user, setUser] = useState<any>(null);
 
-function ProfileRow({ icon, label, value }: ProfileRowProps) {
-  return (
-    <View style={profileRowStyles.row}>
-      <View style={profileRowStyles.iconWrapper}>
-        <MaterialIcons name={icon} size={18} color={colors.onSurfaceVariant} />
-      </View>
-      <View style={profileRowStyles.text}>
-        <Text style={profileRowStyles.label}>{label}</Text>
-        <Text style={profileRowStyles.value}>{value}</Text>
-      </View>
-    </View>
-  );
-}
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+    };
+    loadUser();
+  }, []);
 
-const profileRowStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.stackMd,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.outlineVariant,
-  },
-  iconWrapper: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceContainerHigh,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  text: {
-    flex: 1,
-    gap: 2,
-  },
-  label: {
-    ...typography.labelSm,
-    color: colors.onSurfaceVariant,
-  },
-  value: {
-    ...typography.bodyMd,
-    color: colors.onSurface,
-    fontWeight: '500',
-  },
-});
-
-export default function ProfileScreen() {
-  const insets = useSafeAreaInsets();
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await authService.logout();
+          onLogout();
+        },
+      },
+    ]);
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <TopAppBar />
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Avatar + Name */}
-        <View style={styles.heroSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>
-              {currentUser.fullName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <Text style={styles.fullName}>{currentUser.fullName}</Text>
-          <Text style={styles.email}>{currentUser.email}</Text>
-          {currentUser.isVerified && (
-            <View style={styles.verifiedBadge}>
-              <MaterialIcons name="verified" size={14} color={colors.tertiary} />
-              <Text style={styles.verifiedText}>Verified Member</Text>
+    <View style={styles.container}>
+      <Header title="Profile" />
+      <ScrollView style={styles.content}>
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatar}>
+              <MaterialIcons name="person" size={60} color="#fff" />
             </View>
-          )}
-        </View>
-
-        {/* Subscription Status */}
-        <View style={styles.subscriptionCard}>
-          <View style={styles.subscriptionHeader}>
-            <MaterialIcons name="card-membership" size={20} color={colors.primary} />
-            <Text style={styles.subscriptionTitle}>Membership Plan</Text>
+            <TouchableOpacity style={styles.editAvatar}>
+              <MaterialIcons name="camera-alt" size={18} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <View style={styles.subscriptionBody}>
-            <Text style={styles.planName}>Annual Membership</Text>
-            <View style={styles.activeChip}>
-              <Text style={styles.activeChipText}>ACTIVE</Text>
-            </View>
+          <Text style={styles.userName}>{user?.full_name}</Text>
+          <Text style={styles.userEmail}>{user?.email}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account Details</Text>
+          <View style={styles.infoCard}>
+            <InfoRow icon="badge" label="Role" value={user?.role?.toUpperCase()} color="#4f46e5" />
+            <InfoRow icon="location-on" label="District" value={user?.district || 'Not Assigned'} color="#10b981" />
+            <InfoRow icon="work" label="Designation" value={user?.designation || 'Member'} color="#f59e0b" />
+            <InfoRow icon="phone" label="Phone" value={user?.phone || 'Not Provided'} color="#6366f1" isLast />
           </View>
-          <Text style={styles.planExpiry}>Renews on Dec 31, 2026</Text>
-          <TouchableOpacity style={styles.renewButton} activeOpacity={0.8}>
-            <Text style={styles.renewButtonText}>Manage Subscription</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Profile Details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PROFILE DETAILS</Text>
-          <ProfileRow icon="person" label="Full Name" value={currentUser.fullName} />
-          <ProfileRow icon="email" label="Email" value={currentUser.email} />
-          <ProfileRow icon="phone" label="Phone" value="+91 98765 43210" />
-          <ProfileRow icon="badge" label="Designation" value="District Secretary" />
-          <ProfileRow icon="location-on" label="District" value="Maharashtra" />
-          <ProfileRow icon="home" label="City" value="Mumbai" />
+          <Text style={styles.sectionTitle}>Security & App</Text>
+          <View style={styles.infoCard}>
+            <MenuRow icon="lock" label="Change Password" />
+            <MenuRow icon="notifications" label="Notification Settings" />
+            <MenuRow icon="help" label="Help & Support" isLast />
+          </View>
         </View>
 
-        {/* Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ACCOUNT</Text>
-          <TouchableOpacity style={styles.actionRow} activeOpacity={0.7}>
-            <MaterialIcons name="lock" size={20} color={colors.onSurfaceVariant} />
-            <Text style={styles.actionText}>Change Password</Text>
-            <MaterialIcons name="chevron-right" size={20} color={colors.outline} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionRow} activeOpacity={0.7}>
-            <MaterialIcons name="notifications" size={20} color={colors.onSurfaceVariant} />
-            <Text style={styles.actionText}>Notification Preferences</Text>
-            <MaterialIcons name="chevron-right" size={20} color={colors.outline} />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionRow, styles.logoutRow]} activeOpacity={0.7}>
-            <MaterialIcons name="logout" size={20} color={colors.error} />
-            <Text style={[styles.actionText, styles.logoutText]}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.signOutButton} onPress={handleLogout}>
+          <MaterialIcons name="logout" size={20} color="#ef4444" />
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.versionText}>Version 1.0.0 (Build 24)</Text>
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
-}
+};
+
+const InfoRow = ({ icon, label, value, color, isLast }: { icon: any, label: string, value: string, color: string, isLast?: boolean }) => (
+  <View style={[styles.infoRow, isLast && { borderBottomWidth: 0 }]}>
+    <View style={[styles.iconBox, { backgroundColor: color + '15' }]}>
+      <MaterialIcons name={icon} size={20} color={color} />
+    </View>
+    <View style={styles.infoText}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  </View>
+);
+
+const MenuRow = ({ icon, label, isLast }: { icon: any, label: string, isLast?: boolean }) => (
+  <TouchableOpacity style={[styles.menuRow, isLast && { borderBottomWidth: 0 }]}>
+    <MaterialIcons name={icon} size={22} color="#4b5563" />
+    <Text style={styles.menuLabel}>{label}</Text>
+    <MaterialIcons name="chevron-right" size={20} color="#d1d5db" />
+  </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
+    backgroundColor: '#fff',
   },
   content: {
-    padding: spacing.marginMain,
-    gap: spacing.stackLg,
-    paddingBottom: 32,
-  },
-  heroSection: {
-    alignItems: 'center',
-    gap: spacing.stackSm,
-    paddingVertical: spacing.stackMd,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primaryContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitial: {
-    ...typography.headlineLg,
-    color: colors.onPrimary,
-  },
-  fullName: {
-    ...typography.headlineMd,
-    color: colors.onSurface,
-  },
-  email: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: `${colors.tertiary}1A`,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  verifiedText: {
-    ...typography.labelMd,
-    color: colors.tertiary,
-  },
-  subscriptionCard: {
-    backgroundColor: colors.surfaceContainerLowest,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    borderRadius: 12,
-    padding: spacing.stackMd,
-    gap: spacing.stackSm,
-  },
-  subscriptionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  subscriptionTitle: {
-    ...typography.labelMd,
-    color: colors.onSurfaceVariant,
-  },
-  subscriptionBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  planName: {
-    ...typography.headlineSm,
-    color: colors.onSurface,
-  },
-  activeChip: {
-    backgroundColor: `${colors.tertiary}1A`,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  activeChipText: {
-    ...typography.labelSm,
-    color: colors.tertiary,
-    letterSpacing: 1,
-  },
-  planExpiry: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-  },
-  renewButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  renewButtonText: {
-    ...typography.labelMd,
-    color: colors.onPrimary,
-    letterSpacing: 0.5,
-  },
-  section: {
-    gap: 0,
-  },
-  sectionTitle: {
-    ...typography.labelMd,
-    color: colors.secondary,
-    marginBottom: spacing.stackSm,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.stackMd,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.outlineVariant,
-  },
-  actionText: {
-    ...typography.bodyLg,
-    color: colors.onSurface,
     flex: 1,
   },
-  logoutRow: {
-    borderBottomWidth: 0,
+  profileHeader: {
+    alignItems: 'center',
+    paddingVertical: 30,
+    backgroundColor: '#f9fafb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
-  logoutText: {
-    color: colors.error,
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#4f46e5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  editAvatar: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#111827',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  section: {
+    padding: 20,
+    paddingBottom: 0,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+    overflow: 'hidden',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  infoText: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#374151',
+    marginLeft: 12,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+    marginTop: 30,
+    padding: 16,
+    backgroundColor: '#fef2f2',
+    borderRadius: 12,
+  },
+  signOutText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#ef4444',
+    fontWeight: 'bold',
+  },
+  versionText: {
+    textAlign: 'center',
+    color: '#9ca3af',
+    fontSize: 12,
   },
 });
+
+export default ProfileScreen;
