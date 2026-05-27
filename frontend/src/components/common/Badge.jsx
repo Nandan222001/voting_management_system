@@ -12,14 +12,14 @@ const STATUS_STYLES = {
   // Neutral
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   'pending approval': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-  trial: 'bg-primary-50 text-primary-600 border-primary-100',
-  provisioning: 'bg-primary-50 text-primary-600 border-primary-100',
+  trial: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
+  provisioning: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
   // Draft
   draft: 'bg-gray-50 text-gray-500 border-gray-100',
   inactive: 'bg-gray-50 text-gray-500 border-gray-100',
   // Roles
-  admin: 'bg-primary-50 text-primary-600 border-primary-100',
-  superadmin: 'bg-purple-50 text-purple-700 border-purple-100',
+  admin: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
+  superadmin: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
 };
 
 const DEFAULT_STYLE = 'bg-gray-50 text-gray-500 border-gray-100';

@@ -122,7 +122,7 @@ export default function UsersPage() {
       key: 'role',
       render: (value) => (
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${value === 'admin'
-            ? 'bg-purple-100 text-purple-700'
+            ? 'bg-[#e6edfb] text-[#0051D5]'
             : 'bg-gray-200 text-gray-900'
           }`}>
           {value}
@@ -183,7 +183,7 @@ export default function UsersPage() {
               title="Total Users"
               value={stats.total_users ?? 0}
               icon={FaUsers}
-              color="indigo"
+              color="primary"
             />
 
             <StatsCard
@@ -216,7 +216,7 @@ export default function UsersPage() {
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-primary-500 text-primary-500' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[#0051D5] text-[#0051D5]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -232,7 +232,7 @@ export default function UsersPage() {
                 placeholder="Search users…"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051D5]"
               />
             </div>
           </div>

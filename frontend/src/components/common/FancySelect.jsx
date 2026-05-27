@@ -91,7 +91,7 @@ export default function FancySelect({
                     key={idx}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors font-semibold ${
-                        active ? 'bg-primary-500 text-white' : 'text-gray-900'
+                        active ? 'bg-[#0051D5] text-white' : 'text-gray-900'
                       }`
                     }
                     value={option.value}

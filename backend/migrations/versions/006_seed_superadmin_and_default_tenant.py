@@ -45,7 +45,7 @@ def upgrade() -> None:
             "plan": "enterprise",
             "max_elections": 9999,
             "max_voters": 9999999,
-            "primary_color": "#4f46e5",
+            "primary_color": "#0051D5",
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }

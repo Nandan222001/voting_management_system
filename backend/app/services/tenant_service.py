@@ -57,7 +57,7 @@ class TenantService:
             contact_email=data.contact_email,
             plan=data.plan or "starter",
             logo_url=data.logo_url,
-            primary_color=getattr(data, 'primary_color', None) or "#4f46e5",
+            primary_color=getattr(data, 'primary_color', None) or "#0051D5",
             max_elections=max_e,
             max_voters=max_v,
             status=TenantStatus.trial,

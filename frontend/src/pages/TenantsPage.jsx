@@ -380,7 +380,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-primary-500 rounded-xl hover:bg-primary-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0051D5] rounded-xl hover:bg-[#0051D5] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -470,7 +470,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
   const usageStats = [
     { label: 'Total Users', value: stats.user_count ?? tenant.user_count ?? 0, icon: Users, color: 'text-gray-900', bg: 'bg-gray-100' },
     { label: 'Elections', value: stats.election_count ?? tenant.election_count ?? 0, icon: Vote, color: 'text-gray-900', bg: 'bg-gray-100' },
-    { label: 'Recent Votes', value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0, icon: Activity, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Recent Votes', value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0, icon: Activity, color: 'text-[#0051D5]', bg: 'bg-[#e6edfb]' },
   ];
 
   return (
@@ -741,7 +741,7 @@ export default function TenantsPage() {
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="px-6 py-2.5 bg-primary-500 text-white text-sm font-bold rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-lg flex-shrink-0"
+            className="px-6 py-2.5 bg-[#0051D5] text-white text-sm font-bold rounded-xl hover:bg-[#0051D5] active:scale-95 transition-all shadow-lg flex-shrink-0"
           >
             <Plus className="w-4 h-4 inline-block mr-2" />
             New Tenant
@@ -756,7 +756,7 @@ export default function TenantsPage() {
                 onClick={() => handleStatusFilter(value)}
                 className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === value
-                    ? 'bg-white text-primary-500 shadow-sm'
+                    ? 'bg-white text-[#0051D5] shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -766,13 +766,13 @@ export default function TenantsPage() {
           </div>
 
           <div className="relative flex-1 min-w-[300px] max-w-sm group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-primary-500 transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[#0051D5] transition-colors" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, slug, email..."
-              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 bg-white transition-all shadow-sm"
+              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#0051D5]/10 focus:border-[#0051D5] bg-white transition-all shadow-sm"
             />
             {search && (
               <button
@@ -817,7 +817,7 @@ export default function TenantsPage() {
                     const id = getTenantId(tenant);
                     const isSuspended = tenant.status === 'suspended' || tenant.status === 'Suspended';
                     return (
-                      <tr key={id} className="hover:bg-primary-50/50 transition-colors group">
+                      <tr key={id} className="hover:bg-[#e6edfb]/50 transition-colors group">
                         <td className="px-3 py-3 align-top sm:px-4">
                           <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                             <ImageAvatar

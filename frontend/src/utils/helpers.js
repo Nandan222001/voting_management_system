@@ -83,11 +83,11 @@ const STATUS_COLORS = {
   blocked: 'text-red-700 bg-red-100',
   cancelled: 'text-red-700 bg-red-100',
   rejected: 'text-red-700 bg-red-100',
-  closed: 'text-blue-700 bg-blue-100',
-  finished: 'text-blue-700 bg-blue-100',
-  completed: 'text-blue-700 bg-blue-100',
-  admin: 'text-primary-600 bg-primary-100',
-  moderator: 'text-purple-700 bg-purple-100',
+  closed: 'text-[#0051D5] bg-[#e6edfb]',
+  finished: 'text-[#0051D5] bg-[#e6edfb]',
+  completed: 'text-[#0051D5] bg-[#e6edfb]',
+  admin: 'text-[#0051D5] bg-[#e6edfb]',
+  moderator: 'text-[#0051D5] bg-[#e6edfb]',
   voter: 'text-teal-700 bg-teal-100',
 }
 

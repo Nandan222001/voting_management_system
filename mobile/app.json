@@ -7,7 +7,7 @@
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#003fd2"
+      "backgroundColor": "#0051D5"
     },
     "ios": {
       "supportsTablet": false,
@@ -15,7 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#003fd2"
+        "backgroundColor": "#0051D5"
       },
       "package": "com.civicvote.mobile"
     },

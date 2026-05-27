@@ -16,7 +16,7 @@ import FancySelect from '../components/common/FancySelect'
 import ImageAvatar from '../components/common/ImageAvatar'
 import WinnerCard from '../components/common/WinnerCard'
 
-const COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
+const COLORS = ['#0051D5', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
 
 export default function ResultsPage() {
   const dispatch = useDispatch()
@@ -87,7 +87,7 @@ export default function ResultsPage() {
           <>
             {/* Summary stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <StatsCard title="Total Votes" value={totalVotes} icon={FaVoteYea} color="indigo" />
+              <StatsCard title="Total Votes" value={totalVotes} icon={FaVoteYea} color="primary" />
               <StatsCard title="Candidates" value={candidates.length} icon={FaUsers} color="blue" />
               <StatsCard
                 title="Winner"

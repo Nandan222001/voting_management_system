@@ -50,7 +50,7 @@ const AnalyticsScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0058e7" />
+        <ActivityIndicator size="large" color="#0051D5" />
       </View>
     );
   }
@@ -66,7 +66,7 @@ const AnalyticsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={() => {
             setRefreshing(true);
             loadAnalytics();
-          }} colors={['#0058e7']} />
+          }} colors={['#0051D5']} />
         }
       >
         <View style={styles.screenHeader}>
@@ -75,7 +75,7 @@ const AnalyticsScreen = () => {
         </View>
 
         <View style={styles.statsRow}>
-           <View style={[styles.mainMetric, { backgroundColor: '#0058e7' }]}>
+           <View style={[styles.mainMetric, { backgroundColor: '#0051D5' }]}>
               <View style={styles.metricIconContainer}>
                  <MaterialIcons name="insights" size={24} color="#fff" />
               </View>
@@ -89,7 +89,7 @@ const AnalyticsScreen = () => {
                  <Text style={styles.miniLabel}>Live</Text>
               </View>
               <View style={styles.miniMetric}>
-                 <Text style={[styles.miniValue, { color: '#6366f1' }]}>{stats.totalCandidates}</Text>
+                 <Text style={[styles.miniValue, { color: '#0051d5' }]}>{stats.totalCandidates}</Text>
                  <Text style={styles.miniLabel}>Vetted</Text>
               </View>
            </View>
@@ -133,7 +133,7 @@ const AnalyticsScreen = () => {
         </View>
 
         <View style={styles.securitySeal}>
-           <FontAwesome5 name="fingerprint" size={24} color="#0058e7" style={{ opacity: 0.1, position: 'absolute', right: 20 }} />
+           <FontAwesome5 name="fingerprint" size={24} color="#0051D5" style={{ opacity: 0.1, position: 'absolute', right: 20 }} />
            <Text style={styles.sealTitle}>Authenticated Registry</Text>
            <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed ballots.</Text>
         </View>
@@ -144,7 +144,7 @@ const AnalyticsScreen = () => {
 
 const Bar = ({ height, active }: any) => (
   <View style={styles.barContainer}>
-    <View style={[styles.bar, { height: height, backgroundColor: active ? '#0058e7' : '#e2e8f0' }]} />
+    <View style={[styles.bar, { height: height, backgroundColor: active ? '#0051D5' : '#e2e8f0' }]} />
   </View>
 );
 
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     padding: 24, 
     borderRadius: 24, 
     ...Platform.select({
-      ios: { shadowColor: '#0058e7', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 12 },
+      ios: { shadowColor: '#0051D5', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 12 },
       android: { elevation: 6 }
     })
   },

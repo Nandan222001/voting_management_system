@@ -29,8 +29,7 @@ def upgrade() -> None:
             "primary_color",
             sa.String(7),
             nullable=False,
-            server_default="#4f46e5",
-        ),
+            server_default="#0051D5",        ),
         sa.Column(
             "status",
             sa.Enum(

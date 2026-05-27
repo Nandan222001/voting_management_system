@@ -18,7 +18,7 @@ const ACTION_COLORS = {
   delete: 'bg-red-50 text-red-700 border-red-100',
   approve: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   block: 'bg-orange-50 text-orange-700 border-orange-100',
-  activate: 'bg-purple-50 text-purple-700 border-purple-100',
+  activate: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
   close: 'bg-slate-50 text-slate-700 border-slate-100',
 }
 
@@ -81,13 +81,13 @@ export default function AuditLogsPage() {
 
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative flex-1 min-w-[300px] max-w-md group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-primary-500 transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[#0051D5] transition-colors" />
             <input
               type="text"
               placeholder="Search by action, entity, IP..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 bg-white transition-all shadow-sm"
+              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#0051D5]/10 focus:border-[#0051D5] bg-white transition-all shadow-sm"
             />
             {search && (
               <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -136,7 +136,7 @@ export default function AuditLogsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((log, i) => (
-                    <tr key={log.id ?? i} className="hover:bg-primary-50/50 transition-colors">
+                    <tr key={log.id ?? i} className="hover:bg-[#e6edfb]/50 transition-colors">
                       <td className="px-3 py-3 align-top break-words sm:px-4">
                         <div className="flex flex-col">
                            <span className="text-gray-900 font-semibold">

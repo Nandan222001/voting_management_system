@@ -67,27 +67,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-[#000815] to-gray-900 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-500 opacity-10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 opacity-10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#0051D5] opacity-10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#0051D5] opacity-10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Header band */}
-          <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-8 text-center">
+          <div className="bg-gradient-to-r from-[#0051D5] to-[#0051D5] px-8 py-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
                 <FaBalanceScale className="text-white text-xl" />
               </div>
               <span className="text-white text-2xl font-bold tracking-wide">
-                Vote<span className="text-primary-100">Admin</span>
+                Vote<span className="text-[#e6edfb]">Admin</span>
               </span>
             </div>
-            <p className="text-primary-100 text-sm font-medium">Digital Voting Management System</p>
+            <p className="text-[#e6edfb] text-sm font-medium">Digital Voting Management System</p>
           </div>
 
           {/* Form */}
@@ -116,7 +116,7 @@ export default function LoginPage() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="admin@voteadmin.com"
-                    className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
                       touched.email && validationErrors.email
                         ? 'border-red-400 bg-red-50'
                         : 'border-gray-300 bg-white hover:border-gray-400'
@@ -146,7 +146,7 @@ export default function LoginPage() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="••••••••"
-                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
                       touched.password && validationErrors.password
                         ? 'border-red-400 bg-red-50'
                         : 'border-gray-300 bg-white hover:border-gray-400'
@@ -170,7 +170,7 @@ export default function LoginPage() {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="text-xs font-semibold text-primary-500 hover:text-primary-600 hover:underline transition-colors"
+                  className="text-xs font-semibold text-[#0051D5] hover:text-[#0051D5] hover:underline transition-colors"
                 >
                   Forgot your password?
                 </button>
@@ -180,7 +180,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0051D5] hover:bg-[#0051D5] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
               >
                 {loading ? (
                   <>

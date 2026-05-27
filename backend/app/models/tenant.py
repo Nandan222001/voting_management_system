@@ -47,7 +47,7 @@ class Tenant(Base):
 
     # Branding
     logo_url = Column(String(500), nullable=True)
-    primary_color = Column(String(7), nullable=False, default="#4f46e5")
+    primary_color = Column(String(7), nullable=False, default="#0051D5")
 
     # Lifecycle
     status = Column(

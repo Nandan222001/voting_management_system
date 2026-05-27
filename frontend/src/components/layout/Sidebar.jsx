@@ -29,7 +29,7 @@ const SidebarItem = ({ icon: Icon, label, to }) => (
   <NavLink 
     to={to}
     className={({ isActive }) => 
-      `flex items-center px-6 py-3 cursor-pointer transition-all ${isActive ? 'bg-primary-50 text-primary-500 border-l-4 border-primary-500 font-bold' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-500'}`
+      `flex items-center px-6 py-3 cursor-pointer transition-all ${isActive ? 'bg-[#e6edfb] text-[#0051D5] border-l-4 border-[#0051D5] font-bold' : 'text-gray-500 hover:bg-[#e6edfb] hover:text-[#0051D5]'}`
     }
   >
     <Icon className="w-5 h-5 mr-3" />

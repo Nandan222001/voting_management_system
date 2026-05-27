@@ -94,7 +94,7 @@ export default function CandidateCommitteesPage() {
           </div>
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
           >
             <FaPlus className="text-xs" />
             Add Committee
@@ -112,7 +112,7 @@ export default function CandidateCommitteesPage() {
             </p>
             <button
               onClick={openCreate}
-              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600"
+              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5]"
             >
               <FaPlus className="text-xs" />
               Add First Committee
@@ -167,7 +167,7 @@ export default function CandidateCommitteesPage() {
             <button
               type="submit"
               disabled={actionLoading}
-              className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60"
+              className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60"
             >
               {actionLoading ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>

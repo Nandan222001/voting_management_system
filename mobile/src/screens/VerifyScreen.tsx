@@ -230,12 +230,12 @@ export default function App() {
           <MaterialIcons
             name="dashboard"
             size={22}
-            color={currentScreen === "otp" ? "#2563eb" : "#64748b"}
+            color={currentScreen === "otp" ? "#0051D5" : "#64748b"}
           />
           <Text
             style={[
               styles.tabLabelText,
-              currentScreen === "otp" && { color: "#2563eb" },
+              currentScreen === "otp" && { color: "#0051D5" },
             ]}
           >
             Portal
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 14, color: "#334155", fontWeight: "500" },
   resendText: {
     fontSize: 15,
-    color: "#2563eb",
+    color: "#0051D5",
     fontWeight: "500",
     marginBottom: 24,
   },
@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
 
   // Submit Trigger Layer CTA Buttons
   primaryButton: {
-    backgroundColor: "#0058e7",
+    backgroundColor: "#0051D5",
     width: "100%",
     height: 52,
     borderRadius: 8,

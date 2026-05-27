@@ -56,11 +56,11 @@ export default function DashboardPage() {
   const recentElections = elections.slice(0, 5);
 
   const quickActions = [
-    { label: 'Create Election', icon: FaPlus, color: 'bg-primary-500 hover:bg-primary-600', path: '/elections' },
-    { label: 'Manage Users', icon: FaUserCog, color: 'bg-primary-500 hover:bg-primary-600', path: '/users' },
+    { label: 'Create Election', icon: FaPlus, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/elections' },
+    { label: 'Manage Users', icon: FaUserCog, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/users' },
     { label: 'View Results', icon: FaChartBar, color: 'bg-green-600 hover:bg-green-700', path: '/results' },
     // Audit Logs quick action available only to superadmin
-    ...(user?.role === 'superadmin' ? [{ label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-purple-600 hover:bg-purple-700', path: '/audit-logs' }] : []),
+    ...(user?.role === 'superadmin' ? [{ label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/audit-logs' }] : []),
   ];
 
   return (
@@ -76,7 +76,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={() => navigate('/elections')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           New Election
@@ -92,7 +92,7 @@ export default function DashboardPage() {
             title="Total Users"
             value={stats.totalUsers}
             icon={FaUsers}
-            color="indigo"
+            color="primary"
             change={overview?.user_growth ?? overview?.userGrowth ?? null}
           />
           <StatsCard

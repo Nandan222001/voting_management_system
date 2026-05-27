@@ -49,7 +49,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-[#0051D5] hover:bg-[#e6edfb] transition-colors focus:outline-none focus:ring-2 focus:ring-[#0051D5]/30"
                   >
                     <X className="w-4 h-4" />
                   </button>

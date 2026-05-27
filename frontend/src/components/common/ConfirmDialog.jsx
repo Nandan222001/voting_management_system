@@ -8,7 +8,7 @@ export default function ConfirmDialog({
   title = 'Confirm Action',
   message = 'Are you sure you want to proceed?',
   confirmLabel = 'Confirm',
-  variant = 'indigo',
+  variant = 'primary',
 }) {
   const isRed = variant === 'red' || variant === 'danger';
   const isBlack = variant === 'black';
@@ -19,7 +19,7 @@ export default function ConfirmDialog({
         <div
           className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${
             isRed ? 'bg-red-50 border-red-200' : 
-            isBlack ? 'bg-gray-100 border-gray-200' : 'bg-primary-50 border-primary-100'
+            isBlack ? 'bg-gray-100 border-gray-200' : 'bg-[#e6edfb] border-[#e6edfb]'
           }`}
         >
           {isRed ? (
@@ -27,7 +27,7 @@ export default function ConfirmDialog({
           ) : isBlack ? (
             <Info className="text-gray-900 w-8 h-8" />
           ) : (
-            <Info className="text-primary-500 w-8 h-8" />
+            <Info className="text-[#0051D5] w-8 h-8" />
           )}
         </div>
 
@@ -50,7 +50,7 @@ export default function ConfirmDialog({
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${
               isRed
                 ? 'bg-red-600 hover:bg-red-700'
-                : isBlack ? 'bg-primary-500 hover:bg-primary-600' : 'bg-primary-500 hover:bg-primary-600'
+                : isBlack ? 'bg-[#0051D5] hover:bg-[#0051D5]' : 'bg-[#0051D5] hover:bg-[#0051D5]'
             }`}
           >
             {confirmLabel}

@@ -61,7 +61,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginS
           <View style={styles.illustrationContainer}>
             <View style={styles.outerGlow}>
               <View style={styles.innerGlow}>
-                <FontAwesome5 name="shield-alt" size={48} color="#0058e7" />
+                <FontAwesome5 name="shield-alt" size={48} color="#0051D5" />
               </View>
             </View>
           </View>
@@ -246,13 +246,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   forgotText: {
-    color: "#0058e7",
+    color: "#0051D5",
     fontWeight: "700",
     fontSize: 12,
     marginBottom: 8,
   },
   primaryButton: {
-    backgroundColor: "#0058e7",
+    backgroundColor: "#0051D5",
     height: 56,
     borderRadius: 10,
     justifyContent: "center",
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
-    color: "#0058e7",
+    color: "#0051D5",
     fontWeight: '800',
   },
   trustBanner: {

@@ -41,7 +41,7 @@ function TextInput({ label, className = '', ...props }) {
       <span className="text-xs font-semibold uppercase text-gray-500">{label}</span>
       <input
         {...props}
-        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#0051D5] focus:ring-2 focus:ring-[#e6edfb]"
       />
     </label>
   )
@@ -142,7 +142,7 @@ export default function SettingsPage() {
 
         <form onSubmit={handleProfileSubmit} className="rounded-lg border border-gray-200 bg-white">
           <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-            <UserRound className="h-5 w-5 text-primary-500" />
+            <UserRound className="h-5 w-5 text-[#0051D5]" />
             <div>
               <h2 className="font-semibold text-gray-900">Profile Details</h2>
               <p className="text-sm text-gray-500">Update your visible account and contact information.</p>
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#0051D5] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0051D5] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save className="h-4 w-4" />
               {loading ? 'Saving...' : 'Save Settings'}
@@ -176,7 +176,7 @@ export default function SettingsPage() {
 
         <form onSubmit={handlePasswordSubmit} className="rounded-lg border border-gray-200 bg-white">
           <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-            <KeyRound className="h-5 w-5 text-primary-500" />
+            <KeyRound className="h-5 w-5 text-[#0051D5]" />
             <div>
               <h2 className="font-semibold text-gray-900">Password</h2>
               <p className="text-sm text-gray-500">Change your password using your current password.</p>
