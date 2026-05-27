@@ -9,10 +9,14 @@ import {
   Modal,
   ActivityIndicator,
   RefreshControl,
+  Platform,
+  Dimensions,
 } from 'react-native';
 import { electionService } from '../services/electionService';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import Header from '../components/common/Header';
+
+const { height } = Dimensions.get('window');
 
 const VotingScreen = () => {
   const [elections, setElections] = useState<any[]>([]);
@@ -28,7 +32,7 @@ const VotingScreen = () => {
       const data = await electionService.getElections();
       setElections(data.filter((e: any) => e.status === 'active'));
     } catch (error) {
-      Alert.alert('Error', 'Failed to load elections');
+      Alert.alert('Error', 'Failed to load active ballots');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -56,21 +60,21 @@ const VotingScreen = () => {
 
   const handleVote = async (candidate: any) => {
     Alert.alert(
-      'Confirm Vote',
-      `You are about to vote for ${candidate.full_name}. This action cannot be undone.`,
+      'Secure Ballot Confirmation',
+      `You are about to cast your vote for ${candidate.full_name}. This action is permanent and encrypted.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Review', style: 'cancel' },
         {
           text: 'Confirm Vote',
           onPress: async () => {
             try {
               await electionService.castVote(selectedElection.id, candidate.id);
-              Alert.alert('Vote Cast!', 'Your vote has been securely recorded.');
+              Alert.alert('Ballot cast successfully', 'Your vote has been securely recorded in the registry.');
               setModalVisible(false);
               fetchElections();
             } catch (error: any) {
               const msg = error.response?.data?.detail || 'Failed to cast vote';
-              Alert.alert('Error', msg);
+              Alert.alert('System Error', msg);
             }
           },
         },
@@ -82,43 +86,60 @@ const VotingScreen = () => {
     <TouchableOpacity
       style={styles.electionCard}
       onPress={() => handleSelectElection(item)}
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      <View style={styles.electionIcon}>
-        <MaterialIcons name="event-note" size={24} color="#4f46e5" />
-      </View>
-      <View style={styles.electionInfo}>
+      <View style={styles.cardHighlight} />
+      <View style={styles.cardInner}>
+        <View style={styles.electionHeader}>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>OPEN BALLOT</Text>
+          </View>
+          <MaterialIcons name="security" size={16} color="#94a3b8" />
+        </View>
+
         <Text style={styles.electionTitle}>{item.title}</Text>
-        <View style={styles.dateBadge}>
-          <MaterialIcons name="timer" size={14} color="#6b7280" />
-          <Text style={styles.electionDate}>
-            Ends: {new Date(item.end_date).toLocaleDateString()}
-          </Text>
+        <Text style={styles.electionDesc} numberOfLines={2}>Official regional ballot for the current session.</Text>
+
+        <View style={styles.cardFooter}>
+          <View style={styles.dateInfo}>
+            <MaterialIcons name="timer" size={16} color="#3b82f6" />
+            <Text style={styles.electionDate}>
+              Ends: {new Date(item.end_date).toLocaleDateString()}
+            </Text>
+          </View>
+          <View style={styles.actionPrompt}>
+             <Text style={styles.actionText}>CAST VOTE</Text>
+             <MaterialIcons name="chevron-right" size={18} color="#0058e7" />
+          </View>
         </View>
       </View>
-      <MaterialIcons name="chevron-right" size={24} color="#d1d5db" />
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#0058e7" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Header title="Active Elections" />
+      <Header />
+      <View style={styles.screenHeader}>
+         <Text style={styles.screenTitle}>Official Registry</Text>
+         <Text style={styles.screenSub}>Select an active ballot to participate in the democratic process.</Text>
+      </View>
       
       {elections.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIconContainer}>
-            <MaterialIcons name="how-to-vote" size={60} color="#e5e7eb" />
+          <View style={styles.emptyIconCircle}>
+            <FontAwesome5 name="shield-alt" size={32} color="#cbd5e1" />
           </View>
-          <Text style={styles.emptyTitle}>No Pending Votes</Text>
-          <Text style={styles.emptyText}>There are no active elections matching your district right now.</Text>
+          <Text style={styles.emptyTitle}>Registry Clear</Text>
+          <Text style={styles.emptyText}>No active ballots found in your region at this time.</Text>
         </View>
       ) : (
         <FlatList
@@ -126,11 +147,12 @@ const VotingScreen = () => {
           renderItem={renderElectionItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => {
               setRefreshing(true);
               fetchElections();
-            }} colors={['#4f46e5']} />
+            }} colors={['#0058e7']} />
           }
         />
       )}
@@ -145,19 +167,19 @@ const VotingScreen = () => {
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.modalSubtitle}>Cast your vote for</Text>
-                <Text style={styles.modalTitle}>{selectedElection?.title}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalSubtitle}>Authorized Casting Session</Text>
+                <Text style={styles.modalTitle} numberOfLines={1}>{selectedElection?.title}</Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                <MaterialIcons name="close" size={24} color="#374151" />
+                <MaterialIcons name="close" size={20} color="#64748b" />
               </TouchableOpacity>
             </View>
 
             {votingLoading ? (
               <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color="#4f46e5" />
-                <Text style={styles.loadingText}>Loading candidates...</Text>
+                <ActivityIndicator size="large" color="#0058e7" />
+                <Text style={styles.loadingText}>Loading verified candidates...</Text>
               </View>
             ) : (
               <FlatList
@@ -174,20 +196,22 @@ const VotingScreen = () => {
                     </View>
                     <View style={styles.candidateInfo}>
                       <Text style={styles.candidateName}>{item.full_name}</Text>
-                      {item.party && (
-                        <View style={styles.partyBadge}>
-                          <Text style={styles.partyText}>{item.party}</Text>
-                        </View>
-                      )}
+                      <View style={styles.badgeRow}>
+                         <View style={styles.vettedBadge}>
+                            <MaterialIcons name="verified" size={10} color="#10b981" />
+                            <Text style={styles.vettedText}>VETTED</Text>
+                         </View>
+                         {item.party && <Text style={styles.partyName}>{item.party}</Text>}
+                      </View>
                     </View>
-                    <View style={styles.voteCircle}>
-                      <MaterialIcons name="check" size={20} color="#fff" />
+                    <View style={styles.voteBtn}>
+                      <Text style={styles.voteBtnText}>CAST</Text>
                     </View>
                   </TouchableOpacity>
                 )}
                 ListEmptyComponent={
                   <View style={styles.emptyCandidates}>
-                    <Text style={styles.emptyText}>No candidates registered for this election.</Text>
+                    <Text style={styles.emptyText}>No verified candidates available.</Text>
                   </View>
                 }
                 contentContainerStyle={{ paddingBottom: 40 }}
@@ -201,193 +225,82 @@ const VotingScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  list: {
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  screenHeader: { paddingHorizontal: 20, paddingTop: 24, marginBottom: 8 },
+  screenTitle: { fontSize: 24, fontWeight: '800', color: '#0f172a', letterSpacing: -0.5 },
+  screenSub: { fontSize: 13, color: '#64748b', marginTop: 6, lineHeight: 18 },
+  list: { padding: 20 },
   electionCard: {
     backgroundColor: '#fff',
-    padding: 16,
     borderRadius: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    borderColor: '#e2e8f0',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+      android: { elevation: 3 }
+    })
   },
-  electionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#eef2ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  electionInfo: {
-    flex: 1,
-  },
-  electionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  dateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  electionDate: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginLeft: 4,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#f9fafb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '85%',
-    padding: 24,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 24,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  closeButton: {
-    backgroundColor: '#f3f4f6',
-    padding: 8,
-    borderRadius: 20,
-  },
-  modalLoading: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    color: '#6b7280',
-  },
+  cardHighlight: { height: 4, backgroundColor: '#0058e7' },
+  cardInner: { padding: 20 },
+  electionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  liveIndicator: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 6 },
+  liveText: { fontSize: 10, fontWeight: '800', color: '#047857' },
+  electionTitle: { fontSize: 18, fontWeight: '800', color: '#1e293b', marginBottom: 6 },
+  electionDesc: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 16 },
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  dateInfo: { flexDirection: 'row', alignItems: 'center' },
+  electionDate: { fontSize: 12, color: '#475569', marginLeft: 6, fontWeight: '600' },
+  actionPrompt: { flexDirection: 'row', alignItems: 'center' },
+  actionText: { fontSize: 12, fontWeight: '800', color: '#0058e7', marginRight: 4 },
+  
+  emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#f1f5f9' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 8 },
+  emptyText: { fontSize: 13, color: '#64748b', textAlign: 'center', lineHeight: 20 },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%', padding: 24 },
+  modalHandle: { width: 40, height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, alignSelf: 'center', marginBottom: 24 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 },
+  modalSubtitle: { fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: '800', letterSpacing: 1 },
+  modalTitle: { fontSize: 22, fontWeight: '800', color: '#0f172a', marginTop: 4 },
+  closeButton: { backgroundColor: '#f8fafc', padding: 8, borderRadius: 20, borderWidth: 1, borderColor: '#f1f5f9' },
+  modalLoading: { padding: 40, alignItems: 'center' },
+  loadingText: { marginTop: 12, color: '#64748b', fontWeight: '600', fontSize: 13 },
+
   candidateCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
     borderRadius: 16,
-    marginBottom: 12,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f3f4f6',
+    borderColor: '#e2e8f0',
   },
   candidateAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#4f46e5',
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#0058e7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  candidateInfo: {
-    flex: 1,
-  },
-  candidateName: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  partyBadge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
-  partyText: {
-    fontSize: 12,
-    color: '#4b5563',
-    fontWeight: '500',
-  },
-  voteCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#4f46e5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyCandidates: {
-    padding: 20,
-    alignItems: 'center',
-  },
+  avatarText: { color: '#fff', fontSize: 20, fontWeight: '800' },
+  candidateInfo: { flex: 1 },
+  candidateName: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  vettedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#d1fae5', marginRight: 8 },
+  vettedText: { fontSize: 8, color: '#047857', fontWeight: '800', marginLeft: 2 },
+  partyName: { fontSize: 11, color: '#64748b', fontWeight: '600' },
+  voteBtn: { backgroundColor: '#0058e7', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  voteBtnText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  emptyCandidates: { padding: 20, alignItems: 'center' },
 });
 
 export default VotingScreen;

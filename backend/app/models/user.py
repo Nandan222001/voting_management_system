@@ -44,6 +44,8 @@ class User(Base):
     full_name = Column(String(150), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
+    date_of_birth = Column(String(20), nullable=True)
+    voter_id = Column(String(50), unique=True, index=True, nullable=True)
     designation = Column(String(100), nullable=True)
     street_address = Column(String(300), nullable=True)
     city = Column(String(100), nullable=True)

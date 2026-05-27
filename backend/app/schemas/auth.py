@@ -23,6 +23,8 @@ class RegisterRequest(BaseModel):
         pattern=r"^\+?[0-9\s\-()]{7,20}$",
         examples=["+1-800-555-0199"],
     )
+    date_of_birth: Optional[str] = Field(None, examples=["10/14/1982"])
+    voter_id: Optional[str] = Field(None, examples=["VTR-990-221-X8"])
     designation: str = Field(..., min_length=2, max_length=100, examples=["Vice President"])
     street_address: str = Field(..., min_length=3, max_length=300, examples=["12 Park Street"])
     city: str = Field(..., min_length=2, max_length=100, examples=["Mumbai"])
