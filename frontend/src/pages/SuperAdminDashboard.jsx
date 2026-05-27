@@ -252,7 +252,7 @@ export default function SuperAdminDashboard() {
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => navigate(`/tenants?view=${id}`)}
-                              className="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                              className="px-3 py-1.5 text-xs font-semibold text-[#1B4FD8] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                             >
                               View Details
                             </button>

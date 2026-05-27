@@ -3,7 +3,7 @@ import { FaBell, FaUserCircle, FaChevronDown } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 
 const ROLE_COLORS = {
-  admin: 'bg-indigo-100 text-indigo-700',
+  admin: 'bg-blue-100 text-[#1B4FD8]',
   moderator: 'bg-purple-100 text-purple-700',
   viewer: 'bg-gray-100 text-gray-600',
 };
@@ -55,7 +55,7 @@ export default function Header({ title }) {
                 </li>
               </ul>
               <div className="px-4 py-2 border-t border-gray-100">
-                <button className="text-indigo-600 text-xs font-semibold hover:underline">
+                <button className="text-[#1B4FD8] text-xs font-semibold hover:underline">
                   View all notifications
                 </button>
               </div>
@@ -68,7 +68,7 @@ export default function Header({ title }) {
 
         {/* User Info */}
         <div className="flex items-center gap-3 cursor-default select-none">
-          <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
             <span className="text-white text-sm font-bold uppercase">
               {user?.full_name ? user.full_name.charAt(0) : user?.email?.charAt(0) ?? 'A'}
             </span>
