@@ -163,7 +163,10 @@ export default function ElectionsPage() {
       key: 'title',
       label: 'Title',
       render: (val, row) => (
-        <span className="block max-w-xs truncate font-semibold text-gray-900">
+        <button
+          onClick={() => navigate(`/elections/${row._id || row.id}`)}
+          className="text-[#1B4FD8] font-semibold hover:underline text-left max-w-xs truncate block"
+        >
           {val}
         </span>
       ),
@@ -243,14 +246,14 @@ return (
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Elections</h2>
+          <h2 className="text-2xl font-bold text-[#1066b1]">Elections</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             {total} election{total !== 1 ? 's' : ''} total
           </p>
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-lg hover:bg-[#1640B8] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           Create Election
@@ -267,7 +270,7 @@ return (
             placeholder="Search elections..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent bg-white"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
           />
         </div>
 
@@ -279,7 +282,7 @@ return (
               onClick={() => setStatusFilter(value)}
               className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                 statusFilter === value
-                  ? 'bg-[#0051D5] text-white border-[#0051D5]'
+                  ? 'bg-[#1B4FD8] text-white border-[#1B4FD8]'
                   : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -344,7 +347,7 @@ return (
               value={form.title}
               onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
               placeholder="e.g. City Council Election 2026"
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
+              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 formErrors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
               }`}
             />
@@ -361,37 +364,44 @@ return (
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
               placeholder="Brief description of the election..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
 
-          {/* Election date */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Election Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={form.election_date}
-              onChange={(e) => setForm((p) => ({ ...p, election_date: e.target.value }))}
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
-                formErrors.election_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
-              }`}
-            />
-            {formErrors.election_date && (
-              <p className="mt-1 text-xs text-red-600">{formErrors.election_date}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Geographical Scope (Target)
-            </label>
-            <FancySelect
-              value={form.target_id}
-              onChange={(e) => setForm((p) => ({ ...p, target_id: e.target.value }))}
-              options={[{ value: '', label: '-- All Regions --' }, ...targets.map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))]}
-            />
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                Start Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  formErrors.start_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                }`}
+              />
+              {formErrors.start_date && (
+                <p className="mt-1 text-xs text-red-600">{formErrors.start_date}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                End Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={form.end_date}
+                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  formErrors.end_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                }`}
+              />
+              {formErrors.end_date && (
+                <p className="mt-1 text-xs text-red-600">{formErrors.end_date}</p>
+              )}
+            </div>
           </div>
 
           {/* Actions */}
@@ -406,7 +416,7 @@ return (
             <button
               type="submit"
               disabled={actionLoading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] disabled:opacity-60 transition-colors flex items-center gap-2"
             >
               {actionLoading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

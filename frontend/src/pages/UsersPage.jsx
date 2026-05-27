@@ -81,20 +81,12 @@ export default function UsersPage() {
       key: 'full_name',
       render: (_, u) => (
         <div className="flex items-center gap-3">
-          <ImageAvatar
-            src={u.image_url || u.profile_image}
-            name={u.full_name}
-            sizeClass="w-9 h-9"
-            imageClassName="ring-1 ring-gray-200"
-            fallbackClassName="bg-gray-200 text-gray-900 text-sm"
-          />
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] font-bold text-sm">
+            {u.full_name?.[0]?.toUpperCase()}
+          </div>
           <div>
-            <p className="font-medium text-gray-900 text-sm">
-              {u?.full_name || '—'}
-            </p>
-            <p className="text-xs text-gray-500">
-              {u?.email || '—'}
-            </p>
+            <p className="font-medium text-[#1066b1] text-sm">{u.full_name}</p>
+            <p className="text-xs text-gray-500">{u.email}</p>
           </div>
         </div>
       )
@@ -155,20 +147,25 @@ export default function UsersPage() {
     },
     {
       header: 'Actions',
-      key: 'actions',
-      render: (_, u) => (
-        <TableActions
-          actions={[
-            { key: 'view', label: 'View', onClick: () => setViewUser(u) },
-            u.status === 'pending' && { key: 'approve', label: 'Approve', onClick: () => handleApprove(u) },
-            u.role !== 'admin' && {
-              key: u.status === 'blocked' ? 'unblock' : 'block',
-              label: u.status === 'blocked' ? 'Unblock' : 'Block',
-              onClick: () => handleBlock(u),
-            },
-            u.role !== 'admin' && { key: 'delete', label: 'Delete', danger: true, onClick: () => setActionTarget(u) },
-          ]}
-        />
+      render: u => (
+        <div className="flex items-center gap-2">
+          <button onClick={() => setViewUser(u)} className="text-xs text-[#1B4FD8] hover:text-indigo-800 font-medium">View</button>
+          {u.status === 'pending' && (
+            <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
+              <FaUserCheck className="h-3 w-3" /> Approve
+            </button>
+          )}
+          {u.role !== 'admin' && (
+            <button onClick={() => handleBlock(u)} className={`flex items-center gap-1 text-xs ${u.status === 'blocked' ? 'text-blue-600 hover:text-blue-800' : 'text-orange-500 hover:text-orange-700'}`}>
+              <FaBan className="h-3 w-3" /> {u.status === 'blocked' ? 'Unblock' : 'Block'}
+            </button>
+          )}
+          {u.role !== 'admin' && (
+            <button onClick={() => setActionTarget(u)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
+              <FaTrash className="h-3 w-3" /> Delete
+            </button>
+          )}
+        </div>
       )
     }
   ]
@@ -216,7 +213,7 @@ export default function UsersPage() {
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[#0051D5] text-[#0051D5]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[#1B4FD8] text-[#1B4FD8]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -232,7 +229,7 @@ export default function UsersPage() {
                 placeholder="Search users…"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0051D5]"
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -254,11 +251,11 @@ export default function UsersPage() {
         {viewUser && (
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-900 text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] text-2xl font-bold">
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="text-lg font-semibold text-gray-900">{viewUser.full_name}</p>
+                <p className="text-lg font-semibold text-[#1066b1]">{viewUser.full_name}</p>
                 <p className="text-gray-500">{viewUser.email}</p>
               </div>
             </div>

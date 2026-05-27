@@ -9,17 +9,17 @@ import Pagination from '../components/common/Pagination'
 import { format } from 'date-fns'
 
 const ACTION_COLORS = {
-  login: 'bg-gray-100 text-gray-900 border-gray-200',
-  logout: 'bg-gray-50 text-gray-600 border-gray-100',
-  register: 'bg-teal-50 text-teal-700 border-teal-100',
-  vote: 'bg-green-50 text-green-700 border-green-100',
-  create: 'bg-gray-100 text-gray-900 border-gray-200',
-  update: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-  delete: 'bg-red-50 text-red-700 border-red-100',
-  approve: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  block: 'bg-orange-50 text-orange-700 border-orange-100',
-  activate: 'bg-[#e6edfb] text-[#0051D5] border-[#e6edfb]',
-  close: 'bg-slate-50 text-slate-700 border-slate-100',
+  login: 'bg-blue-100 text-blue-700',
+  logout: 'bg-gray-100 text-gray-600',
+  register: 'bg-teal-100 text-teal-700',
+  vote: 'bg-green-100 text-green-700',
+  create: 'bg-blue-100 text-[#1B4FD8]',
+  update: 'bg-yellow-100 text-yellow-700',
+  delete: 'bg-red-100 text-red-700',
+  approve: 'bg-emerald-100 text-emerald-700',
+  block: 'bg-orange-100 text-orange-700',
+  activate: 'bg-purple-100 text-purple-700',
+  close: 'bg-slate-100 text-slate-700',
 }
 
 function actionColor(action) {
@@ -65,17 +65,32 @@ export default function AuditLogsPage() {
     : logsArray
 
   return (
-    <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Audit Logs</h1>
-            <p className="text-sm font-medium text-gray-500 mt-1">
-              Real-time monitoring of all platform activity and administrative actions.
-            </p>
+    <MainLayout title="Audit Logs">
+      <div className="space-y-4">
+        {/* Filters */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 flex flex-wrap gap-4 items-center">
+          <div className="relative flex-1 min-w-48">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search action, entity, IP…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-          <div className="px-4 py-2 bg-gray-100 text-gray-900 text-xs font-bold rounded-xl border border-gray-200 shadow-sm uppercase tracking-wider">
-            {auditTotal} Entries
+          <div className="flex items-center gap-2">
+            <FaFilter className="h-4 w-4 text-gray-400" />
+            <select
+              value={actionFilter}
+              onChange={e => { setActionFilter(e.target.value); setPage(1) }}
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Actions</option>
+              {Object.keys(ACTION_COLORS).map(a => (
+                <option key={a} value={a}>{a.charAt(0).toUpperCase() + a.slice(1)}</option>
+              ))}
+            </select>
           </div>
         </div>
 

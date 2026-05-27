@@ -68,11 +68,16 @@ export default function ResultsPage() {
         {/* Election selector */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">Select Election</label>
-            <FancySelect
-              value={selectedElectionId}
-              onChange={(e) => setSelectedElectionId(e.target.value)}
-              options={[{ value: '', label: '-- Choose an election to view results --' }, ...elections.map(e => ({ value: e.id, label: `${e.title} (${e.status})` }))]}
-            />
+          <select
+            value={selectedElectionId}
+            onChange={e => setSelectedElectionId(e.target.value)}
+            className="w-full md:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- Choose an election to view results --</option>
+            {elections.map(e => (
+              <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
+            ))}
+          </select>
         </div>
 
         {!selectedElectionId ? (
@@ -97,21 +102,27 @@ export default function ResultsPage() {
               />
             </div>
 
-            <WinnerCard
-              winner={winner}
-              winners={results?.winners || []}
-              isTie={results?.is_tie}
-              winnerDeclared={winnerDeclared}
-              totalVotes={totalVotes}
-              electionStatus={selectedElection?.status}
-            />
+            {/* Winner banner */}
+            {winner && totalVotes > 0 && (
+              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-5 flex items-center gap-4">
+                <FaTrophy className="h-8 w-8 text-yellow-500 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wide">Leading Candidate</p>
+                  <p className="text-xl font-bold text-[#1066b1]">{winner.candidate_name}</p>
+                  <p className="text-sm text-gray-600">{winner.party} · {winner.vote_count} votes ({winner.percentage.toFixed(1)}%)</p>
+                </div>
+                <div className="ml-auto">
+                  <Badge status={selectedElection?.status} />
+                </div>
+              </div>
+            )}
 
             {/* Charts */}
             {chartData.length > 0 && (
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Bar chart */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Votes by Candidate</h3>
+                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Votes by Candidate</h3>
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -129,7 +140,7 @@ export default function ResultsPage() {
 
                 {/* Pie chart */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Vote Share</h3>
+                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Vote Share</h3>
                   {pieData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
                       <PieChart>
@@ -152,7 +163,7 @@ export default function ResultsPage() {
             {/* Results table */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-6 border-b border-gray-100">
-                <h3 className="text-base font-semibold text-gray-900">Detailed Results</h3>
+                <h3 className="text-base font-semibold text-[#1066b1]">Detailed Results</h3>
               </div>
               {candidates.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 text-sm">No candidates in this election.</div>
@@ -173,14 +184,8 @@ export default function ResultsPage() {
                         />
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">{c.candidate_name}</p>
-                            {c.is_winner && (
-                              <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                                Winner
-                              </span>
-                            )}
-                          </div>
+                          <p className="font-medium text-[#1066b1] text-sm truncate">{c.candidate_name}</p>
+                          <p className="text-xs text-gray-500">{c.party}</p>
                         </div>
                         <div className="w-40 hidden md:block">
                           <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -195,7 +200,7 @@ export default function ResultsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">{c.vote_count}</p>
+                          <p className="text-lg font-bold text-[#1066b1]">{c.vote_count}</p>
                           <p className="text-xs text-gray-500">{c.percentage.toFixed(1)}%</p>
                         </div>
                       </div>

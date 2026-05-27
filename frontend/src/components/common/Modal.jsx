@@ -43,8 +43,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
               <Dialog.Panel
                 className={`w-full ${sizeClass} bg-white rounded-2xl border border-gray-100 shadow-2xl transform transition-all overflow-hidden`}
               >
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/30">
-                  <Dialog.Title className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                  <Dialog.Title className="text-lg font-bold text-[#1066b1]">
                     {title}
                   </Dialog.Title>
                   <button

@@ -17,9 +17,8 @@ export default function ConfirmDialog({
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <div className="flex flex-col items-center text-center gap-6">
         <div
-          className={`w-16 h-16 rounded-2xl flex items-center justify-center border-2 ${
-            isRed ? 'bg-red-50 border-red-200' : 
-            isBlack ? 'bg-gray-100 border-gray-200' : 'bg-[#e6edfb] border-[#e6edfb]'
+          className={`w-14 h-14 rounded-full flex items-center justify-center ${
+            isRed ? 'bg-red-100' : 'bg-blue-100'
           }`}
         >
           {isRed ? (
@@ -27,7 +26,7 @@ export default function ConfirmDialog({
           ) : isBlack ? (
             <Info className="text-gray-900 w-8 h-8" />
           ) : (
-            <Info className="text-[#0051D5] w-8 h-8" />
+            <FaInfoCircle className="text-[#1B4FD8] text-2xl" />
           )}
         </div>
 
@@ -50,7 +49,7 @@ export default function ConfirmDialog({
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${
               isRed
                 ? 'bg-red-600 hover:bg-red-700'
-                : isBlack ? 'bg-[#0051D5] hover:bg-[#0051D5]' : 'bg-[#0051D5] hover:bg-[#0051D5]'
+                : 'bg-[#1B4FD8] hover:bg-[#1640B8]'
             }`}
           >
             {confirmLabel}

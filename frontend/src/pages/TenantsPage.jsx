@@ -75,9 +75,9 @@ function getTenantId(tenant) {
 // ─── Plan Badge ───────────────────────────────────────────────────────────────
 
 const PLAN_STYLES = {
-  starter: 'bg-gray-50 text-gray-600 border-gray-100',
-  professional: 'bg-gray-100 text-gray-900 border-gray-200',
-  enterprise: 'bg-gray-100 text-gray-900 border-gray-200',
+  starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
+  professional: 'bg-blue-100 text-[#1B4FD8] ring-1 ring-blue-200',
+  enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
 };
 
 function PlanBadge({ plan }) {
@@ -109,23 +109,17 @@ function Field({ label, required, children, hint, error }) {
 
 function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, icon: Icon, ...props }) {
   return (
-    <div className="relative group">
-      {Icon && (
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-900 transition-colors" />
-      )}
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        disabled={disabled}
-        required={required}
-        {...props}
-        className={`block w-full ${Icon ? 'pl-9' : 'px-4'} py-2.5 bg-gray-50 border rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-black/10/10 focus:border-black disabled:bg-gray-100 disabled:text-gray-400 transition-all ${
-          hasError ? 'border-red-600 bg-red-50 focus:ring-red-600/5' : 'border-gray-200'
-        }`}
-      />
-    </div>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      required={required}
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+        hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+      }`}
+    />
   );
 }
 
@@ -299,16 +293,16 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 hasError={!!errors.contact_email}
               />
             </Field>
-            <Field label="Subscription Plan">
-                <FancySelect
-                  value={form.plan}
-                  onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
-                  options={[
-                    { value: 'starter', label: 'Starter — 5 elections' },
-                    { value: 'professional', label: 'Professional — 25 elections' },
-                    { value: 'enterprise', label: 'Enterprise — Unlimited' },
-                  ]}
-                />
+            <Field label="Plan">
+              <select
+                value={form.plan}
+                onChange={set('plan')}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="starter">Starter — 5 elections, 1,000 voters</option>
+                <option value="professional">Professional — 25 elections, 10,000 voters</option>
+                <option value="enterprise">Enterprise — Unlimited</option>
+              </select>
             </Field>
           </div>
 
@@ -380,7 +374,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-[#0051D5] rounded-xl hover:bg-[#0051D5] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -422,8 +416,8 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            placeholder="Describe reason for suspension..."
-            className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-black/10/10 focus:border-black transition-all resize-none shadow-sm"
+            placeholder="Describe the reason for suspension..."
+            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
           />
         </Field>
         <div className="flex justify-end gap-3 pt-8 border-t border-gray-100">
@@ -468,9 +462,34 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
 
   const stats = tenant.usage || {};
   const usageStats = [
-    { label: 'Total Users', value: stats.user_count ?? tenant.user_count ?? 0, icon: Users, color: 'text-gray-900', bg: 'bg-gray-100' },
-    { label: 'Elections', value: stats.election_count ?? tenant.election_count ?? 0, icon: Vote, color: 'text-gray-900', bg: 'bg-gray-100' },
-    { label: 'Recent Votes', value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0, icon: Activity, color: 'text-[#0051D5]', bg: 'bg-[#e6edfb]' },
+    {
+      label: 'Users',
+      value: stats.user_count ?? tenant.user_count ?? 0,
+      icon: FaUsers,
+      color: 'text-[#1B4FD8]',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: 'Elections',
+      value: stats.election_count ?? tenant.election_count ?? 0,
+      icon: FaVoteYea,
+      color: 'text-green-600',
+      bg: 'bg-green-50',
+    },
+    {
+      label: 'Active',
+      value: stats.active_elections ?? tenant.active_elections ?? 0,
+      icon: FaCheckCircle,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: 'Total Votes',
+      value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0,
+      icon: FaBuilding,
+      color: 'text-purple-600',
+      bg: 'bg-purple-50',
+    },
   ];
 
   return (
@@ -487,9 +506,9 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             style={{ backgroundColor: tenant.primary_color || '#000' }}
           />
           <div className="min-w-0">
-            <h3 className="text-xl font-bold text-gray-900 truncate">{tenant.name}</h3>
-            <p className="text-sm text-gray-400 font-mono font-medium truncate mt-0.5">{tenant.slug}</p>
-            <div className="flex items-center gap-2 mt-2">
+            <h3 className="text-lg font-bold text-[#1066b1] truncate">{tenant.name}</h3>
+            <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
+            <div className="flex items-center gap-2 mt-1">
               <Badge status={tenant.status} />
               <PlanBadge plan={tenant.plan} />
             </div>
@@ -576,6 +595,75 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
         </div>
       </div>
     </Modal>
+  );
+}
+
+// ─── Stat Chip ────────────────────────────────────────────────────────────────
+
+function StatChip({ label, count, color }) {
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${color}`}>
+      <span className="text-base font-bold">{count}</span>
+      <span className="opacity-80">{label}</span>
+    </div>
+  );
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+function Pagination({ page, total, perPage, onPage }) {
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+      <p className="text-xs text-gray-500">
+        Showing {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} of{' '}
+        <span className="font-semibold text-gray-700">{total}</span>
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPage(page - 1)}
+          disabled={page <= 1}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <FaChevronLeft className="text-xs" />
+        </button>
+        {Array.from({ length: totalPages }, (_, i) => i + 1)
+          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+          .reduce((acc, p, idx, arr) => {
+            if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+            acc.push(p);
+            return acc;
+          }, [])
+          .map((p, i) =>
+            p === '...' ? (
+              <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPage(p)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                  p === page
+                    ? 'bg-[#1B4FD8] text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-white hover:border hover:border-gray-200'
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
+        <button
+          onClick={() => onPage(page + 1)}
+          disabled={page >= totalPages}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <FaChevronRight className="text-xs" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -734,14 +822,14 @@ export default function TenantsPage() {
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Tenant Management</h1>
-            <p className="text-sm font-medium text-gray-500 mt-1">
-              {total} registered organization{total !== 1 ? 's' : ''} monitored live.
+            <h1 className="text-2xl font-bold text-[#1066b1]">Tenant Management</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {total} organisation{total !== 1 ? 's' : ''} on the platform
             </p>
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="px-6 py-2.5 bg-[#0051D5] text-white text-sm font-bold rounded-xl hover:bg-[#0051D5] active:scale-95 transition-all shadow-lg flex-shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-xl hover:bg-[#1640B8] active:scale-95 transition-all shadow-sm flex-shrink-0"
           >
             <Plus className="w-4 h-4 inline-block mr-2" />
             New Tenant
@@ -756,7 +844,7 @@ export default function TenantsPage() {
                 onClick={() => handleStatusFilter(value)}
                 className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === value
-                    ? 'bg-white text-[#0051D5] shadow-sm'
+                    ? 'bg-white text-[#1B4FD8] shadow-sm ring-1 ring-gray-200'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -771,8 +859,8 @@ export default function TenantsPage() {
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, slug, email..."
-              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#0051D5]/10 focus:border-[#0051D5] bg-white transition-all shadow-sm"
+              placeholder="Search by name, slug or email…"
+              className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             />
             {search && (
               <button
@@ -793,8 +881,22 @@ export default function TenantsPage() {
               <div className="w-16 h-16 mx-auto mb-6 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100">
                 <Building className="w-8 h-8 text-gray-300" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">No tenants found</h3>
-              <p className="text-sm font-medium text-gray-400 mt-1 max-w-xs mx-auto">Try adjusting your filters or search query.</p>
+              <p className="text-gray-700 font-semibold text-base">No tenants found</p>
+              <p className="text-sm text-gray-400 mt-1">
+                {search
+                  ? `No results for "${search}".`
+                  : statusFilter
+                  ? 'Try a different status filter.'
+                  : 'Create your first tenant to get started.'}
+              </p>
+              {(search || statusFilter) && (
+                <button
+                  onClick={() => { setSearch(''); setStatusFilter(''); }}
+                  className="mt-4 text-sm text-[#1B4FD8] hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           ) : (
             <div className="w-full">
@@ -835,9 +937,35 @@ export default function TenantsPage() {
                           </div>
                         </td>
 
-                        <td className="px-3 py-3 align-top text-gray-500 font-mono text-xs font-medium break-words sm:px-4">
-                          {tenant.slug}
-                        </td>
+                      return (
+                        <tr key={id} className="hover:bg-blue-50/30 transition-colors group">
+                          {/* Organisation */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              {tenant.logo_url ? (
+                                <img
+                                  src={tenant.logo_url}
+                                  alt={tenant.name}
+                                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-gray-200"
+                                />
+                              ) : (
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
+                                  style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
+                                >
+                                  {tenant.name?.charAt(0).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-gray-800 truncate max-w-[160px]">
+                                  {tenant.name}
+                                </p>
+                                <p className="text-xs text-gray-400 font-mono truncate max-w-[160px]">
+                                  {tenant.slug}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
 
                         <td className="px-3 py-3 align-top sm:px-4">
                           <PlanBadge plan={tenant.plan} />
@@ -847,41 +975,101 @@ export default function TenantsPage() {
                           <Badge status={tenant.status} />
                         </td>
 
-                        <td className="px-3 py-3 align-top sm:px-4">
-                          <div className="flex items-center gap-2">
-                             <Users className="w-4 h-4 text-gray-300" />
-                             <span className="font-bold text-gray-700">{tenant.user_count ?? 0}</span>
-                          </div>
-                        </td>
+                          {/* Users / Elections */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="flex items-center gap-1 text-[#1B4FD8] font-semibold">
+                                <FaUsers className="opacity-70" />
+                                {tenant.user_count ?? 0}
+                              </span>
+                              <span className="text-gray-300">·</span>
+                              <span className="flex items-center gap-1 text-green-600 font-semibold">
+                                <FaVoteYea className="opacity-70" />
+                                {tenant.election_count ?? 0}
+                              </span>
+                            </div>
+                          </td>
 
-                        <td className="w-24 px-3 py-3 text-right align-top sm:px-4">
-                          <TableActions
-                            actions={[
-                              { key: 'view', label: 'Overview', icon: Eye, onClick: () => handleViewDetails(tenant) },
-                              { key: 'settings', label: 'Settings', icon: Edit, onClick: () => setEditTenant(tenant) },
-                              isSuspended
-                                ? { key: 'activate', label: 'Reactivate', icon: CheckCircle2, onClick: () => handleActivate(tenant) }
-                                : { key: 'block', label: 'Suspend', icon: Ban, onClick: () => setSuspendTarget(tenant) },
-                              { key: 'delete', label: 'Delete Forever', icon: Trash2, danger: true, onClick: () => setDeleteTarget(tenant) },
-                            ]}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          {/* Limits */}
+                          <td className="px-5 py-4">
+                            <div className="text-xs text-gray-500 space-y-0.5">
+                              <div>{tenant.max_elections ?? '∞'} elections</div>
+                              <div>{tenant.max_voters != null ? tenant.max_voters.toLocaleString() : '∞'} voters</div>
+                            </div>
+                          </td>
+
+                          {/* Created */}
+                          <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">
+                            {safeFormat(tenant.created_at || tenant.createdAt)}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => handleViewDetails(tenant)}
+                                title="View Details"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[#1B4FD8] transition-colors"
+                              >
+                                <FaEye className="text-sm" />
+                              </button>
+                              <button
+                                onClick={() => setEditTenant(tenant)}
+                                title="Edit"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                              >
+                                <FaEdit className="text-sm" />
+                              </button>
+                              {isSuspended ? (
+                                <button
+                                  onClick={() => handleActivate(tenant)}
+                                  disabled={actionLoading}
+                                  title="Activate"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40"
+                                >
+                                  <FaCheckCircle className="text-sm" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setSuspendTarget(tenant)}
+                                  title="Suspend"
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                                >
+                                  <FaBan className="text-sm" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setDeleteTarget(tenant)}
+                                title="Delete"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              >
+                                <FaTrash className="text-sm" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <Pagination
+                page={page}
+                total={total}
+                perPage={PER_PAGE}
+                onPage={setPage}
+              />
+            </>
           )}
 
-          {total > PER_PAGE && (
-             <div className="border-t border-gray-100 bg-gray-50/50">
-                <Pagination
-                  page={page}
-                  totalPages={Math.ceil(total / PER_PAGE)}
-                  onPageChange={setPage}
-                />
-             </div>
+          {/* Refresh indicator */}
+          {loading && filteredTenants.length > 0 && (
+            <div className="px-5 py-2 bg-blue-50 border-t border-indigo-100 flex items-center gap-2">
+              <span className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-[#1B4FD8] font-medium">Refreshing…</span>
+            </div>
           )}
         </div>
       </div>
