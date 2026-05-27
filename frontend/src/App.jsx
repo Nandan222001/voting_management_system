@@ -5,6 +5,9 @@ import { getMe } from './store/slices/authSlice'
 
 // Pages
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import OTPPage from './pages/OTPPage'
+import AccountPage from './pages/AccountPage'
 import DashboardPage from './pages/DashboardPage'
 import ElectionsPage from './pages/ElectionsPage'
 import ElectionDetailPage from './pages/ElectionDetailPage'
@@ -108,6 +111,8 @@ export default function App() {
       {/* Public */}
       <Route path="/" element={<RootRedirect />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/otp" element={<OTPPage />} />
 
       {/* SuperAdmin-only routes */}
       <Route
@@ -133,6 +138,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <PrivateRoute>
+            <AccountPage />
           </PrivateRoute>
         }
       />
