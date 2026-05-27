@@ -1,19 +1,20 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const COLOR_MAP = {
-  primary: 'border-primary-100 text-primary-600 bg-primary-50',
-  indigo: 'border-primary-100 text-primary-500 bg-primary-50',
+  primary: 'border-[#e6edfb] text-[#0051D5] bg-[#e6edfb]',
+  secondary: 'border-secondary-100 text-secondary-600 bg-secondary-50',
   green: 'border-green-100 text-green-600 bg-green-50',
-  blue: 'border-blue-100 text-blue-600 bg-blue-50',
+  blue: 'border-[#e6edfb] text-[#0051D5] bg-[#e6edfb]',
   orange: 'border-orange-100 text-orange-600 bg-orange-50',
+  yellow: 'border-warning-100 text-warning-600 bg-warning-50',
+  amber: 'border-warning-100 text-warning-600 bg-warning-50',
   red: 'border-red-100 text-red-600 bg-red-50',
-  purple: 'border-purple-100 text-purple-600 bg-purple-50',
   black: 'border-gray-800 text-white bg-black',
   gray: 'border-gray-200 text-gray-800 bg-gray-100',
 };
 
-export default function StatsCard({ title, value, icon: Icon, color = 'indigo', change }) {
-  const colorClass = COLOR_MAP[color] ?? COLOR_MAP.indigo;
+export default function StatsCard({ title, value, icon: Icon, color = 'primary', change }) {
+  const colorClass = COLOR_MAP[color] ?? COLOR_MAP.primary;
   const isPositive = typeof change === 'number' ? change >= 0 : true;
   const absChange = typeof change === 'number' ? Math.abs(change) : null;
 

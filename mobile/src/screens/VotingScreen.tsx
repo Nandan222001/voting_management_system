@@ -103,14 +103,14 @@ const VotingScreen = () => {
 
         <View style={styles.cardFooter}>
           <View style={styles.dateInfo}>
-            <MaterialIcons name="timer" size={16} color="#3b82f6" />
+            <MaterialIcons name="timer" size={16} color="#0051D5" />
             <Text style={styles.electionDate}>
               Ends: {new Date(item.end_date).toLocaleDateString()}
             </Text>
           </View>
           <View style={styles.actionPrompt}>
              <Text style={styles.actionText}>CAST VOTE</Text>
-             <MaterialIcons name="chevron-right" size={18} color="#0058e7" />
+             <MaterialIcons name="chevron-right" size={18} color="#0051D5" />
           </View>
         </View>
       </View>
@@ -120,7 +120,7 @@ const VotingScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0058e7" />
+        <ActivityIndicator size="large" color="#0051D5" />
       </View>
     );
   }
@@ -152,7 +152,7 @@ const VotingScreen = () => {
             <RefreshControl refreshing={refreshing} onRefresh={() => {
               setRefreshing(true);
               fetchElections();
-            }} colors={['#0058e7']} />
+            }} colors={['#0051D5']} />
           }
         />
       )}
@@ -178,7 +178,7 @@ const VotingScreen = () => {
 
             {votingLoading ? (
               <View style={styles.modalLoading}>
-                <ActivityIndicator size="large" color="#0058e7" />
+                <ActivityIndicator size="large" color="#0051D5" />
                 <Text style={styles.loadingText}>Loading verified candidates...</Text>
               </View>
             ) : (
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
       android: { elevation: 3 }
     })
   },
-  cardHighlight: { height: 4, backgroundColor: '#0058e7' },
+  cardHighlight: { height: 4, backgroundColor: '#0051D5' },
   cardInner: { padding: 20 },
   electionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   liveIndicator: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   dateInfo: { flexDirection: 'row', alignItems: 'center' },
   electionDate: { fontSize: 12, color: '#475569', marginLeft: 6, fontWeight: '600' },
   actionPrompt: { flexDirection: 'row', alignItems: 'center' },
-  actionText: { fontSize: 12, fontWeight: '800', color: '#0058e7', marginRight: 4 },
+  actionText: { fontSize: 12, fontWeight: '800', color: '#0051D5', marginRight: 4 },
   
   emptyState: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
   emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#f1f5f9' },
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#0058e7',
+    backgroundColor: '#0051D5',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   vettedBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#d1fae5', marginRight: 8 },
   vettedText: { fontSize: 8, color: '#047857', fontWeight: '800', marginLeft: 2 },
   partyName: { fontSize: 11, color: '#64748b', fontWeight: '600' },
-  voteBtn: { backgroundColor: '#0058e7', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  voteBtn: { backgroundColor: '#0051D5', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
   voteBtnText: { color: '#fff', fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   emptyCandidates: { padding: 20, alignItems: 'center' },
 });

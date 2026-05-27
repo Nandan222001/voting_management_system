@@ -141,7 +141,7 @@ export default function RevenuePage() {
             title="Total Revenue" 
             value={new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(summary.total_revenue)} 
             icon={FaWallet} 
-            color="indigo" 
+            color="primary" 
           />
           <StatsCard 
             title="Pending Amount" 
@@ -267,7 +267,7 @@ export default function RevenuePage() {
             <button 
               type="submit" 
               disabled={savingSettings}
-              className="px-6 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-md disabled:opacity-50"
+              className="px-6 py-2 bg-[#0051D5] text-white text-sm font-bold rounded-lg hover:bg-[#0051D5] transition-colors shadow-md disabled:opacity-50"
             >
               {savingSettings ? 'Saving...' : 'Save Credentials'}
             </button>

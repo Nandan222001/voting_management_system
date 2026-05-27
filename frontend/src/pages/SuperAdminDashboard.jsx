@@ -23,7 +23,7 @@ const MetricCard = ({ title, value, subtext, icon: Icon }) => (
   <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md group">
     <div className="flex justify-between items-start mb-4">
       <h3 className="text-xs font-semibold text-gray-500">{title}</h3>
-      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-primary-500 transition-colors border border-gray-100 shadow-sm">
+      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-[#0051D5] transition-colors border border-gray-100 shadow-sm">
         <Icon size={20} />
       </div>
     </div>
@@ -36,7 +36,7 @@ const MetricCard = ({ title, value, subtext, icon: Icon }) => (
 );
 
 const TenantRow = ({ logo, initials, name, slug, status, plan, initialsBg = 'bg-gray-200 text-gray-900', onDetails, onSuspend }) => (
-  <tr className="border-b border-gray-100 hover:bg-primary-50/50 transition-colors group">
+  <tr className="border-b border-gray-100 hover:bg-[#e6edfb]/50 transition-colors group">
     <td className="px-3 py-3 align-top sm:px-4">
       <div className="flex min-w-0 items-center gap-3">
       {logo ? (
@@ -133,7 +133,7 @@ export default function SuperAdminDashboard() {
           </div>
           <button 
             onClick={() => navigate('/tenants')}
-            className="px-8 py-3 bg-primary-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-2xl"
+            className="px-8 py-3 bg-[#0051D5] text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#0051D5] active:scale-95 transition-all shadow-2xl"
           >
             New Tenant
           </button>
@@ -149,7 +149,7 @@ export default function SuperAdminDashboard() {
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-8 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
             <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Recent Activity</h3>
-            <button onClick={() => navigate('/tenants')} className="text-sm font-bold text-primary-500 hover:text-primary-600 transition-colors">
+            <button onClick={() => navigate('/tenants')} className="text-sm font-bold text-[#0051D5] hover:text-[#0051D5] transition-colors">
               View all records
             </button>
           </div>

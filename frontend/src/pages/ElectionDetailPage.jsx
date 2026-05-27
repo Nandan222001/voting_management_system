@@ -28,7 +28,7 @@ import ImageAvatar from '../components/common/ImageAvatar'
 import WinnerCard from '../components/common/WinnerCard'
 import TableActions from '../components/common/TableActions'
 
-const CHART_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
+const CHART_COLORS = ['#0051D5', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
 
 const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
 
@@ -216,7 +216,7 @@ export default function ElectionDetailPage() {
             {isAdmin && currentElection?.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600"
+                className="flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-medium rounded-lg hover:bg-[#0051D5]"
               >
                 <FaPlus className="h-4 w-4" /> Add Candidate
               </button>
@@ -369,7 +369,7 @@ export default function ElectionDetailPage() {
             <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60">
               {submitting ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
             </button>
           </div>

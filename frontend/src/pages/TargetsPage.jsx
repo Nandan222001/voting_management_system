@@ -119,7 +119,7 @@ export default function TargetsPage() {
       key: 'type',
       header: 'Type',
       render: (val) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-primary-50 text-primary-600 border border-primary-100 uppercase tracking-wider">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#e6edfb] text-[#0051D5] border border-[#e6edfb] uppercase tracking-wider">
           {val}
         </span>
       ),
@@ -159,7 +159,7 @@ export default function TargetsPage() {
           {isSuperAdmin && (
             <button
               onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
             >
               <FaPlus className="text-xs" />
               Add Entity
@@ -169,7 +169,7 @@ export default function TargetsPage() {
 
         {targets.length === 0 && !loading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-primary-50 text-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-[#e6edfb] text-[#0051D5] rounded-full flex items-center justify-center mx-auto mb-4">
               <FaMapMarkerAlt className="text-2xl" />
             </div>
             <h3 className="text-lg font-bold text-gray-900">No geographic data</h3>
@@ -179,7 +179,7 @@ export default function TargetsPage() {
             {isSuperAdmin && (
                 <button
                     onClick={openCreate}
-                    className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600"
+                    className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5]"
                 >
                     <FaPlus className="text-xs" />
                     Add First State
@@ -211,7 +211,7 @@ export default function TargetsPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               placeholder="e.g. Maharashtra, Pune, or Mulshi"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0051D5]"
             />
           </div>
           <div>
@@ -256,7 +256,7 @@ export default function TargetsPage() {
             <button
               type="submit"
               disabled={actionLoading || (TYPE_PARENT_MAP[form.type] && possibleParents.length === 0)}
-              className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60"
+              className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60"
             >
               {actionLoading ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>

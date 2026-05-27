@@ -250,7 +250,7 @@ return (
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           Create Election
@@ -267,7 +267,7 @@ return (
             placeholder="Search elections..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent bg-white"
           />
         </div>
 
@@ -279,7 +279,7 @@ return (
               onClick={() => setStatusFilter(value)}
               className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                 statusFilter === value
-                  ? 'bg-primary-500 text-white border-primary-600'
+                  ? 'bg-[#0051D5] text-white border-[#0051D5]'
                   : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -344,7 +344,7 @@ return (
               value={form.title}
               onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
               placeholder="e.g. City Council Election 2026"
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
                 formErrors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
               }`}
             />
@@ -361,7 +361,7 @@ return (
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
               placeholder="Brief description of the election..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent resize-none"
             />
           </div>
 
@@ -374,7 +374,7 @@ return (
               type="date"
               value={form.election_date}
               onChange={(e) => setForm((p) => ({ ...p, election_date: e.target.value }))}
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent ${
                 formErrors.election_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
               }`}
             />
@@ -406,7 +406,7 @@ return (
             <button
               type="submit"
               disabled={actionLoading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60 transition-colors flex items-center gap-2"
             >
               {actionLoading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -454,7 +454,7 @@ return (
         title="Activate Election"
         message={`Activate "${activateDialog.target?.title}"? Voters will be able to cast their votes once active.`}
         confirmLabel="Activate"
-        variant="indigo"
+        variant="primary"
       />
 
       {/* Close Confirm */}

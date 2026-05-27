@@ -205,7 +205,7 @@ export default function CandidatesPage() {
             {selectedElection && isAdmin && selectedElection.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
               >
                 <FaPlus className="text-xs" />
                 Add Candidate
@@ -214,7 +214,7 @@ export default function CandidatesPage() {
             {selectedElection && (
               <button
                 onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
               >
                 <FaExternalLinkAlt className="text-xs" />
                 View Election
@@ -336,7 +336,7 @@ export default function CandidatesPage() {
             <button 
               type="submit" 
               disabled={actionLoading} 
-              className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60"
+              className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60"
             >
               {actionLoading ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
             </button>
@@ -384,7 +384,7 @@ function VoteShare({ result }) {
       </div>
       <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
         <div
-          className="bg-primary-500 h-full transition-all duration-500"
+          className="bg-[#0051D5] h-full transition-all duration-500"
           style={{ width: `${value}%` }}
         />
       </div>

@@ -3,7 +3,7 @@ import { FaChevronRight, FaCheck, FaMapMarkerAlt, FaUsers, FaLandmark, FaLayerGr
 import FancySelect from '../common/FancySelect';
 
 const LEVELS = [
-  { id: 'working', title: 'Working Committee', subtitle: 'Apex Body (National)', icon: FaLandmark, color: 'indigo' },
+  { id: 'working', title: 'Working Committee', subtitle: 'Apex Body (National)', icon: FaLandmark, color: 'primary' },
   { id: 'pradesh', title: 'Pradesh Committee', subtitle: 'State Level', icon: FaLayerGroup, color: 'blue' },
   { id: 'district', title: 'District Committee', subtitle: 'District Level', icon: FaMapMarkerAlt, color: 'blue' },
   { id: 'block', title: 'Block Committee', subtitle: 'Block / Taluka / City', icon: FaUsers, color: 'blue' },
@@ -102,20 +102,20 @@ export default function HierarchyScoper({ targets = [], value, onChange }) {
               <div 
                 className={`relative z-10 w-full bg-white border-2 rounded-2xl p-4 transition-all duration-300 ${
                   isActive 
-                    ? 'border-primary-500 shadow-md shadow-primary-100 ring-4 ring-primary-50' 
+                    ? 'border-[#0051D5] shadow-md shadow-[#e6edfb] ring-4 ring-[#e6edfb]' 
                     : isCompleted ? 'border-green-200 bg-green-50/20' : 'border-gray-100 opacity-60'
                 }`}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                      isActive ? 'bg-primary-500 text-white' : isCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
+                      isActive ? 'bg-[#0051D5] text-white' : isCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
                   }`}>
                     {isCompleted ? <FaCheck className="text-sm" /> : <level.icon />}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                        <h4 className={`text-sm font-bold truncate ${isActive ? 'text-primary-900' : 'text-gray-700'}`}>
+                        <h4 className={`text-sm font-bold truncate ${isActive ? 'text-gray-900' : 'text-gray-700'}`}>
                         {level.title}
                         </h4>
                         {isCompleted && (

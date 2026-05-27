@@ -843,7 +843,7 @@ votes
 | name | VARCHAR(255) | NOT NULL | Display name |
 | slug | VARCHAR(100) | UNIQUE, NOT NULL | URL-safe identifier |
 | logo_url | VARCHAR(500) | NULL | |
-| primary_color | VARCHAR(7) | DEFAULT '#4f46e5' | Hex colour |
+| primary_color | VARCHAR(7) | DEFAULT '#0051D5' | Hex colour |
 | status | ENUM | DEFAULT 'trial' | trial/active/suspended/cancelled |
 | plan | ENUM | DEFAULT 'starter' | starter/professional/enterprise |
 | max_elections | INT | DEFAULT 5 | Plan limit |
