@@ -13,11 +13,12 @@ from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
+    ForgotPasswordRequest,
     MessageResponse,
     OTPVerifyRequest,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
-    
 )
 from app.schemas.user import ChangePasswordRequest, UserResponse, UserSettingsUpdate
 from app.services.auth_service import auth_service
@@ -96,6 +97,54 @@ def verify_otp(
     """
     auth_service.verify_otp(db, payload.email, payload.otp_code)
     return MessageResponse(message="Email verified successfully.")
+
+
+# ---------------------------------------------------------------------------
+# POST /forgot-password
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+    summary="Request a password reset OTP",
+)
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Send a password reset OTP to the user's registered email address.
+    Always returns a success message to prevent user enumeration.
+    """
+    auth_service.forgot_password(db, payload.email)
+    return MessageResponse(
+        message="If an account exists for this email, a password reset OTP has been sent."
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /reset-password
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+    summary="Reset password using OTP",
+)
+def reset_password(
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Verify the OTP and update the user's password.
+    """
+    auth_service.reset_password(
+        db, 
+        payload.email, 
+        payload.otp_code, 
+        payload.new_password
+    )
+    return MessageResponse(message="Password has been reset successfully.")
 
 
 # ---------------------------------------------------------------------------

@@ -16,8 +16,8 @@ const authService = {
   logout: () => api.post('/auth/logout'),
   refreshToken: () => api.post('/auth/refresh'),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (token, password) =>
-    api.post('/auth/reset-password', { token, password }),
+  resetPassword: (email, otp_code, new_password) =>
+    api.post('/auth/reset-password', { email, otp_code, new_password }),
 };
 
 export default authService;
