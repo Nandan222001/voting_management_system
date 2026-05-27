@@ -7,10 +7,10 @@ export default function CommonButton({
   ...props
 }) {
   const variants = {
-    primary: 'bg-[#0051D5] text-white hover:bg-[#0051D5] focus:ring-[#0051D5]/30',
-    secondary: 'border border-gray-200 bg-white text-gray-700 hover:border-[#0051D5] hover:text-[#0051D5] focus:ring-[#0051D5]/30',
+    primary: 'bg-[rgb(16_102_177)] text-white hover:bg-[rgb(16_102_177)] focus:ring-[rgb(16_102_177)]/30',
+    secondary: 'border border-gray-200 bg-white text-gray-700 hover:border-[rgb(16_102_177)] hover:text-[rgb(16_102_177)] focus:ring-[rgb(16_102_177)]/30',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500/30',
-    ghost: 'text-gray-700 hover:bg-[#e6edfb] hover:text-[#0051D5] focus:ring-[#0051D5]/30',
+    ghost: 'text-gray-700 hover:bg-[#e6edfb] hover:text-[rgb(16_102_177)] focus:ring-[rgb(16_102_177)]/30',
   };
 
   const sizes = {

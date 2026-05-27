@@ -1,22 +1,21 @@
-import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-export default function MainLayout({ children }) {
-  return (
-    <div className="min-h-screen bg-[#F0F2F7] flex">
-      {/* Fixed Sidebar */}
-      <Sidebar />
+export default function MainLayout({ children, title }) {
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
-        <Header />
-        
-        {/* Dashboard Content */}
-        <div className="p-4">
+  if (!isAuthenticated) return children;
+
+  return (
+    <div className="min-h-screen bg-[#F0F2F7]">
+      <Sidebar />
+      <div className="pl-64">
+        <Header title={title} />
+        <main className="p-8">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

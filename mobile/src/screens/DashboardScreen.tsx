@@ -44,7 +44,7 @@ const DashboardScreen = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#0051D5" />
+        <ActivityIndicator size="large" color="rgb(16 102 177)" />
       </View>
     );
   }
@@ -57,7 +57,7 @@ const DashboardScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#0051D5']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['rgb(16 102 177)']} />
         }
       >
         <View style={styles.welcomeSection}>
@@ -72,7 +72,7 @@ const DashboardScreen = () => {
         </View>
 
         <View style={styles.summaryGrid}>
-           <View style={[styles.mainStatCard, { backgroundColor: '#0051D5' }]}>
+           <View style={[styles.mainStatCard, { backgroundColor: 'rgb(16 102 177)' }]}>
               <View style={styles.mainStatHeader}>
                  <Text style={styles.mainStatLabel}>Active Ballots</Text>
                  <MaterialIcons name="how-to-vote" size={24} color="rgba(255,255,255,0.8)" />
@@ -105,13 +105,13 @@ const DashboardScreen = () => {
               icon="fingerprint" 
               label="Secure ID" 
               value={`CV-${(user?.id || 0).toString().padStart(5, '0')}`} 
-              color="#0051D5"
+              color="rgb(16 102 177)"
            />
            <DetailRow 
               icon="location-city" 
               label="Registry District" 
               value={user?.district || 'Universal'} 
-              color="#0051D5"           />
+              color="rgb(16 102 177)"           />
            <DetailRow 
               icon="verified" 
               label="Voter Status" 
@@ -123,7 +123,7 @@ const DashboardScreen = () => {
 
         <TouchableOpacity style={styles.ctaBanner} activeOpacity={0.9}>
            <View style={styles.ctaIcon}>
-              <FontAwesome5 name="shield-alt" size={20} color="#0051D5" />
+              <FontAwesome5 name="shield-alt" size={20} color="rgb(16 102 177)" />
            </View>
            <View style={styles.ctaContent}>
               <Text style={styles.ctaTitle}>Privacy Protection Active</Text>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 16,
     ...Platform.select({
-      ios: { shadowColor: '#0051D5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      ios: { shadowColor: 'rgb(16 102 177)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }
     })
   },
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderLeftWidth: 4,
-    borderLeftColor: '#0051D5',
+    borderLeftColor: 'rgb(16 102 177)',
   },
   ctaIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
   ctaContent: { flex: 1 },

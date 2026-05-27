@@ -2,9 +2,9 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const COLOR_MAP = {
   indigo: {
-    bg: 'bg-blue-50',
-    icon: 'bg-blue-100 text-[#1B4FD8]',
-    ring: 'ring-blue-200',
+    bg: 'bg-[#e6edfb]',
+    icon: 'bg-[rgb(16_102_177)] text-white',
+    ring: 'ring-[rgb(16_102_177)]/20',
   },
   green: {
     bg: 'bg-green-50',
@@ -12,9 +12,9 @@ const COLOR_MAP = {
     ring: 'ring-green-200',
   },
   blue: {
-    bg: 'bg-blue-50',
-    icon: 'bg-blue-100 text-blue-600',
-    ring: 'ring-blue-200',
+    bg: 'bg-[#e6edfb]',
+    icon: 'bg-[rgb(16_102_177)] text-white',
+    ring: 'ring-[rgb(16_102_177)]/20',
   },
   orange: {
     bg: 'bg-orange-50',
@@ -33,8 +33,8 @@ const COLOR_MAP = {
   },
 };
 
-export default function StatsCard({ title, value, icon: Icon, color = 'primary', change }) {
-  const colorClass = COLOR_MAP[color] ?? COLOR_MAP.primary;
+export default function StatsCard({ title, value, icon: Icon, color = 'indigo', change }) {
+  const colorClass = COLOR_MAP[color] ?? COLOR_MAP.indigo;
   const isPositive = typeof change === 'number' ? change >= 0 : true;
   const absChange = typeof change === 'number' ? Math.abs(change) : null;
 
@@ -42,7 +42,7 @@ export default function StatsCard({ title, value, icon: Icon, color = 'primary',
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm transition-all group hover:shadow-md">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
-        <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${colorClass} transition-colors group-hover:bg-white shadow-sm`}>
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.icon} shadow-sm`}>
           {Icon && <Icon size={20} />}
         </div>
       </div>
@@ -51,33 +51,23 @@ export default function StatsCard({ title, value, icon: Icon, color = 'primary',
         {value !== undefined && value !== null ? value.toLocaleString() : '0'}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <p className="text-gray-500 text-sm font-medium truncate">{title}</p>
-        <p className="text-3xl font-bold text-[#1066b1] mt-0.5 leading-tight">
-          {value !== undefined && value !== null ? value.toLocaleString() : '—'}
-        </p>
-
-        {/* Change Badge */}
-        {absChange !== null && (
-          <div className="flex items-center gap-1 mt-2">
-            <span
-              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
-                isPositive
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {isPositive ? (
-                <FaArrowUp className="text-[10px]" />
-              ) : (
-                <FaArrowDown className="text-[10px]" />
-              )}
-              {absChange}%
-            </span>
-            <span className="text-gray-400 text-xs">vs last month</span>
-          </div>
-          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">vs last month</span>
+      {absChange !== null && (
+        <div className="flex items-center gap-2 mt-2">
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+              isPositive
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
+          >
+            {isPositive ? (
+              <TrendingUp size={12} />
+            ) : (
+              <TrendingDown size={12} />
+            )}
+            {absChange}%
+          </span>
+          <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">vs last month</span>
         </div>
       )}
     </div>

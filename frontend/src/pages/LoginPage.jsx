@@ -1,183 +1,110 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaShieldAlt, FaLock, FaEye, FaEyeSlash, FaIdCard, FaCheckCircle } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaShieldAlt, FaArrowRight } from 'react-icons/fa';
 import toast from 'react-hot-toast';
-import { loginUser, clearError, selectAuthLoading, selectAuthError, selectIsAuthenticated, selectCurrentUser } from '../store/slices/authSlice';
+import { loginUser, clearError } from '../store/slices/authSlice';
 
 export default function LoginPage() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const loading = useSelector(selectAuthLoading);
-  const error = useSelector(selectAuthError);
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const user = useSelector(selectCurrentUser);
+  const dispatch = useDispatch();
+  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [showPassword, setShowPassword] = useState(false);
-  const [touched, setTouched] = useState({});
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
-    if (isAuthenticated) navigate('/dashboard', { replace: true });
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
   }, [isAuthenticated, navigate]);
 
   useEffect(() => {
-    if (error) { toast.error(error); dispatch(clearError()); }
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
   }, [error, dispatch]);
-
-  const handleChange = (e) => setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
-  const handleBlur = (e) => setTouched((p) => ({ ...p, [e.target.name]: true }));
-
-  const validate = () => {
-    const errs = {};
-    if (!form.email) errs.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email';
-    if (!form.password) errs.password = 'Password is required';
-    return errs;
-  };
-
-  const validationErrors = validate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
-    if (Object.keys(validationErrors).length > 0) return;
-    const result = await dispatch(loginUser({ email: form.email, password: form.password }));
-    if (loginUser.fulfilled.match(result)) {
-      toast.success('Welcome back!');
-      const returnedUser = result.payload?.user
-      if (returnedUser?.role === 'superadmin') navigate('/dashboard', { replace: true })
-      else navigate('/', { replace: true })
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
     }
+    dispatch(loginUser({ email, password }));
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F2F7] flex flex-col items-center justify-center px-4 py-10">
-
-      {/* Logo */}
-      <div className="mb-6 flex flex-col items-center gap-3">
-        <div className="w-20 h-20 bg-white border border-gray-200 rounded-2xl shadow-sm flex items-center justify-center">
-          <div className="w-12 h-12 bg-[#1a2b6b] rounded-xl flex items-center justify-center">
-            <span className="text-white text-lg font-bold tracking-tight">CI</span>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[rgb(16_102_177)] text-white mb-4 shadow-lg shadow-indigo-200">
+            <FaShieldAlt size={32} />
           </div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">SecureVote</h1>
+          <p className="text-gray-500 mt-2 font-medium">Digital Voting Management System</p>
         </div>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#1066b1]">Civic Integrity</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Authorized Voting Portal</p>
-        </div>
-      </div>
 
-      {/* Card */}
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-md p-6">
-
-        {/* Email/ID */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-gray-800 mb-1.5">Email/ID</label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaIdCard className="text-gray-400 text-sm" />
+        <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider">Email Address</label>
+              <div className="relative group">
+                <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[rgb(16_102_177)] transition-colors" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[rgb(16_102_177)]/5 focus:border-[rgb(16_102_177)] transition-all font-medium"
+                  placeholder="admin@securevote.com"
+                />
+              </div>
             </div>
-            <input
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={form.email}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="Enter your ID or email"
-              className={`w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                touched.email && validationErrors.email
-                  ? 'border-red-400 bg-red-50'
-                  : 'border-gray-300 bg-white'
-              }`}
-            />
-          </div>
-          {touched.email && validationErrors.email && (
-            <p className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
-          )}
-        </div>
 
-        {/* Password */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-semibold text-gray-800">Password</label>
-            <button type="button" className="text-xs font-semibold text-blue-600 hover:underline">
-              Forgot Password
-            </button>
-          </div>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FaLock className="text-gray-400 text-sm" />
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">Password</label>
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-xs font-bold text-[rgb(16_102_177)] hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className="relative group">
+                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[rgb(16_102_177)] transition-colors" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[rgb(16_102_177)]/5 focus:border-[rgb(16_102_177)] transition-all font-medium"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
-            <input
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              value={form.password}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="••••••••"
-              className={`w-full pl-9 pr-11 py-2.5 text-sm rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                touched.password && validationErrors.password
-                  ? 'border-red-400 bg-red-50'
-                  : 'border-gray-300 bg-white'
-              }`}
-            />
+
             <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              tabIndex={-1}
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 py-4 bg-[rgb(16_102_177)] hover:bg-[rgb(12_85_148)] disabled:opacity-60 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-100 group active:scale-[0.98]"
             >
-              {showPassword ? <FaEyeSlash className="text-sm" /> : <FaEye className="text-sm" />}
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  Sign In to Panel
+                  <FaArrowRight className="text-sm group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </button>
-          </div>
-          {touched.password && validationErrors.password && (
-            <p className="mt-1 text-xs text-red-500">{validationErrors.password}</p>
-          )}
+          </form>
         </div>
 
-        {/* Secure Login Button */}
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-[#1B4FD8] hover:bg-[#1640B8] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
-        >
-          {loading ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <FaShieldAlt className="text-base" />
-          )}
-          {loading ? 'Signing in...' : 'Secure Login'}
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-gray-200" />
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-
-        {/* Request Credentials */}
-        <p className="text-center text-sm text-gray-500 mb-3">Need an account or assistance?</p>
-        <button
-          type="button"
-          className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors text-sm"
-        >
-          Request Credentials
-        </button>
-      </div>
-
-      {/* Verified badge */}
-      <div className="mt-5 flex items-center gap-2 bg-gray-900 text-white text-xs font-semibold px-4 py-2 rounded-full">
-        <FaCheckCircle className="text-green-400 text-sm" />
-        Verified by SecureVote
-      </div>
-
-      {/* Footer links */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-gray-400">
-        <button type="button" className="hover:text-gray-600 transition-colors">Privacy Policy</button>
-        <span>·</span>
-        <button type="button" className="hover:text-gray-600 transition-colors">Terms of Service</button>
+        <p className="text-center mt-8 text-sm text-gray-400 font-medium">
+          Protected by end-to-end encryption and blockchain verification.
+        </p>
       </div>
     </div>
   );

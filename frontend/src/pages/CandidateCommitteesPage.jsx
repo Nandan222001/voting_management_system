@@ -1,45 +1,51 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaPlus, FaEdit, FaTrash, FaUserShield } from 'react-icons/fa'
+import { FaPlus, FaUsers, FaSearch } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import DataTable from '../components/common/DataTable'
 import Modal from '../components/common/Modal'
 import ConfirmDialog from '../components/common/ConfirmDialog'
+import LoadingSpinner from '../components/common/LoadingSpinner'
 import {
   fetchCandidateCommittees,
   createCandidateCommittee,
   updateCandidateCommittee,
-  deleteCandidateCommittee,
+  deleteCandidateCommittee
 } from '../store/slices/candidateCommitteeSlice'
+
+const emptyForm = { name: '', description: '' }
 
 export default function CandidateCommitteesPage() {
   const dispatch = useDispatch()
-  const { committees, loading, actionLoading } = useSelector((s) => s.candidateCommittees)
+  const { committees, loading } = useSelector(s => s.candidateCommittees)
 
-  const [modalOpen, setModalOpen] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState(emptyForm)
+  const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     dispatch(fetchCandidateCommittees())
   }, [dispatch])
 
-  const openCreate = () => {
+  function openCreate() {
     setEditTarget(null)
-    setForm({ name: '', description: '' })
-    setModalOpen(true)
+    setForm(emptyForm)
+    setShowModal(true)
   }
 
-  const openEdit = (committee) => {
-    setEditTarget(committee)
-    setForm({ name: committee.name, description: committee.description || '' })
-    setModalOpen(true)
+  function openEdit(c) {
+    setEditTarget(c)
+    setForm({ name: c.name, description: c.description || '' })
+    setShowModal(true)
   }
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault()
+    setSubmitting(true)
     try {
       if (editTarget) {
         await dispatch(updateCandidateCommittee({ id: editTarget.id, data: form })).unwrap()
@@ -48,128 +54,112 @@ export default function CandidateCommitteesPage() {
         await dispatch(createCandidateCommittee(form)).unwrap()
         toast.success('Committee created')
       }
-      setModalOpen(false)
+      setShowModal(false)
+      dispatch(fetchCandidateCommittees())
     } catch (err) {
-      toast.error(err || 'Operation failed')
+      toast.error(err?.message || 'Action failed')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleDelete = async () => {
+  async function handleDelete() {
     try {
       await dispatch(deleteCandidateCommittee(deleteTarget.id)).unwrap()
       toast.success('Committee deleted')
       setDeleteTarget(null)
+      dispatch(fetchCandidateCommittees())
     } catch (err) {
-      toast.error(err || 'Delete failed')
+      toast.error(err?.message || 'Delete failed')
     }
   }
 
+  const filtered = committees.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  )
+
   const columns = [
+    { key: 'name', label: 'Committee Name' },
+    { key: 'description', label: 'Description' },
     {
-      key: 'name',
-      header: 'Committee Name',
-      render: (val) => <span className="font-semibold text-gray-900">{val}</span>,
-    },
-    {
-      key: 'description',
-      header: 'Description',
-      render: (val) => <span className="text-gray-500 text-sm">{val || '—'}</span>,
-    },
-    {
-      key: 'created_at',
-      header: 'Created',
-      render: (val) => <span className="text-gray-400 text-xs">{new Date(val).toLocaleDateString()}</span>,
-    },
+      key: 'candidate_count',
+      label: 'Candidates',
+      render: (v) => <span className="font-semibold text-gray-700">{v ?? 0}</span>
+    }
   ]
 
   return (
     <MainLayout title="Candidate Committees">
-      <div className="space-y-5 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Candidate Committees</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              Manage election committees (e.g., Executive, Advisory)
-            </p>
-          </div>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">Committees</h1>
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[rgb(16_102_177)] text-white text-sm font-medium rounded-lg hover:bg-[rgb(12_85_148)]"
           >
-            <FaPlus className="text-xs" />
-            Add Committee
+            <FaPlus className="h-4 w-4" /> Add Committee
           </button>
         </div>
 
-        {committees.length === 0 && !loading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaUserShield className="text-2xl" />
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <div className="relative max-w-xs">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search committees..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">No committees defined</h3>
-            <p className="text-gray-500 max-w-sm mx-auto mt-1">
-              Committees allow you to group candidates in an election. Create your first committee to get started.
-            </p>
-            <button
-              onClick={openCreate}
-              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5]"
-            >
-              <FaPlus className="text-xs" />
-              Add First Committee
-            </button>
           </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={committees}
-            loading={loading}
-            onEdit={openEdit}
-            onDelete={(row) => setDeleteTarget(row)}
-          />
-        )}
+
+          {loading ? (
+            <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+          ) : filtered.length === 0 ? (
+            <div className="py-20 text-center text-gray-400">
+              <FaUsers className="h-12 w-12 mx-auto mb-4 opacity-20" />
+              <p>No committees found.</p>
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={filtered}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+            />
+          )}
+        </div>
       </div>
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editTarget ? 'Edit Committee' : 'Create Committee'}
-      >
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Edit Committee' : 'Create Committee'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Committee Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               required
-              placeholder="e.g. Executive Committee"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               rows={3}
-              placeholder="Brief description of the committee..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
+            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={actionLoading}
-              className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60"
-            >
-              {actionLoading ? 'Saving...' : editTarget ? 'Update' : 'Create'}
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] disabled:opacity-60">
+              {submitting ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
@@ -180,7 +170,7 @@ export default function CandidateCommitteesPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Committee"
-        message={`Are you sure you want to delete the "${deleteTarget?.name}" committee? Candidates assigned to this committee will have their committee cleared.`}
+        message={`Are you sure you want to delete "${deleteTarget?.name}"?`}
         confirmLabel="Delete"
         variant="danger"
       />

@@ -36,7 +36,7 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
             </View>
           );
         },
-        tabBarActiveTintColor: '#0051D5',
+        tabBarActiveTintColor: 'rgb(16 102 177)',
         tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,

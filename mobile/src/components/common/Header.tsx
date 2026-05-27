@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   initialsText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0051D5',
+    color: 'rgb(16 102 177)',
   },
 });
 

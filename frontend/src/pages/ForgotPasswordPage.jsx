@@ -32,14 +32,14 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-[#000815] to-gray-900 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#0051D5] opacity-10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#0051D5] opacity-10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[rgb(16_102_177)] opacity-10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[rgb(16_102_177)] opacity-10 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Header band */}
-          <div className="bg-gradient-to-r from-[#0051D5] to-[#0051D5] px-8 py-8 text-center">
+          <div className="bg-gradient-to-r from-[rgb(16_102_177)] to-[rgb(16_102_177)] px-8 py-8 text-center">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
                 <FaBalanceScale className="text-white text-xl" />
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
           <div className="px-8 py-8">
             <div className="mb-6">
               <h2 className="text-xl font-bold text-gray-900">Forgot Password?</h2>
-              <p className="text-gray-500 text-sm mt-1">Enter your email address and we'll send you an OTP to reset your password.</p>
+              <p className="text-gray-500 text-sm mt-1">Enter your email address and we&apos;ll send you an OTP to reset your password.</p>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@voteadmin.com"
-                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0051D5] focus:border-transparent transition-colors"
+                    className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-300 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] focus:border-transparent transition-colors"
                   />
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0051D5] hover:bg-[#0051D5] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-[rgb(16_102_177)] hover:bg-[rgb(16_102_177)] disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
               >
                 {loading ? (
                   <>
@@ -96,7 +96,7 @@ export default function ForgotPasswordPage() {
               <div className="text-center">
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-[#0051D5] transition-colors"
+                  className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-[rgb(16_102_177)] transition-colors"
                 >
                   <FaArrowLeft className="text-[10px]" />
                   Back to Login

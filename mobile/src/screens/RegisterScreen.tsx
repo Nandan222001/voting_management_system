@@ -490,9 +490,9 @@ const RegisterScreen = ({ navigation }: any) => {
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.tenantItem} onPress={() => selectTenant(item)}>
-                  <Ionicons name="business-outline" size={20} color="#0051D5" style={{ marginRight: 12 }} />
+                  <Ionicons name="business-outline" size={20} color="rgb(16 102 177)" style={{ marginRight: 12 }} />
                   <Text style={styles.tenantName}>{item.name}</Text>
-                  {formData.tenant_id === item.id && <Ionicons name="checkmark-circle" size={20} color="#0051D5" />}
+                  {formData.tenant_id === item.id && <Ionicons name="checkmark-circle" size={20} color="rgb(16 102 177)" />}
                 </TouchableOpacity>
               )}
             />
@@ -511,12 +511,12 @@ const styles = StyleSheet.create({
   mainTitleText: { fontSize: 22, fontWeight: '700', color: '#111827', letterSpacing: -0.5 },
   subtitleText: { fontSize: 14, color: '#6b7280', marginTop: 6, lineHeight: 20 },
   progressBarBg: { height: 6, backgroundColor: '#eff6ff', borderRadius: 3, marginTop: 18, width: '100%', overflow: 'hidden' },
-  progressBarFilled: { height: 6, backgroundColor: '#0051D5', borderRadius: 3 },
+  progressBarFilled: { height: 6, backgroundColor: 'rgb(16 102 177)', borderRadius: 3 },
   formContainer: { paddingHorizontal: 20 },
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: '600', color: '#4b5563', marginBottom: 6 },
   inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, paddingHorizontal: 12, height: 48 },
-  inputWrapperFocused: { borderColor: '#0051D5', borderWidth: 1.5 },
+  inputWrapperFocused: { borderColor: 'rgb(16 102 177)', borderWidth: 1.5 },
   inputWrapperError: { borderColor: '#ef4444', borderWidth: 1.5 },
   errorText: { color: '#ef4444', fontSize: 12, marginTop: 4, marginLeft: 2 },
   inputIcon: { marginRight: 10 },
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20 },
   dividerLine: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
   dividerText: { paddingHorizontal: 10, fontSize: 10, fontWeight: '800', color: '#9ca3af' },
-  primaryButton: { backgroundColor: '#0051D5', height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  primaryButton: { backgroundColor: 'rgb(16 102 177)', height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   buttonDisabled: { backgroundColor: '#d1d5db' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 20 },
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   backButtonText: { color: '#4b5563', fontSize: 16, fontWeight: '600' },
   footerContainer: { flexDirection: 'row', justifyContent: 'center', marginTop: 24, marginBottom: 20 },
   alreadyText: { color: '#4b5563', fontSize: 14 },
-  loginText: { color: '#0051D5', fontWeight: '700', fontSize: 14 },
+  loginText: { color: 'rgb(16 102 177)', fontWeight: '700', fontSize: 14 },
   securityBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#d1d5db', alignSelf: 'center', marginVertical: 16 },
   securityText: { fontSize: 11, fontWeight: '700', color: '#047857', marginLeft: 6, textTransform: 'uppercase' },
   disclaimerText: { textAlign: 'center', color: '#6b7280', fontSize: 12, lineHeight: 18, paddingHorizontal: 10 },
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   tenantItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   tenantName: { flex: 1, fontSize: 15, fontWeight: '500' },
   initialsContainer: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#dbeafe' },
-  initialsText: { fontSize: 12, fontWeight: '600', color: '#0051D5' },
+  initialsText: { fontSize: 12, fontWeight: '600', color: 'rgb(16 102 177)' },
 });
 
 export default RegisterScreen;

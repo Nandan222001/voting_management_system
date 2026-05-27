@@ -7,23 +7,31 @@ import {
   FaUserCog,
   FaChartBar,
   FaShieldAlt,
-  FaSignOutAlt,
   FaBuilding,
   FaChartLine,
+  FaMapMarkerAlt,
+  FaCog,
+  FaLayerGroup,
 } from 'react-icons/fa';
-import { logoutUser } from '../../store/slices/authSlice';
+import { LogOut } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { logoutUser, selectCurrentUser } from '../../store/slices/authSlice';
 
 const adminNavLinks = [
   { to: '/dashboard', icon: FaHome, label: 'Dashboard', roles: ['admin', 'moderator', 'voter'] },
   { to: '/elections', icon: FaVoteYea, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
   { to: '/candidates', icon: FaUsers, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/candidate-committees', icon: FaLayerGroup, label: 'Committees', roles: ['admin'] },
+  { to: '/targets', icon: FaMapMarkerAlt, label: 'Geography', roles: ['admin'] },
   { to: '/users', icon: FaUserCog, label: 'Users', roles: ['admin'] },
   { to: '/results', icon: FaChartBar, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/revenue', icon: FaChartLine, label: 'Revenue', roles: ['admin'] },
   { to: '/audit-logs', icon: FaShieldAlt, label: 'Audit Logs', roles: ['admin'] },
+  { to: '/settings', icon: FaCog, label: 'Settings', roles: ['admin', 'moderator', 'voter'] },
 ];
 
 const superAdminNavLinks = [
-  { to: '/superadmin', icon: FaChartLine, label: 'Platform Overview' },
+  { to: '/dashboard', icon: FaChartLine, label: 'Platform Overview' },
   { to: '/tenants', icon: FaBuilding, label: 'Tenants' },
   { to: '/elections?superadmin=true', icon: FaVoteYea, label: 'All Elections', exactMatch: '/elections' },
   { to: '/audit-logs', icon: FaShieldAlt, label: 'Platform Audit' },
@@ -38,8 +46,8 @@ function NavItem({ to, icon: Icon, label }) {
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
             isActive
-              ? 'bg-[#1B4FD8] text-white shadow-sm'
-              : 'text-gray-600 hover:bg-[#F0F2F7] hover:text-[#1B4FD8]'
+              ? 'bg-[rgb(16_102_177)] text-white shadow-sm'
+              : 'text-gray-600 hover:bg-[#F0F2F7] hover:text-[rgb(16_102_177)]'
           }`
         }
       >
@@ -47,11 +55,11 @@ function NavItem({ to, icon: Icon, label }) {
           <>
             <Icon
               className={`text-base flex-shrink-0 transition-colors ${
-                isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#1B4FD8]'
+                isActive ? 'text-white' : 'text-gray-400 group-hover:text-[rgb(16_102_177)]'
               }`}
             />
             <span>{label}</span>
-            {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-200" />}
+            {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[rgb(16_102_177)]/20" />}
           </>
         )}
       </NavLink>
@@ -63,6 +71,8 @@ export default function Sidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectCurrentUser);
+  const role = user?.role?.toLowerCase();
+  const isSuperAdmin = role === 'superadmin';
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -70,7 +80,7 @@ export default function Sidebar() {
     navigate('/login');
   };
 
-  const visibleAdminLinks = adminNavLinks.filter(
+  const filteredLinks = adminNavLinks.filter(
     (link) => !link.roles || link.roles.includes(role)
   );
 
@@ -79,11 +89,11 @@ export default function Sidebar() {
 
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
-        <div className="w-9 h-9 bg-[#1B4FD8] rounded-xl flex items-center justify-center flex-shrink-0">
+        <div className="w-9 h-9 bg-[rgb(16_102_177)] rounded-xl flex items-center justify-center flex-shrink-0">
           <FaShieldAlt className="text-white text-base" />
         </div>
-        <span className="text-[#1066b1] text-xl font-bold tracking-wide">
-          Secure<span className="text-[#1B4FD8]">Vote</span>
+        <span className="text-[rgb(16_102_177)] text-xl font-bold tracking-wide">
+          Secure<span className="text-[rgb(16_102_177)]">Vote</span>
         </span>
       </div>
 
@@ -117,17 +127,17 @@ export default function Sidebar() {
           {isSuperAdmin ? 'Platform Menu' : 'Main Menu'}
         </p>
 
-        {isSuperAdmin ? (
-          <ul className="space-y-1">
-            {superAdminNavLinks.map(({ to, icon, label }) => (
+        <ul className="space-y-1">
+          {isSuperAdmin ? (
+            superAdminNavLinks.map(({ to, icon, label }) => (
               <NavItem key={to} to={to} icon={icon} label={label} />
-            ))}
-          </ul>
-        ) : (
-          filteredLinks.map((link) => (
-            <SidebarItem key={link.to} to={link.to} icon={link.icon} label={link.label} />
-          ))
-        )}
+            ))
+          ) : (
+            filteredLinks.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} />
+            ))
+          )}
+        </ul>
       </nav>
 
       {/* User Info + Logout */}
@@ -135,7 +145,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-3 mb-3">
           <div
             className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-              isSuperAdmin ? 'bg-purple-500' : 'bg-[#1B4FD8]'
+              isSuperAdmin ? 'bg-purple-500' : 'bg-[rgb(16_102_177)]'
             }`}
           >
             <span className="text-white text-sm font-bold uppercase">
@@ -143,7 +153,7 @@ export default function Sidebar() {
             </span>
           </div>
           <div className="overflow-hidden">
-            <p className="text-[#1066b1] text-sm font-semibold truncate">
+            <p className="text-[rgb(16_102_177)] text-sm font-semibold truncate">
               {user?.full_name ?? 'Admin User'}
             </p>
             <p className="text-gray-400 text-xs truncate">{user?.email ?? 'admin@vote.com'}</p>

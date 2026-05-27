@@ -1,275 +1,178 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaPlus, FaEdit, FaTrash, FaMapMarkerAlt } from 'react-icons/fa'
+import { FaPlus, FaMapMarkerAlt, FaSearch } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
-import FancySelect from '../components/common/FancySelect'
 import DataTable from '../components/common/DataTable'
 import Modal from '../components/common/Modal'
 import ConfirmDialog from '../components/common/ConfirmDialog'
-import useAuth from '../hooks/useAuth'
-import {
-  fetchTargets,
-  createTarget,
-  updateTarget,
-  deleteTarget,
-} from '../store/slices/targetSlice'
+import LoadingSpinner from '../components/common/LoadingSpinner'
+import { fetchTargets, createTarget, updateTarget, deleteTarget } from '../store/slices/targetSlice'
 
-const TARGET_TYPES = [
-  { value: 'state', label: 'State' },
-  { value: 'district', label: 'District' },
-  { value: 'taluka', label: 'Taluka' },
-  { value: 'city', label: 'City' },
-  { value: 'village', label: 'Village' },
-  { value: 'other', label: 'Other' },
-]
-
-const TYPE_PARENT_MAP = {
-  'district': 'state',
-  'taluka': 'district',
-  'city': 'taluka',
-  'village': 'city',
-}
+const emptyForm = { name: '', type: 'block' }
 
 export default function TargetsPage() {
   const dispatch = useDispatch()
-  const { isSuperAdmin } = useAuth()
-  const { targets, loading, actionLoading } = useSelector((s) => s.targets)
+  const { targets, loading } = useSelector(s => s.targets)
 
-  const [modalOpen, setModalOpen] = useState(false)
+  const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
-  const [deleteTargetObj, setDeleteTargetObj] = useState(null)
-  const [form, setForm] = useState({ name: '', type: 'state', parent_id: '' })
+  const [deleteTargetItem, setDeleteTargetItem] = useState(null)
+  const [form, setForm] = useState(emptyForm)
+  const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     dispatch(fetchTargets())
   }, [dispatch])
 
-  const openCreate = () => {
+  function openCreate() {
     setEditTarget(null)
-    setForm({ name: '', type: 'state', parent_id: '' })
-    setModalOpen(true)
+    setForm(emptyForm)
+    setShowModal(true)
   }
 
-  const openEdit = (t) => {
+  function openEdit(t) {
     setEditTarget(t)
-    setForm({ 
-      name: t.name, 
-      type: t.type, 
-      parent_id: t.parent_id || '' 
-    })
-    setModalOpen(true)
+    setForm({ name: t.name, type: t.type || 'block' })
+    setShowModal(true)
   }
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault()
-    
-    // Validation: Ensure parent matches hierarchy if required
-    const requiredParentType = TYPE_PARENT_MAP[form.type]
-    if (requiredParentType) {
-        const parent = targets.find(t => String(t.id) === String(form.parent_id))
-        if (!parent || parent.type !== requiredParentType) {
-            toast.error(`A ${form.type} must have a ${requiredParentType} as its parent.`)
-            return
-        }
-    }
-
-    const payload = { 
-      ...form, 
-      parent_id: form.parent_id ? parseInt(form.parent_id) : null 
-    }
+    setSubmitting(true)
     try {
       if (editTarget) {
-        await dispatch(updateTarget({ id: editTarget.id, data: payload })).unwrap()
+        await dispatch(updateTarget({ id: editTarget.id, data: form })).unwrap()
         toast.success('Target updated')
       } else {
-        await dispatch(createTarget(payload)).unwrap()
+        await dispatch(createTarget(form)).unwrap()
         toast.success('Target created')
       }
-      setModalOpen(false)
+      setShowModal(false)
+      dispatch(fetchTargets())
     } catch (err) {
-      toast.error(err || 'Operation failed')
+      toast.error(err?.message || 'Action failed')
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleDelete = async () => {
+  async function handleDelete() {
     try {
-      await dispatch(deleteTarget(deleteTargetObj.id)).unwrap()
+      await dispatch(deleteTarget(deleteTargetItem.id)).unwrap()
       toast.success('Target deleted')
-      setDeleteTargetObj(null)
+      setDeleteTargetItem(null)
+      dispatch(fetchTargets())
     } catch (err) {
-      toast.error(err || 'Delete failed')
+      toast.error(err?.message || 'Delete failed')
     }
   }
 
-  // Filter possible parents based on selected type
-  const possibleParents = useMemo(() => {
-    const requiredType = TYPE_PARENT_MAP[form.type]
-    if (!requiredType) return []
-    return targets.filter(t => t.type === requiredType && t.id !== editTarget?.id)
-  }, [form.type, targets, editTarget])
+  const filtered = targets.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase()) ||
+    t.type.toLowerCase().includes(search.toLowerCase())
+  )
 
   const columns = [
-    {
-      key: 'name',
-      header: 'Name',
-      render: (val) => <span className="font-semibold text-gray-900">{val}</span>,
-    },
+    { key: 'name', label: 'Area Name' },
     {
       key: 'type',
-      header: 'Type',
-      render: (val) => (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#e6edfb] text-[#0051D5] border border-[#e6edfb] uppercase tracking-wider">
-          {val}
+      label: 'Type',
+      render: (v) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100 uppercase tracking-wider">
+          {v}
         </span>
-      ),
-    },
-    {
-      key: 'parent_id',
-      header: 'Parent Target',
-      render: (val) => {
-        const parent = targets.find(t => t.id === val)
-        return parent ? (
-            <div className="flex flex-col">
-                <span className="text-gray-900 text-sm font-medium">{parent.name}</span>
-                <span className="text-gray-400 text-[10px] uppercase tracking-tighter">{parent.type}</span>
-            </div>
-        ) : <span className="text-gray-400 text-xs">—</span>
-      },
-    },
-    {
-      key: 'created_at',
-      header: 'Created',
-      render: (val) => <span className="text-gray-400 text-xs">{new Date(val).toLocaleDateString()}</span>,
-    },
+      )
+    }
   ]
 
   return (
-    <MainLayout title="Platform Geographic Hierarchy">
-      <div className="space-y-5 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Geography</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {isSuperAdmin 
-                ? 'Manage the platform-wide hierarchy: State → District → Taluka → City → Village.' 
-                : 'Browse the available geographic hierarchy for election targeting.'}
-            </p>
-          </div>
-          {isSuperAdmin && (
-            <button
-              onClick={openCreate}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
-            >
-              <FaPlus className="text-xs" />
-              Add Entity
-            </button>
-          )}
+    <MainLayout title="Geographical Targets">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">Targets</h1>
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-[rgb(16_102_177)] text-white text-sm font-medium rounded-lg hover:bg-[rgb(12_85_148)]"
+          >
+            <FaPlus className="h-4 w-4" /> Add Target
+          </button>
         </div>
 
-        {targets.length === 0 && !loading ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-[#e6edfb] text-[#0051D5] rounded-full flex items-center justify-center mx-auto mb-4">
-              <FaMapMarkerAlt className="text-2xl" />
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <div className="relative max-w-xs">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search areas..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">No geographic data</h3>
-            <p className="text-gray-500 max-w-sm mx-auto mt-1">
-              {isSuperAdmin ? 'Start by adding a State, then build your hierarchy downwards.' : 'No geographic entities have been defined by the platform administrator yet.'}
-            </p>
-            {isSuperAdmin && (
-                <button
-                    onClick={openCreate}
-                    className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5]"
-                >
-                    <FaPlus className="text-xs" />
-                    Add First State
-                </button>
-            )}
           </div>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={targets}
-            loading={loading}
-            onEdit={isSuperAdmin ? openEdit : null}
-            onDelete={isSuperAdmin ? (row) => setDeleteTargetObj(row) : null}
-          />
-        )}
+
+          {loading ? (
+            <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+          ) : filtered.length === 0 ? (
+            <div className="py-20 text-center text-gray-400">
+              <FaMapMarkerAlt className="h-12 w-12 mx-auto mb-4 opacity-20" />
+              <p>No targets found.</p>
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={filtered}
+              onEdit={openEdit}
+              onDelete={setDeleteTargetItem}
+            />
+          )}
+        </div>
       </div>
 
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editTarget ? 'Edit Entity' : 'Create New Entity'}
-      >
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Edit Target' : 'Create Target'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Entity Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Area Name</label>
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               required
-              placeholder="e.g. Maharashtra, Pune, or Mulshi"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0051D5]"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-            <FancySelect
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select
               value={form.type}
-              onChange={(e) => {
-                  const newType = e.target.value
-                  setForm({ ...form, type: newType, parent_id: '' })
-              }}
-              options={TARGET_TYPES}
-            />
-          </div>
-          
-          {TYPE_PARENT_MAP[form.type] && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Parent {TYPE_PARENT_MAP[form.type].charAt(0).toUpperCase() + TYPE_PARENT_MAP[form.type].slice(1)}
-              </label>
-              <FancySelect
-                value={form.parent_id}
-                onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
-                placeholder={`-- Select ${TYPE_PARENT_MAP[form.type]} --`}
-                options={possibleParents.map(t => ({ value: t.id, label: t.name }))}
-              />
-              {possibleParents.length === 0 && (
-                  <p className="mt-1 text-[10px] text-red-500 font-medium">
-                      No {TYPE_PARENT_MAP[form.type]}s found. Please create one first.
-                  </p>
-              )}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
+              <option value="state">State</option>
+              <option value="district">District</option>
+              <option value="block">Block</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={actionLoading || (TYPE_PARENT_MAP[form.type] && possibleParents.length === 0)}
-              className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60"
-            >
-              {actionLoading ? 'Saving...' : editTarget ? 'Update' : 'Create'}
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] disabled:opacity-60">
+              {submitting ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>
           </div>
         </form>
       </Modal>
 
       <ConfirmDialog
-        isOpen={!!deleteTargetObj}
-        onClose={() => setDeleteTargetObj(null)}
+        isOpen={!!deleteTargetItem}
+        onClose={() => setDeleteTargetItem(null)}
         onConfirm={handleDelete}
-        title="Delete Geographic Entity"
-        message={`Are you sure you want to delete the "${deleteTargetObj?.name}" ${deleteTargetObj?.type}? This will fail if it has child entities.`}
+        title="Delete Target"
+        message={`Are you sure you want to delete "${deleteTargetItem?.name}"?`}
         confirmLabel="Delete"
         variant="danger"
       />

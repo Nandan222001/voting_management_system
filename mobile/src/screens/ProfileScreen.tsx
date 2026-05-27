@@ -65,7 +65,7 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#0051D5" />
+        <ActivityIndicator size="large" color="rgb(16 102 177)" />
       </View>
     );
   }
@@ -88,7 +88,7 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
           </View>
           <Text style={styles.userName}>{user?.full_name || "Verified Voter"}</Text>
           <View style={styles.secureIdBadge}>
-            <Ionicons name="finger-print" size={14} color="#0051D5" style={{ marginRight: 4 }} />
+            <Ionicons name="finger-print" size={14} color="rgb(16 102 177)" style={{ marginRight: 4 }} />
             <Text style={styles.secureIdText}>SECURE ID: {(user?.id || '4209').toString().padStart(4, '0')}</Text>
           </View>
         </View>
@@ -158,7 +158,7 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
               <Switch
                 value={isBiometricAuth}
                 onValueChange={setIsBiometricAuth}
-                trackColor={{ false: '#e5e7eb', true: '#0051D5' }}
+                trackColor={{ false: '#e5e7eb', true: 'rgb(16 102 177)' }}
                 thumbColor={'#fff'}
               />
             </View>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: '#0051D5',
+    backgroundColor: 'rgb(16 102 177)',
     width: 26,
     height: 26,
     borderRadius: 13,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   secureIdText: {
    fontSize: 12,
    fontWeight: '600',
-   color: '#0051D5',
+   color: 'rgb(16 102 177)',
    letterSpacing: 0.5,
   },  section: {
     paddingHorizontal: 16,
