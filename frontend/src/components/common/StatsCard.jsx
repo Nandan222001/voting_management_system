@@ -1,16 +1,36 @@
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const COLOR_MAP = {
-  primary: 'border-[#e6edfb] text-[#0051D5] bg-[#e6edfb]',
-  secondary: 'border-secondary-100 text-secondary-600 bg-secondary-50',
-  green: 'border-green-100 text-green-600 bg-green-50',
-  blue: 'border-[#e6edfb] text-[#0051D5] bg-[#e6edfb]',
-  orange: 'border-orange-100 text-orange-600 bg-orange-50',
-  yellow: 'border-warning-100 text-warning-600 bg-warning-50',
-  amber: 'border-warning-100 text-warning-600 bg-warning-50',
-  red: 'border-red-100 text-red-600 bg-red-50',
-  black: 'border-gray-800 text-white bg-black',
-  gray: 'border-gray-200 text-gray-800 bg-gray-100',
+  indigo: {
+    bg: 'bg-blue-50',
+    icon: 'bg-blue-100 text-[#1B4FD8]',
+    ring: 'ring-blue-200',
+  },
+  green: {
+    bg: 'bg-green-50',
+    icon: 'bg-green-100 text-green-600',
+    ring: 'ring-green-200',
+  },
+  blue: {
+    bg: 'bg-blue-50',
+    icon: 'bg-blue-100 text-blue-600',
+    ring: 'ring-blue-200',
+  },
+  orange: {
+    bg: 'bg-orange-50',
+    icon: 'bg-orange-100 text-orange-600',
+    ring: 'ring-orange-200',
+  },
+  red: {
+    bg: 'bg-red-50',
+    icon: 'bg-red-100 text-red-600',
+    ring: 'ring-red-200',
+  },
+  purple: {
+    bg: 'bg-purple-50',
+    icon: 'bg-purple-100 text-purple-600',
+    ring: 'ring-purple-200',
+  },
 };
 
 export default function StatsCard({ title, value, icon: Icon, color = 'primary', change }) {
@@ -31,11 +51,31 @@ export default function StatsCard({ title, value, icon: Icon, color = 'primary',
         {value !== undefined && value !== null ? value.toLocaleString() : '0'}
       </div>
 
-      {absChange !== null && (
-        <div className="flex items-center gap-1.5">
-          <div className={`flex items-center gap-1 text-xs font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-            {absChange}%
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-gray-500 text-sm font-medium truncate">{title}</p>
+        <p className="text-3xl font-bold text-[#1066b1] mt-0.5 leading-tight">
+          {value !== undefined && value !== null ? value.toLocaleString() : '—'}
+        </p>
+
+        {/* Change Badge */}
+        {absChange !== null && (
+          <div className="flex items-center gap-1 mt-2">
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                isPositive
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {isPositive ? (
+                <FaArrowUp className="text-[10px]" />
+              ) : (
+                <FaArrowDown className="text-[10px]" />
+              )}
+              {absChange}%
+            </span>
+            <span className="text-gray-400 text-xs">vs last month</span>
           </div>
           <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">vs last month</span>
         </div>

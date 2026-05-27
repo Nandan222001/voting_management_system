@@ -157,7 +157,7 @@ export default function ElectionDetailPage() {
             <FaArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{currentElection?.title}</h1>
+            <h1 className="text-2xl font-bold text-[#1066b1]">{currentElection?.title}</h1>
             <p className="text-sm text-gray-500">{currentElection?.description}</p>
           </div>
           <Badge status={currentElection?.status} />
@@ -173,7 +173,7 @@ export default function ElectionDetailPage() {
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-              <div className="mt-1 text-sm font-semibold text-gray-900 truncate">{value}</div>
+              <p className="mt-1 text-lg font-semibold text-[#1066b1]">{value}</p>
             </div>
           ))}
         </div>
@@ -190,7 +190,7 @@ export default function ElectionDetailPage() {
         {/* Results chart */}
         {showResults && chartData.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Vote Distribution</h2>
+            <h2 className="text-lg font-semibold text-[#1066b1] mb-4">Vote Distribution</h2>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -210,13 +210,13 @@ export default function ElectionDetailPage() {
         {/* Candidates section */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-            Candidates ({displayCandidates.length})
+            <h2 className="text-lg font-semibold text-[#1066b1]">
+              Candidates ({candidates.length})
             </h2>
             {isAdmin && currentElection?.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-medium rounded-lg hover:bg-[#0051D5]"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1B4FD8] text-white text-sm font-medium rounded-lg hover:bg-[#1640B8]"
               >
                 <FaPlus className="h-4 w-4" /> Add Candidate
               </button>
@@ -250,32 +250,12 @@ export default function ElectionDetailPage() {
                       <span className="absolute top-12 right-3 text-amber-500"><FaTrophy /></span>
                     )}
                     <div className="flex items-center gap-3 mb-3">
-                      <ImageAvatar
-                        src={c.image_url || result?.image_url}
-                        name={c.full_name}
-                        sizeClass="w-12 h-12"
-                        imageClassName="ring-1 ring-gray-200"
-                        fallbackClassName="bg-gray-200 text-gray-900 text-lg"
-                      />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{c.full_name}</p>
-                        <div className="flex flex-wrap gap-1 mt-0.5">
-                          {isWinner && (
-                            <span className="text-[10px] text-white bg-amber-500 px-1.5 py-0.5 rounded font-bold uppercase">
-                              Winner
-                            </span>
-                          )}
-                          {c.committee && (
-                            <span className="text-[10px] text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded font-medium truncate italic">
-                              {c.committee.name}
-                            </span>
-                          )}
-                          {c.target && (
-                            <span className="text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded font-medium truncate border border-gray-100">
-                              {c.target.name}
-                            </span>
-                          )}
-                        </div>
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] font-bold text-lg">
+                        {c.symbol || c.full_name[0]}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-[#1066b1]">{c.full_name}</p>
+                        <p className="text-sm text-gray-500">{c.party}</p>
                       </div>
                     </div>
                     {c.bio && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{c.bio}</p>}
@@ -293,14 +273,14 @@ export default function ElectionDetailPage() {
                         </div>
                       </div>
                     )}
-                    {isAdmin && currentElection?.status === 'draft' && (
-                      <div className="flex justify-end">
-                        <TableActions
-                          actions={[
-                            { key: 'edit', label: 'Edit', onClick: () => openEdit(c) },
-                            { key: 'delete', label: 'Remove', danger: true, onClick: () => setDeleteCandidateTarget(c) },
-                          ]}
-                        />
+                    {currentElection?.status === 'draft' && (
+                      <div className="flex gap-2">
+                        <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-[#1B4FD8] hover:text-indigo-800">
+                          <FaEdit /> Edit
+                        </button>
+                        <button onClick={() => setDeleteTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
+                          <FaTrash /> Remove
+                        </button>
                       </div>
                     )}
                   </div>
@@ -314,37 +294,20 @@ export default function ElectionDetailPage() {
       {/* Add/Edit Modal */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}>
         <form onSubmit={handleSubmit} className="space-y-4">
-                  {[
-                    { name: 'full_name', label: 'Full Name', required: true },
-                    { name: 'symbol', label: 'Symbol / Initial', required: false },
-                  ].map(({ name, label, required }) => (
-                    <div key={name}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-                      <input
-                        type="text"
-                        value={form[name]}
-                        onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-                        required={required}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
-                      />
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                    <ImageUpload
-                      file={form.image_file}
-                      existingUrl={form.image_url}
-                      onFileChange={(f) => setForm(prev => ({ ...prev, image_file: f }))}
-                      id="election-candidate-image-input"
-                    />
-                  </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Committee</label>
-              <FancySelect
-                value={form.committee_id}
-                onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
-                options={[{ value: '', label: '-- No specific committee --' }, ...committees.map(c => ({ value: c.id, label: c.name }))]}
+          {[
+            { name: 'full_name', label: 'Full Name', required: true },
+            { name: 'party', label: 'Party', required: true },
+            { name: 'symbol', label: 'Symbol / Initial', required: false },
+            { name: 'image_url', label: 'Image URL', required: false },
+          ].map(({ name, label, required }) => (
+            <div key={name}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+              <input
+                type="text"
+                value={form[name]}
+                onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
+                required={required}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -362,15 +325,15 @@ export default function ElectionDetailPage() {
               value={form.bio}
               onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[#0051D5] rounded-lg hover:bg-[#0051D5] disabled:opacity-60">
-              {submitting ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] disabled:opacity-60">
+              {submitting ? 'Saving…' : editTarget ? 'Update' : 'Add'}
             </button>
           </div>
         </form>

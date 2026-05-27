@@ -1,41 +1,63 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
-  LayoutDashboard, Users, Shield, Settings, Activity, FileText, CheckSquare, Banknote, MapPin, LogOut
-} from 'lucide-react';
-import { logoutUser, selectCurrentUser } from '../../store/slices/authSlice';
-import toast from 'react-hot-toast';
+import {
+  FaHome,
+  FaVoteYea,
+  FaUsers,
+  FaUserCog,
+  FaChartBar,
+  FaShieldAlt,
+  FaSignOutAlt,
+  FaBuilding,
+  FaChartLine,
+} from 'react-icons/fa';
+import { logoutUser } from '../../store/slices/authSlice';
 
-const navLinks = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'moderator', 'voter'] },
-  { to: '/elections', icon: CheckSquare, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
-  { to: '/candidates', icon: Users, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
-  { to: '/candidate-committees', icon: Shield, label: 'Committees', roles: ['admin'] },
-  { to: '/users', icon: Users, label: 'Users', roles: ['admin'] },
-  { to: '/results', icon: Activity, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
-  { to: '/revenue', icon: Banknote, label: 'Revenue', roles: ['admin'] },
-  { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'moderator', 'voter'] },
+const adminNavLinks = [
+  { to: '/dashboard', icon: FaHome, label: 'Dashboard', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/elections', icon: FaVoteYea, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/candidates', icon: FaUsers, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/users', icon: FaUserCog, label: 'Users', roles: ['admin'] },
+  { to: '/results', icon: FaChartBar, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/audit-logs', icon: FaShieldAlt, label: 'Audit Logs', roles: ['admin'] },
 ];
 
-const superAdminLinks = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/tenants', icon: Users, label: 'Tenants' },
-  { to: '/targets', icon: MapPin, label: 'Geography' },
-  { to: '/audit-logs', icon: FileText, label: 'Audit Logs', roles: ['superadmin'] },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const superAdminNavLinks = [
+  { to: '/superadmin', icon: FaChartLine, label: 'Platform Overview' },
+  { to: '/tenants', icon: FaBuilding, label: 'Tenants' },
+  { to: '/elections?superadmin=true', icon: FaVoteYea, label: 'All Elections', exactMatch: '/elections' },
+  { to: '/audit-logs', icon: FaShieldAlt, label: 'Platform Audit' },
 ];
 
-const SidebarItem = ({ icon: Icon, label, to }) => (
-  <NavLink 
-    to={to}
-    className={({ isActive }) => 
-      `flex items-center px-6 py-3 cursor-pointer transition-all ${isActive ? 'bg-[#e6edfb] text-[#0051D5] border-l-4 border-[#0051D5] font-bold' : 'text-gray-500 hover:bg-[#e6edfb] hover:text-[#0051D5]'}`
-    }
-  >
-    <Icon className="w-5 h-5 mr-3" />
-    <span className="text-sm font-semibold">{label}</span>
-  </NavLink>
-);
+function NavItem({ to, icon: Icon, label }) {
+  return (
+    <li>
+      <NavLink
+        to={to}
+        end={false}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+            isActive
+              ? 'bg-[#1B4FD8] text-white shadow-sm'
+              : 'text-gray-600 hover:bg-[#F0F2F7] hover:text-[#1B4FD8]'
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <Icon
+              className={`text-base flex-shrink-0 transition-colors ${
+                isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#1B4FD8]'
+              }`}
+            />
+            <span>{label}</span>
+            {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-200" />}
+          </>
+        )}
+      </NavLink>
+    </li>
+  );
+}
 
 export default function Sidebar() {
   const dispatch = useDispatch();
@@ -48,26 +70,59 @@ export default function Sidebar() {
     navigate('/login');
   };
 
-  const filteredLinks = navLinks.filter(
-    (link) => !link.roles || (user && link.roles.includes(user.role))
+  const visibleAdminLinks = adminNavLinks.filter(
+    (link) => !link.roles || link.roles.includes(role)
   );
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
-      <div className="p-6 border-b border-gray-200 text-center">
-        <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-          {user?.role === 'superadmin' ? 'SuperAdmin' : 'TechElect'}
-        </h1>
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-          {user?.role === 'superadmin' ? 'Platform Overview' : 'Voting System'}
-        </p>
+    <aside className="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 flex flex-col z-50 shadow-sm">
+
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+        <div className="w-9 h-9 bg-[#1B4FD8] rounded-xl flex items-center justify-center flex-shrink-0">
+          <FaShieldAlt className="text-white text-base" />
+        </div>
+        <span className="text-[#1066b1] text-xl font-bold tracking-wide">
+          Secure<span className="text-[#1B4FD8]">Vote</span>
+        </span>
       </div>
-      
-      <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
-        {user?.role === 'superadmin' ? (
-          superAdminLinks.map((link) => (
-            <SidebarItem key={link.to} to={link.to} icon={link.icon} label={link.label} />
-          ))
+
+      {/* SuperAdmin badge */}
+      {isSuperAdmin && (
+        <div className="px-4 pt-3 pb-1">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-xl">
+            <span className="text-purple-500 text-xs">⚡</span>
+            <span className="text-purple-600 text-xs font-semibold tracking-wide uppercase">
+              Platform Admin
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Tenant context */}
+      {!isSuperAdmin && user?.tenant_name && (
+        <div className="px-4 pt-3 pb-1">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F0F2F7] border border-gray-200 rounded-xl">
+            <FaBuilding className="text-gray-400 text-xs flex-shrink-0" />
+            <span className="text-gray-600 text-xs font-medium truncate">
+              {user.tenant_name}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider px-3 mb-2">
+          {isSuperAdmin ? 'Platform Menu' : 'Main Menu'}
+        </p>
+
+        {isSuperAdmin ? (
+          <ul className="space-y-1">
+            {superAdminNavLinks.map(({ to, icon, label }) => (
+              <NavItem key={to} to={to} icon={icon} label={label} />
+            ))}
+          </ul>
         ) : (
           filteredLinks.map((link) => (
             <SidebarItem key={link.to} to={link.to} icon={link.icon} label={link.label} />
@@ -75,28 +130,29 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
-          <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold overflow-hidden">
-             {user?.avatar_url ? (
-               <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-             ) : (
-               user?.full_name?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || 'S'
-             )}
+      {/* User Info + Logout */}
+      <div className="border-t border-gray-100 px-4 py-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+              isSuperAdmin ? 'bg-purple-500' : 'bg-[#1B4FD8]'
+            }`}
+          >
+            <span className="text-white text-sm font-bold uppercase">
+              {user?.full_name ? user.full_name.charAt(0) : user?.email?.charAt(0) ?? 'A'}
+            </span>
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-bold text-sm text-gray-900 truncate">
-              {user?.full_name || user?.name || 'System Admin'}
-            </div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase truncate">
-              {user?.role || 'Admin'}
-            </div>
+          <div className="overflow-hidden">
+            <p className="text-[#1066b1] text-sm font-semibold truncate">
+              {user?.full_name ?? 'Admin User'}
+            </p>
+            <p className="text-gray-400 text-xs truncate">{user?.email ?? 'admin@vote.com'}</p>
           </div>
         </div>
 
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-2 py-2 text-gray-400 hover:text-red-600 text-sm font-semibold transition-all"
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 text-sm font-medium transition-all duration-150"
         >
           <LogOut className="w-4 h-4 ml-1" />
           <span>Logout</span>

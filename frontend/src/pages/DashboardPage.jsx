@@ -56,27 +56,26 @@ export default function DashboardPage() {
   const recentElections = elections.slice(0, 5);
 
   const quickActions = [
-    { label: 'Create Election', icon: FaPlus, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/elections' },
-    { label: 'Manage Users', icon: FaUserCog, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/users' },
+    { label: 'Create Election', icon: FaPlus, color: 'bg-[#1B4FD8] hover:bg-[#1640B8]', path: '/elections' },
+    { label: 'Manage Users', icon: FaUserCog, color: 'bg-blue-600 hover:bg-blue-700', path: '/users' },
     { label: 'View Results', icon: FaChartBar, color: 'bg-green-600 hover:bg-green-700', path: '/results' },
     // Audit Logs quick action available only to superadmin
     ...(user?.role === 'superadmin' ? [{ label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-[#0051D5] hover:bg-[#0051D5]', path: '/audit-logs' }] : []),
   ];
 
   return (
-    <MainLayout title="Dashboard">
-      <div className="space-y-6 animate-fade-in">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Overview</h2>
+    <div className="space-y-6 animate-fade-in">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-[#1066b1]">Overview</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             Welcome back! Here&apos;s what&apos;s happening today.
           </p>
         </div>
         <button
           onClick={() => navigate('/elections')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-[#0051D5] text-white text-sm font-semibold rounded-lg hover:bg-[#0051D5] transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#1B4FD8] text-white text-sm font-semibold rounded-lg hover:bg-[#1640B8] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           New Election
@@ -127,7 +126,7 @@ export default function DashboardPage() {
             <h3 className="text-base font-bold text-gray-800">Recent Elections</h3>
             <button
               onClick={() => navigate('/elections')}
-              className="flex items-center gap-1 text-gray-900 text-sm font-semibold hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1 text-[#1B4FD8] text-sm font-semibold hover:text-[#1B4FD8] transition-colors"
             >
               View all
               <FaArrowRight className="text-xs" />
@@ -152,21 +151,13 @@ export default function DashboardPage() {
                     onClick={() => navigate(`/elections/${id}`)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <FaVoteYea className="text-gray-600 text-sm" />
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <FaVoteYea className="text-[#1B4FD8] text-sm" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-gray-900 transition-colors">
-                            {election.title}
-                          </p>
-                          {election.winner_declared && election.winner && (
-                            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
-                              <FaTrophy className="text-[9px]" />
-                              {election.winner.candidate_name}
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-[#1B4FD8] transition-colors">
+                          {election.title}
+                        </p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           {safeFormat(election.start_date || election.startDate)} &mdash;{' '}
                           {safeFormat(election.end_date || election.endDate)}
@@ -178,7 +169,7 @@ export default function DashboardPage() {
                       <span className="text-xs text-gray-400 hidden sm:block">
                         {election.candidate_count ?? election.candidateCount ?? election.candidates_count ?? election.candidatesCount ?? 0} candidates
                       </span>
-                      <FaArrowRight className="text-gray-300 text-xs group-hover:text-gray-500 transition-colors" />
+                      <FaArrowRight className="text-gray-300 text-xs group-hover:text-blue-400 transition-colors" />
                     </div>
                   </div>
                 );

@@ -4,8 +4,8 @@ import Header from './Header';
 
 export default function MainLayout({ children }) {
   return (
-    <div className="flex h-screen bg-gray-50 font-sans">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#F0F2F7] flex">
+      {/* Fixed Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}

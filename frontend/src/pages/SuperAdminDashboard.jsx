@@ -128,8 +128,10 @@ export default function SuperAdminDashboard() {
       <div className="animate-fade-in space-y-8">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">System Overview</h1>
-            <p className="text-sm text-gray-500 mt-1">Real-time platform monitoring and organization tracking.</p>
+            <h2 className="text-2xl font-bold text-[#1066b1]">Platform Overview</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Manage all tenants and monitor platform-wide activity.
+            </p>
           </div>
           <button 
             onClick={() => navigate('/tenants')}
@@ -177,27 +179,95 @@ export default function SuperAdminDashboard() {
                   const colors = ['bg-gray-100 text-gray-800', 'bg-gray-200 text-gray-900', 'bg-gray-50 text-gray-600', 'bg-gray-100 text-gray-700'];
                   const bgClass = colors[index % colors.length];
 
-                  return (
-                    <TenantRow 
-                      key={tenant._id || tenant.id}
-                      logo={resolveMediaUrl(tenant.logo_url || tenant.logo)}
-                      initials={tenant.name?.[0]?.toUpperCase() || 'T'}
-                      name={tenant.name}
-                      slug={tenant.slug}
-                      status={tenant.status || 'Active'}
-                      plan={tenant.plan || 'Enterprise'}
-                      initialsBg={bgClass}
-                      onDetails={() => navigate(`/tenants?view=${tenant._id || tenant.id}`)}
-                      onSuspend={() => handleSuspendToggle(tenant)}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {recentTotalPages > 1 && (
-            <div className="border-t border-gray-100 bg-gray-50/50">
-              <Pagination page={recentPage} totalPages={recentTotalPages} onPageChange={setRecentPage} />
+                    return (
+                      <tr key={id} className="hover:bg-gray-50 transition-colors group">
+                        {/* Organization Name */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {tenant.logo_url ? (
+                              <img
+                                src={tenant.logo_url}
+                                alt={tenant.name}
+                                className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                                style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
+                              >
+                                {tenant.name?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="font-semibold text-gray-800 truncate max-w-[160px]">
+                              {tenant.name}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Slug */}
+                        <td className="px-6 py-4">
+                          <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                            {tenant.slug}
+                          </span>
+                        </td>
+
+                        {/* Plan */}
+                        <td className="px-6 py-4">
+                          <PlanBadge plan={tenant.plan} />
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-6 py-4">
+                          <Badge status={tenant.status} />
+                        </td>
+
+                        {/* Elections */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <FaVoteYea className="text-gray-400 text-xs" />
+                            <span>{tenant.election_count ?? tenant.elections ?? '—'}</span>
+                          </div>
+                        </td>
+
+                        {/* Users */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <FaUsers className="text-gray-400 text-xs" />
+                            <span>{tenant.user_count ?? tenant.users ?? '—'}</span>
+                          </div>
+                        </td>
+
+                        {/* Created */}
+                        <td className="px-6 py-4 text-gray-500 text-xs">
+                          {safeFormat(tenant.created_at || tenant.createdAt)}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => navigate(`/tenants?view=${id}`)}
+                              className="px-3 py-1.5 text-xs font-semibold text-[#1B4FD8] bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                            >
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => handleSuspendToggle(tenant)}
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                                isSuspended
+                                  ? 'text-green-600 bg-green-50 hover:bg-green-100'
+                                  : 'text-red-600 bg-red-50 hover:bg-red-100'
+                              }`}
+                            >
+                              {isSuspended ? 'Activate' : 'Suspend'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
