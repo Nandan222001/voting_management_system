@@ -19,8 +19,9 @@ from app.schemas.auth import (
     TokenResponse,
     
 )
-from app.schemas.user import UserResponse
+from app.schemas.user import ChangePasswordRequest, UserResponse, UserSettingsUpdate
 from app.services.auth_service import auth_service
+from app.services.user_service import user_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -141,3 +142,52 @@ def get_me(
     Requires a valid Bearer token in the ``Authorization`` header.
     """
     return UserResponse.model_validate(current_user)
+
+
+# ---------------------------------------------------------------------------
+# PUT /me
+# ---------------------------------------------------------------------------
+
+@router.put(
+    "/me",
+    response_model=UserResponse,
+    summary="Update the currently authenticated user's settings",
+)
+def update_me(
+    payload: UserSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UserResponse:
+    """
+    Update self-service profile settings for the authenticated user.
+
+    Email, role, status, tenant, and verification flags are not accepted here.
+    """
+    updated = user_service.update_own_settings(db, current_user.id, payload)
+    return UserResponse.model_validate(updated)
+
+
+# ---------------------------------------------------------------------------
+# PUT /me/password
+# ---------------------------------------------------------------------------
+
+@router.put(
+    "/me/password",
+    response_model=MessageResponse,
+    summary="Change the currently authenticated user's password",
+)
+def change_my_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    """
+    Change the authenticated user's password after verifying the current one.
+    """
+    user_service.change_password(
+        db,
+        current_user.id,
+        payload.current_password,
+        payload.new_password,
+    )
+    return MessageResponse(message="Password updated successfully.")

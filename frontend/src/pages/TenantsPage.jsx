@@ -3,20 +3,23 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  FaBuilding,
-  FaPlus,
-  FaEdit,
-  FaTrash,
-  FaBan,
-  FaCheckCircle,
-  FaEye,
-  FaUsers,
-  FaVoteYea,
-  FaSearch,
-  FaChevronLeft,
-  FaChevronRight,
-  FaTimes,
-} from 'react-icons/fa';
+  Activity,
+  Users,
+  Plus,
+  Edit,
+  Trash2,
+  Ban,
+  CheckCircle2,
+  Eye,
+  Vote,
+  Search,
+  X,
+  Building,
+  Clock,
+  Mail,
+  Link,
+  ShieldCheck,
+} from 'lucide-react';
 import {
   fetchTenants,
   fetchTenantById,
@@ -39,6 +42,8 @@ import FancySelect from '../components/common/FancySelect';
 import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import Pagination from '../components/common/Pagination';
+import TableActions from '../components/common/TableActions';
 import { format, parseISO } from 'date-fns';
 import ImageUpload from '../components/common/ImageUpload';
 import ImageAvatar from '../components/common/ImageAvatar';
@@ -70,9 +75,9 @@ function getTenantId(tenant) {
 // ─── Plan Badge ───────────────────────────────────────────────────────────────
 
 const PLAN_STYLES = {
-  starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200',
-  enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
+  starter: 'bg-gray-50 text-gray-600 border-gray-100',
+  professional: 'bg-gray-100 text-gray-900 border-gray-200',
+  enterprise: 'bg-gray-100 text-gray-900 border-gray-200',
 };
 
 function PlanBadge({ plan }) {
@@ -80,7 +85,7 @@ function PlanBadge({ plan }) {
   const key = plan.toLowerCase();
   const style = PLAN_STYLES[key] ?? PLAN_STYLES.starter;
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${style}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${style}`}>
       {plan}
     </span>
   );
@@ -90,32 +95,37 @@ function PlanBadge({ plan }) {
 
 function Field({ label, required, children, hint, error }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="space-y-1.5">
+      <label className="block text-sm font-semibold text-gray-700">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {children}
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-      {hint && !error && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+      {hint && !error && <p className="text-xs text-gray-400">{hint}</p>}
     </div>
   );
 }
 
-function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, ...props }) {
+function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, icon: Icon, ...props }) {
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={onChange}
-      placeholder={placeholder}
-      disabled={disabled}
-      required={required}
-      {...props}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
-        hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
-      }`}
-    />
+    <div className="relative group">
+      {Icon && (
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-gray-900 transition-colors" />
+      )}
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        required={required}
+        {...props}
+        className={`block w-full ${Icon ? 'pl-9' : 'px-4'} py-2.5 bg-gray-50 border rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-black/10/10 focus:border-black disabled:bg-gray-100 disabled:text-gray-400 transition-all ${
+          hasError ? 'border-red-600 bg-red-50 focus:ring-red-600/5' : 'border-gray-200'
+        }`}
+      />
+    </div>
   );
 }
 
@@ -182,14 +192,14 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Organization name is required.';
-    if (!form.slug.trim()) errs.slug = 'Slug is required.';
-    if (!form.contact_email.trim()) errs.contact_email = 'Contact email is required.';
+    if (!form.name.trim()) errs.name = 'Required.';
+    if (!form.slug.trim()) errs.slug = 'Required.';
+    if (!form.contact_email.trim()) errs.contact_email = 'Required.';
     if (!isEdit) {
-      if (!form.admin_name.trim()) errs.admin_name = 'Admin name is required.';
-      if (!form.admin_email.trim()) errs.admin_email = 'Admin email is required.';
-      if (!form.admin_password) errs.admin_password = 'Password is required.';
-      else if (form.admin_password.length < 8) errs.admin_password = 'Password must be at least 8 characters.';
+      if (!form.admin_name.trim()) errs.admin_name = 'Required.';
+      if (!form.admin_email.trim()) errs.admin_email = 'Required.';
+      if (!form.admin_password) errs.admin_password = 'Required.';
+      else if (form.admin_password.length < 8) errs.admin_password = 'Min. 8 chars.';
     }
     return errs;
   };
@@ -220,7 +230,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
     }
 
     if (!isEdit) {
-      // Flat admin fields matching backend TenantCreate schema
       if (payload instanceof FormData) {
         payload.append('admin_full_name', form.admin_name.trim());
         payload.append('admin_email', form.admin_email.trim());
@@ -237,8 +246,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Tenant' : 'Create New Tenant'} size="2xl">
-      <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
-        {/* Anti-Autofill Honeypot */}
+      <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
         {!isEdit && (
           <div className="sr-only" aria-hidden="true" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, zIndex: -1 }}>
             <input type="text" name="prevent_autofill_email" tabIndex="-1" autoComplete="username" />
@@ -246,10 +254,9 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           </div>
         )}
 
-        {/* Tenant Details Section */}
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-            Tenant Details
+        <div className="space-y-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Organization Details
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Organization Name" required error={errors.name}>
@@ -259,24 +266,26 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={set('name')}
                 placeholder="Acme Corp"
                 autoComplete="off"
+                icon={Building}
                 required
                 hasError={!!errors.name}
               />
             </Field>
-            <Field label="Slug" required hint="Auto-generated from name. Used in URLs." error={errors.slug}>
+            <Field label="Slug" required hint="Auto-generated from name." error={errors.slug}>
               <Input
                 name="tenant_slug_field"
                 value={form.slug}
                 onChange={handleSlugChange}
                 placeholder="acme-corp"
                 autoComplete="off"
+                icon={Link}
                 required
                 hasError={!!errors.slug}
               />
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Contact Email" required error={errors.contact_email}>
               <Input
                 type="email"
@@ -285,41 +294,39 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={set('contact_email')}
                 placeholder="admin@acme.com"
                 autoComplete="off"
+                icon={Mail}
                 required
                 hasError={!!errors.contact_email}
               />
             </Field>
-            <Field label="Plan">
+            <Field label="Subscription Plan">
                 <FancySelect
                   value={form.plan}
                   onChange={(e) => setForm((prev) => ({ ...prev, plan: e.target.value }))}
                   options={[
-                    { value: 'starter', label: 'Starter — 5 elections, 1,000 voters' },
-                    { value: 'professional', label: 'Professional — 25 elections, 10,000 voters' },
+                    { value: 'starter', label: 'Starter — 5 elections' },
+                    { value: 'professional', label: 'Professional — 25 elections' },
                     { value: 'enterprise', label: 'Enterprise — Unlimited' },
                   ]}
                 />
             </Field>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 mt-4">
-            <Field label="Logo">
-              <ImageUpload
-                file={form.logo_file}
-                existingUrl={form.logo_url}
-                onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
-                id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
-                helperText="Upload a PNG/JPEG logo file (optional) up to 2 MB"
-              />
-            </Field>
-          </div>
+          <Field label="Logo">
+            <ImageUpload
+              file={form.logo_file}
+              existingUrl={form.logo_url}
+              onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
+              id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
+              helperText="Upload a PNG/JPEG logo file (optional) up to 2 MB"
+            />
+          </Field>
         </div>
 
-        {/* Admin Account section — only for create */}
         {!isEdit && (
-          <div className="border-t border-gray-100 pt-5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-              Admin Account
+          <div className="space-y-4 pt-6 border-t border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              Root Administrator
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Full Name" required error={errors.admin_name}>
@@ -329,6 +336,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   onChange={set('admin_name')}
                   placeholder="Jane Smith"
                   autoComplete="off"
+                  icon={Users}
                   hasError={!!errors.admin_name}
                 />
               </Field>
@@ -340,39 +348,39 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   onChange={set('admin_email')}
                   placeholder="jane@acme.com"
                   autoComplete="new-user-email"
+                  icon={Mail}
                   hasError={!!errors.admin_email}
                 />
               </Field>
             </div>
-            <div className="mt-4">
-              <Field label="Password" required hint="Minimum 8 characters." error={errors.admin_password}>
-                <Input
-                  type="password"
-                  name="new_tenant_admin_password_field"
-                  value={form.admin_password}
-                  onChange={set('admin_password')}
-                  placeholder="Min. 8 characters"
-                  autoComplete="new-password"
-                  hasError={!!errors.admin_password}
-                />
-              </Field>
-            </div>
+            <Field label="Password" required hint="Minimum 8 characters." error={errors.admin_password}>
+              <Input
+                type="password"
+                name="new_tenant_admin_password_field"
+                value={form.admin_password}
+                onChange={set('admin_password')}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                icon={ShieldCheck}
+                hasError={!!errors.admin_password}
+              />
+            </Field>
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-primary-500 rounded-xl hover:bg-primary-600 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -402,44 +410,40 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Suspend Tenant" size="md">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-start gap-3 p-3 bg-orange-50 border border-orange-100 rounded-lg">
-          <FaBan className="text-orange-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-orange-800">
-            Suspending <span className="font-semibold">{tenant?.name}</span> will block all users
-            of this organisation from accessing the platform.
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-100 rounded-xl">
+          <Ban className="text-orange-500 mt-0.5 flex-shrink-0 w-5 h-5" />
+          <p className="text-sm font-medium text-orange-800">
+            Suspending <span className="font-bold underline">{tenant?.name}</span> will block all access to the platform.
           </p>
         </div>
-        <Field label="Suspension Reason" hint="Optional. May be shown to the tenant admin.">
+        <Field label="Suspension Reason" hint="Optional notice.">
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            placeholder="Describe the reason for suspension..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+            placeholder="Describe reason for suspension..."
+            className="block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-black/10/10 focus:border-black transition-all resize-none shadow-sm"
           />
         </Field>
-        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-8 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[130px] justify-center"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all disabled:opacity-60"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <>
-                <FaBan className="text-xs" />
-                Suspend Tenant
-              </>
+              'Confirm Suspension'
             )}
           </button>
         </div>
@@ -455,130 +459,82 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
 
   const detailRows = [
     { label: 'Organization Name', value: tenant.name },
-    { label: 'Slug', value: tenant.slug, mono: true },
-    { label: 'Contact Email', value: tenant.contact_email || tenant.email },
-    { label: 'Domain', value: tenant.domain },
-    { label: 'Plan', value: <PlanBadge plan={tenant.plan} /> },
-    { label: 'Status', value: <Badge status={tenant.status} /> },
-    { label: 'Max Elections', value: tenant.max_elections != null ? tenant.max_elections.toLocaleString() : '—' },
-    { label: 'Max Voters', value: tenant.max_voters != null ? tenant.max_voters.toLocaleString() : '—' },
-    { label: 'Created', value: safeFormat(tenant.created_at || tenant.createdAt) },
-    { label: 'Last Updated', value: safeFormat(tenant.updated_at || tenant.updatedAt) },
+    { label: 'URL Identifier', value: tenant.slug, mono: true },
+    { label: 'Admin Email', value: tenant.contact_email || tenant.email },
+    { label: 'Subscription Plan', value: <PlanBadge plan={tenant.plan} /> },
+    { label: 'Current Status', value: <Badge status={tenant.status} /> },
+    { label: 'Created On', value: safeFormat(tenant.created_at || tenant.createdAt) },
   ];
 
   const stats = tenant.usage || {};
   const usageStats = [
-    {
-      label: 'Users',
-      value: stats.user_count ?? tenant.user_count ?? 0,
-      icon: FaUsers,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
-    },
-    {
-      label: 'Elections',
-      value: stats.election_count ?? tenant.election_count ?? 0,
-      icon: FaVoteYea,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
-    },
-    {
-      label: 'Active',
-      value: stats.active_elections ?? tenant.active_elections ?? 0,
-      icon: FaCheckCircle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Total Votes',
-      value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0,
-      icon: FaBuilding,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
-    },
+    { label: 'Total Users', value: stats.user_count ?? tenant.user_count ?? 0, icon: Users, color: 'text-gray-900', bg: 'bg-gray-100' },
+    { label: 'Elections', value: stats.election_count ?? tenant.election_count ?? 0, icon: Vote, color: 'text-gray-900', bg: 'bg-gray-100' },
+    { label: 'Recent Votes', value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0, icon: Activity, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Tenant Details" size="2xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+    <Modal isOpen={isOpen} onClose={onClose} title="Tenant Overview" size="2xl">
+      <div className="space-y-8">
+        <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
           <ImageAvatar
             src={tenant.logo_url}
             name={tenant.name}
-            sizeClass="w-14 h-14"
-            shapeClass="rounded-xl"
-            imageClassName="border border-gray-200"
-            fallbackClassName="text-white text-2xl shadow-sm"
-            style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
+            sizeClass="w-16 h-16"
+            shapeClass="rounded-2xl"
+            imageClassName="border border-gray-200 shadow-sm"
+            fallbackClassName="text-white text-3xl shadow-sm"
+            style={{ backgroundColor: tenant.primary_color || '#000' }}
           />
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 truncate">{tenant.name}</h3>
-            <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <h3 className="text-xl font-bold text-gray-900 truncate">{tenant.name}</h3>
+            <p className="text-sm text-gray-400 font-mono font-medium truncate mt-0.5">{tenant.slug}</p>
+            <div className="flex items-center gap-2 mt-2">
               <Badge status={tenant.status} />
               <PlanBadge plan={tenant.plan} />
             </div>
           </div>
         </div>
 
-        {/* Usage Stats */}
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Usage Statistics
+        <div className="space-y-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Live Usage Metrics
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {usageStats.map(({ label, value, icon: Icon, color, bg }) => (
-              <div
-                key={label}
-                className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-100 bg-gray-50"
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${bg}`}>
-                  <Icon className={`text-base ${color}`} />
+              <div key={label} className="p-5 rounded-2xl border border-gray-100 bg-gray-50 flex flex-col items-center shadow-sm">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white border border-gray-100 shadow-sm`}>
+                  <Icon className={`w-5 h-5 ${color}`} />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">{value}</p>
-                <p className="text-xs text-gray-500 text-center mt-0.5">{label}</p>
+                <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Detail rows */}
-        <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Details
+        <div className="space-y-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+            Configuration Details
           </p>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
             {detailRows.map(({ label, value, mono }) => (
-              <div key={label} className="flex flex-col">
-                <dt className="text-xs text-gray-400 font-medium">{label}</dt>
-                <dd
-                  className={`mt-0.5 text-sm text-gray-800 ${
-                    mono ? 'font-mono bg-gray-100 px-2 py-0.5 rounded text-xs w-fit' : 'font-medium'
-                  }`}
-                >
+              <div key={label} className="space-y-0.5">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+                <div className={`text-sm font-semibold text-gray-900 ${mono ? 'font-mono' : ''}`}>
                   {value || '—'}
-                </dd>
+                </div>
               </div>
             ))}
-          </dl>
+          </div>
         </div>
 
-        {tenant.status === 'suspended' && tenant.suspension_reason && (
-          <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
-            <p className="text-xs font-semibold text-red-600 uppercase tracking-wider mb-1">
-              Suspension Reason
-            </p>
-            <p className="text-sm text-red-700">{tenant.suspension_reason}</p>
-          </div>
-        )}
-
-        <div className="flex justify-end pt-2 border-t border-gray-100">
+        <div className="flex justify-end pt-6 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
-            Close
+            Close Overview
           </button>
         </div>
       </div>
@@ -591,106 +547,35 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
 function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Delete Tenant" size="sm">
-      <div className="space-y-4">
-        <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-lg">
-          <FaTrash className="text-red-500 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-red-800">
-            This will permanently cancel{' '}
-            <span className="font-semibold">{tenant?.name}</span>. All associated data will be
-            deactivated. This cannot be undone.
+      <div className="space-y-6">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+          <Trash2 className="text-red-500 mt-0.5 flex-shrink-0 w-5 h-5" />
+          <p className="text-sm font-medium text-red-800">
+            Are you sure you want to <span className="font-bold underline">permanently delete</span> {tenant?.name}? This action cannot be undone.
           </p>
         </div>
-        <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
           <button
             onClick={onClose}
             disabled={actionLoading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[90px] justify-center"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center min-w-[120px]"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              'Delete'
+              'Delete Permanently'
             )}
           </button>
         </div>
       </div>
     </Modal>
-  );
-}
-
-// ─── Stat Chip ────────────────────────────────────────────────────────────────
-
-function StatChip({ label, count, color }) {
-  return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${color}`}>
-      <span className="text-base font-bold">{count}</span>
-      <span className="opacity-80">{label}</span>
-    </div>
-  );
-}
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
-
-function Pagination({ page, total, perPage, onPage }) {
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-      <p className="text-xs text-gray-500">
-        Showing {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} of{' '}
-        <span className="font-semibold text-gray-700">{total}</span>
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPage(page - 1)}
-          disabled={page <= 1}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <FaChevronLeft className="text-xs" />
-        </button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1)
-          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-          .reduce((acc, p, idx, arr) => {
-            if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-            acc.push(p);
-            return acc;
-          }, [])
-          .map((p, i) =>
-            p === '...' ? (
-              <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">
-                …
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => onPage(p)}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                  p === page
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-white hover:border hover:border-gray-200'
-                }`}
-              >
-                {p}
-              </button>
-            )
-          )}
-        <button
-          onClick={() => onPage(page + 1)}
-          disabled={page >= totalPages}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <FaChevronRight className="text-xs" />
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -701,7 +586,6 @@ const STATUS_FILTERS = [
   { value: 'trial', label: 'Trial' },
   { value: 'active', label: 'Active' },
   { value: 'suspended', label: 'Suspended' },
-  { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const PER_PAGE = 20;
@@ -728,21 +612,18 @@ export default function TenantsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
 
-  // Fetch tenants when page or filter changes
   useEffect(() => {
     const params = { page, per_page: PER_PAGE };
     if (statusFilter) params.status = statusFilter;
     dispatch(fetchTenants(params));
   }, [dispatch, page, statusFilter]);
 
-  // Reset to page 1 when filter changes
   const handleStatusFilter = (val) => {
     setStatusFilter(val);
     setPage(1);
     setSearch('');
   };
 
-  // Handle ?view= and ?action= links from SuperAdminDashboard
   useEffect(() => {
     const viewId = searchParams.get('view');
     const action = searchParams.get('action');
@@ -769,7 +650,6 @@ export default function TenantsPage() {
     }
   }, [searchParams, tenants]);
 
-  // Clear state on unmount
   useEffect(() => {
     return () => {
       dispatch(clearError());
@@ -777,7 +657,6 @@ export default function TenantsPage() {
     };
   }, [dispatch]);
 
-  // Show error toast
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -785,7 +664,6 @@ export default function TenantsPage() {
     }
   }, [error, dispatch]);
 
-  // Client-side search filter on the current page
   const filteredTenants = useMemo(() => {
     if (!search.trim()) return tenants;
     const q = search.toLowerCase();
@@ -796,17 +674,6 @@ export default function TenantsPage() {
         t.contact_email?.toLowerCase().includes(q)
     );
   }, [tenants, search]);
-
-  // Counts by status (from current full list — approximate)
-  const statusCounts = useMemo(() => {
-    const counts = { trial: 0, active: 0, suspended: 0, cancelled: 0 };
-    tenants.forEach((t) => {
-      if (counts[t.status] !== undefined) counts[t.status]++;
-    });
-    return counts;
-  }, [tenants]);
-
-  // ─── Action Handlers ─────────────────────────────────────────────────────
 
   const handleCreate = async (data) => {
     const result = await dispatch(createTenant(data));
@@ -831,7 +698,7 @@ export default function TenantsPage() {
     const id = getTenantId(suspendTarget);
     const result = await dispatch(suspendTenant({ id, reason }));
     if (suspendTenant.fulfilled.match(result)) {
-      toast.success(`${suspendTarget.name} suspended.`);
+      toast.success('Tenant suspended.');
       setSuspendTarget(null);
     }
   };
@@ -841,7 +708,7 @@ export default function TenantsPage() {
       const id = getTenantId(tenant);
       const result = await dispatch(activateTenant(id));
       if (activateTenant.fulfilled.match(result)) {
-        toast.success(`${tenant.name} activated.`);
+        toast.success('Tenant activated.');
       }
     },
     [dispatch]
@@ -852,7 +719,7 @@ export default function TenantsPage() {
     const id = getTenantId(deleteTarget);
     const result = await dispatch(deleteTenant(id));
     if (deleteTenant.fulfilled.match(result)) {
-      toast.success(`${deleteTarget.name} deleted.`);
+      toast.success('Tenant deleted.');
       setDeleteTarget(null);
     }
   };
@@ -864,35 +731,32 @@ export default function TenantsPage() {
 
   return (
     <MainLayout>
-      <div className="space-y-5">
-        {/* ── Page Header ── */}
+      <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tenant Management</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {total} organisation{total !== 1 ? 's' : ''} on the platform
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Tenant Management</h1>
+            <p className="text-sm font-medium text-gray-500 mt-1">
+              {total} registered organization{total !== 1 ? 's' : ''} monitored live.
             </p>
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex-shrink-0"
+            className="px-6 py-2.5 bg-primary-500 text-white text-sm font-bold rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-lg flex-shrink-0"
           >
-            <FaPlus className="text-xs" />
-            Add Tenant
+            <Plus className="w-4 h-4 inline-block mr-2" />
+            New Tenant
           </button>
         </div>
 
-        {/* ── Filters + Search ── */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Status pills */}
-          <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl border border-gray-200 shadow-sm">
             {STATUS_FILTERS.map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => handleStatusFilter(value)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === value
-                    ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-gray-200'
+                    ? 'bg-white text-primary-500 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -901,215 +765,123 @@ export default function TenantsPage() {
             ))}
           </div>
 
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+          <div className="relative flex-1 min-w-[300px] max-w-sm group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-primary-500 transition-colors" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, slug or email…"
-              className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+              placeholder="Search by name, slug, email..."
+              className="w-full pl-12 pr-12 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 bg-white transition-all shadow-sm"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
-                <FaTimes className="text-xs" />
+                <X className="w-4 h-4" />
               </button>
-            )}
-          </div>
-
-          {/* Quick counts */}
-          <div className="flex items-center gap-2 ml-auto">
-            <StatChip label="active" count={statusCounts.active} color="bg-green-50 text-green-700" />
-            <StatChip label="trial" count={statusCounts.trial} color="bg-yellow-50 text-yellow-700" />
-            {statusCounts.suspended > 0 && (
-              <StatChip label="suspended" count={statusCounts.suspended} color="bg-red-50 text-red-700" />
             )}
           </div>
         </div>
 
-        {/* ── Table ── */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           {loading && filteredTenants.length === 0 ? (
-            <LoadingSpinner message="Loading tenants…" />
+            <div className="py-20 flex justify-center"><LoadingSpinner /></div>
           ) : filteredTenants.length === 0 ? (
             <div className="px-6 py-20 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 flex items-center justify-center">
-                <FaBuilding className="text-3xl text-gray-300" />
+              <div className="w-16 h-16 mx-auto mb-6 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100">
+                <Building className="w-8 h-8 text-gray-300" />
               </div>
-              <p className="text-gray-700 font-semibold text-base">No tenants found</p>
-              <p className="text-sm text-gray-400 mt-1">
-                {search
-                  ? `No results for "${search}".`
-                  : statusFilter
-                  ? 'Try a different status filter.'
-                  : 'Create your first tenant to get started.'}
-              </p>
-              {(search || statusFilter) && (
-                <button
-                  onClick={() => { setSearch(''); setStatusFilter(''); }}
-                  className="mt-4 text-sm text-indigo-600 hover:underline"
-                >
-                  Clear filters
-                </button>
-              )}
+              <h3 className="text-lg font-bold text-gray-900">No tenants found</h3>
+              <p className="text-sm font-medium text-gray-400 mt-1 max-w-xs mx-auto">Try adjusting your filters or search query.</p>
             </div>
           ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
-                      {['Organisation', 'Plan', 'Status', 'Users / Elections', 'Limits', 'Created', 'Actions'].map((col) => (
-                        <th
-                          key={col}
-                          className={`px-5 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 ${
-                            col === 'Actions' ? 'text-right' : 'text-left'
-                          }`}
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {filteredTenants.map((tenant) => {
-                      const id = getTenantId(tenant);
-                      const isSuspended = tenant.status === 'suspended';
+            <div className="w-full">
+              <table className="w-full table-fixed text-sm text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {['Organisation', 'URL Identifier', 'Plan', 'Status', 'Users', 'Actions'].map((col) => (
+                      <th
+                        key={col}
+                        className={`px-3 py-3 sm:px-4 ${col === 'Actions' ? 'w-24 whitespace-nowrap text-right' : 'break-words'}`}
+                        style={col === 'Actions' ? { width: '6rem' } : undefined}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredTenants.map((tenant, index) => {
+                    const id = getTenantId(tenant);
+                    const isSuspended = tenant.status === 'suspended' || tenant.status === 'Suspended';
+                    return (
+                      <tr key={id} className="hover:bg-primary-50/50 transition-colors group">
+                        <td className="px-3 py-3 align-top sm:px-4">
+                          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                            <ImageAvatar
+                              src={tenant.logo_url}
+                              name={tenant.name}
+                              sizeClass="w-10 h-10"
+                              shapeClass="rounded-xl"
+                              imageClassName="border border-gray-200 shadow-sm"
+                              fallbackClassName="text-white text-xs shadow-sm"
+                              style={{ backgroundColor: tenant.primary_color || '#000' }}
+                            />
+                            <p className="min-w-0 break-words font-semibold text-gray-800">
+                              {tenant.name}
+                            </p>
+                          </div>
+                        </td>
 
-                      return (
-                        <tr key={id} className="hover:bg-indigo-50/30 transition-colors group">
-                          {/* Organisation */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <ImageAvatar
-                                src={tenant.logo_url}
-                                name={tenant.name}
-                                sizeClass="w-10 h-10"
-                                shapeClass="rounded-xl"
-                                imageClassName="border border-gray-200"
-                                fallbackClassName="text-white text-sm shadow-sm"
-                                style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
-                              />
-                              <div className="min-w-0">
-                                <p className="font-semibold text-gray-800 truncate max-w-[160px]">
-                                  {tenant.name}
-                                </p>
-                                <p className="text-xs text-gray-400 font-mono truncate max-w-[160px]">
-                                  {tenant.slug}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
+                        <td className="px-3 py-3 align-top text-gray-500 font-mono text-xs font-medium break-words sm:px-4">
+                          {tenant.slug}
+                        </td>
 
-                          {/* Plan */}
-                          <td className="px-5 py-4">
-                            <PlanBadge plan={tenant.plan} />
-                          </td>
+                        <td className="px-3 py-3 align-top sm:px-4">
+                          <PlanBadge plan={tenant.plan} />
+                        </td>
 
-                          {/* Status */}
-                          <td className="px-5 py-4">
-                            <Badge status={tenant.status} />
-                          </td>
+                        <td className="px-3 py-3 align-top sm:px-4">
+                          <Badge status={tenant.status} />
+                        </td>
 
-                          {/* Users / Elections */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="flex items-center gap-1 text-indigo-600 font-semibold">
-                                <FaUsers className="opacity-70" />
-                                {tenant.user_count ?? 0}
-                              </span>
-                              <span className="text-gray-300">·</span>
-                              <span className="flex items-center gap-1 text-green-600 font-semibold">
-                                <FaVoteYea className="opacity-70" />
-                                {tenant.election_count ?? 0}
-                              </span>
-                            </div>
-                          </td>
+                        <td className="px-3 py-3 align-top sm:px-4">
+                          <div className="flex items-center gap-2">
+                             <Users className="w-4 h-4 text-gray-300" />
+                             <span className="font-bold text-gray-700">{tenant.user_count ?? 0}</span>
+                          </div>
+                        </td>
 
-                          {/* Limits */}
-                          <td className="px-5 py-4">
-                            <div className="text-xs text-gray-500 space-y-0.5">
-                              <div>{tenant.max_elections ?? '∞'} elections</div>
-                              <div>{tenant.max_voters != null ? tenant.max_voters.toLocaleString() : '∞'} voters</div>
-                            </div>
-                          </td>
-
-                          {/* Created */}
-                          <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">
-                            {safeFormat(tenant.created_at || tenant.createdAt)}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => handleViewDetails(tenant)}
-                                title="View Details"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
-                              >
-                                <FaEye className="text-sm" />
-                              </button>
-                              <button
-                                onClick={() => setEditTenant(tenant)}
-                                title="Edit"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                              >
-                                <FaEdit className="text-sm" />
-                              </button>
-                              {isSuspended ? (
-                                <button
-                                  onClick={() => handleActivate(tenant)}
-                                  disabled={actionLoading}
-                                  title="Activate"
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40"
-                                >
-                                  <FaCheckCircle className="text-sm" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setSuspendTarget(tenant)}
-                                  title="Suspend"
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                                >
-                                  <FaBan className="text-sm" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeleteTarget(tenant)}
-                                title="Delete"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                              >
-                                <FaTrash className="text-sm" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <Pagination
-                page={page}
-                total={total}
-                perPage={PER_PAGE}
-                onPage={setPage}
-              />
-            </>
+                        <td className="w-24 px-3 py-3 text-right align-top sm:px-4">
+                          <TableActions
+                            actions={[
+                              { key: 'view', label: 'Overview', icon: Eye, onClick: () => handleViewDetails(tenant) },
+                              { key: 'settings', label: 'Settings', icon: Edit, onClick: () => setEditTenant(tenant) },
+                              isSuspended
+                                ? { key: 'activate', label: 'Reactivate', icon: CheckCircle2, onClick: () => handleActivate(tenant) }
+                                : { key: 'block', label: 'Suspend', icon: Ban, onClick: () => setSuspendTarget(tenant) },
+                              { key: 'delete', label: 'Delete Forever', icon: Trash2, danger: true, onClick: () => setDeleteTarget(tenant) },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          {/* Refresh indicator */}
-          {loading && filteredTenants.length > 0 && (
-            <div className="px-5 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center gap-2">
-              <span className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-indigo-600 font-medium">Refreshing…</span>
-            </div>
+          {total > PER_PAGE && (
+             <div className="border-t border-gray-100 bg-gray-50/50">
+                <Pagination
+                  page={page}
+                  totalPages={Math.ceil(total / PER_PAGE)}
+                  onPageChange={setPage}
+                />
+             </div>
           )}
         </div>
       </div>

@@ -1,111 +1,50 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  FaHome,
-  FaVoteYea,
-  FaUsers,
-  FaUserCog,
-  FaUserShield,
-  FaMapMarkerAlt,
-  FaChartBar,
-  FaSignOutAlt,
-  FaBalanceScale,
-  FaShieldAlt,
-  FaHistory,
-  FaTrophy,
-  FaWallet,
-} from 'react-icons/fa';
-
+import { 
+  LayoutDashboard, Users, Shield, Settings, Activity, FileText, CheckSquare, Banknote, MapPin, LogOut
+} from 'lucide-react';
 import { logoutUser, selectCurrentUser } from '../../store/slices/authSlice';
 import toast from 'react-hot-toast';
 
 const navLinks = [
-  {
-    to: '/',
-    icon: FaHome,
-    label: 'Dashboard',
-    roles: ['admin', 'moderator', 'voter'],
-  },
-
-  {
-    to: '/elections',
-    icon: FaVoteYea,
-    label: 'Elections',
-    roles: ['admin', 'moderator', 'voter'],
-  },
-
-  {
-    to: '/candidates',
-    icon: FaUsers,
-    label: 'Candidates',
-    roles: ['admin', 'moderator', 'voter'],
-  },
-
-  {
-    to: '/candidate-committees',
-    icon: FaUserShield,
-    label: 'Committees',
-    roles: ['admin'],
-  },
-
-  {
-    to: '/users',
-    icon: FaUserCog,
-    label: 'Users',
-    roles: ['admin'],
-  },
-  // NEW RESULTS PAGE
-  {
-    to: '/results',
-    icon: FaTrophy,
-    label: 'Results',
-    roles: ['admin', 'moderator', 'voter'],
-  },
-
-  {
-    to: '/revenue',
-    icon: FaWallet,
-    label: 'Revenue',
-    roles: ['admin'],
-  },
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/elections', icon: CheckSquare, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/candidates', icon: Users, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/candidate-committees', icon: Shield, label: 'Committees', roles: ['admin'] },
+  { to: '/users', icon: Users, label: 'Users', roles: ['admin'] },
+  { to: '/results', icon: Activity, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/revenue', icon: Banknote, label: 'Revenue', roles: ['admin'] },
+  { to: '/settings', icon: Settings, label: 'Settings', roles: ['admin', 'moderator', 'voter'] },
 ];
 
 const superAdminLinks = [
-  {
-    to: '/dashboard',
-    icon: FaShieldAlt,
-    label: 'Platform',
-  },
-
-  {
-    to: '/tenants',
-    icon: FaBalanceScale,
-    label: 'Tenants',
-  },
-  {
-    to: '/targets',
-    icon: FaMapMarkerAlt,
-    label: 'Geography',
-  },
-   {
-    to: '/audit-logs',
-    icon: FaHistory,
-    label: 'Audit Logs',
-    roles: ['superadmin'],
-  },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/tenants', icon: Users, label: 'Tenants' },
+  { to: '/targets', icon: MapPin, label: 'Geography' },
+  { to: '/audit-logs', icon: FileText, label: 'Audit Logs', roles: ['superadmin'] },
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ];
+
+const SidebarItem = ({ icon: Icon, label, to }) => (
+  <NavLink 
+    to={to}
+    className={({ isActive }) => 
+      `flex items-center px-6 py-3 cursor-pointer transition-all ${isActive ? 'bg-primary-50 text-primary-500 border-l-4 border-primary-500 font-bold' : 'text-gray-500 hover:bg-primary-50 hover:text-primary-500'}`
+    }
+  >
+    <Icon className="w-5 h-5 mr-3" />
+    <span className="text-sm font-semibold">{label}</span>
+  </NavLink>
+);
 
 export default function Sidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
   const user = useSelector(selectCurrentUser);
 
   const handleLogout = () => {
     dispatch(logoutUser());
-
     toast.success('Logged out successfully');
-
     navigate('/login');
   };
 
@@ -114,93 +53,52 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 shadow-sm">
-      {/* LOGO */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-indigo-100 shadow-lg">
-            <FaVoteYea className="text-white text-lg" />
-          </div>
-
-          <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent tracking-tight">
-            TechElect
-          </span>
-        </div>
+    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0">
+      <div className="p-6 border-b border-gray-200 text-center">
+        <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+          {user?.role === 'superadmin' ? 'SuperAdmin' : 'TechElect'}
+        </h1>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+          {user?.role === 'superadmin' ? 'Platform Overview' : 'Voting System'}
+        </p>
       </div>
-
-      {/* NAVIGATION */}
-      <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
-        {filteredLinks.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                isActive
-                  ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`
-            }
-          >
-            <link.icon className="text-lg transition-transform group-hover:scale-110" />
-
-            <span>{link.label}</span>
-          </NavLink>
-        ))}
-
-        {/* SUPER ADMIN SECTION */}
-        {user?.role === 'superadmin' && (
-          <div className="pt-6 mt-6 border-t border-gray-100">
-            <p className="px-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Platform Admin
-            </p>
-
-            {superAdminLinks.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                    isActive
-                      ? 'bg-purple-50 text-purple-700 shadow-sm ring-1 ring-purple-100'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                  }`
-                }
-              >
-                <link.icon className="text-lg transition-transform group-hover:scale-110" />
-
-                <span>{link.label}</span>
-              </NavLink>
-            ))}
-          </div>
+      
+      <nav className="flex-1 py-4 overflow-y-auto custom-scrollbar">
+        {user?.role === 'superadmin' ? (
+          superAdminLinks.map((link) => (
+            <SidebarItem key={link.to} to={link.to} icon={link.icon} label={link.label} />
+          ))
+        ) : (
+          filteredLinks.map((link) => (
+            <SidebarItem key={link.to} to={link.to} icon={link.icon} label={link.label} />
+          ))
         )}
       </nav>
 
-      {/* USER PROFILE */}
       <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center gap-3 px-3 py-4 mb-3 bg-gray-50 rounded-2xl">
-          <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-indigo-700 font-bold text-sm shadow-sm">
-            {user?.full_name?.[0]?.toUpperCase()}
+        <div className="flex items-center gap-3 mb-4 p-2 rounded-xl bg-gray-50 border border-gray-100 shadow-sm">
+          <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-bold overflow-hidden">
+             {user?.avatar_url ? (
+               <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+             ) : (
+               user?.full_name?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || 'S'
+             )}
           </div>
-
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-gray-900 truncate">
-              {user?.full_name}
-            </p>
-
-            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
-              {user?.role}
-            </p>
+            <div className="font-bold text-sm text-gray-900 truncate">
+              {user?.full_name || user?.name || 'System Admin'}
+            </div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase truncate">
+              {user?.role || 'Admin'}
+            </div>
           </div>
         </div>
 
-        {/* LOGOUT */}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 text-sm font-bold transition-all duration-200"
+          className="flex w-full items-center gap-3 px-2 py-2 text-gray-400 hover:text-red-600 text-sm font-semibold transition-all"
         >
-          <FaSignOutAlt className="text-lg" />
-
+          <LogOut className="w-4 h-4 ml-1" />
           <span>Logout</span>
         </button>
       </div>

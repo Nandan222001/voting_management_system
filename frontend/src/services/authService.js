@@ -10,6 +10,8 @@ const authService = {
     });
   },
   getMe: () => api.get('/auth/me'),
+  updateMe: (data) => api.put('/auth/me', data),
+  changePassword: (data) => api.put('/auth/me/password', data),
   verifyOTP: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
   logout: () => api.post('/auth/logout'),
   refreshToken: () => api.post('/auth/refresh'),

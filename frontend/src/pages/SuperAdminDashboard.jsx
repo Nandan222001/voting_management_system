@@ -1,11 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  FaBuilding,
-  FaCheckCircle,
-  FaArrowRight,
-} from 'react-icons/fa';
+  Users, CheckCircle2, Clock, AlertCircle, TrendingUp, Eye, Ban
+} from 'lucide-react';
 import {
   fetchPlatformStats,
   fetchTenants,
@@ -13,46 +11,80 @@ import {
   selectTenants,
   selectTenantLoading,
 } from '../store/slices/tenantSlice';
-import StatsCard from '../components/common/StatsCard';
-import Badge from '../components/common/Badge';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import MainLayout from '../components/layout/MainLayout';
-import ImageAvatar from '../components/common/ImageAvatar';
-import { format, parseISO } from 'date-fns';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import Pagination from '../components/common/Pagination';
+import TableActions from '../components/common/TableActions';
+import { resolveMediaUrl } from '../utils/images';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const RECENT_PAGE_SIZE = 5;
 
-function safeFormat(dateStr) {
-  if (!dateStr) return '—';
-  try {
-    return format(parseISO(dateStr), 'MMM d, yyyy');
-  } catch {
-    return dateStr;
-  }
-}
+const MetricCard = ({ title, value, subtext, icon: Icon }) => (
+  <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md group">
+    <div className="flex justify-between items-start mb-4">
+      <h3 className="text-xs font-semibold text-gray-500">{title}</h3>
+      <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:text-primary-500 transition-colors border border-gray-100 shadow-sm">
+        <Icon size={20} />
+      </div>
+    </div>
+    <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+    <div className="text-sm text-gray-500 flex items-center">
+      {subtext?.includes('+') && <TrendingUp className="w-4 h-4 mr-1 text-black" />}
+      {subtext}
+    </div>
+  </div>
+);
 
-// ─── Plan Badge ───────────────────────────────────────────────────────────────
-
-const PLAN_BADGE_STYLES = {
-  starter: 'bg-gray-100 text-gray-600 ring-gray-200',
-  professional: 'bg-blue-100 text-blue-700 ring-blue-200',
-  enterprise: 'bg-purple-100 text-purple-700 ring-purple-200',
-};
-
-function PlanBadge({ plan }) {
-  if (!plan) return null;
-  const key = plan.toLowerCase();
-  const style = PLAN_BADGE_STYLES[key] ?? 'bg-gray-100 text-gray-600 ring-gray-200';
-  return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ring-1 capitalize ${style}`}
-    >
-      {plan}
-    </span>
-  );
-}
-
-// ─── Dashboard Page ───────────────────────────────────────────────────────────
+const TenantRow = ({ logo, initials, name, slug, status, plan, initialsBg = 'bg-gray-200 text-gray-900', onDetails, onSuspend }) => (
+  <tr className="border-b border-gray-100 hover:bg-primary-50/50 transition-colors group">
+    <td className="px-3 py-3 align-top sm:px-4">
+      <div className="flex min-w-0 items-center gap-3">
+      {logo ? (
+        <img src={logo} alt={name} className="h-10 w-10 flex-shrink-0 rounded-xl object-cover shadow-sm border border-gray-200" />
+      ) : (
+        <div className={`h-10 w-10 flex-shrink-0 rounded-xl flex items-center justify-center text-xs font-bold shadow-sm ${initialsBg}`}>
+          {initials}
+        </div>
+      )}
+        <span className="min-w-0 break-words font-semibold text-gray-800">{name}</span>
+      </div>
+    </td>
+    <td className="px-3 py-3 align-top sm:px-4">
+      <span className="inline-block max-w-full break-words text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded">
+        {slug}
+      </span>
+    </td>
+    <td className="px-3 py-3 align-top sm:px-4">
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-gray-200 bg-gray-50 text-gray-600">
+        {plan}
+      </span>
+    </td>
+    <td className="px-3 py-3 align-top sm:px-4">
+      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+        status === 'Active' || status === 'active' 
+          ? 'bg-gray-100 text-gray-900 border-gray-200' : 
+        status === 'Provisioning' || status === 'Trial' || status === 'trial'
+          ? 'bg-gray-50 text-gray-600 border-gray-100' : 
+          'bg-gray-50 text-gray-500 border-gray-100'
+      }`}>
+        {status}
+      </span>
+    </td>
+    <td className="w-24 px-3 py-3 text-right align-top sm:px-4">
+      <TableActions
+        actions={[
+          { key: 'view', label: 'Details', icon: Eye, onClick: onDetails },
+          {
+            key: status === 'suspended' || status === 'Suspended' ? 'activate' : 'block',
+            label: status === 'suspended' || status === 'Suspended' ? 'Activate' : 'Suspend',
+            icon: Ban,
+            onClick: onSuspend,
+          },
+        ]}
+      />
+    </td>
+  </tr>
+);
 
 export default function SuperAdminDashboard() {
   const dispatch = useDispatch();
@@ -60,6 +92,7 @@ export default function SuperAdminDashboard() {
   const platformStats = useSelector(selectPlatformStats);
   const tenants = useSelector(selectTenants);
   const loading = useSelector(selectTenantLoading);
+  const [recentPage, setRecentPage] = useState(1);
 
   useEffect(() => {
     dispatch(fetchPlatformStats());
@@ -78,165 +111,95 @@ export default function SuperAdminDashboard() {
     navigate(`/tenants?action=toggle&id=${id}`);
   };
 
+  const recentTotalPages = Math.ceil(tenants.length / RECENT_PAGE_SIZE);
+  const recentTenants = useMemo(() => {
+    const start = (recentPage - 1) * RECENT_PAGE_SIZE;
+    return tenants.slice(start, start + RECENT_PAGE_SIZE);
+  }, [recentPage, tenants]);
+
+  useEffect(() => {
+    if (recentPage > recentTotalPages && recentTotalPages > 0) {
+      setRecentPage(recentTotalPages);
+    }
+  }, [recentPage, recentTotalPages]);
+
   return (
-    <MainLayout title="Platform Control Center">
-      <div className="space-y-6 animate-fade-in">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
+    <MainLayout>
+      <div className="animate-fade-in space-y-8">
+        <div className="flex justify-between items-end">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Platform Overview</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              System health and tenant management.
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">System Overview</h1>
+            <p className="text-sm text-gray-500 mt-1">Real-time platform monitoring and organization tracking.</p>
           </div>
-          <div className="flex gap-2">
-            <button
-                onClick={() => navigate('/tenants')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-            >
-                <FaBuilding className="text-xs" />
-                Manage Tenants
-            </button>
-          </div>
+          <button 
+            onClick={() => navigate('/tenants')}
+            className="px-8 py-3 bg-primary-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-primary-600 active:scale-95 transition-all shadow-2xl"
+          >
+            New Tenant
+          </button>
         </div>
 
-        {/* Stats Grid */}
-        {loading && !platformStats ? (
-          <LoadingSpinner message="Loading platform stats..." />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <StatsCard
-              title="Total Tenants"
-              value={stats.totalTenants}
-              icon={FaBuilding}
-              color="indigo"
-            />
-            <StatsCard
-              title="Active Tenants"
-              value={stats.activeTenants}
-              icon={FaCheckCircle}
-              color="green"
-            />
-             <StatsCard
-              title="Trial Tenants"
-              value={stats.trialTenants}
-              icon={FaBuilding}
-              color="blue"
-            />
-            <StatsCard
-              title="Suspended"
-              value={stats.suspendedTenants}
-              icon={FaBuilding}
-              color="orange"
-            />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard title="Total Tenants" value={stats.totalTenants} subtext="+3 this week" icon={Users} />
+          <MetricCard title="Active Tenants" value={stats.activeTenants} subtext="Fully operational" icon={CheckCircle2} />
+          <MetricCard title="Trial Accounts" value={stats.trialTenants} subtext="New onboarding" icon={Clock} />
+          <MetricCard title="Suspended" value={stats.suspendedTenants} subtext="Access restricted" icon={AlertCircle} />
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-8 py-5 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Recent Activity</h3>
+            <button onClick={() => navigate('/tenants')} className="text-sm font-bold text-primary-500 hover:text-primary-600 transition-colors">
+              View all records
+            </button>
           </div>
-        )}
+          <div className="w-full">
+            <table className="w-full table-fixed text-sm text-left border-collapse">
+              <thead className="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <tr>
+                  <th className="px-3 py-3 break-words sm:px-4">Organization</th>
+                  <th className="px-3 py-3 break-words sm:px-4">Identifier</th>
+                  <th className="px-3 py-3 break-words sm:px-4">Plan</th>
+                  <th className="px-3 py-3 break-words sm:px-4">Status</th>
+                  <th className="w-24 px-3 py-3 text-right whitespace-nowrap sm:px-4" style={{ width: '6rem' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading && tenants.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-20 text-center"><LoadingSpinner /></td>
+                  </tr>
+                ) : tenants.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="py-20 text-center text-gray-400 font-medium uppercase tracking-widest text-[10px]">No active nodes found</td>
+                  </tr>
+                ) : recentTenants.map((tenant, index) => {
+                  const colors = ['bg-gray-100 text-gray-800', 'bg-gray-200 text-gray-900', 'bg-gray-50 text-gray-600', 'bg-gray-100 text-gray-700'];
+                  const bgClass = colors[index % colors.length];
 
-        <div className="grid grid-cols-1 gap-6">
-            {/* Tenant List Table */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                <h3 className="text-base font-bold text-gray-800">Recent Tenants</h3>
-                <button
-                onClick={() => navigate('/tenants')}
-                className="flex items-center gap-1 text-indigo-600 text-sm font-semibold hover:text-indigo-700 transition-colors"
-                >
-                View all
-                <FaArrowRight className="text-xs" />
-                </button>
+                  return (
+                    <TenantRow 
+                      key={tenant._id || tenant.id}
+                      logo={resolveMediaUrl(tenant.logo_url || tenant.logo)}
+                      initials={tenant.name?.[0]?.toUpperCase() || 'T'}
+                      name={tenant.name}
+                      slug={tenant.slug}
+                      status={tenant.status || 'Active'}
+                      plan={tenant.plan || 'Enterprise'}
+                      initialsBg={bgClass}
+                      onDetails={() => navigate(`/tenants?view=${tenant._id || tenant.id}`)}
+                      onSuspend={() => handleSuspendToggle(tenant)}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {recentTotalPages > 1 && (
+            <div className="border-t border-gray-100 bg-gray-50/50">
+              <Pagination page={recentPage} totalPages={recentTotalPages} onPageChange={setRecentPage} />
             </div>
-
-            {loading && tenants.length === 0 ? (
-                <LoadingSpinner message="Loading tenants..." />
-            ) : tenants.length === 0 ? (
-                <div className="px-6 py-10 text-center text-gray-400">
-                <FaBuilding className="text-3xl mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No tenants found</p>
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                        {[
-                        'Organization Name',
-                        'Slug',
-                        'Plan',
-                        'Status',
-                        'Actions',
-                        ].map((col) => (
-                        <th
-                            key={col}
-                            className={`px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider ${
-                            col === 'Actions' ? 'text-right' : 'text-left'
-                            }`}
-                        >
-                            {col}
-                        </th>
-                        ))}
-                    </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                    {tenants.map((tenant) => {
-                        const id = tenant._id || tenant.id;
-                        const isSuspended = tenant.status === 'suspended';
-
-                        return (
-                        <tr key={id} className="hover:bg-gray-50 transition-colors group">
-                            <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                                <ImageAvatar
-                                src={tenant.logo_url}
-                                name={tenant.name}
-                                sizeClass="w-8 h-8"
-                                shapeClass="rounded-lg"
-                                fallbackClassName="text-white text-sm"
-                                style={{ backgroundColor: tenant.primary_color || '#6b7280' }}
-                                />
-                                <span className="font-semibold text-gray-800 truncate max-w-[160px]">
-                                {tenant.name}
-                                </span>
-                            </div>
-                            </td>
-                            <td className="px-6 py-4">
-                            <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                {tenant.slug}
-                            </span>
-                            </td>
-                            <td className="px-6 py-4">
-                            <PlanBadge plan={tenant.plan} />
-                            </td>
-                            <td className="px-6 py-4">
-                            <Badge status={tenant.status} />
-                            </td>
-                            <td className="px-6 py-4">
-                            <div className="flex items-center justify-end gap-2">
-                                <button
-                                onClick={() => navigate(`/tenants?view=${id}`)}
-                                className="px-3 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-                                >
-                                Details
-                                </button>
-                                <button
-                                onClick={() => handleSuspendToggle(tenant)}
-                                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
-                                    isSuspended
-                                    ? 'text-green-600'
-                                    : 'text-red-600'
-                                }`}
-                                >
-                                {isSuspended ? 'Activate' : 'Suspend'}
-                                </button>
-                            </div>
-                            </td>
-                        </tr>
-                        );
-                    })}
-                    </tbody>
-                </table>
-                </div>
-            )}
-            </div>
+          )}
         </div>
       </div>
     </MainLayout>

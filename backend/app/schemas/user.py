@@ -71,6 +71,23 @@ class UserUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserSettingsUpdate(BaseModel):
+    """Fields a signed-in user may update from their own settings page."""
+
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    phone: Optional[str] = Field(default=None, max_length=20)
+    designation: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    street_address: Optional[str] = Field(default=None, min_length=3, max_length=300)
+    city: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    district: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    state: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    country: Optional[str] = Field(default=None, min_length=2, max_length=100)
+    pincode: Optional[str] = Field(default=None, min_length=3, max_length=20)
+    target_id: Optional[int] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ChangePasswordRequest(BaseModel):
     """Payload for the change-password endpoint."""
 

@@ -94,7 +94,7 @@ export default function CandidateCommitteesPage() {
           </div>
           <button
             onClick={openCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
           >
             <FaPlus className="text-xs" />
             Add Committee
@@ -103,7 +103,7 @@ export default function CandidateCommitteesPage() {
 
         {committees.length === 0 && !loading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <FaUserShield className="text-2xl" />
             </div>
             <h3 className="text-lg font-bold text-gray-900">No committees defined</h3>
@@ -112,7 +112,7 @@ export default function CandidateCommitteesPage() {
             </p>
             <button
               onClick={openCreate}
-              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700"
+              className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600"
             >
               <FaPlus className="text-xs" />
               Add First Committee
@@ -143,7 +143,7 @@ export default function CandidateCommitteesPage() {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
               placeholder="e.g. Executive Committee"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
             />
           </div>
           <div>
@@ -153,7 +153,7 @@ export default function CandidateCommitteesPage() {
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
               placeholder="Brief description of the committee..."
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -167,7 +167,7 @@ export default function CandidateCommitteesPage() {
             <button
               type="submit"
               disabled={actionLoading}
-              className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+              className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60"
             >
               {actionLoading ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>

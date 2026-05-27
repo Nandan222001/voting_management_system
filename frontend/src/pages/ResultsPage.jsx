@@ -169,7 +169,7 @@ export default function ResultsPage() {
                           name={c.candidate_name}
                           sizeClass="w-9 h-9"
                           imageClassName="ring-1 ring-gray-100"
-                          fallbackClassName="bg-indigo-50 text-indigo-700 text-xs ring-1 ring-indigo-100"
+                          fallbackClassName="bg-gray-100 text-gray-900 text-xs ring-1 ring-gray-200"
                         />
 
                         <div className="flex-1 min-w-0">

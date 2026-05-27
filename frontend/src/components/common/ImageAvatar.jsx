@@ -9,7 +9,7 @@ export default function ImageAvatar({
   sizeClass = 'w-10 h-10',
   shapeClass = 'rounded-full',
   imageClassName = '',
-  fallbackClassName = 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100',
+  fallbackClassName = 'bg-gray-100 text-gray-900 ring-1 ring-gray-200',
   style,
 }) {
   const resolvedSrc = resolveMediaUrl(src)

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole, UserStatus
 from app.repositories.user_repository import UserRepository
-from app.schemas.user import UserUpdate
+from app.schemas.user import UserSettingsUpdate, UserUpdate
 from app.utils.security import hash_password, verify_password
 
 
@@ -136,6 +136,20 @@ class UserService:
 
         Raises:
             HTTPException 404: If the user does not exist.
+        """
+        repo = UserRepository(db)
+        user = self.get_user_by_id(db, user_id)
+        return repo.update(user, data)
+
+    def update_own_settings(
+        self, db: Session, user_id: int, data: UserSettingsUpdate
+    ) -> User:
+        """
+        Apply self-service settings updates for the signed-in user.
+
+        Role, status, tenant, verification state, and email are intentionally
+        excluded from the settings schema so users cannot elevate privileges
+        or move themselves between tenants.
         """
         repo = UserRepository(db)
         user = self.get_user_by_id(db, user_id)

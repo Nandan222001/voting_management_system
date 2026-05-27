@@ -70,7 +70,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 flex items-center justify-center p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-600 opacity-10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-primary-500 opacity-10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600 opacity-10 rounded-full blur-3xl" />
       </div>
 
@@ -84,10 +84,10 @@ export default function LoginPage() {
                 <FaBalanceScale className="text-white text-xl" />
               </div>
               <span className="text-white text-2xl font-bold tracking-wide">
-                Vote<span className="text-indigo-200">Admin</span>
+                Vote<span className="text-primary-100">Admin</span>
               </span>
             </div>
-            <p className="text-indigo-200 text-sm font-medium">Digital Voting Management System</p>
+            <p className="text-primary-100 text-sm font-medium">Digital Voting Management System</p>
           </div>
 
           {/* Form */}
@@ -116,7 +116,7 @@ export default function LoginPage() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="admin@voteadmin.com"
-                    className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.email && validationErrors.email
                         ? 'border-red-400 bg-red-50'
                         : 'border-gray-300 bg-white hover:border-gray-400'
@@ -146,7 +146,7 @@ export default function LoginPage() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     placeholder="••••••••"
-                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    className={`w-full pl-10 pr-11 py-2.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
                       touched.password && validationErrors.password
                         ? 'border-red-400 bg-red-50'
                         : 'border-gray-300 bg-white hover:border-gray-400'
@@ -170,7 +170,7 @@ export default function LoginPage() {
               <div className="flex justify-end">
                 <button
                   type="button"
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
+                  className="text-xs font-semibold text-primary-500 hover:text-primary-600 hover:underline transition-colors"
                 >
                   Forgot your password?
                 </button>
@@ -180,7 +180,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-500 hover:bg-primary-600 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors shadow-sm text-sm"
               >
                 {loading ? (
                   <>

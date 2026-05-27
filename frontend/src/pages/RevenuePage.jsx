@@ -17,7 +17,10 @@ import DataTable from '../components/common/DataTable'
 import StatsCard from '../components/common/StatsCard'
 import Modal from '../components/common/Modal'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import Pagination from '../components/common/Pagination'
 import paymentService from '../services/paymentService'
+
+const PAGE_SIZE = 20
 
 export default function RevenuePage() {
   const [data, setData] = useState(null)
@@ -33,7 +36,7 @@ export default function RevenuePage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await paymentService.getRevenueOverview({ page, page_size: 20 })
+      const res = await paymentService.getRevenueOverview({ page, page_size: PAGE_SIZE })
       setData(res.data)
     } catch (err) {
       toast.error('Failed to load revenue data')
@@ -111,6 +114,8 @@ export default function RevenuePage() {
 
   const summary = data?.summary || {}
   const transactions = data?.transactions?.items || []
+  const transactionTotal = data?.transactions?.total || 0
+  const totalPages = Math.ceil(transactionTotal / PAGE_SIZE)
 
   return (
     <MainLayout title="Revenue Management">
@@ -125,7 +130,7 @@ export default function RevenuePage() {
             onClick={() => setSettingsOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
           >
-            <FaCog className="text-indigo-500" />
+            <FaCog className="text-gray-600" />
             Razorpay Settings
           </button>
         </div>
@@ -162,7 +167,7 @@ export default function RevenuePage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h3 className="text-base font-bold text-gray-800">Transaction History</h3>
-            <button onClick={fetchData} className="text-xs font-bold text-indigo-600 hover:underline">Refresh</button>
+            <button onClick={fetchData} className="text-xs font-bold text-gray-900 hover:underline">Refresh</button>
           </div>
           
           {transactions.length === 0 ? (
@@ -175,7 +180,13 @@ export default function RevenuePage() {
               columns={columns} 
               data={transactions} 
               loading={loading}
+              pagination={false}
             />
+          )}
+          {totalPages > 1 && (
+            <div className="border-t border-gray-100 bg-gray-50/50">
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
           )}
         </div>
       </div>
@@ -187,9 +198,9 @@ export default function RevenuePage() {
         title="Razorpay Configuration"
         size="lg"
       >
-        <div className="mb-6 p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex gap-3">
-          <FaShieldAlt className="text-indigo-600 text-xl flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-indigo-800 leading-relaxed">
+        <div className="mb-6 p-4 bg-gray-100 rounded-xl border border-gray-200 flex gap-3">
+          <FaShieldAlt className="text-gray-900 text-xl flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-900 leading-relaxed">
             Your Razorpay credentials are encrypted and used only to process payments for your organization. 
             Keep your <strong>Key Secret</strong> strictly confidential.
           </p>
@@ -213,7 +224,7 @@ export default function RevenuePage() {
               placeholder="rzp_live_..."
               value={settingsForm.key_id}
               onChange={e => setSettingsOpenForm(prev => ({ ...prev, key_id: e.target.value }))}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-mono"
+              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:bg-white transition-all font-mono"
               autoComplete="new-password"
               required
             />
@@ -231,7 +242,7 @@ export default function RevenuePage() {
                 placeholder="••••••••••••••••"
                 value={settingsForm.key_secret}
                 onChange={e => setSettingsOpenForm(prev => ({ ...prev, key_secret: e.target.value }))}
-                className="w-full pl-4 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-mono"
+                className="w-full pl-4 pr-12 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:bg-white transition-all font-mono"
                 autoComplete="new-password"
                 required
               />
@@ -256,7 +267,7 @@ export default function RevenuePage() {
             <button 
               type="submit" 
               disabled={savingSettings}
-              className="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md disabled:opacity-50"
+              className="px-6 py-2 bg-primary-500 text-white text-sm font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-md disabled:opacity-50"
             >
               {savingSettings ? 'Saving...' : 'Save Credentials'}
             </button>

@@ -14,6 +14,7 @@ import TargetsPage from './pages/TargetsPage'
 import RevenuePage from './pages/RevenuePage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ElectionDetailPage from './pages/ElectionDetailPage'
+import SettingsPage from './pages/SettingsPage'
 import { selectIsAuthenticated, selectCurrentUser, getMe } from './store/slices/authSlice'
 import { Toaster } from 'react-hot-toast'
 
@@ -137,6 +138,15 @@ export default function App() {
               <UsersPage />
             </PrivateRoute>
           } 
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <SettingsPage />
+            </PrivateRoute>
+          }
         />
 
         <Route 

@@ -1,4 +1,5 @@
 import { FaInbox } from 'react-icons/fa';
+import CommonButton from './CommonButton';
 
 export default function EmptyState({
   icon: Icon = FaInbox,
@@ -15,12 +16,9 @@ export default function EmptyState({
       <h3 className="text-base font-semibold text-gray-700 mb-1">{title}</h3>
       <p className="text-sm text-gray-400 max-w-sm leading-relaxed">{message}</p>
       {action && (
-        <button
-          onClick={action}
-          className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-        >
+        <CommonButton onClick={action} className="mt-5">
           {actionLabel}
-        </button>
+        </CommonButton>
       )}
     </div>
   );
