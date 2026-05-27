@@ -10,7 +10,7 @@
     @apply scroll-smooth;
   }
   body {
-    @apply text-gray-900 font-sans antialiased;
+    @apply text-[#1066b1] font-sans antialiased;
     background-color: #F0F2F7;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -48,7 +48,7 @@
   }
   .input {
     @apply w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-lg
-           placeholder-gray-400 text-gray-900
+           placeholder-gray-400 text-[#1066b1]
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
            disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
            transition-colors duration-200;
@@ -96,7 +96,7 @@
     @apply mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4;
   }
   .page-title {
-    @apply text-2xl font-bold text-gray-900;
+    @apply text-2xl font-bold text-[#1066b1];
   }
   .page-subtitle {
     @apply text-sm text-gray-500 mt-1;
@@ -118,7 +118,7 @@
   }
   .sidebar-link {
     @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-           text-gray-600 hover:text-gray-900 hover:bg-gray-100
+           text-gray-600 hover:text-[#1066b1] hover:bg-gray-100
            transition-all duration-150 cursor-pointer;
   }
   .sidebar-link-active {

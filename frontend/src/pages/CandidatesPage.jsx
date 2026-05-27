@@ -96,7 +96,7 @@ export default function CandidatesPage() {
           <div>
             {/* Summary row */}
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-[#1066b1]">
                 {candidates.length} Candidates · {selectedElection?.title}
               </h2>
               <div className="flex items-center gap-3">
@@ -130,7 +130,7 @@ export default function CandidatesPage() {
                         </div>
                       )}
                       <div>
-                        <p className="font-semibold text-gray-900">{c.full_name}</p>
+                        <p className="font-semibold text-[#1066b1]">{c.full_name}</p>
                         <p className="text-sm text-[#1B4FD8]">{c.party}</p>
                         {c.symbol && <p className="text-xs text-gray-400">Symbol: {c.symbol}</p>}
                       </div>

@@ -47,7 +47,7 @@ export default function RegisterPage() {
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <FaShieldAlt className="text-[#1B4FD8] text-lg" />
-          <span className="font-bold text-gray-900 text-base">SecureVote</span>
+          <span className="font-bold text-[#1066b1] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-[#1B4FD8] flex items-center justify-center">
           <span className="text-white text-sm font-bold">CV</span>
@@ -59,7 +59,7 @@ export default function RegisterPage() {
 
         {/* Heading */}
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-gray-900">Voter Registration</h1>
+          <h1 className="text-2xl font-bold text-[#1066b1]">Voter Registration</h1>
           <p className="text-sm text-gray-500 mt-1">Step 1 of 2: Create your secure identity profile.</p>
         </div>
 

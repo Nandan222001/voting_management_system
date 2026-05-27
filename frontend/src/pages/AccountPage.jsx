@@ -89,7 +89,7 @@ export default function AccountPage() {
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <FaShieldAlt className="text-[#1B4FD8] text-lg" />
-          <span className="font-bold text-gray-900 text-base">SecureVote</span>
+          <span className="font-bold text-[#1066b1] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">
           <span className="text-white text-sm font-bold">{initials}</span>
@@ -110,7 +110,7 @@ export default function AccountPage() {
             </div>
           </div>
           <div className="text-center">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-[#1066b1]">
               {user?.full_name ?? 'Verified Voter'}
             </h2>
             <div className="inline-flex items-center gap-1.5 mt-1.5 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
@@ -130,7 +130,7 @@ export default function AccountPage() {
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Full Legal Name</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">
+                <p className="text-sm font-bold text-[#1066b1] mt-0.5">
                   {user?.full_name ?? 'Eleanor J. Sterling'}
                 </p>
               </div>
@@ -139,14 +139,14 @@ export default function AccountPage() {
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Date of Birth</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">October 14, 1982</p>
+                <p className="text-sm font-bold text-[#1066b1] mt-0.5">October 14, 1982</p>
               </div>
               <FaLock className="text-gray-300 text-base" />
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Voter Registration ID</p>
-                <p className="text-sm font-bold text-gray-900 mt-0.5">VTR-990-221-X8</p>
+                <p className="text-sm font-bold text-[#1066b1] mt-0.5">VTR-990-221-X8</p>
               </div>
               <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-lg">
                 ACTIVE

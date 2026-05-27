@@ -84,7 +84,7 @@ export default function Sidebar() {
         <div className="w-9 h-9 bg-[#1B4FD8] rounded-xl flex items-center justify-center flex-shrink-0">
           <FaShieldAlt className="text-white text-base" />
         </div>
-        <span className="text-gray-900 text-xl font-bold tracking-wide">
+        <span className="text-[#1066b1] text-xl font-bold tracking-wide">
           Secure<span className="text-[#1B4FD8]">Vote</span>
         </span>
       </div>
@@ -147,7 +147,7 @@ export default function Sidebar() {
             </span>
           </div>
           <div className="overflow-hidden">
-            <p className="text-gray-900 text-sm font-semibold truncate">
+            <p className="text-[#1066b1] text-sm font-semibold truncate">
               {user?.full_name ?? 'Admin User'}
             </p>
             <p className="text-gray-400 text-xs truncate">{user?.email ?? 'admin@vote.com'}</p>

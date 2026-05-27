@@ -59,7 +59,7 @@ export default function LoginPage() {
           </div>
         </div>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Civic Integrity</h1>
+          <h1 className="text-2xl font-bold text-[#1066b1]">Civic Integrity</h1>
           <p className="text-sm text-gray-500 mt-0.5">Authorized Voting Portal</p>
         </div>
       </div>

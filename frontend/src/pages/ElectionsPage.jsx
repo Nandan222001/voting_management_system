@@ -220,7 +220,7 @@ export default function ElectionsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Elections</h2>
+          <h2 className="text-2xl font-bold text-[#1066b1]">Elections</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             {total} election{total !== 1 ? 's' : ''} total
           </p>

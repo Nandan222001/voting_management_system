@@ -50,7 +50,7 @@ export default function StatsCard({ title, value, icon: Icon, color = 'indigo', 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <p className="text-gray-500 text-sm font-medium truncate">{title}</p>
-        <p className="text-3xl font-bold text-gray-900 mt-0.5 leading-tight">
+        <p className="text-3xl font-bold text-[#1066b1] mt-0.5 leading-tight">
           {value !== undefined && value !== null ? value.toLocaleString() : '—'}
         </p>
 
