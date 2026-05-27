@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -12,201 +12,226 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import EmptyState from '../components/common/EmptyState'
 import { fetchElections } from '../store/slices/electionSlice'
 import { fetchElectionResults } from '../store/slices/candidateSlice'
-import FancySelect from '../components/common/FancySelect'
 import ImageAvatar from '../components/common/ImageAvatar'
-import WinnerCard from '../components/common/WinnerCard'
+import Badge from '../components/common/Badge'
 
-const COLORS = ['#0051D5', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
+const COLORS = ['rgb(16 102 177)', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
 
 export default function ResultsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const dispatch = useDispatch()
-  const { id } = useParams()
-  const [searchParams] = useSearchParams()
-  const { elections } = useSelector(s => s.elections)
-  const { results, loading } = useSelector(s => s.candidates)
-
-  const [selectedElectionId, setSelectedElectionId] = useState(id || searchParams.get('election') || '')
-
-  useEffect(() => {
-    const requestedElectionId = id || searchParams.get('election') || ''
-    if (requestedElectionId) setSelectedElectionId(requestedElectionId)
-  }, [id, searchParams])
+  
+  const { elections } = useSelector((state) => state.elections)
+  const { results, loading } = useSelector((state) => state.candidates)
+  
+  const electionId = searchParams.get('election') || ''
 
   useEffect(() => {
     dispatch(fetchElections({}))
   }, [dispatch])
 
   useEffect(() => {
-    if (selectedElectionId) {
-      dispatch(fetchElectionResults(selectedElectionId))
+    if (electionId) {
+      dispatch(fetchElectionResults(electionId))
     }
-  }, [selectedElectionId, dispatch])
+  }, [electionId, dispatch])
 
-  const selectedElection = elections.find(e => String(e.id) === String(selectedElectionId))
-  const candidates = (results?.candidates || [])
-    .slice()
-    .sort((a, b) => (a.rank || 999) - (b.rank || 999) || b.vote_count - a.vote_count)
-  const totalVotes = results?.total_votes || 0
-
-  const winner = results?.winner || null
-  const winnerDeclared = Boolean(results?.winner_declared && winner)
-
-  const chartData = candidates.map(c => ({
+  const selectedElection = elections.find(e => String(e.id) === String(electionId))
+  
+  const chartData = (results?.candidates || []).map(c => ({
     name: c.candidate_name,
     votes: c.vote_count,
-    percentage: parseFloat(c.percentage.toFixed(1))
+    percentage: c.percentage
   }))
 
-  const pieData = candidates.filter(c => c.vote_count > 0).map(c => ({
+  const pieData = (results?.candidates || []).map(c => ({
     name: c.candidate_name,
     value: c.vote_count
   }))
 
+  const winners = results?.winners || []
+  const isTie = results?.is_tie
+  const winnerDeclared = results?.winner_declared
+
   return (
-    <MainLayout title="Results & Reports">
+    <MainLayout title="Election Results">
       <div className="space-y-6">
-        {/* Election selector */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Election</label>
+        {/* Election Selector */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Election to View Results</label>
           <select
-            value={selectedElectionId}
-            onChange={e => setSelectedElectionId(e.target.value)}
-            className="w-full md:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={electionId}
+            onChange={(e) => setSearchParams({ election: e.target.value })}
+            className="w-full sm:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
           >
-            <option value="">-- Choose an election to view results --</option>
+            <option value="">-- Choose an election --</option>
             {elections.map(e => (
               <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
             ))}
           </select>
         </div>
 
-        {!selectedElectionId ? (
+        {!electionId ? (
           <EmptyState
-            icon={FaChartPie}
-            title="Select an Election"
-            message="Choose an election above to view detailed results and analytics."
+            icon={<FaVoteYea className="h-12 w-12 text-gray-300" />}
+            title="No Election Selected"
+            message="Please select an election from the dropdown above to view its live results and statistics."
           />
         ) : loading ? (
           <LoadingSpinner message="Loading results..." />
+        ) : !results || results.total_votes === 0 ? (
+          <EmptyState
+            icon={<FaVoteYea className="h-12 w-12 text-gray-300" />}
+            title="No Votes Yet"
+            message="There are no votes cast for this election yet. Results will appear once voting begins."
+            action={
+              selectedElection?.status === 'draft' && (
+                <Badge status="draft" />
+              )
+            }
+          />
         ) : (
           <>
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <StatsCard title="Total Votes" value={totalVotes} icon={FaVoteYea} color="primary" />
-              <StatsCard title="Candidates" value={candidates.length} icon={FaUsers} color="blue" />
-              <StatsCard
-                title="Winner"
-                value={winnerDeclared ? winner.candidate_name.split(' ')[0] : '—'}
-                icon={FaTrophy}
-                color="yellow"
-              />
-            </div>
-
-            {/* Winner banner */}
-            {winner && totalVotes > 0 && (
-              <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-lg p-5 flex items-center gap-4">
-                <FaTrophy className="h-8 w-8 text-yellow-500 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wide">Leading Candidate</p>
-                  <p className="text-xl font-bold text-[#1066b1]">{winner.candidate_name}</p>
-                  <p className="text-sm text-gray-600">{winner.party} · {winner.vote_count} votes ({winner.percentage.toFixed(1)}%)</p>
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard title="Total Votes" value={results.total_votes} icon={FaVoteYea} color="indigo" />
+              <StatsCard title="Candidates" value={results.candidates?.length || 0} icon={FaUsers} color="blue" />
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 border border-amber-100">
+                  <FaTrophy size={24} />
                 </div>
-                <div className="ml-auto">
-                  <Badge status={selectedElection?.status} />
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</p>
+                  <div className="mt-1">
+                    <Badge status={selectedElection?.status} />
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Charts */}
-            {chartData.length > 0 && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* Bar chart */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Votes by Candidate</h3>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" />
-                      <YAxis tick={{ fontSize: 11 }} />
-                      <Tooltip />
-                      <Bar dataKey="votes" radius={[4, 4, 0, 0]}>
-                        {chartData.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Pie chart */}
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Vote Share</h3>
-                  {pieData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="45%" outerRadius={90} dataKey="value" label={({ percentage }) => `${(percentage * 100).toFixed(0)}%`}>
-                          {pieData.map((_, i) => (
-                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Legend />
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-gray-400 text-sm">No votes cast yet</div>
+            {/* Winner Section */}
+            {winnerDeclared && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 border-4 border-white shadow-md">
+                    <FaTrophy size={40} />
+                  </div>
+                  <div className="text-center md:text-left flex-1">
+                    <h2 className="text-xl font-black text-amber-900 uppercase tracking-tight">
+                      {isTie ? 'Election Result: Tie' : 'Winner Declared'}
+                    </h2>
+                    <p className="text-amber-700 font-medium">
+                      {isTie 
+                        ? `A tie has occurred between ${winners.map(w => w.candidate_name).join(' and ')}.`
+                        : `Congratulations to ${results.winner.candidate_name} for winning the election.`
+                      }
+                    </p>
+                  </div>
+                  {!isTie && results.winner && (
+                    <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-amber-200 shadow-sm">
+                      <ImageAvatar name={results.winner.candidate_name} sizeClass="w-10 h-10" />
+                      <div>
+                        <p className="font-bold text-gray-900">{results.winner.candidate_name}</p>
+                        <p className="text-xs text-gray-500">{results.winner.vote_count} votes ({results.winner.percentage.toFixed(1)}%)</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Results table */}
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-base font-semibold text-[#1066b1]">Detailed Results</h3>
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  <FaChartPie className="text-[rgb(16_102_177)]" />
+                  Vote Distribution
+                </h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              {candidates.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">No candidates in this election.</div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {candidates.map((c, i) => (
-                      <div key={c.candidate_id} className={`flex items-center gap-4 px-6 py-4 ${c.is_winner ? 'bg-amber-50/60' : ''}`}>
-                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${c.is_winner ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-500'}`}>
-                          #{c.rank || i + 1}
-                        </span>
-                        
-                        <ImageAvatar
-                          src={c.image_url}
-                          name={c.candidate_name}
-                          sizeClass="w-9 h-9"
-                          imageClassName="ring-1 ring-gray-100"
-                          fallbackClassName="bg-gray-100 text-gray-900 text-xs ring-1 ring-gray-200"
-                        />
 
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-[#1066b1] text-sm truncate">{c.candidate_name}</p>
-                          <p className="text-xs text-gray-500">{c.party}</p>
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                  <FaVoteYea className="text-[rgb(16_102_177)]" />
+                  Vote Counts
+                </h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} layout="vertical" margin={{ left: 40, right: 40 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12, fontWeight: 600 }} />
+                      <Tooltip />
+                      <Bar dataKey="votes" radius={[0, 4, 4, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Table Section */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                    <th className="px-6 py-4">Rank</th>
+                    <th className="px-6 py-4">Candidate</th>
+                    <th className="px-6 py-4">Votes</th>
+                    <th className="px-6 py-4">Percentage</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(results.candidates || []).slice().sort((a, b) => b.vote_count - a.vote_count).map((c, i) => (
+                    <tr key={c.candidate_id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                          i === 0 ? 'bg-amber-100 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {i + 1}
                         </div>
-                        <div className="w-40 hidden md:block">
-                          <div className="flex justify-between text-xs text-gray-500 mb-1">
-                            <span>{c.vote_count} votes</span>
-                            <span>{c.percentage.toFixed(1)}%</span>
-                          </div>
-                          <div className="w-full bg-gray-100 rounded-full h-2">
-                            <div
-                              className="h-2 rounded-full"
+                      </td>
+                      <td className="px-6 py-4 font-bold text-gray-800">{c.candidate_name}</td>
+                      <td className="px-6 py-4 font-mono text-gray-600">{c.vote_count.toLocaleString()}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 min-w-[100px]">
+                            <div 
+                              className="h-2 rounded-full transition-all duration-1000" 
                               style={{ width: `${c.percentage}%`, backgroundColor: COLORS[i % COLORS.length] }}
                             />
                           </div>
+                          <span className="font-bold text-gray-700">{c.percentage.toFixed(1)}%</span>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-[#1066b1]">{c.vote_count}</p>
-                          <p className="text-xs text-gray-500">{c.percentage.toFixed(1)}%</p>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}

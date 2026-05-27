@@ -1,4 +1,4 @@
-import React, { Fragment, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions, Transition } from '@headlessui/react'
 import { Check, ChevronDown } from 'lucide-react'
 
@@ -91,7 +91,7 @@ export default function FancySelect({
                     key={idx}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors font-semibold ${
-                        active ? 'bg-[#0051D5] text-white' : 'text-gray-900'
+                        active ? 'bg-[rgb(16_102_177)] text-white' : 'text-gray-900'
                       }`
                     }
                     value={option.value}

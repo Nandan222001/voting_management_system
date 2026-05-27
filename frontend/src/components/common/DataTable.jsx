@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import Pagination from './Pagination';
-import TableActions from './TableActions';
 
 function SkeletonRow({ cols }) {
   return (
@@ -38,7 +38,7 @@ export default function DataTable({
   onEdit,
   onDelete,
   onAction,
-  getActions,
+  actionLabel = 'Action',
 }) {
   const [currentPage, setCurrentPage] = useState(1);
   const showActions = onEdit || onDelete || onAction;
@@ -130,7 +130,7 @@ export default function DataTable({
                         {onAction && (
                           <button
                             onClick={() => onAction(row)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-[#1B4FD8] hover:bg-blue-100 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-[rgb(16_102_177)] hover:bg-blue-100 transition-colors"
                           >
                             {actionLabel}
                           </button>
@@ -138,7 +138,7 @@ export default function DataTable({
                         {onEdit && (
                           <button
                             onClick={() => onEdit(row)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-blue-50 hover:text-[#1B4FD8] transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-blue-50 hover:text-[rgb(16_102_177)] transition-colors"
                             title="Edit"
                           >
                             <FaEdit className="text-sm" />

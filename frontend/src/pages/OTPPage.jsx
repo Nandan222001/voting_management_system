@@ -61,8 +61,8 @@ export default function OTPPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[#1B4FD8] text-lg" />
-          <span className="font-bold text-[#1066b1] text-base">SecureVote</span>
+          <FaShieldAlt className="text-[rgb(16_102_177)] text-lg" />
+          <span className="font-bold text-[rgb(16_102_177)] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
           <span className="text-gray-700 text-sm font-bold">JD</span>
@@ -79,9 +79,9 @@ export default function OTPPage() {
       <div className="flex-1 px-5 py-8 max-w-lg mx-auto w-full">
 
         {/* Heading */}
-        <h1 className="text-2xl font-bold text-[#1066b1] text-center mb-2">Identity Verification</h1>
+        <h1 className="text-2xl font-bold text-[rgb(16_102_177)] text-center mb-2">Identity Verification</h1>
         <p className="text-sm text-gray-500 text-center mb-7 leading-relaxed">
-          We've sent a 6-digit verification code to your registered device ending in{' '}
+          We&apos;ve sent a 6-digit verification code to your registered device ending in{' '}
           <span className="font-semibold text-gray-700">••••4209</span>.
         </p>
 
@@ -97,7 +97,7 @@ export default function OTPPage() {
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className="w-12 h-14 text-center text-xl font-bold text-[#1066b1] border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[#1B4FD8] focus:ring-2 focus:ring-blue-200 transition-all"
+              className="w-12 h-14 text-center text-xl font-bold text-[rgb(16_102_177)] border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[rgb(16_102_177)] focus:ring-2 focus:ring-blue-200 transition-all"
             />
           ))}
         </div>
@@ -116,7 +116,7 @@ export default function OTPPage() {
           <button
             type="button"
             onClick={handleResend}
-            className="text-sm font-semibold text-[#1B4FD8] hover:underline"
+            className="text-sm font-semibold text-[rgb(16_102_177)] hover:underline"
           >
             Resend Code
           </button>
@@ -151,7 +151,7 @@ export default function OTPPage() {
           type="button"
           onClick={handleVerify}
           disabled={otp.join('').length < OTP_LENGTH}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1B4FD8] hover:bg-[#1640B8] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-[rgb(16_102_177)] hover:bg-[rgb(12_85_148)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
         >
           Verify &amp; Continue
           <FaArrowRight className="text-sm" />

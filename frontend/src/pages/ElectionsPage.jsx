@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
-  FaPlus,
-  FaChartBar,
-  FaSearch,
-  FaTrophy,
-} from 'react-icons/fa';
+  Plus,
+  Search,
+  Trophy,
+  BarChart,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   fetchElections,
@@ -16,14 +16,12 @@ import {
   activateElection,
   closeElection,
   selectElections,
-  selectElectionTotal,
   selectElectionLoading,
   selectElectionActionLoading,
 } from '../store/slices/electionSlice';
 import { fetchTargets } from '../store/slices/targetSlice';
 import DataTable from '../components/common/DataTable';
 import Badge from '../components/common/Badge';
-import FancySelect from '../components/common/FancySelect';
 import Modal from '../components/common/Modal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Pagination from '../components/common/Pagination';
@@ -58,7 +56,6 @@ export default function ElectionsPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const elections = useSelector(selectElections);
-  const total = useSelector(selectElectionTotal);
   const loading = useSelector(selectElectionLoading);
   const actionLoading = useSelector(selectElectionActionLoading);
   const { targets } = useSelector(s => s.targets);
@@ -165,10 +162,10 @@ export default function ElectionsPage() {
       render: (val, row) => (
         <button
           onClick={() => navigate(`/elections/${row._id || row.id}`)}
-          className="text-[#1B4FD8] font-semibold hover:underline text-left max-w-xs truncate block"
+          className="text-[rgb(16_102_177)] font-semibold hover:underline text-left max-w-xs truncate block"
         >
           {val}
-        </span>
+        </button>
       ),
     },
     {
@@ -183,7 +180,7 @@ export default function ElectionsPage() {
         if (row.winner_declared && row.winner) {
           return (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
-              <FaTrophy className="text-[10px]" />
+              <Trophy size={10} />
               {row.winner.candidate_name}
             </span>
           );
@@ -231,262 +228,241 @@ export default function ElectionsPage() {
     return null;
   };
 
-  // Filter rows that need an action button
   const dataWithAction = elections.map((e) => ({
     ...e,
     id: e._id || e.id,
     _actionLabel: getActionLabel(e),
   }));
 
-  const totalPages = Math.ceil(total / LIMIT);
+  const totalPages = Math.ceil(elections.length / LIMIT);
 
-return (
-  <MainLayout title="Elections">
-    <div className="space-y-5 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1066b1]">Elections</h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {total} election{total !== 1 ? 's' : ''} total
-          </p>
-        </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-lg hover:bg-[#1640B8] transition-colors shadow-sm"
-        >
-          <FaPlus className="text-xs" />
-          Create Election
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-          <input
-            type="text"
-            placeholder="Search elections..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-          />
-        </div>
-
-        {/* Status filter */}
-        <div className="flex gap-2 flex-wrap">
-          {STATUS_FILTERS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setStatusFilter(value)}
-              className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                statusFilter === value
-                  ? 'bg-[#1B4FD8] text-white border-[#1B4FD8]'
-                  : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <DataTable
-        columns={columns}
-        data={dataWithAction}
-        loading={loading}
-        pagination={false}
-        getActions={(row) => [
-          {
-            key: 'view',
-            label: 'View Election',
-            onClick: () => navigate(`/elections/${row._id || row.id}`),
-          },
-          {
-            key: 'results',
-            label: 'View Results',
-            icon: FaChartBar,
-            onClick: () => navigate(`/results?election=${row._id || row.id}`),
-          },
-        ]}
-        onEdit={openEditModal}
-        onDelete={(row) => setDeleteDialog({ open: true, target: row })}
-        onAction={(row) => {
-          if (row._actionLabel) handleRowAction(row);
-        }}
-        // actionLabel={null}
-      />
-
-      {/* Override action column with per-row labels by rendering actions externally */}
-      {/* We use custom action rendering via DataTable's onAction + render */}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-        </div>
-      )}
-
-      {/* Create / Edit Modal */}
-      <Modal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={editTarget ? 'Edit Election' : 'Create New Election'}
-        size="lg"
-      >
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          {/* Title */}
+  return (
+    <MainLayout title="Elections">
+      <div className="space-y-5 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-              Election Title <span className="text-red-500">*</span>
-            </label>
+            <h2 className="text-2xl font-bold text-[rgb(16_102_177)]">Elections</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Manage your elections
+            </p>
+          </div>
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[rgb(16_102_177)] text-white text-sm font-semibold rounded-lg hover:bg-[rgb(12_85_148)] transition-colors shadow-sm"
+          >
+            <Plus size={16} />
+            Create Election
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              value={form.title}
-              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-              placeholder="e.g. City Council Election 2026"
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                formErrors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
-              }`}
-            />
-            {formErrors.title && (
-              <p className="mt-1 text-xs text-red-600">{formErrors.title}</p>
-            )}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
-            <textarea
-              value={form.description}
-              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              rows={3}
-              placeholder="Brief description of the election..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="Search elections..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] focus:border-transparent bg-white"
             />
           </div>
 
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex gap-2 flex-wrap">
+            {STATUS_FILTERS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value)}
+                className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                  statusFilter === value
+                    ? 'bg-[rgb(16_102_177)] text-white border-[rgb(16_102_177)]'
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <DataTable
+          columns={columns}
+          data={dataWithAction}
+          loading={loading}
+          pagination={false}
+          getActions={(row) => [
+            {
+              key: 'view',
+              label: 'View Election',
+              onClick: () => navigate(`/elections/${row._id || row.id}`),
+            },
+            {
+              key: 'results',
+              label: 'View Results',
+              icon: BarChart,
+              onClick: () => navigate(`/results?election=${row._id || row.id}`),
+            },
+          ]}
+          onEdit={openEditModal}
+          onDelete={(row) => setDeleteDialog({ open: true, target: row })}
+          onAction={(row) => {
+            if (row._actionLabel) handleRowAction(row);
+          }}
+        />
+
+        {totalPages > 1 && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
+        )}
+
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={editTarget ? 'Edit Election' : 'Create New Election'}
+          size="lg"
+        >
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Start Date <span className="text-red-500">*</span>
+                Election Title <span className="text-red-500">*</span>
               </label>
               <input
-                type="date"
-                value={form.start_date}
-                onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  formErrors.start_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                type="text"
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. City Council Election 2026"
+                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] focus:border-transparent ${
+                  formErrors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 }`}
               />
-              {formErrors.start_date && (
-                <p className="mt-1 text-xs text-red-600">{formErrors.start_date}</p>
+              {formErrors.title && (
+                <p className="mt-1 text-xs text-red-600">{formErrors.title}</p>
               )}
             </div>
+
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={form.end_date}
-                onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  formErrors.end_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
-                }`}
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                rows={3}
+                placeholder="Brief description of the election..."
+                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] focus:border-transparent resize-none"
               />
-              {formErrors.end_date && (
-                <p className="mt-1 text-xs text-red-600">{formErrors.end_date}</p>
-              )}
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setModalOpen(false)}
-              className="px-4 py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={actionLoading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] disabled:opacity-60 transition-colors flex items-center gap-2"
-            >
-              {actionLoading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              )}
-              {editTarget ? 'Save Changes' : 'Create Election'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Area</label>
+              <select
+                value={form.target_id}
+                onChange={(e) => setForm((p) => ({ ...p, target_id: e.target.value }))}
+                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+              >
+                <option value="">-- All Regions --</option>
+                {targets.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.type})</option>
+                ))}
+              </select>
+            </div>
 
-      {/* Delete Confirm */}
-      <ConfirmDialog
-        isOpen={deleteDialog.open}
-        onClose={() => setDeleteDialog({ open: false, target: null })}
-        onConfirm={async () => {
-          const id = deleteDialog.target?._id || deleteDialog.target?.id;
-          const result = await dispatch(deleteElection(id));
-          if (result.meta.requestStatus === 'fulfilled') {
-            toast.success('Election deleted');
-          } else {
-            toast.error(result.payload || 'Delete failed');
-          }
-          setDeleteDialog({ open: false, target: null });
-        }}
-        title="Delete Election"
-        message={`Are you sure you want to delete "${deleteDialog.target?.title}"? This action cannot be undone.`}
-        confirmLabel="Delete"
-        variant="red"
-      />
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Election Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.election_date}
+                  onChange={(e) => setForm((p) => ({ ...p, election_date: e.target.value }))}
+                  className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] focus:border-transparent ${
+                    formErrors.election_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {formErrors.election_date && (
+                  <p className="mt-1 text-xs text-red-600">{formErrors.election_date}</p>
+                )}
+              </div>
+            </div>
 
-      {/* Activate Confirm */}
-      <ConfirmDialog
-        isOpen={activateDialog.open}
-        onClose={() => setActivateDialog({ open: false, target: null })}
-        onConfirm={async () => {
-          const id = activateDialog.target?._id || activateDialog.target?.id;
-          const result = await dispatch(activateElection(id));
-          if (result.meta.requestStatus === 'fulfilled') {
-            toast.success('Election activated!');
-          } else {
-            toast.error(result.payload || 'Activation failed');
-          }
-          setActivateDialog({ open: false, target: null });
-        }}
-        title="Activate Election"
-        message={`Activate "${activateDialog.target?.title}"? Voters will be able to cast their votes once active.`}
-        confirmLabel="Activate"
-        variant="primary"
-      />
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className="px-4 py-2.5 text-sm font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] disabled:opacity-60 transition-colors flex items-center gap-2"
+              >
+                {actionLoading && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
+                {editTarget ? 'Save Changes' : 'Create Election'}
+              </button>
+            </div>
+          </form>
+        </Modal>
 
-      {/* Close Confirm */}
-      <ConfirmDialog
-        isOpen={closeDialog.open}
-        onClose={() => setCloseDialog({ open: false, target: null })}
-        onConfirm={async () => {
-          const id = closeDialog.target?._id || closeDialog.target?.id;
-          const result = await dispatch(closeElection(id));
-          if (result.meta.requestStatus === 'fulfilled') {
-            toast.success('Election closed');
-          } else {
-            toast.error(result.payload || 'Close failed');
-          }
-          setCloseDialog({ open: false, target: null });
-        }}
-        title="Close Election"
-        message={`Close "${closeDialog.target?.title}"? No more votes can be cast after closing.`}
-        confirmLabel="Close Election"
-        variant="red"
-      />
-    </div>
-  </MainLayout>
+        <ConfirmDialog
+          isOpen={deleteDialog.open}
+          onClose={() => setDeleteDialog({ open: false, target: null })}
+          onConfirm={async () => {
+            const id = deleteDialog.target?._id || deleteDialog.target?.id;
+            const result = await dispatch(deleteElection(id));
+            if (result.meta.requestStatus === 'fulfilled') {
+              toast.success('Election deleted');
+            } else {
+              toast.error(result.payload || 'Delete failed');
+            }
+            setDeleteDialog({ open: false, target: null });
+          }}
+          title="Delete Election"
+          message={`Are you sure you want to delete "${deleteDialog.target?.title}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          variant="red"
+        />
+
+        <ConfirmDialog
+          isOpen={activateDialog.open}
+          onClose={() => setActivateDialog({ open: false, target: null })}
+          onConfirm={async () => {
+            const id = activateDialog.target?._id || activateDialog.target?.id;
+            const result = await dispatch(activateElection(id));
+            if (result.meta.requestStatus === 'fulfilled') {
+              toast.success('Election activated!');
+            } else {
+              toast.error(result.payload || 'Activation failed');
+            }
+            setActivateDialog({ open: false, target: null });
+          }}
+          title="Activate Election"
+          message={`Activate "${activateDialog.target?.title}"? Voters will be able to cast their votes once active.`}
+          confirmLabel="Activate"
+          variant="primary"
+        />
+
+        <ConfirmDialog
+          isOpen={closeDialog.open}
+          onClose={() => setCloseDialog({ open: false, target: null })}
+          onConfirm={async () => {
+            const id = closeDialog.target?._id || closeDialog.target?.id;
+            const result = await dispatch(closeElection(id));
+            if (result.meta.requestStatus === 'fulfilled') {
+              toast.success('Election closed');
+            } else {
+              toast.error(result.payload || 'Close failed');
+            }
+            setCloseDialog({ open: false, target: null });
+          }}
+          title="Close Election"
+          message={`Close "${closeDialog.target?.title}"? No more votes can be cast after closing.`}
+          confirmLabel="Close Election"
+          variant="red"
+        />
+      </div>
+    </MainLayout>
   );
 }

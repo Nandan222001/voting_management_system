@@ -31,7 +31,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-[#0051D5] hover:border-[#0051D5] disabled:opacity-20 transition-all shadow-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-[rgb(16_102_177)] hover:border-[rgb(16_102_177)] disabled:opacity-20 transition-all shadow-sm"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -46,7 +46,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
                 onClick={() => onPageChange(p)}
                 className={`w-9 h-9 text-xs font-semibold transition-all border rounded-lg ${
                   p === page
-                    ? 'bg-[#1B4FD8] text-white shadow-sm'
+                    ? 'bg-[rgb(16_102_177)] text-white shadow-sm'
                     : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -59,7 +59,7 @@ export default function Pagination({ page, totalPages, onPageChange }) {
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-[#0051D5] hover:border-[#0051D5] disabled:opacity-20 transition-all shadow-sm"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-[rgb(16_102_177)] hover:border-[rgb(16_102_177)] disabled:opacity-20 transition-all shadow-sm"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  Activity,
   Users,
   Plus,
   Edit,
@@ -15,10 +14,6 @@ import {
   Search,
   X,
   Building,
-  Clock,
-  Mail,
-  Link,
-  ShieldCheck,
 } from 'lucide-react';
 import {
   fetchTenants,
@@ -38,12 +33,10 @@ import {
   clearError,
 } from '../store/slices/tenantSlice';
 import MainLayout from '../components/layout/MainLayout';
-import FancySelect from '../components/common/FancySelect';
 import Modal from '../components/common/Modal';
 import Badge from '../components/common/Badge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination';
-import TableActions from '../components/common/TableActions';
 import { format, parseISO } from 'date-fns';
 import ImageUpload from '../components/common/ImageUpload';
 import ImageAvatar from '../components/common/ImageAvatar';
@@ -76,7 +69,7 @@ function getTenantId(tenant) {
 
 const PLAN_STYLES = {
   starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-blue-100 text-[#1B4FD8] ring-1 ring-blue-200',
+  professional: 'bg-blue-100 text-[rgb(16_102_177)] ring-1 ring-blue-200',
   enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
 };
 
@@ -107,7 +100,7 @@ function Field({ label, required, children, hint, error }) {
   );
 }
 
-function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, icon: Icon, ...props }) {
+function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, ...props }) {
   return (
     <input
       type={type}
@@ -119,6 +112,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
+      {...props}
     />
   );
 }
@@ -260,7 +254,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={set('name')}
                 placeholder="Acme Corp"
                 autoComplete="off"
-                icon={Building}
                 required
                 hasError={!!errors.name}
               />
@@ -272,7 +265,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={handleSlugChange}
                 placeholder="acme-corp"
                 autoComplete="off"
-                icon={Link}
                 required
                 hasError={!!errors.slug}
               />
@@ -288,7 +280,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={set('contact_email')}
                 placeholder="admin@acme.com"
                 autoComplete="off"
-                icon={Mail}
                 required
                 hasError={!!errors.contact_email}
               />
@@ -330,7 +321,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   onChange={set('admin_name')}
                   placeholder="Jane Smith"
                   autoComplete="off"
-                  icon={Users}
                   hasError={!!errors.admin_name}
                 />
               </Field>
@@ -342,7 +332,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   onChange={set('admin_email')}
                   placeholder="jane@acme.com"
                   autoComplete="new-user-email"
-                  icon={Mail}
                   hasError={!!errors.admin_email}
                 />
               </Field>
@@ -355,7 +344,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 onChange={set('admin_password')}
                 placeholder="••••••••"
                 autoComplete="new-password"
-                icon={ShieldCheck}
                 hasError={!!errors.admin_password}
               />
             </Field>
@@ -374,7 +362,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -465,28 +453,21 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
     {
       label: 'Users',
       value: stats.user_count ?? tenant.user_count ?? 0,
-      icon: FaUsers,
-      color: 'text-[#1B4FD8]',
+      icon: Users,
+      color: 'text-[rgb(16_102_177)]',
       bg: 'bg-blue-50',
     },
     {
       label: 'Elections',
       value: stats.election_count ?? tenant.election_count ?? 0,
-      icon: FaVoteYea,
+      icon: Vote,
       color: 'text-green-600',
       bg: 'bg-green-50',
     },
     {
-      label: 'Active',
-      value: stats.active_elections ?? tenant.active_elections ?? 0,
-      icon: FaCheckCircle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
       label: 'Total Votes',
       value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0,
-      icon: FaBuilding,
+      icon: Building,
       color: 'text-purple-600',
       bg: 'bg-purple-50',
     },
@@ -520,7 +501,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             Live Usage Metrics
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {usageStats.map(({ label, value, icon: Icon, color, bg }) => (
+            {usageStats.map(({ label, value, icon: Icon, color }) => (
               <div key={label} className="p-5 rounded-2xl border border-gray-100 bg-gray-50 flex flex-col items-center shadow-sm">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white border border-gray-100 shadow-sm`}>
                   <Icon className={`w-5 h-5 ${color}`} />
@@ -598,75 +579,6 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
   );
 }
 
-// ─── Stat Chip ────────────────────────────────────────────────────────────────
-
-function StatChip({ label, count, color }) {
-  return (
-    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${color}`}>
-      <span className="text-base font-bold">{count}</span>
-      <span className="opacity-80">{label}</span>
-    </div>
-  );
-}
-
-// ─── Pagination ───────────────────────────────────────────────────────────────
-
-function Pagination({ page, total, perPage, onPage }) {
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
-  if (totalPages <= 1) return null;
-
-  return (
-    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-      <p className="text-xs text-gray-500">
-        Showing {Math.min((page - 1) * perPage + 1, total)}–{Math.min(page * perPage, total)} of{' '}
-        <span className="font-semibold text-gray-700">{total}</span>
-      </p>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => onPage(page - 1)}
-          disabled={page <= 1}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <FaChevronLeft className="text-xs" />
-        </button>
-        {Array.from({ length: totalPages }, (_, i) => i + 1)
-          .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-          .reduce((acc, p, idx, arr) => {
-            if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-            acc.push(p);
-            return acc;
-          }, [])
-          .map((p, i) =>
-            p === '...' ? (
-              <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-400">
-                …
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => onPage(p)}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
-                  p === page
-                    ? 'bg-[#1B4FD8] text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-white hover:border hover:border-gray-200'
-                }`}
-              >
-                {p}
-              </button>
-            )
-          )}
-        <button
-          onClick={() => onPage(page + 1)}
-          disabled={page >= totalPages}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white hover:border hover:border-gray-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <FaChevronRight className="text-xs" />
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const STATUS_FILTERS = [
@@ -700,68 +612,18 @@ export default function TenantsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
 
-  useEffect(() => {
-    const params = { page, per_page: PER_PAGE };
-    if (statusFilter) params.status = statusFilter;
-    dispatch(fetchTenants(params));
-  }, [dispatch, page, statusFilter]);
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleStatusFilter = (val) => {
-    setStatusFilter(val);
-    setPage(1);
-    setSearch('');
-  };
-
-  useEffect(() => {
-    const viewId = searchParams.get('view');
-    const action = searchParams.get('action');
-    const id = searchParams.get('id');
-
-    if (viewId) {
-      const found = tenants.find((t) => String(getTenantId(t)) === viewId);
-      if (found) {
-        setViewTarget(found);
-        setSearchParams({}, { replace: true });
+  const handleActivate = useCallback(
+    async (tenant) => {
+      const id = getTenantId(tenant);
+      const result = await dispatch(activateTenant(id));
+      if (activateTenant.fulfilled.match(result)) {
+        toast.success('Tenant activated.');
       }
-    }
-
-    if (action === 'toggle' && id) {
-      const found = tenants.find((t) => String(getTenantId(t)) === id);
-      if (found) {
-        if (found.status === 'suspended') {
-          handleActivate(found);
-        } else {
-          setSuspendTarget(found);
-        }
-        setSearchParams({}, { replace: true });
-      }
-    }
-  }, [searchParams, tenants]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-      dispatch(clearCurrentTenant());
-    };
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error(error);
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
-
-  const filteredTenants = useMemo(() => {
-    if (!search.trim()) return tenants;
-    const q = search.toLowerCase();
-    return tenants.filter(
-      (t) =>
-        t.name?.toLowerCase().includes(q) ||
-        t.slug?.toLowerCase().includes(q) ||
-        t.contact_email?.toLowerCase().includes(q)
-    );
-  }, [tenants, search]);
+    },
+    [dispatch]
+  );
 
   const handleCreate = async (data) => {
     const result = await dispatch(createTenant(data));
@@ -791,17 +653,6 @@ export default function TenantsPage() {
     }
   };
 
-  const handleActivate = useCallback(
-    async (tenant) => {
-      const id = getTenantId(tenant);
-      const result = await dispatch(activateTenant(id));
-      if (activateTenant.fulfilled.match(result)) {
-        toast.success('Tenant activated.');
-      }
-    },
-    [dispatch]
-  );
-
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const id = getTenantId(deleteTarget);
@@ -817,34 +668,101 @@ export default function TenantsPage() {
     dispatch(fetchTenantById(getTenantId(tenant)));
   };
 
+  const handleStatusFilter = (val) => {
+    setStatusFilter(val);
+    setPage(1);
+    setSearch('');
+  };
+
+  // ── Effects ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const params = { page, per_page: PER_PAGE };
+    if (statusFilter) params.status = statusFilter;
+    dispatch(fetchTenants(params));
+  }, [dispatch, page, statusFilter]);
+
+  useEffect(() => {
+    const viewId = searchParams.get('view');
+    const action = searchParams.get('action');
+    const id = searchParams.get('id');
+
+    if (viewId) {
+      const found = tenants.find((t) => String(getTenantId(t)) === viewId);
+      if (found) {
+        setViewTarget(found);
+        setSearchParams({}, { replace: true });
+      }
+    }
+
+    if (action === 'toggle' && id) {
+      const found = tenants.find((t) => String(getTenantId(t)) === id);
+      if (found) {
+        if (found.status === 'suspended') {
+          handleActivate(found);
+        } else {
+          setSuspendTarget(found);
+        }
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, tenants, handleActivate, setSearchParams]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+      dispatch(clearCurrentTenant());
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
+  const filteredTenants = useMemo(() => {
+    if (!search.trim()) return tenants;
+    const q = search.toLowerCase();
+    return tenants.filter(
+      (t) =>
+        t.name?.toLowerCase().includes(q) ||
+        t.slug?.toLowerCase().includes(q) ||
+        t.contact_email?.toLowerCase().includes(q)
+    );
+  }, [tenants, search]);
+
+  const totalPages = Math.ceil(total / PER_PAGE);
+
   return (
-    <MainLayout>
+    <MainLayout title="Tenant Management">
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#1066b1]">Tenant Management</h1>
+            <h2 className="text-2xl font-bold text-[#1066b1]">Organisations</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {total} organisation{total !== 1 ? 's' : ''} on the platform
             </p>
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-xl hover:bg-[#1640B8] active:scale-95 transition-all shadow-sm flex-shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[rgb(16_102_177)] text-white text-sm font-semibold rounded-xl hover:bg-[rgb(12_85_148)] transition-all shadow-sm"
           >
-            <Plus className="w-4 h-4 inline-block mr-2" />
+            <Plus className="w-4 h-4" />
             New Tenant
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl border border-gray-200">
             {STATUS_FILTERS.map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => handleStatusFilter(value)}
                 className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   statusFilter === value
-                    ? 'bg-white text-[#1B4FD8] shadow-sm ring-1 ring-gray-200'
+                    ? 'bg-white text-[rgb(16_102_177)] shadow-sm ring-1 ring-gray-200'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -854,13 +772,13 @@ export default function TenantsPage() {
           </div>
 
           <div className="relative flex-1 min-w-[300px] max-w-sm group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[#0051D5] transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[rgb(16_102_177)] transition-colors" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, slug or email…"
-              className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-[rgb(16_102_177)]/5 focus:border-[rgb(16_102_177)] bg-white transition-all shadow-sm"
             />
             {search && (
               <button
@@ -889,25 +807,16 @@ export default function TenantsPage() {
                   ? 'Try a different status filter.'
                   : 'Create your first tenant to get started.'}
               </p>
-              {(search || statusFilter) && (
-                <button
-                  onClick={() => { setSearch(''); setStatusFilter(''); }}
-                  className="mt-4 text-sm text-[#1B4FD8] hover:underline"
-                >
-                  Clear filters
-                </button>
-              )}
             </div>
           ) : (
-            <div className="w-full">
-              <table className="w-full table-fixed text-sm text-left border-collapse">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse min-w-[800px]">
                 <thead>
                   <tr className="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {['Organisation', 'URL Identifier', 'Plan', 'Status', 'Users', 'Actions'].map((col) => (
+                    {['Organisation', 'Identifier', 'Plan', 'Status', 'Users', 'Created', 'Actions'].map((col) => (
                       <th
                         key={col}
-                        className={`px-3 py-3 sm:px-4 ${col === 'Actions' ? 'w-24 whitespace-nowrap text-right' : 'break-words'}`}
-                        style={col === 'Actions' ? { width: '6rem' } : undefined}
+                        className={`px-3 py-4 sm:px-6 ${col === 'Actions' ? 'text-right' : ''}`}
                       >
                         {col}
                       </th>
@@ -915,13 +824,13 @@ export default function TenantsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredTenants.map((tenant, index) => {
+                  {filteredTenants.map((tenant) => {
                     const id = getTenantId(tenant);
-                    const isSuspended = tenant.status === 'suspended' || tenant.status === 'Suspended';
+                    const isSuspended = tenant.status === 'suspended';
                     return (
                       <tr key={id} className="hover:bg-[#e6edfb]/50 transition-colors group">
-                        <td className="px-3 py-3 align-top sm:px-4">
-                          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                        <td className="px-3 py-4 sm:px-6">
+                          <div className="flex items-center gap-3">
                             <ImageAvatar
                               src={tenant.logo_url}
                               name={tenant.name}
@@ -929,152 +838,96 @@ export default function TenantsPage() {
                               shapeClass="rounded-xl"
                               imageClassName="border border-gray-200 shadow-sm"
                               fallbackClassName="text-white text-xs shadow-sm"
-                              style={{ backgroundColor: tenant.primary_color || '#000' }}
+                              style={{ backgroundColor: tenant.primary_color || 'rgb(16_102_177)' }}
                             />
-                            <p className="min-w-0 break-words font-semibold text-gray-800">
-                              {tenant.name}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-800 truncate max-w-[160px]">
+                                {tenant.name}
+                              </p>
+                            </div>
                           </div>
                         </td>
-
-                      return (
-                        <tr key={id} className="hover:bg-blue-50/30 transition-colors group">
-                          {/* Organisation */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              {tenant.logo_url ? (
-                                <img
-                                  src={tenant.logo_url}
-                                  alt={tenant.name}
-                                  className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border border-gray-200"
-                                />
-                              ) : (
-                                <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
-                                  style={{ backgroundColor: tenant.primary_color || '#4f46e5' }}
-                                >
-                                  {tenant.name?.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="font-semibold text-gray-800 truncate max-w-[160px]">
-                                  {tenant.name}
-                                </p>
-                                <p className="text-xs text-gray-400 font-mono truncate max-w-[160px]">
-                                  {tenant.slug}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-
-                        <td className="px-3 py-3 align-top sm:px-4">
+                        <td className="px-3 py-4 sm:px-6 font-mono text-[10px] text-gray-400">
+                          {tenant.slug}
+                        </td>
+                        <td className="px-3 py-4 sm:px-6">
                           <PlanBadge plan={tenant.plan} />
                         </td>
-
-                        <td className="px-3 py-3 align-top sm:px-4">
+                        <td className="px-3 py-4 sm:px-6">
                           <Badge status={tenant.status} />
                         </td>
-
-                          {/* Users / Elections */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="flex items-center gap-1 text-[#1B4FD8] font-semibold">
-                                <FaUsers className="opacity-70" />
-                                {tenant.user_count ?? 0}
-                              </span>
-                              <span className="text-gray-300">·</span>
-                              <span className="flex items-center gap-1 text-green-600 font-semibold">
-                                <FaVoteYea className="opacity-70" />
-                                {tenant.election_count ?? 0}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Limits */}
-                          <td className="px-5 py-4">
-                            <div className="text-xs text-gray-500 space-y-0.5">
-                              <div>{tenant.max_elections ?? '∞'} elections</div>
-                              <div>{tenant.max_voters != null ? tenant.max_voters.toLocaleString() : '∞'} voters</div>
-                            </div>
-                          </td>
-
-                          {/* Created */}
-                          <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">
-                            {safeFormat(tenant.created_at || tenant.createdAt)}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-5 py-4">
-                            <div className="flex items-center justify-end gap-1">
+                        <td className="px-3 py-4 sm:px-6">
+                          <div className="flex items-center gap-1.5 text-gray-600 font-semibold">
+                            <Users className="w-4 h-4 text-gray-400" />
+                            {tenant.user_count ?? 0}
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 sm:px-6 text-xs text-gray-500 whitespace-nowrap">
+                          {safeFormat(tenant.created_at || tenant.createdAt)}
+                        </td>
+                        <td className="px-3 py-4 sm:px-6 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleViewDetails(tenant)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[rgb(16_102_177)] transition-colors"
+                              title="View Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => setEditTenant(tenant)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            {isSuspended ? (
                               <button
-                                onClick={() => handleViewDetails(tenant)}
-                                title="View Details"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[#1B4FD8] transition-colors"
+                                onClick={() => handleActivate(tenant)}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                title="Activate"
                               >
-                                <FaEye className="text-sm" />
+                                <CheckCircle2 size={16} />
                               </button>
+                            ) : (
                               <button
-                                onClick={() => setEditTenant(tenant)}
-                                title="Edit"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                                onClick={() => setSuspendTarget(tenant)}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                                title="Suspend"
                               >
-                                <FaEdit className="text-sm" />
+                                <Ban size={16} />
                               </button>
-                              {isSuspended ? (
-                                <button
-                                  onClick={() => handleActivate(tenant)}
-                                  disabled={actionLoading}
-                                  title="Activate"
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors disabled:opacity-40"
-                                >
-                                  <FaCheckCircle className="text-sm" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setSuspendTarget(tenant)}
-                                  title="Suspend"
-                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                                >
-                                  <FaBan className="text-sm" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => setDeleteTarget(tenant)}
-                                title="Delete"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                              >
-                                <FaTrash className="text-sm" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <Pagination
-                page={page}
-                total={total}
-                perPage={PER_PAGE}
-                onPage={setPage}
-              />
-            </>
+                            )}
+                            <button
+                              onClick={() => setDeleteTarget(tenant)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
 
-          {/* Refresh indicator */}
-          {loading && filteredTenants.length > 0 && (
-            <div className="px-5 py-2 bg-blue-50 border-t border-indigo-100 flex items-center gap-2">
-              <span className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-[#1B4FD8] font-medium">Refreshing…</span>
+          {totalPages > 1 && (
+            <div className="border-t border-gray-100 bg-gray-50/50">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       <TenantFormModal
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}

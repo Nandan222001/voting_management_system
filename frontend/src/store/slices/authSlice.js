@@ -85,7 +85,7 @@ export const verifyOTP = createAsyncThunk(
 
 export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
-  async (_, { rejectWithValue }) => {
+  async () => {
     try {
       await api.post('/auth/logout')
     } catch {

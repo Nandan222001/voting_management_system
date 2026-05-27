@@ -9,10 +9,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog'
 import Pagination from '../components/common/Pagination'
 import Modal from '../components/common/Modal'
 import StatsCard from '../components/common/StatsCard'
-import TableActions from '../components/common/TableActions'
 import { fetchUsers, approveUser, blockUser, deleteUser, fetchUserStats } from '../store/slices/userSlice'
-import { fetchTargets } from '../store/slices/targetSlice'
-import ImageAvatar from '../components/common/ImageAvatar'
 
 const TABS = [
   { key: '', label: 'All Users' },
@@ -24,7 +21,6 @@ const TABS = [
 export default function UsersPage() {
   const dispatch = useDispatch()
   const { users, total, stats, loading } = useSelector(s => s.users)
-  const { targets } = useSelector(s => s.targets)
 
   const [activeTab, setActiveTab] = useState('')
   const [search, setSearch] = useState('')
@@ -35,7 +31,6 @@ export default function UsersPage() {
 
   useEffect(() => {
     dispatch(fetchUserStats())
-    dispatch(fetchTargets())
   }, [dispatch])
 
   useEffect(() => {
@@ -81,11 +76,11 @@ export default function UsersPage() {
       key: 'full_name',
       render: (_, u) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[rgb(16_102_177)] font-bold text-sm">
             {u.full_name?.[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-[#1066b1] text-sm">{u.full_name}</p>
+            <p className="font-medium text-[rgb(16_102_177)] text-sm">{u.full_name}</p>
             <p className="text-xs text-gray-500">{u.email}</p>
           </div>
         </div>
@@ -114,7 +109,7 @@ export default function UsersPage() {
       key: 'role',
       render: (value) => (
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${value === 'admin'
-            ? 'bg-[#e6edfb] text-[#0051D5]'
+            ? 'bg-[#e6edfb] text-[rgb(16_102_177)]'
             : 'bg-gray-200 text-gray-900'
           }`}>
           {value}
@@ -147,9 +142,9 @@ export default function UsersPage() {
     },
     {
       header: 'Actions',
-      render: u => (
+      render: (_, u) => (
         <div className="flex items-center gap-2">
-          <button onClick={() => setViewUser(u)} className="text-xs text-[#1B4FD8] hover:text-indigo-800 font-medium">View</button>
+          <button onClick={() => setViewUser(u)} className="text-xs text-[rgb(16_102_177)] hover:text-indigo-800 font-medium">View</button>
           {u.status === 'pending' && (
             <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
               <FaUserCheck className="h-3 w-3" /> Approve
@@ -213,7 +208,7 @@ export default function UsersPage() {
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[#1B4FD8] text-[#1B4FD8]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[rgb(16_102_177)] text-[rgb(16_102_177)]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -251,11 +246,11 @@ export default function UsersPage() {
         {viewUser && (
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[rgb(16_102_177)] text-2xl font-bold">
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="text-lg font-semibold text-[#1066b1]">{viewUser.full_name}</p>
+                <p className="text-lg font-semibold text-[rgb(16_102_177)]">{viewUser.full_name}</p>
                 <p className="text-gray-500">{viewUser.email}</p>
               </div>
             </div>
@@ -263,7 +258,7 @@ export default function UsersPage() {
               ['Phone', viewUser.phone || '—'],
               ['Target Area', viewUser.target ? `${viewUser.target.name} (${viewUser.target.type})` : '—'],
               ['Role', viewUser.role],
-              ['Status', <Badge status={viewUser.status} />],
+              ['Status', <Badge key="user-status" status={viewUser.status} />],
               ['Verified', viewUser.is_verified ? 'Yes' : 'No'],
               ['Registered', viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : '—'],
             ].map(([label, val]) => (
