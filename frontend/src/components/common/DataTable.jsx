@@ -80,7 +80,7 @@ export default function DataTable({
                         {onAction && (
                           <button
                             onClick={() => onAction(row)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-[#1B4FD8] hover:bg-blue-100 transition-colors"
                           >
                             {actionLabel}
                           </button>
@@ -88,7 +88,7 @@ export default function DataTable({
                         {onEdit && (
                           <button
                             onClick={() => onEdit(row)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-blue-50 hover:text-[#1B4FD8] transition-colors"
                             title="Edit"
                           >
                             <FaEdit className="text-sm" />

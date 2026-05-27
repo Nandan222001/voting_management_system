@@ -49,7 +49,7 @@ export default function CandidatesPage() {
             <select
               value={selectedElectionId}
               onChange={e => setSelectedElectionId(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">-- Choose an election --</option>
               {elections.map(e => (
@@ -59,7 +59,7 @@ export default function CandidatesPage() {
             {selectedElection && (
               <button
                 onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-indigo-600 border border-indigo-300 rounded-lg hover:bg-indigo-50"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-[#1B4FD8] border border-indigo-300 rounded-lg hover:bg-blue-50"
               >
                 <FaExternalLinkAlt className="h-3 w-3" /> View Election
               </button>
@@ -85,7 +85,7 @@ export default function CandidatesPage() {
               selectedElection?.status === 'draft' && (
                 <button
                   onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                  className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                  className="px-4 py-2 bg-[#1B4FD8] text-white text-sm rounded-lg hover:bg-[#1640B8]"
                 >
                   Add Candidates
                 </button>
@@ -125,13 +125,13 @@ export default function CandidatesPage() {
                       {c.image_url ? (
                         <img src={c.image_url} alt={c.full_name} className="w-14 h-14 rounded-full object-cover" />
                       ) : (
-                        <div className="w-14 h-14 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-xl font-bold">
+                        <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] text-xl font-bold">
                           {c.symbol || c.full_name[0]}
                         </div>
                       )}
                       <div>
                         <p className="font-semibold text-gray-900">{c.full_name}</p>
-                        <p className="text-sm text-indigo-600">{c.party}</p>
+                        <p className="text-sm text-[#1B4FD8]">{c.party}</p>
                         {c.symbol && <p className="text-xs text-gray-400">Symbol: {c.symbol}</p>}
                       </div>
                     </div>
@@ -148,7 +148,7 @@ export default function CandidatesPage() {
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-2.5">
                           <div
-                            className="bg-indigo-500 h-2.5 rounded-full transition-all duration-500"
+                            className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
                             style={{ width: `${result.percentage}%` }}
                           />
                         </div>

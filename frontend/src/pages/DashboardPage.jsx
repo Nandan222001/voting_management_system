@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const recentElections = elections.slice(0, 5);
 
   const quickActions = [
-    { label: 'Create Election', icon: FaPlus, color: 'bg-indigo-600 hover:bg-indigo-700', path: '/elections' },
+    { label: 'Create Election', icon: FaPlus, color: 'bg-[#1B4FD8] hover:bg-[#1640B8]', path: '/elections' },
     { label: 'Manage Users', icon: FaUserCog, color: 'bg-blue-600 hover:bg-blue-700', path: '/users' },
     { label: 'View Results', icon: FaChartBar, color: 'bg-green-600 hover:bg-green-700', path: '/results' },
     { label: 'Audit Logs', icon: FaShieldAlt, color: 'bg-purple-600 hover:bg-purple-700', path: '/audit-logs' },
@@ -69,7 +69,7 @@ export default function DashboardPage() {
         </div>
         <button
           onClick={() => navigate('/elections')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#1B4FD8] text-white text-sm font-semibold rounded-lg hover:bg-[#1640B8] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           New Election
@@ -120,7 +120,7 @@ export default function DashboardPage() {
             <h3 className="text-base font-bold text-gray-800">Recent Elections</h3>
             <button
               onClick={() => navigate('/elections')}
-              className="flex items-center gap-1 text-indigo-600 text-sm font-semibold hover:text-indigo-700 transition-colors"
+              className="flex items-center gap-1 text-[#1B4FD8] text-sm font-semibold hover:text-[#1B4FD8] transition-colors"
             >
               View all
               <FaArrowRight className="text-xs" />
@@ -145,11 +145,11 @@ export default function DashboardPage() {
                     onClick={() => navigate(`/elections/${id}`)}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                        <FaVoteYea className="text-indigo-500 text-sm" />
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                        <FaVoteYea className="text-[#1B4FD8] text-sm" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-indigo-700 transition-colors">
+                        <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-[#1B4FD8] transition-colors">
                           {election.title}
                         </p>
                         <p className="text-xs text-gray-400 mt-0.5">
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                       <span className="text-xs text-gray-400 hidden sm:block">
                         {election.candidates_count ?? election.candidatesCount ?? 0} candidates
                       </span>
-                      <FaArrowRight className="text-gray-300 text-xs group-hover:text-indigo-400 transition-colors" />
+                      <FaArrowRight className="text-gray-300 text-xs group-hover:text-blue-400 transition-colors" />
                     </div>
                   </div>
                 );

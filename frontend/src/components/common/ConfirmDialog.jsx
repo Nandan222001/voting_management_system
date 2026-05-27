@@ -18,13 +18,13 @@ export default function ConfirmDialog({
         {/* Icon */}
         <div
           className={`w-14 h-14 rounded-full flex items-center justify-center ${
-            isRed ? 'bg-red-100' : 'bg-indigo-100'
+            isRed ? 'bg-red-100' : 'bg-blue-100'
           }`}
         >
           {isRed ? (
             <FaExclamationTriangle className="text-red-600 text-2xl" />
           ) : (
-            <FaInfoCircle className="text-indigo-600 text-2xl" />
+            <FaInfoCircle className="text-[#1B4FD8] text-2xl" />
           )}
         </div>
 
@@ -47,7 +47,7 @@ export default function ConfirmDialog({
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors ${
               isRed
                 ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-[#1B4FD8] hover:bg-[#1640B8]'
             }`}
           >
             {confirmLabel}

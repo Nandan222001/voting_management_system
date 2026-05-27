@@ -68,7 +68,7 @@ function getTenantId(tenant) {
 
 const PLAN_STYLES = {
   starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200',
+  professional: 'bg-blue-100 text-[#1B4FD8] ring-1 ring-blue-200',
   enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
 };
 
@@ -108,7 +108,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
     />
@@ -261,7 +261,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
               <select
                 value={form.plan}
                 onChange={set('plan')}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="starter">Starter — 5 elections, 1,000 voters</option>
                 <option value="professional">Professional — 25 elections, 10,000 voters</option>
@@ -348,7 +348,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -449,8 +449,8 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
       label: 'Users',
       value: stats.user_count ?? tenant.user_count ?? 0,
       icon: FaUsers,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
+      color: 'text-[#1B4FD8]',
+      bg: 'bg-blue-50',
     },
     {
       label: 'Elections',
@@ -656,7 +656,7 @@ function Pagination({ page, total, perPage, onPage }) {
                 onClick={() => onPage(p)}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                   p === page
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-[#1B4FD8] text-white shadow-sm'
                     : 'text-gray-600 hover:bg-white hover:border hover:border-gray-200'
                 }`}
               >
@@ -857,7 +857,7 @@ export default function TenantsPage() {
           </div>
           <button
             onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex-shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-xl hover:bg-[#1640B8] active:scale-95 transition-all shadow-sm flex-shrink-0"
           >
             <FaPlus className="text-xs" />
             Add Tenant
@@ -874,7 +874,7 @@ export default function TenantsPage() {
                 onClick={() => handleStatusFilter(value)}
                 className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
                   statusFilter === value
-                    ? 'bg-white text-indigo-700 shadow-sm ring-1 ring-gray-200'
+                    ? 'bg-white text-[#1B4FD8] shadow-sm ring-1 ring-gray-200'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -891,7 +891,7 @@ export default function TenantsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, slug or email…"
-              className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+              className="w-full pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             />
             {search && (
               <button
@@ -933,7 +933,7 @@ export default function TenantsPage() {
               {(search || statusFilter) && (
                 <button
                   onClick={() => { setSearch(''); setStatusFilter(''); }}
-                  className="mt-4 text-sm text-indigo-600 hover:underline"
+                  className="mt-4 text-sm text-[#1B4FD8] hover:underline"
                 >
                   Clear filters
                 </button>
@@ -963,7 +963,7 @@ export default function TenantsPage() {
                       const isSuspended = tenant.status === 'suspended';
 
                       return (
-                        <tr key={id} className="hover:bg-indigo-50/30 transition-colors group">
+                        <tr key={id} className="hover:bg-blue-50/30 transition-colors group">
                           {/* Organisation */}
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
@@ -1005,7 +1005,7 @@ export default function TenantsPage() {
                           {/* Users / Elections */}
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3 text-xs">
-                              <span className="flex items-center gap-1 text-indigo-600 font-semibold">
+                              <span className="flex items-center gap-1 text-[#1B4FD8] font-semibold">
                                 <FaUsers className="opacity-70" />
                                 {tenant.user_count ?? 0}
                               </span>
@@ -1036,7 +1036,7 @@ export default function TenantsPage() {
                               <button
                                 onClick={() => handleViewDetails(tenant)}
                                 title="View Details"
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[#1B4FD8] transition-colors"
                               >
                                 <FaEye className="text-sm" />
                               </button>
@@ -1093,9 +1093,9 @@ export default function TenantsPage() {
 
           {/* Refresh indicator */}
           {loading && filteredTenants.length > 0 && (
-            <div className="px-5 py-2 bg-indigo-50 border-t border-indigo-100 flex items-center gap-2">
+            <div className="px-5 py-2 bg-blue-50 border-t border-indigo-100 flex items-center gap-2">
               <span className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-indigo-600 font-medium">Refreshing…</span>
+              <span className="text-xs text-[#1B4FD8] font-medium">Refreshing…</span>
             </div>
           )}
         </div>

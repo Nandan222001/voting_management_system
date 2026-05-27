@@ -61,7 +61,7 @@ export default function ResultsPage() {
           <select
             value={selectedElectionId}
             onChange={e => setSelectedElectionId(e.target.value)}
-            className="w-full md:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full md:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">-- Choose an election to view results --</option>
             {elections.map(e => (

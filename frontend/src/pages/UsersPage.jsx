@@ -75,7 +75,7 @@ export default function UsersPage() {
       header: 'User',
       render: u => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] font-bold text-sm">
             {u.full_name?.[0]?.toUpperCase()}
           </div>
           <div>
@@ -111,7 +111,7 @@ export default function UsersPage() {
       header: 'Actions',
       render: u => (
         <div className="flex items-center gap-2">
-          <button onClick={() => setViewUser(u)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</button>
+          <button onClick={() => setViewUser(u)} className="text-xs text-[#1B4FD8] hover:text-indigo-800 font-medium">View</button>
           {u.status === 'pending' && (
             <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
               <FaUserCheck className="h-3 w-3" /> Approve
@@ -152,7 +152,7 @@ export default function UsersPage() {
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[#1B4FD8] text-[#1B4FD8]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -168,7 +168,7 @@ export default function UsersPage() {
                 placeholder="Search users…"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function UsersPage() {
         {viewUser && (
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] text-2xl font-bold">
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>

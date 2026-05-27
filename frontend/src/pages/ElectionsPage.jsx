@@ -158,7 +158,7 @@ export default function ElectionsPage() {
       render: (val, row) => (
         <button
           onClick={() => navigate(`/elections/${row._id || row.id}`)}
-          className="text-indigo-700 font-semibold hover:underline text-left max-w-xs truncate block"
+          className="text-[#1B4FD8] font-semibold hover:underline text-left max-w-xs truncate block"
         >
           {val}
         </button>
@@ -227,7 +227,7 @@ export default function ElectionsPage() {
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#1B4FD8] text-white text-sm font-semibold rounded-lg hover:bg-[#1640B8] transition-colors shadow-sm"
         >
           <FaPlus className="text-xs" />
           Create Election
@@ -244,7 +244,7 @@ export default function ElectionsPage() {
             placeholder="Search elections..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
           />
         </div>
 
@@ -256,7 +256,7 @@ export default function ElectionsPage() {
               onClick={() => setStatusFilter(value)}
               className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
                 statusFilter === value
-                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  ? 'bg-[#1B4FD8] text-white border-[#1B4FD8]'
                   : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -307,7 +307,7 @@ export default function ElectionsPage() {
               value={form.title}
               onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
               placeholder="e.g. City Council Election 2026"
-              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+              className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                 formErrors.title ? 'border-red-400 bg-red-50' : 'border-gray-300'
               }`}
             />
@@ -324,7 +324,7 @@ export default function ElectionsPage() {
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
               placeholder="Brief description of the election..."
-              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
 
@@ -338,7 +338,7 @@ export default function ElectionsPage() {
                 type="date"
                 value={form.start_date}
                 onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   formErrors.start_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 }`}
               />
@@ -354,7 +354,7 @@ export default function ElectionsPage() {
                 type="date"
                 value={form.end_date}
                 onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                className={`w-full px-3 py-2.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   formErrors.end_date ? 'border-red-400 bg-red-50' : 'border-gray-300'
                 }`}
               />
@@ -376,7 +376,7 @@ export default function ElectionsPage() {
             <button
               type="submit"
               disabled={actionLoading}
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60 transition-colors flex items-center gap-2"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] disabled:opacity-60 transition-colors flex items-center gap-2"
             >
               {actionLoading && (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

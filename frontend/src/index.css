@@ -10,7 +10,8 @@
     @apply scroll-smooth;
   }
   body {
-    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+    @apply text-gray-900 font-sans antialiased;
+    background-color: #F0F2F7;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;

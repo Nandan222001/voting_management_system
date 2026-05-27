@@ -2,9 +2,9 @@ import { FaArrowUp, FaArrowDown } from 'react-icons/fa';
 
 const COLOR_MAP = {
   indigo: {
-    bg: 'bg-indigo-50',
-    icon: 'bg-indigo-100 text-indigo-600',
-    ring: 'ring-indigo-200',
+    bg: 'bg-blue-50',
+    icon: 'bg-blue-100 text-[#1B4FD8]',
+    ring: 'ring-blue-200',
   },
   green: {
     bg: 'bg-green-50',

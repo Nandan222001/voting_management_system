@@ -12,7 +12,7 @@ const ACTION_COLORS = {
   logout: 'bg-gray-100 text-gray-600',
   register: 'bg-teal-100 text-teal-700',
   vote: 'bg-green-100 text-green-700',
-  create: 'bg-indigo-100 text-indigo-700',
+  create: 'bg-blue-100 text-[#1B4FD8]',
   update: 'bg-yellow-100 text-yellow-700',
   delete: 'bg-red-100 text-red-700',
   approve: 'bg-emerald-100 text-emerald-700',
@@ -62,7 +62,7 @@ export default function AuditLogsPage() {
               placeholder="Search action, entity, IP…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function AuditLogsPage() {
             <select
               value={actionFilter}
               onChange={e => { setActionFilter(e.target.value); setPage(1) }}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Actions</option>
               {Object.keys(ACTION_COLORS).map(a => (

@@ -157,7 +157,7 @@ export default function ElectionDetailPage() {
             {currentElection?.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+                className="flex items-center gap-2 px-4 py-2 bg-[#1B4FD8] text-white text-sm font-medium rounded-lg hover:bg-[#1640B8]"
               >
                 <FaPlus className="h-4 w-4" /> Add Candidate
               </button>
@@ -178,7 +178,7 @@ export default function ElectionDetailPage() {
                       <span className="absolute top-3 right-3 text-yellow-500"><FaTrophy /></span>
                     )}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[#1B4FD8] font-bold text-lg">
                         {c.symbol || c.full_name[0]}
                       </div>
                       <div>
@@ -203,7 +203,7 @@ export default function ElectionDetailPage() {
                     )}
                     {currentElection?.status === 'draft' && (
                       <div className="flex gap-2">
-                        <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
+                        <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-[#1B4FD8] hover:text-indigo-800">
                           <FaEdit /> Edit
                         </button>
                         <button onClick={() => setDeleteTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
@@ -235,7 +235,7 @@ export default function ElectionDetailPage() {
                 value={form[name]}
                 onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
                 required={required}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           ))}
@@ -245,14 +245,14 @@ export default function ElectionDetailPage() {
               value={form.bio}
               onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[#1B4FD8] rounded-lg hover:bg-[#1640B8] disabled:opacity-60">
               {submitting ? 'Saving…' : editTarget ? 'Update' : 'Add'}
             </button>
           </div>
