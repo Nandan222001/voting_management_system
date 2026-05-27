@@ -86,7 +86,7 @@ const STATUS_COLORS = {
   closed: 'text-blue-700 bg-blue-100',
   finished: 'text-blue-700 bg-blue-100',
   completed: 'text-blue-700 bg-blue-100',
-  admin: 'text-indigo-700 bg-indigo-100',
+  admin: 'text-primary-600 bg-primary-100',
   moderator: 'text-purple-700 bg-purple-100',
   voter: 'text-teal-700 bg-teal-100',
 }

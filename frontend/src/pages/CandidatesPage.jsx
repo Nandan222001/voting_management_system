@@ -153,7 +153,7 @@ export default function CandidatesPage() {
       header: 'Committee',
       render: committee => (
         committee ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wider">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-900 border border-gray-200 uppercase tracking-wider">
             {committee.name}
           </span>
         ) : <span className="text-gray-400 text-xs">—</span>
@@ -205,7 +205,7 @@ export default function CandidatesPage() {
             {selectedElection && isAdmin && selectedElection.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
               >
                 <FaPlus className="text-xs" />
                 Add Candidate
@@ -214,7 +214,7 @@ export default function CandidatesPage() {
             {selectedElection && (
               <button
                 onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white text-sm font-semibold rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
               >
                 <FaExternalLinkAlt className="text-xs" />
                 View Election
@@ -227,11 +227,11 @@ export default function CandidatesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] gap-3">
             <div>
               <div className="relative group">
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-gray-600 transition-colors" />
                 <input
                   type="text"
                   placeholder="Search by name or symbol..."
-                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black/10 focus:bg-white transition-all"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -282,7 +282,7 @@ export default function CandidatesPage() {
                 value={form[name]}
                 onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
                 required={required}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
               />
             </div>
           ))}
@@ -322,7 +322,7 @@ export default function CandidatesPage() {
               value={form.bio}
               onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -336,7 +336,7 @@ export default function CandidatesPage() {
             <button 
               type="submit" 
               disabled={actionLoading} 
-              className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+              className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60"
             >
               {actionLoading ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
             </button>
@@ -365,7 +365,7 @@ function CandidateIdentity({ candidate }) {
         name={candidate.full_name}
         sizeClass="w-10 h-10"
         imageClassName="ring-1 ring-gray-200"
-        fallbackClassName="bg-indigo-50 text-indigo-700 text-sm ring-1 ring-indigo-100"
+        fallbackClassName="bg-gray-100 text-gray-900 text-sm ring-1 ring-gray-200"
       />
       <div className="min-w-0">
         <p className="font-semibold text-gray-900 truncate">{candidate.full_name}</p>
@@ -384,7 +384,7 @@ function VoteShare({ result }) {
       </div>
       <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
         <div
-          className="bg-indigo-600 h-full transition-all duration-500"
+          className="bg-primary-500 h-full transition-all duration-500"
           style={{ width: `${value}%` }}
         />
       </div>

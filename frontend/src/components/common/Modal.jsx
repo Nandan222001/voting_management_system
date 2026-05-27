@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { FaTimes } from 'react-icons/fa';
+import { X } from 'lucide-react';
 
 const SIZE_CLASSES = {
   sm: 'max-w-sm',
@@ -17,7 +17,6 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* Backdrop */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-200"
@@ -27,10 +26,9 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
         </Transition.Child>
 
-        {/* Modal Panel */}
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
@@ -43,24 +41,21 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full ${sizeClass} bg-white rounded-2xl shadow-2xl transform transition-all`}
+                className={`w-full ${sizeClass} bg-white rounded-2xl border border-gray-100 shadow-2xl transform transition-all overflow-hidden`}
               >
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <Dialog.Title className="text-lg font-bold text-gray-900">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/30">
+                  <Dialog.Title className="text-sm font-bold text-gray-900 uppercase tracking-wider">
                     {title}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-                    aria-label="Close modal"
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                   >
-                    <FaTimes className="text-sm" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Body */}
-                <div className="px-6 py-5">{children}</div>
+                <div className="p-8">{children}</div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

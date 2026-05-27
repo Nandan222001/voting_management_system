@@ -5,8 +5,8 @@ import FancySelect from '../common/FancySelect';
 const LEVELS = [
   { id: 'working', title: 'Working Committee', subtitle: 'Apex Body (National)', icon: FaLandmark, color: 'indigo' },
   { id: 'pradesh', title: 'Pradesh Committee', subtitle: 'State Level', icon: FaLayerGroup, color: 'blue' },
-  { id: 'district', title: 'District Committee', subtitle: 'District Level', icon: FaMapMarkerAlt, color: 'cyan' },
-  { id: 'block', title: 'Block Committee', subtitle: 'Block / Taluka / City', icon: FaUsers, color: 'teal' },
+  { id: 'district', title: 'District Committee', subtitle: 'District Level', icon: FaMapMarkerAlt, color: 'blue' },
+  { id: 'block', title: 'Block Committee', subtitle: 'Block / Taluka / City', icon: FaUsers, color: 'blue' },
 ];
 
 export default function HierarchyScoper({ targets = [], value, onChange }) {
@@ -102,20 +102,20 @@ export default function HierarchyScoper({ targets = [], value, onChange }) {
               <div 
                 className={`relative z-10 w-full bg-white border-2 rounded-2xl p-4 transition-all duration-300 ${
                   isActive 
-                    ? 'border-indigo-500 shadow-md shadow-indigo-100 ring-4 ring-indigo-50' 
+                    ? 'border-primary-500 shadow-md shadow-primary-100 ring-4 ring-primary-50' 
                     : isCompleted ? 'border-green-200 bg-green-50/20' : 'border-gray-100 opacity-60'
                 }`}
               >
                 <div className="flex items-start gap-4">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                      isActive ? 'bg-indigo-600 text-white' : isCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
+                      isActive ? 'bg-primary-500 text-white' : isCompleted ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400'
                   }`}>
                     {isCompleted ? <FaCheck className="text-sm" /> : <level.icon />}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                        <h4 className={`text-sm font-bold truncate ${isActive ? 'text-indigo-900' : 'text-gray-700'}`}>
+                        <h4 className={`text-sm font-bold truncate ${isActive ? 'text-primary-900' : 'text-gray-700'}`}>
                         {level.title}
                         </h4>
                         {isCompleted && (
@@ -133,7 +133,7 @@ export default function HierarchyScoper({ targets = [], value, onChange }) {
                                 onClick={handleApexSelect}
                                 className={`w-full py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
                                     isActive 
-                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                                    ? 'bg-gray-100 border-gray-200 text-gray-900' 
                                     : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
                                 }`}
                             >

@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
-import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaTrophy } from 'react-icons/fa'
+import { FaArrowLeft, FaPlus, FaTrophy } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import Modal from '../components/common/Modal'
@@ -26,6 +26,7 @@ import { fetchTargets } from '../store/slices/targetSlice'
 import ImageUpload from '../components/common/ImageUpload'
 import ImageAvatar from '../components/common/ImageAvatar'
 import WinnerCard from '../components/common/WinnerCard'
+import TableActions from '../components/common/TableActions'
 
 const CHART_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
 
@@ -215,7 +216,7 @@ export default function ElectionDetailPage() {
             {isAdmin && currentElection?.status === 'draft' && (
               <button
                 onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-white text-sm font-medium rounded-lg hover:bg-primary-600"
               >
                 <FaPlus className="h-4 w-4" /> Add Candidate
               </button>
@@ -254,7 +255,7 @@ export default function ElectionDetailPage() {
                         name={c.full_name}
                         sizeClass="w-12 h-12"
                         imageClassName="ring-1 ring-gray-200"
-                        fallbackClassName="bg-indigo-100 text-indigo-600 text-lg"
+                        fallbackClassName="bg-gray-200 text-gray-900 text-lg"
                       />
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-900 truncate">{c.full_name}</p>
@@ -265,7 +266,7 @@ export default function ElectionDetailPage() {
                             </span>
                           )}
                           {c.committee && (
-                            <span className="text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-medium truncate italic">
+                            <span className="text-[10px] text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded font-medium truncate italic">
                               {c.committee.name}
                             </span>
                           )}
@@ -293,13 +294,13 @@ export default function ElectionDetailPage() {
                       </div>
                     )}
                     {isAdmin && currentElection?.status === 'draft' && (
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800">
-                          <FaEdit /> Edit
-                        </button>
-                        <button onClick={() => setDeleteCandidateTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
-                          <FaTrash /> Remove
-                        </button>
+                      <div className="flex justify-end">
+                        <TableActions
+                          actions={[
+                            { key: 'edit', label: 'Edit', onClick: () => openEdit(c) },
+                            { key: 'delete', label: 'Remove', danger: true, onClick: () => setDeleteCandidateTarget(c) },
+                          ]}
+                        />
                       </div>
                     )}
                   </div>
@@ -324,7 +325,7 @@ export default function ElectionDetailPage() {
                         value={form[name]}
                         onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
                         required={required}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
                       />
                     </div>
                   ))}
@@ -361,14 +362,14 @@ export default function ElectionDetailPage() {
               value={form.bio}
               onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/10"
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-60">
               {submitting ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
             </button>
           </div>

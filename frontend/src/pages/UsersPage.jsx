@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog'
 import Pagination from '../components/common/Pagination'
 import Modal from '../components/common/Modal'
 import StatsCard from '../components/common/StatsCard'
+import TableActions from '../components/common/TableActions'
 import { fetchUsers, approveUser, blockUser, deleteUser, fetchUserStats } from '../store/slices/userSlice'
 import { fetchTargets } from '../store/slices/targetSlice'
 import ImageAvatar from '../components/common/ImageAvatar'
@@ -85,7 +86,7 @@ export default function UsersPage() {
             name={u.full_name}
             sizeClass="w-9 h-9"
             imageClassName="ring-1 ring-gray-200"
-            fallbackClassName="bg-indigo-100 text-indigo-600 text-sm"
+            fallbackClassName="bg-gray-200 text-gray-900 text-sm"
           />
           <div>
             <p className="font-medium text-gray-900 text-sm">
@@ -122,7 +123,7 @@ export default function UsersPage() {
       render: (value) => (
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${value === 'admin'
             ? 'bg-purple-100 text-purple-700'
-            : 'bg-blue-100 text-blue-700'
+            : 'bg-gray-200 text-gray-900'
           }`}>
           {value}
         </span>
@@ -156,24 +157,18 @@ export default function UsersPage() {
       header: 'Actions',
       key: 'actions',
       render: (_, u) => (
-        <div className="flex items-center gap-2">
-          <button onClick={() => setViewUser(u)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View</button>
-          {u.status === 'pending' && (
-            <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
-              <FaUserCheck className="h-3 w-3" /> Approve
-            </button>
-          )}
-          {u.role !== 'admin' && (
-            <button onClick={() => handleBlock(u)} className={`flex items-center gap-1 text-xs ${u.status === 'blocked' ? 'text-blue-600 hover:text-blue-800' : 'text-orange-500 hover:text-orange-700'}`}>
-              <FaBan className="h-3 w-3" /> {u.status === 'blocked' ? 'Unblock' : 'Block'}
-            </button>
-          )}
-          {u.role !== 'admin' && (
-            <button onClick={() => setActionTarget(u)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
-              <FaTrash className="h-3 w-3" /> Delete
-            </button>
-          )}
-        </div>
+        <TableActions
+          actions={[
+            { key: 'view', label: 'View', onClick: () => setViewUser(u) },
+            u.status === 'pending' && { key: 'approve', label: 'Approve', onClick: () => handleApprove(u) },
+            u.role !== 'admin' && {
+              key: u.status === 'blocked' ? 'unblock' : 'block',
+              label: u.status === 'blocked' ? 'Unblock' : 'Block',
+              onClick: () => handleBlock(u),
+            },
+            u.role !== 'admin' && { key: 'delete', label: 'Delete', danger: true, onClick: () => setActionTarget(u) },
+          ]}
+        />
       )
     }
   ]
@@ -221,7 +216,7 @@ export default function UsersPage() {
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-primary-500 text-primary-500' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
                 {t.label}
               </button>
@@ -237,13 +232,13 @@ export default function UsersPage() {
                 placeholder="Search users…"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </div>
 
           {/* Table */}
-          <DataTable columns={columns} data={users} loading={loading} />
+          <DataTable columns={columns} data={users} loading={loading} pagination={false} />
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -259,7 +254,7 @@ export default function UsersPage() {
         {viewUser && (
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-900 text-2xl font-bold">
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>

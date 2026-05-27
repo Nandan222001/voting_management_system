@@ -1,6 +1,6 @@
 import React, { Fragment, useState } from 'react'
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions, Transition } from '@headlessui/react'
-import { FaChevronDown, FaCheck } from 'react-icons/fa'
+import { Check, ChevronDown } from 'lucide-react'
 
 export default function FancySelect({ 
   id, 
@@ -55,17 +55,17 @@ export default function FancySelect({
   return (
     <div className={`w-full ${className}`}>
       <Combobox value={value} onChange={handleChange} disabled={disabled}>
-        <div className="relative mt-1">
-          <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-gray-200 shadow-sm transition-all duration-200 focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent hover:shadow-md disabled:opacity-60">
+        <div className="relative">
+          <div className="relative w-full cursor-default overflow-hidden rounded-xl bg-gray-50 text-left border border-gray-200 transition-all focus-within:ring-4 focus-within:ring-black/5 focus-within:border-black hover:border-gray-300 disabled:opacity-60 shadow-sm">
             <ComboboxInput
-              className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-gray-800 focus:ring-0 outline-none"
+              className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-gray-900 font-semibold bg-transparent focus:ring-0 outline-none placeholder-gray-400"
               displayValue={() => selectedOption?.label || ''}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={placeholder || 'Select option...'}
+              placeholder={placeholder || 'Select...'}
             />
-            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-2">
-              <FaChevronDown
-                className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+            <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <ChevronDown
+                className="h-4 w-4 text-gray-400 group-focus-within:text-gray-900 transition-colors"
                 aria-hidden="true"
               />
             </ComboboxButton>
@@ -79,10 +79,10 @@ export default function FancySelect({
           >
             <ComboboxOptions 
               anchor="bottom start" 
-              className="z-50 mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1 text-base shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm [--anchor-gap:4px]"
+              className="z-50 mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1 text-base shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm [--anchor-gap:4px]"
             >
               {filteredOptions.length === 0 && query !== '' ? (
-                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                <div className="relative cursor-default select-none py-2 px-4 text-gray-700 font-medium italic">
                   Nothing found.
                 </div>
               ) : (
@@ -90,8 +90,8 @@ export default function FancySelect({
                   <ComboboxOption
                     key={idx}
                     className={({ active }) =>
-                      `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
-                        active ? 'bg-indigo-600 text-white' : 'text-gray-900'
+                      `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors font-semibold ${
+                        active ? 'bg-primary-500 text-white' : 'text-gray-900'
                       }`
                     }
                     value={option.value}
@@ -100,18 +100,18 @@ export default function FancySelect({
                       <>
                         <span
                           className={`block truncate ${
-                            selected ? 'font-semibold' : 'font-normal'
-                          }`}
+                            selected ? 'font-bold text-gray-900' : 'font-medium'
+                          } ${active ? 'text-white' : ''}`}
                         >
                           {option.label}
                         </span>
                         {selected ? (
                           <span
                             className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                              active ? 'text-white' : 'text-indigo-600'
+                              active ? 'text-white' : 'text-gray-900'
                             }`}
                           >
-                            <FaCheck className="h-3 w-3" aria-hidden="true" />
+                            <Check className="h-4 w-4" aria-hidden="true" />
                           </span>
                         ) : null}
                       </>

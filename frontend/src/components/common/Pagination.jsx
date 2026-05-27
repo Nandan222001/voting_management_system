@@ -1,9 +1,8 @@
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function Pagination({ page, totalPages, onPageChange }) {
   if (!totalPages || totalPages <= 1) return null;
 
-  // Build page number array with ellipsis
   const getPageNumbers = () => {
     const pages = [];
     if (totalPages <= 7) {
@@ -23,43 +22,32 @@ export default function Pagination({ page, totalPages, onPageChange }) {
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className="flex items-center justify-between px-2 py-3">
-      {/* Info */}
+    <div className="flex items-center justify-between px-6 py-4">
       <p className="text-sm text-gray-500">
-        Page <span className="font-semibold text-gray-700">{page}</span> of{' '}
-        <span className="font-semibold text-gray-700">{totalPages}</span>
+        Page <span className="font-semibold text-gray-700">{page}</span> of <span className="font-semibold text-gray-700">{totalPages}</span>
       </p>
 
-      {/* Controls */}
-      <div className="flex items-center gap-1">
-        {/* Prev */}
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-primary-500 hover:border-primary-500 disabled:opacity-20 transition-all shadow-sm"
         >
-          <FaChevronLeft className="text-xs" />
-          <span className="hidden sm:inline">Prev</span>
+          <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Page numbers */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {pageNumbers.map((p, idx) =>
             p === '...' ? (
-              <span
-                key={`ellipsis-${idx}`}
-                className="px-2 py-1.5 text-sm text-gray-400 select-none"
-              >
-                …
-              </span>
+              <span key={`ellipsis-${idx}`} className="px-2 text-gray-300 font-bold">...</span>
             ) : (
               <button
                 key={p}
                 onClick={() => onPageChange(p)}
-                className={`min-w-[36px] px-2 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                className={`w-9 h-9 text-xs font-semibold transition-all border rounded-lg ${
                   p === page
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-primary-500 text-white border-primary-500 shadow-md'
+                    : 'bg-white border-gray-200 text-gray-500 hover:text-primary-500 hover:border-primary-500'
                 }`}
               >
                 {p}
@@ -68,14 +56,12 @@ export default function Pagination({ page, totalPages, onPageChange }) {
           )}
         </div>
 
-        {/* Next */}
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-primary-500 hover:border-primary-500 disabled:opacity-20 transition-all shadow-sm"
         >
-          <span className="hidden sm:inline">Next</span>
-          <FaChevronRight className="text-xs" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       </div>
     </div>

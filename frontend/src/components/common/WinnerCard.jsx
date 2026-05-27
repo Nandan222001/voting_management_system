@@ -56,7 +56,7 @@ export default function WinnerCard({
   const name = getCandidateName(winner)
 
   return (
-    <section className={`rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-indigo-50 shadow-lg shadow-amber-100/50 overflow-hidden ${className}`}>
+    <section className={`rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-gray-50 shadow-lg shadow-amber-100/50 overflow-hidden ${className}`}>
       <div className="relative p-5 sm:p-6">
         <div className="absolute right-5 top-5 hidden sm:flex w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 items-center justify-center shadow-inner">
           <FaCrown className="text-2xl" />

@@ -39,6 +39,34 @@ export const getMe = createAsyncThunk(
   }
 )
 
+export const updateMe = createAsyncThunk(
+  'auth/updateMe',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await authService.updateMe(data)
+      return response.data.user || response.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data?.detail || 'Failed to update settings.'
+      )
+    }
+  }
+)
+
+export const changePassword = createAsyncThunk(
+  'auth/changePassword',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await authService.changePassword(data)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data?.detail || 'Failed to change password.'
+      )
+    }
+  }
+)
+
 export const verifyOTP = createAsyncThunk(
   'auth/verifyOTP',
   async ({ email, otp }, { rejectWithValue }) => {
@@ -149,6 +177,38 @@ const authSlice = createSlice({
         state.user = null
         state.token = null
         state.isAuthenticated = false
+        state.loading = false
+        state.error = action.payload
+      })
+
+    // updateMe
+    builder
+      .addCase(updateMe.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateMe.fulfilled, (state, action) => {
+        state.user = action.payload
+        state.isAuthenticated = true
+        state.loading = false
+        state.error = null
+      })
+      .addCase(updateMe.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
+      })
+
+    // changePassword
+    builder
+      .addCase(changePassword.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(changePassword.fulfilled, (state) => {
+        state.loading = false
+        state.error = null
+      })
+      .addCase(changePassword.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload
       })
