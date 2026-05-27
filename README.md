@@ -35,7 +35,7 @@ voting_management_system/
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: source venv/Scripts/activate
 pip install -r requirements.txt
 cp .env.example .env          # Edit with your DB credentials
 alembic upgrade head          # Run all migrations (creates tables + seeds admin)
