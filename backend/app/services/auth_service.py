@@ -26,6 +26,7 @@ from app.utils.security import (
     hash_password,
     verify_password,
 )
+from app.utils.email import send_otp_email, send_registration_otp_email
 
 # OTP is valid for 10 minutes by default.
 _OTP_TTL_MINUTES: int = 10
@@ -141,6 +142,10 @@ class AuthService:
         db.add(user)
         db.commit()
         db.refresh(user)
+
+        # Send verification email
+        send_registration_otp_email(user.email, otp)
+
         return user
 
     # ------------------------------------------------------------------
@@ -284,6 +289,103 @@ class AuthService:
         user.otp_expires_at = None
         db.commit()
         db.refresh(user)
+        return True
+
+    # ------------------------------------------------------------------
+    # Forgot Password
+    # ------------------------------------------------------------------
+
+    def forgot_password(self, db: Session, email: str) -> bool:
+        """
+        Generate a password reset OTP and email it to the user.
+
+        Args:
+            db:    Active database session.
+            email: User's registered e-mail address.
+
+        Returns:
+            Always returns True to avoid leaking whether an email exists.
+        """
+        repo = UserRepository(db)
+        user: Optional[User] = repo.get_by_email(email)
+
+        if user:
+            otp = generate_otp()
+            otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+            
+            user.otp_code = otp
+            user.otp_expires_at = otp_expires
+            db.commit()
+            
+            # Send the OTP via email
+            send_otp_email(user.email, otp)
+        
+        return True
+
+    # ------------------------------------------------------------------
+    # Reset Password
+    # ------------------------------------------------------------------
+
+    def reset_password(self, db: Session, email: str, otp: str, new_password: str) -> bool:
+        """
+        Verify the OTP and update the user's password.
+
+        Args:
+            db:           Active database session.
+            email:        User's registered e-mail address.
+            otp:          The OTP code submitted.
+            new_password: The new password to set.
+
+        Returns:
+            True if reset succeeded.
+
+        Raises:
+            HTTPException 404: If user not found.
+            HTTPException 400: If OTP is invalid or expired.
+        """
+        repo = UserRepository(db)
+        user: Optional[User] = repo.get_by_email(email)
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found.",
+            )
+
+        if not user.otp_code or not user.otp_expires_at:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No pending password reset request.",
+            )
+
+        now = datetime.now(timezone.utc)
+        expires = (
+            user.otp_expires_at.replace(tzinfo=timezone.utc)
+            if user.otp_expires_at.tzinfo is None
+            else user.otp_expires_at
+        )
+
+        if now > expires:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP has expired. Please request a new one.",
+            )
+
+        if user.otp_code != otp:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid OTP code.",
+            )
+
+        # Update password and clear OTP fields
+        user.hashed_password = hash_password(new_password)
+        user.otp_code = None
+        user.otp_expires_at = None
+        
+        # Also ensure user is marked as verified if they reset their password
+        user.is_verified = True
+        
+        db.commit()
         return True
 
     # ------------------------------------------------------------------

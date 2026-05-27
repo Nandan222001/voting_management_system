@@ -65,6 +65,20 @@ class OTPVerifyRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Payload to request a password reset OTP."""
+
+    email: EmailStr = Field(..., examples=["jane@example.com"])
+
+
+class ResetPasswordRequest(BaseModel):
+    """Payload to reset password using an OTP."""
+
+    email: EmailStr = Field(..., examples=["jane@example.com"])
+    otp_code: str = Field(..., min_length=4, max_length=10, examples=["123456"])
+    new_password: str = Field(..., min_length=8, max_length=128, examples=["NewStr0ng!Pass"])
+
+
 # ---------------------------------------------------------------------------
 # Response schemas
 # ---------------------------------------------------------------------------
