@@ -45,11 +45,15 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS — allow all origins in development; restrict in production via env
+# CORS — allow specific origins in development; restrict in production via env
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8081",
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
