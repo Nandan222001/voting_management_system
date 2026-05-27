@@ -107,7 +107,7 @@ export default function ElectionDetailPage() {
             <FaArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{currentElection?.title}</h1>
+            <h1 className="text-2xl font-bold text-[#1066b1]">{currentElection?.title}</h1>
             <p className="text-sm text-gray-500">{currentElection?.description}</p>
           </div>
           <Badge status={currentElection?.status} />
@@ -123,7 +123,7 @@ export default function ElectionDetailPage() {
           ].map(({ label, value }) => (
             <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
+              <p className="mt-1 text-lg font-semibold text-[#1066b1]">{value}</p>
             </div>
           ))}
         </div>
@@ -131,7 +131,7 @@ export default function ElectionDetailPage() {
         {/* Results chart */}
         {showResults && chartData.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Vote Distribution</h2>
+            <h2 className="text-lg font-semibold text-[#1066b1] mb-4">Vote Distribution</h2>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -151,7 +151,7 @@ export default function ElectionDetailPage() {
         {/* Candidates section */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-[#1066b1]">
               Candidates ({candidates.length})
             </h2>
             {currentElection?.status === 'draft' && (
@@ -182,7 +182,7 @@ export default function ElectionDetailPage() {
                         {c.symbol || c.full_name[0]}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{c.full_name}</p>
+                        <p className="font-semibold text-[#1066b1]">{c.full_name}</p>
                         <p className="text-sm text-gray-500">{c.party}</p>
                       </div>
                     </div>

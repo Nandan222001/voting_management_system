@@ -104,7 +104,7 @@ export default function ResultsPage() {
                 <FaTrophy className="h-8 w-8 text-yellow-500 flex-shrink-0" />
                 <div>
                   <p className="text-xs text-yellow-600 font-semibold uppercase tracking-wide">Leading Candidate</p>
-                  <p className="text-xl font-bold text-gray-900">{winner.candidate_name}</p>
+                  <p className="text-xl font-bold text-[#1066b1]">{winner.candidate_name}</p>
                   <p className="text-sm text-gray-600">{winner.party} · {winner.vote_count} votes ({winner.percentage.toFixed(1)}%)</p>
                 </div>
                 <div className="ml-auto">
@@ -118,7 +118,7 @@ export default function ResultsPage() {
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {/* Bar chart */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Votes by Candidate</h3>
+                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Votes by Candidate</h3>
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -136,7 +136,7 @@ export default function ResultsPage() {
 
                 {/* Pie chart */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Vote Share</h3>
+                  <h3 className="text-base font-semibold text-[#1066b1] mb-4">Vote Share</h3>
                   {pieData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={280}>
                       <PieChart>
@@ -159,7 +159,7 @@ export default function ResultsPage() {
             {/* Results table */}
             <div className="bg-white rounded-lg border border-gray-200">
               <div className="p-6 border-b border-gray-100">
-                <h3 className="text-base font-semibold text-gray-900">Detailed Results</h3>
+                <h3 className="text-base font-semibold text-[#1066b1]">Detailed Results</h3>
               </div>
               {candidates.length === 0 ? (
                 <div className="py-12 text-center text-gray-400 text-sm">No candidates in this election.</div>
@@ -174,7 +174,7 @@ export default function ResultsPage() {
                           {i + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm truncate">{c.candidate_name}</p>
+                          <p className="font-medium text-[#1066b1] text-sm truncate">{c.candidate_name}</p>
                           <p className="text-xs text-gray-500">{c.party}</p>
                         </div>
                         <div className="w-40 hidden md:block">
@@ -190,7 +190,7 @@ export default function ResultsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-gray-900">{c.vote_count}</p>
+                          <p className="text-lg font-bold text-[#1066b1]">{c.vote_count}</p>
                           <p className="text-xs text-gray-500">{c.percentage.toFixed(1)}%</p>
                         </div>
                       </div>

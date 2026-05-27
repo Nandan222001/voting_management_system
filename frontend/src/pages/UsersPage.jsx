@@ -79,7 +79,7 @@ export default function UsersPage() {
             {u.full_name?.[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-gray-900 text-sm">{u.full_name}</p>
+            <p className="font-medium text-[#1066b1] text-sm">{u.full_name}</p>
             <p className="text-xs text-gray-500">{u.email}</p>
           </div>
         </div>
@@ -194,7 +194,7 @@ export default function UsersPage() {
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="text-lg font-semibold text-gray-900">{viewUser.full_name}</p>
+                <p className="text-lg font-semibold text-[#1066b1]">{viewUser.full_name}</p>
                 <p className="text-gray-500">{viewUser.email}</p>
               </div>
             </div>

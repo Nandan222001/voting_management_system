@@ -62,7 +62,7 @@ export default function OTPPage() {
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <FaShieldAlt className="text-[#1B4FD8] text-lg" />
-          <span className="font-bold text-gray-900 text-base">SecureVote</span>
+          <span className="font-bold text-[#1066b1] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
           <span className="text-gray-700 text-sm font-bold">JD</span>
@@ -79,7 +79,7 @@ export default function OTPPage() {
       <div className="flex-1 px-5 py-8 max-w-lg mx-auto w-full">
 
         {/* Heading */}
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">Identity Verification</h1>
+        <h1 className="text-2xl font-bold text-[#1066b1] text-center mb-2">Identity Verification</h1>
         <p className="text-sm text-gray-500 text-center mb-7 leading-relaxed">
           We've sent a 6-digit verification code to your registered device ending in{' '}
           <span className="font-semibold text-gray-700">••••4209</span>.
@@ -97,7 +97,7 @@ export default function OTPPage() {
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className="w-12 h-14 text-center text-xl font-bold text-gray-900 border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[#1B4FD8] focus:ring-2 focus:ring-blue-200 transition-all"
+              className="w-12 h-14 text-center text-xl font-bold text-[#1066b1] border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[#1B4FD8] focus:ring-2 focus:ring-blue-200 transition-all"
             />
           ))}
         </div>

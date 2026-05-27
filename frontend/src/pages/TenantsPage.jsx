@@ -108,7 +108,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
     />
@@ -261,7 +261,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
               <select
                 value={form.plan}
                 onChange={set('plan')}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="starter">Starter — 5 elections, 1,000 voters</option>
                 <option value="professional">Professional — 25 elections, 10,000 voters</option>
@@ -392,7 +392,7 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="Describe the reason for suspension..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
           />
         </Field>
         <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
@@ -495,7 +495,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             </div>
           )}
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 truncate">{tenant.name}</h3>
+            <h3 className="text-lg font-bold text-[#1066b1] truncate">{tenant.name}</h3>
             <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge status={tenant.status} />
@@ -850,7 +850,7 @@ export default function TenantsPage() {
         {/* ── Page Header ── */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Tenant Management</h1>
+            <h1 className="text-2xl font-bold text-[#1066b1]">Tenant Management</h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {total} organisation{total !== 1 ? 's' : ''} on the platform
             </p>
