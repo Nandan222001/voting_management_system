@@ -22,7 +22,6 @@ const adminNavLinks = [
   { to: '/elections', icon: FaVoteYea, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
   { to: '/candidates', icon: FaUsers, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
   { to: '/candidate-committees', icon: FaLayerGroup, label: 'Committees', roles: ['admin'] },
-  { to: '/targets', icon: FaMapMarkerAlt, label: 'Geography', roles: ['admin'] },
   { to: '/users', icon: FaUserCog, label: 'Users', roles: ['admin'] },
   { to: '/results', icon: FaChartBar, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
   { to: '/revenue', icon: FaChartLine, label: 'Revenue', roles: ['admin'] },
@@ -34,6 +33,7 @@ const superAdminNavLinks = [
   { to: '/dashboard', icon: FaChartLine, label: 'Platform Overview' },
   { to: '/tenants', icon: FaBuilding, label: 'Tenants' },
   { to: '/elections?superadmin=true', icon: FaVoteYea, label: 'All Elections', exactMatch: '/elections' },
+  { to: '/targets', icon: FaMapMarkerAlt, label: 'Geography' },
   { to: '/audit-logs', icon: FaShieldAlt, label: 'Platform Audit' },
 ];
 

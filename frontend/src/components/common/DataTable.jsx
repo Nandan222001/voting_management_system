@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import Pagination from './Pagination';
+import ActionDropdown from './ActionDropdown';
 
 function SkeletonRow({ cols }) {
   return (
@@ -126,34 +127,30 @@ export default function DataTable({
                   })}
                   {showActions && (
                     <td className="px-4 py-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1">
-                        {onAction && (
-                          <button
-                            onClick={() => onAction(row)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 text-[rgb(16_102_177)] hover:bg-blue-100 transition-colors"
-                          >
-                            {actionLabel}
-                          </button>
-                        )}
-                        {onEdit && (
-                          <button
-                            onClick={() => onEdit(row)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-blue-50 hover:text-[rgb(16_102_177)] transition-colors"
-                            title="Edit"
-                          >
-                            <FaEdit className="text-sm" />
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            onClick={() => onDelete(row)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-                            title="Delete"
-                          >
-                            <FaTrash className="text-sm" />
-                          </button>
-                        )}
-                      </div>
+                      <ActionDropdown
+                        align="right"
+                        actions={[
+                          onAction && {
+                            key: 'action',
+                            label: actionLabel || 'Action',
+                            icon: MoreHorizontal,
+                            onClick: () => onAction(row),
+                          },
+                          onEdit && {
+                            key: 'edit',
+                            label: 'Edit',
+                            icon: FaEdit,
+                            onClick: () => onEdit(row),
+                          },
+                          onDelete && {
+                            key: 'delete',
+                            label: 'Delete',
+                            icon: FaTrash,
+                            danger: true,
+                            onClick: () => onDelete(row),
+                          },
+                        ].filter(Boolean)}
+                      />
                     </td>
                   )}
                 </tr>
