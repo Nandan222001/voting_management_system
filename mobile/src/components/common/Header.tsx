@@ -45,20 +45,26 @@ const Header = ({ showBack, onBack, title }: HeaderProps) => {
         <View style={styles.leftSection}>
           {showBack ? (
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={24} color="#111827" />
+              <MaterialIcons name="arrow-back" size={24} color="#003d9b" />
             </TouchableOpacity>
           ) : (
-            <View style={styles.brandRow}>
-              <FontAwesome5 name="shield-alt" size={20} color="#111827" />
-              <Text style={styles.brandText}>{title || 'SecureVote'}</Text>
-            </View>
+            <TouchableOpacity style={styles.menuButton}>
+              <MaterialIcons name="menu" size={24} color="#003d9b" />
+            </TouchableOpacity>
           )}
-          {showBack && title && (
-             <Text style={[styles.brandText, { marginLeft: 10 }]}>{title}</Text>
-          )}
+          <Text style={styles.brandText}>{title || 'Election Operations'}</Text>
         </View>
         
-        <UserInitials />
+        <View style={styles.rightSection}>
+          <TouchableOpacity style={styles.iconButton}>
+            <MaterialIcons name="search" size={24} color="#434654" />
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.iconButton, styles.notificationButton]}>
+            <MaterialIcons name="notifications-none" size={24} color="#434654" />
+            <View style={styles.notificationBadge} />
+          </TouchableOpacity>
+          <UserInitials />
+        </View>
       </View>
     </View>
   );
@@ -66,11 +72,11 @@ const Header = ({ showBack, onBack, title }: HeaderProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fb',
     borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#c3c6d6',
     paddingBottom: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     zIndex: 100,
   },
   content: {
@@ -82,34 +88,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   backButton: {
     marginRight: 8,
     padding: 4,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  menuButton: {
+    marginRight: 8,
+    padding: 4,
   },
   brandText: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    marginLeft: 10,
+    fontWeight: '900',
+    color: '#003d9b',
+    marginLeft: 4,
+  },
+  iconButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  notificationButton: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    backgroundColor: '#ba1a1a',
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#f8f9fb',
   },
   initialsContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#dae2ff',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#dbeafe',
+    marginLeft: 4,
   },
   initialsText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: 'rgb(16 102 177)',
+    fontWeight: '700',
+    color: '#003d9b',
   },
 });
 

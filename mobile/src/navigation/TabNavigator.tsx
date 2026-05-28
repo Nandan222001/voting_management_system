@@ -1,14 +1,25 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
+import IdentityScreen from '../screens/IdentityScreen';
 import VotingScreen from '../screens/VotingScreen';
+import CandidateDetailScreen from '../screens/CandidateDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+const VoteStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="VotingMain" component={VotingScreen} />
+    <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
+  </Stack.Navigator>
+);
 
 const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
   return (
@@ -19,12 +30,14 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
 
           if (route.name === 'Dashboard') {
             iconName = 'dashboard';
-          } else if (route.name === 'Elections') {
+          } else if (route.name === 'Identity') {
             iconName = 'how-to-vote';
+          } else if (route.name === 'Elections') {
+            iconName = 'ballot';
           } else if (route.name === 'Analytics') {
-            iconName = 'bar-chart';
+            iconName = 'groups';
           } else if (route.name === 'Profile') {
-            iconName = 'person';
+            iconName = 'settings';
           }
 
           return (
@@ -36,18 +49,38 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
             </View>
           );
         },
-        tabBarActiveTintColor: 'rgb(16 102 177)',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: '#003d9b',
+        tabBarInactiveTintColor: '#434654',
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
         tabBarLabelStyle: styles.tabLabel,
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Elections" component={VotingScreen} />
-      <Tab.Screen name="Analytics" component={AnalyticsScreen} />
-      <Tab.Screen name="Profile">
+      <Tab.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen 
+        name="Identity" 
+        component={IdentityScreen} 
+        options={{ tabBarLabel: 'Identity' }}
+      />
+      <Tab.Screen 
+        name="Elections" 
+        component={VoteStack} 
+        options={{ tabBarLabel: 'Vote' }}
+      />
+      <Tab.Screen 
+        name="Analytics" 
+        component={AnalyticsScreen} 
+        options={{ tabBarLabel: 'People' }}
+      />
+      <Tab.Screen 
+        name="Profile"
+        options={{ tabBarLabel: 'Account' }}
+      >
         {(props) => <ProfileScreen {...props} onLogout={onLogout} />}
       </Tab.Screen>
     </Tab.Navigator>
