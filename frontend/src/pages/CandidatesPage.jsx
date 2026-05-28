@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   FaExternalLinkAlt,
   FaUserTie,
+  FaPlus,
 } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
@@ -59,6 +60,12 @@ export default function CandidatesPage() {
       dispatch(fetchElectionResults(selectedElectionId))
     }
   }, [selectedElectionId, dispatch])
+
+  const openCreate = () => {
+    setEditCandidateTarget(null)
+    setForm(emptyForm)
+    setShowModal(true)
+  }
 
   const openEdit = (c) => {
     setEditCandidateTarget(c)
@@ -175,26 +182,37 @@ export default function CandidatesPage() {
   return (
     <MainLayout title="Candidates Management">
       <div className="space-y-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select Election</label>
-          <div className="flex gap-4 items-center">
+        <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col sm:flex-row sm:items-end gap-4">
+          <div className="flex-1">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Select Election</label>
             <select
               value={selectedElectionId}
               onChange={e => setSelectedElectionId(e.target.value)}
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+              className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)] bg-white"
             >
               <option value="">-- Choose an election --</option>
               {elections.map(e => (
                 <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
               ))}
             </select>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
             {selectedElection && (
               <button
                 onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-[rgb(16_102_177)] border border-[rgb(16_102_177)]/30 rounded-lg hover:bg-[#e6edfb]"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-[rgb(16_102_177)] border border-[rgb(16_102_177)]/30 rounded-xl hover:bg-[#e6edfb] font-medium"
               >
                 <FaExternalLinkAlt className="text-xs" />
-                View Election
+                View
+              </button>
+            )}
+            {isAdmin && selectedElection?.status === 'draft' && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm text-white bg-[rgb(16_102_177)] rounded-xl hover:bg-[rgb(12_85_148)] font-semibold shadow-sm"
+              >
+                <FaPlus className="text-xs" />
+                Add Candidate
               </button>
             )}
           </div>
