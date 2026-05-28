@@ -251,7 +251,6 @@ export default function RevenuePage() {
                   </label>
                   <input
                     type="number"
-                    min="1"
                     step="0.01"
                     value={payForm.amount}
                     onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}

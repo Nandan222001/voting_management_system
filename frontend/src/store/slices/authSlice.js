@@ -98,11 +98,15 @@ export const logoutUser = createAsyncThunk(
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
+const _storedToken = localStorage.getItem('token') || null
+
 const initialState = {
   user: null,
-  token: localStorage.getItem('token') || null,
+  token: _storedToken,
   isAuthenticated: false,
-  loading: false,
+  // If a token exists in storage, start in loading state so PrivateRoute
+  // shows a spinner while getMe() runs instead of immediately redirecting.
+  loading: !!_storedToken,
   error: null,
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { FaUserCheck, FaBan, FaTrash, FaSearch, FaUsers } from 'react-icons/fa'
+import { FaUserCheck, FaBan, FaTrash, FaSearch, FaUsers, FaEye } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import DataTable from '../components/common/DataTable'
@@ -9,6 +9,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog'
 import Pagination from '../components/common/Pagination'
 import Modal from '../components/common/Modal'
 import StatsCard from '../components/common/StatsCard'
+import ActionDropdown from '../components/common/ActionDropdown'
 import { fetchUsers, approveUser, blockUser, deleteUser, fetchUserStats } from '../store/slices/userSlice'
 
 const TABS = [
@@ -143,24 +144,20 @@ export default function UsersPage() {
     {
       header: 'Actions',
       render: (_, u) => (
-        <div className="flex items-center gap-2">
-          <button onClick={() => setViewUser(u)} className="text-xs text-[rgb(16_102_177)] hover:text-indigo-800 font-medium">View</button>
-          {u.status === 'pending' && (
-            <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
-              <FaUserCheck className="h-3 w-3" /> Approve
-            </button>
-          )}
-          {u.role !== 'admin' && (
-            <button onClick={() => handleBlock(u)} className={`flex items-center gap-1 text-xs ${u.status === 'blocked' ? 'text-blue-600 hover:text-blue-800' : 'text-orange-500 hover:text-orange-700'}`}>
-              <FaBan className="h-3 w-3" /> {u.status === 'blocked' ? 'Unblock' : 'Block'}
-            </button>
-          )}
-          {u.role !== 'admin' && (
-            <button onClick={() => setActionTarget(u)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
-              <FaTrash className="h-3 w-3" /> Delete
-            </button>
-          )}
-        </div>
+        <ActionDropdown
+          align="right"
+          actions={[
+            { key: 'view', label: 'View', icon: FaEye, onClick: () => setViewUser(u) },
+            u.status === 'pending' && { key: 'approve', label: 'Approve', icon: FaUserCheck, onClick: () => handleApprove(u) },
+            u.role !== 'admin' && {
+              key: 'block',
+              label: u.status === 'blocked' ? 'Unblock' : 'Block',
+              icon: FaBan,
+              onClick: () => handleBlock(u),
+            },
+            u.role !== 'admin' && { key: 'delete', label: 'Delete', icon: FaTrash, danger: true, onClick: () => setActionTarget(u) },
+          ].filter(Boolean)}
+        />
       )
     }
   ]
