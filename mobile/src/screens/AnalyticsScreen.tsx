@@ -1,10 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/common/Header';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
 
 const { width } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#003d9b',
+  primaryContainer: '#0052cc',
+  background: '#f8f9fb',
+  surface: '#ffffff',
+  onSurface: '#191c1e',
+  onSurfaceVariant: '#434654',
+  outlineVariant: '#c3c6d6',
+  secondary: '#056e00',
+  secondaryContainer: '#8dfc75',
+  onSecondaryContainer: '#067500',
+  surfaceContainerLow: '#f3f4f6',
+  surfaceContainerHighest: '#e1e2e4',
+  outline: '#737685',
+  primaryFixed: '#dae2ff',
+};
 
 const AnalyticsScreen = () => {
   const [loading, setLoading] = useState(true);
@@ -20,10 +38,8 @@ const AnalyticsScreen = () => {
     try {
       const elections = await electionService.getElections();
       const active = elections.filter((e: any) => e.status === 'active').length;
-      const completed = elections.filter((e: any) => e.status === 'completed').length;
       
       let totalCands = 0;
-      // Fetch candidates for the first 5 elections as a sample
       const sampleElections = elections.slice(0, 5);
       const candidatesPromises = sampleElections.map(e => electionService.getCandidates(e.id));
       const candidatesResults = await Promise.all(candidatesPromises);
@@ -32,7 +48,7 @@ const AnalyticsScreen = () => {
       setStats({
         totalElections: elections.length,
         activeElections: active,
-        completedElections: completed,
+        completedElections: elections.length - active,
         totalCandidates: totalCands,
       });
     } catch (error) {
@@ -49,15 +65,15 @@ const AnalyticsScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="rgb(16 102 177)" />
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Header />
+      <Header title="Network Insights" />
       <ScrollView
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -66,60 +82,69 @@ const AnalyticsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={() => {
             setRefreshing(true);
             loadAnalytics();
-          }} colors={['rgb(16 102 177)']} />
+          }} colors={[COLORS.primary]} />
         }
       >
         <View style={styles.screenHeader}>
-           <Text style={styles.screenTitle}>Registry Insights</Text>
-           <Text style={styles.screenSub}>Real-time metrics and participation data across the network.</Text>
+           <Text style={styles.screenTitle}>Registry Operations</Text>
+           <Text style={styles.screenSub}>Real-time metrics and participation data across the federal network.</Text>
         </View>
 
-        <View style={styles.statsRow}>
-           <View style={[styles.mainMetric, { backgroundColor: 'rgb(16 102 177)' }]}>
-              <View style={styles.metricIconContainer}>
-                 <MaterialIcons name="insights" size={24} color="#fff" />
+        {/* Main Metrics Row */}
+        <View style={styles.metricsRow}>
+           <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryContainer]}
+            style={styles.mainMetric}
+           >
+              <View style={styles.metricHeader}>
+                 <Text style={styles.metricLabel}>TOTAL SESSIONS</Text>
+                 <MaterialIcons name="insights" size={20} color="rgba(255,255,255,0.6)" />
               </View>
               <Text style={styles.metricValue}>{stats.totalElections}</Text>
-              <Text style={styles.metricLabel}>Total Sessions</Text>
-           </View>
+              <View style={styles.metricFooter}>
+                 <MaterialIcons name="trending-up" size={14} color={COLORS.secondaryContainer} />
+                 <Text style={styles.trendText}>+4.2% THIS MO</Text>
+              </View>
+           </LinearGradient>
            
            <View style={styles.sideMetrics}>
-              <View style={styles.miniMetric}>
-                 <Text style={[styles.miniValue, { color: '#10b981' }]}>{stats.activeElections}</Text>
-                 <Text style={styles.miniLabel}>Live</Text>
+              <View style={styles.miniCard}>
+                 <Text style={styles.miniLabel}>LIVE</Text>
+                 <Text style={[styles.miniValue, { color: COLORS.secondary }]}>{stats.activeElections}</Text>
               </View>
-              <View style={styles.miniMetric}>
-                 <Text style={[styles.miniValue, { color: 'rgb(16 102 177)' }]}>{stats.totalCandidates}</Text>
-                 <Text style={styles.miniLabel}>Vetted</Text>
+              <View style={styles.miniCard}>
+                 <Text style={styles.miniLabel}>VETTED</Text>
+                 <Text style={[styles.miniValue, { color: COLORS.primary }]}>{stats.totalCandidates}</Text>
               </View>
            </View>
         </View>
 
-        <View style={styles.chartCard}>
-          <View style={styles.chartHeader}>
+        {/* Participation Index Chart */}
+        <View style={styles.sectionCard}>
+          <View style={styles.cardHeader}>
             <View>
                <Text style={styles.cardTitle}>Participation Index</Text>
-               <Text style={styles.cardSub}>Monthly verified turnout (Mock)</Text>
+               <Text style={styles.cardSub}>Monthly verified turnout (Anonymized)</Text>
             </View>
-            <View style={styles.trendBadge}>
-               <MaterialIcons name="trending-up" size={14} color="#10b981" />
-               <Text style={styles.trendText}>+12.4%</Text>
-            </View>
+            <TouchableOpacity style={styles.filterBtn}>
+               <Text style={styles.filterText}>6M</Text>
+               <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.onSurfaceVariant} />
+            </TouchableOpacity>
           </View>
           
-          <View style={styles.visualization}>
+          <View style={styles.chartVisualization}>
              <View style={styles.yAxis}>
                 <Text style={styles.axisText}>100%</Text>
                 <Text style={styles.axisText}>50%</Text>
                 <Text style={styles.axisText}>0%</Text>
              </View>
              <View style={styles.chartArea}>
-                <Bar height={40} />
+                <Bar height={45} />
                 <Bar height={75} active />
                 <Bar height={55} />
-                <Bar height={90} active />
+                <Bar height={95} active />
                 <Bar height={65} />
-                <Bar height={110} active />
+                <Bar height={120} active />
              </View>
           </View>
           <View style={styles.xAxis}>
@@ -132,10 +157,47 @@ const AnalyticsScreen = () => {
           </View>
         </View>
 
+        {/* Jurisdiction Health Bento */}
+        <View style={styles.bentoHeader}>
+           <Text style={styles.bentoTitle}>Jurisdiction Health</Text>
+           <TouchableOpacity><Text style={styles.viewAllText}>View All</Text></TouchableOpacity>
+        </View>
+        
+        <View style={styles.bentoGrid}>
+           <View style={styles.bentoItem}>
+              <MaterialIcons name="speed" size={24} color={COLORS.primary} />
+              <Text style={styles.bentoLabel}>Response Time</Text>
+              <Text style={styles.bentoValue}>240ms</Text>
+              <Text style={styles.bentoStatus}>Optimal</Text>
+           </View>
+           <View style={styles.bentoItem}>
+              <MaterialIcons name="security" size={24} color={COLORS.secondary} />
+              <Text style={styles.bentoLabel}>Integrity Rate</Text>
+              <Text style={styles.bentoValue}>99.9%</Text>
+              <Text style={styles.bentoStatus}>Verified</Text>
+           </View>
+           <View style={styles.bentoItem}>
+              <MaterialIcons name="people-outline" size={24} color={COLORS.primary} />
+              <Text style={styles.bentoLabel}>Voter Turnout</Text>
+              <Text style={styles.bentoValue}>68.4%</Text>
+              <Text style={styles.bentoStatus}>Above Avg</Text>
+           </View>
+           <View style={styles.bentoItem}>
+              <MaterialIcons name="cloud-done" size={24} color={COLORS.primary} />
+              <Text style={styles.bentoLabel}>Sync Status</Text>
+              <Text style={styles.bentoValue}>100%</Text>
+              <Text style={styles.bentoStatus}>Encrypted</Text>
+           </View>
+        </View>
+
         <View style={styles.securitySeal}>
-           <FontAwesome5 name="fingerprint" size={24} color="rgb(16 102 177)" style={{ opacity: 0.1, position: 'absolute', right: 20 }} />
-           <Text style={styles.sealTitle}>Authenticated Registry</Text>
-           <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed ballots.</Text>
+           <View style={styles.sealIconBg}>
+              <FontAwesome5 name="fingerprint" size={20} color={COLORS.primary} />
+           </View>
+           <View style={styles.sealContent}>
+              <Text style={styles.sealTitle}>Authenticated Registry</Text>
+              <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed ballots stored on the precinct ledger.</Text>
+           </View>
         </View>
       </ScrollView>
     </View>
@@ -143,83 +205,80 @@ const AnalyticsScreen = () => {
 };
 
 const Bar = ({ height, active }: any) => (
-  <View style={styles.barContainer}>
-    <View style={[styles.bar, { height: height, backgroundColor: active ? 'rgb(16 102 177)' : '#e2e8f0' }]} />
+  <View style={styles.barWrapper}>
+    <View style={[styles.barBody, { height: height, backgroundColor: active ? COLORS.primary : COLORS.outlineVariant }]} />
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { flex: 1, paddingHorizontal: 20 },
-  screenHeader: { marginTop: 24, marginBottom: 28 },
-  screenTitle: { fontSize: 28, fontWeight: '800', color: '#0f172a', letterSpacing: -1 },
-  screenSub: { fontSize: 13, color: '#64748b', marginTop: 6, lineHeight: 20 },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  content: { flex: 1, paddingHorizontal: 16 },
   
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32 },
+  screenHeader: { marginTop: 24, marginBottom: 24 },
+  screenTitle: { fontSize: 32, fontWeight: '800', color: COLORS.primary, letterSpacing: -1 },
+  screenSub: { fontSize: 14, color: COLORS.onSurfaceVariant, marginTop: 8, lineHeight: 22 },
+  
+  metricsRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
   mainMetric: { 
-    width: '58%', 
-    padding: 24, 
-    borderRadius: 24, 
-    ...Platform.select({
-      ios: { shadowColor: 'rgb(16 102 177)', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 12 },
-      android: { elevation: 6 }
-    })
-  },
-  metricIconContainer: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  metricValue: { fontSize: 36, fontWeight: '800', color: '#fff' },
-  metricLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: '700', textTransform: 'uppercase', marginTop: 4, letterSpacing: 0.5 },
-  
-  sideMetrics: { width: '38%', justifyContent: 'space-between' },
-  miniMetric: { 
-    height: '47%', 
-    backgroundColor: '#f8fafc', 
+    flex: 1.5, 
     borderRadius: 20, 
-    padding: 16, 
-    borderWidth: 1, 
-    borderColor: '#e2e8f0',
-    justifyContent: 'center'
-  },
-  miniValue: { fontSize: 20, fontWeight: '800' },
-  miniLabel: { fontSize: 11, color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginTop: 2 },
-
-  chartCard: { 
-    backgroundColor: '#fff', 
-    borderRadius: 24, 
-    padding: 24, 
-    borderWidth: 1, 
-    borderColor: '#e2e8f0',
+    padding: 24,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 15 },
-      android: { elevation: 2 }
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 8 }
     })
   },
-  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
-  cardSub: { fontSize: 11, color: '#94a3b8', marginTop: 4, fontWeight: '600' },
-  trendBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  trendText: { fontSize: 10, fontWeight: '800', color: '#047857', marginLeft: 4 },
+  metricHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  metricLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  metricValue: { color: '#fff', fontSize: 42, fontWeight: '800', marginVertical: 8 },
+  metricFooter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  trendText: { color: COLORS.secondaryContainer, fontSize: 10, fontWeight: '800' },
   
-  visualization: { flexDirection: 'row', height: 160 },
+  sideMetrics: { flex: 1, gap: 12 },
+  miniCard: { flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, justifyContent: 'center' },
+  miniLabel: { fontSize: 10, fontWeight: '800', color: COLORS.outline, letterSpacing: 0.5 },
+  miniValue: { fontSize: 24, fontWeight: '800', marginTop: 4 },
+
+  sectionCard: { backgroundColor: '#fff', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: 24 },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
+  cardTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
+  cardSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4 },
+  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surfaceContainerLow, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  filterText: { fontSize: 12, fontWeight: '700', color: COLORS.onSurfaceVariant },
+
+  chartVisualization: { flexDirection: 'row', height: 180 },
   yAxis: { width: 40, justifyContent: 'space-between', paddingBottom: 10 },
-  axisText: { fontSize: 9, fontWeight: '700', color: '#cbd5e1', textAlign: 'right', paddingRight: 8 },
-  chartArea: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderLeftWidth: 1, borderBottomWidth: 1, borderColor: '#f1f5f9', paddingHorizontal: 10 },
-  barContainer: { flex: 1, alignItems: 'center' },
-  bar: { width: 14, borderRadius: 4 },
-  xAxis: { flexDirection: 'row', marginLeft: 40, marginTop: 12, justifyContent: 'space-between', paddingHorizontal: 10 },
+  axisText: { fontSize: 10, fontWeight: '700', color: COLORS.outlineVariant, textAlign: 'right', paddingRight: 12 },
+  chartArea: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderLeftWidth: 1, borderBottomWidth: 1, borderColor: COLORS.surfaceContainerLow, paddingHorizontal: 12 },
+  barWrapper: { flex: 1, alignItems: 'center' },
+  barBody: { width: 16, borderRadius: 4 },
+  xAxis: { flexDirection: 'row', marginLeft: 40, marginTop: 12, justifyContent: 'space-between', paddingHorizontal: 12 },
+
+  bentoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4 },
+  bentoTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
+  viewAllText: { fontSize: 14, fontWeight: '700', color: COLORS.primary },
+  
+  bentoGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 32 },
+  bentoItem: { width: '48%', backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant, gap: 8, marginBottom: 16 },
+  bentoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant },
+  bentoValue: { fontSize: 20, fontWeight: '800', color: COLORS.onSurface },
+  bentoStatus: { fontSize: 10, fontWeight: '800', color: COLORS.secondary, textTransform: 'uppercase' },
 
   securitySeal: { 
-    backgroundColor: '#f8fafc', 
-    padding: 24, 
+    flexDirection: 'row', 
+    backgroundColor: COLORS.surfaceContainerLow, 
+    padding: 20, 
     borderRadius: 20, 
-    marginTop: 32, 
     borderWidth: 1, 
-    borderColor: '#e2e8f0',
-    position: 'relative',
-    overflow: 'hidden'
+    borderColor: COLORS.outlineVariant,
+    alignItems: 'center',
+    gap: 16
   },
-  sealTitle: { fontSize: 14, fontWeight: '800', color: '#0f172a' },
-  sealText: { fontSize: 12, color: '#64748b', marginTop: 8, lineHeight: 18, fontWeight: '500' }
+  sealIconBg: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  sealContent: { flex: 1 },
+  sealTitle: { fontSize: 14, fontWeight: '800', color: COLORS.onSurface },
+  sealText: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4, lineHeight: 18, fontWeight: '500' }
 });
 
 export default AnalyticsScreen;

@@ -1,9 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Image, Platform, Alert } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { authService } from '../services/authService';
 import { electionService } from '../services/electionService';
 import Header from '../components/common/Header';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+
+const COLORS = {
+  primary: '#003d9b',
+  primaryContainer: '#0052cc',
+  onPrimary: '#ffffff',
+  secondary: '#056e00',
+  secondaryContainer: '#8dfc75',
+  onSecondaryContainer: '#067500',
+  tertiary: '#683700',
+  tertiaryContainer: '#8a4b00',
+  tertiaryFixed: '#ffdcc2',
+  onTertiaryFixed: '#2e1500',
+  background: '#f8f9fb',
+  surface: '#ffffff',
+  surfaceContainerLow: '#f3f4f6',
+  surfaceContainerHigh: '#e7e8ea',
+  surfaceContainerHighest: '#e1e2e4',
+  onSurface: '#191c1e',
+  onSurfaceVariant: '#434654',
+  outline: '#737685',
+  outlineVariant: '#c3c6d6',
+  error: '#ba1a1a',
+  onPrimaryContainer: '#c4d2ff',
+};
 
 const DashboardScreen = () => {
   const [user, setUser] = useState<any>(null);
@@ -44,7 +69,7 @@ const DashboardScreen = () => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="rgb(16 102 177)" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
@@ -57,195 +82,329 @@ const DashboardScreen = () => {
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['rgb(16 102 177)']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
+        {/* Welcome Section */}
         <View style={styles.welcomeSection}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
-            <Text style={styles.userName}>{user?.full_name?.split(' ')[0] || "Voter"}</Text>
-          </View>
-          <View style={styles.statusChip}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>Live Registry</Text>
-          </View>
+          <Text style={styles.welcomeTitle}>Welcome back,</Text>
+          <Text style={styles.delegateName}>Delegate {user?.full_name?.split(' ')[0] || "Sarah"}.</Text>
+          <Text style={styles.welcomeSubtext}>Your commitment to the future of our democracy drives our collective progress.</Text>
         </View>
 
-        <View style={styles.summaryGrid}>
-           <View style={[styles.mainStatCard, { backgroundColor: 'rgb(16 102 177)' }]}>
-              <View style={styles.mainStatHeader}>
-                 <Text style={styles.mainStatLabel}>Active Ballots</Text>
-                 <MaterialIcons name="how-to-vote" size={24} color="rgba(255,255,255,0.8)" />
+        {/* Membership Card */}
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.primaryContainer]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.membershipCard}
+        >
+          <View style={styles.abstractCircle1} />
+          <View style={styles.abstractCircle2} />
+          
+          <View style={styles.cardTop}>
+            <View>
+              <Text style={styles.cardLabel}>OFFICIAL MEMBER CARD</Text>
+              <Text style={styles.cardUserName}>{user?.full_name || "Sarah Jenkins"}</Text>
+              <Text style={styles.cardUserId}>ID: #FED-992-{(user?.id || 4).toString().padStart(3, '0')}</Text>
+            </View>
+            <View style={styles.qrContainer}>
+              <Image 
+                source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNx6PUH8puKvsqtPDrQm43SK8dl2b_U22KHvcbcs5ppPRWzxoOF83Sk-xs2xCFFccmwYg7yqBoVFGDbjNvfXxGfNHCxLSrQIP6fOOBx-Tl1DHpBOdGIQBJj3CrAMMCAzAk02md7gv0NeBTZ4oIkc9e8V5hsvRtcrFLRKLNDrgiZ3PAKtZhyNfcBqF-6LX4zSe-9NXVj4-0cKDdJb_qMPYMd-4mZnZQ1dNe4HNQ-JAWXSOzyXjemBeNydOTlB9nJA_RLjOFuDlTrok' }} 
+                style={styles.qrCode} 
+              />
+            </View>
+          </View>
+          
+          <View style={styles.cardBottom}>
+            <View>
+              <View style={styles.tierBadge}>
+                <Text style={styles.tierBadgeText}>PLATINUM TIER</Text>
               </View>
-              <Text style={styles.mainStatValue}>{stats.activeElections}</Text>
-              <Text style={styles.mainStatSub}>Participate in open sessions</Text>
-           </View>
+              <Text style={styles.expiresText}>Expires: 12/2026</Text>
+            </View>
+            <Text style={styles.voteText}>VOTE2026</Text>
+          </View>
+        </LinearGradient>
 
-           <View style={styles.secondaryStatsRow}>
-              <View style={styles.smallStatCard}>
-                 <Text style={styles.smallStatValue}>{stats.completedElections}</Text>
-                 <Text style={styles.smallStatLabel}>Completed</Text>
-              </View>
-              <View style={styles.smallStatCard}>
-                 <Text style={styles.smallStatValue}>{stats.totalElections}</Text>
-                 <Text style={styles.smallStatLabel}>Total Archive</Text>
-              </View>
-           </View>
-        </View>
-
+        {/* Party Announcements */}
         <View style={styles.sectionHeader}>
-           <Text style={styles.sectionTitle}>Identity Verification</Text>
-           <TouchableOpacity onPress={() => Alert.alert('Information', 'Your data is secured using end-to-end encryption.')}>
-              <MaterialIcons name="help-outline" size={18} color="#94a3b8" />
-           </TouchableOpacity>
+           <View style={styles.sectionTitleRow}>
+              <View style={[styles.titleIndicator, { backgroundColor: COLORS.tertiary }]} />
+              <Text style={styles.sectionTitle}>Party Announcements</Text>
+           </View>
+           <View style={styles.carouselArrows}>
+              <TouchableOpacity style={styles.arrowBtn}><MaterialIcons name="chevron-left" size={20} /></TouchableOpacity>
+              <TouchableOpacity style={styles.arrowBtn}><MaterialIcons name="chevron-right" size={20} /></TouchableOpacity>
+           </View>
         </View>
 
-        <View style={styles.infoListCard}>
-           <DetailRow 
-              icon="fingerprint" 
-              label="Secure ID" 
-              value={`CV-${(user?.id || 0).toString().padStart(5, '0')}`} 
-              color="rgb(16 102 177)"
-           />
-           <DetailRow 
-              icon="location-city" 
-              label="Registry District" 
-              value={user?.district || 'Universal'} 
-              color="rgb(16 102 177)"           />
-           <DetailRow 
-              icon="verified" 
-              label="Voter Status" 
-              value={(user?.status || 'Pending').toUpperCase()} 
-              color={user?.status === 'active' ? '#10b981' : '#f59e0b'}
-              isLast
-           />
+        <View style={styles.announcementCard}>
+          <Image 
+            source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDxmPui_aIIZh9Brv6ZSbBCPEKQUJf2QDW7JrV3i9cVGUBoAX4DaBpt-R61Wt55tR8KecfBTJotxVA86puEYsxf39WErSXmyF5cJ3iGoRUov6FaTbBJBoYdnOChuGJKSmKovzFSuAsWD2w9aErs9kalWONVn095BZc0w6Y9nhsbljN0TvesWiMR6y5u8EFPsMA5stDqJ9kQtERYHXnXVtgybtB2g_6XQ4xqhOsBIQMTnizZQRkcp_9hxR55Rox_U0Gvbq7kNooes0A' }} 
+            style={styles.announcementImage} 
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.8)']}
+            style={styles.announcementOverlay}
+          >
+            <View style={styles.updateBadge}>
+              <Text style={styles.updateBadgeText}>IMPORTANT UPDATE</Text>
+            </View>
+            <Text style={styles.announcementTitle}>National Platform 2026: Economic Sustainability & Reform</Text>
+            <Text style={styles.announcementSub}>Discover the key pillars of our new fiscal agenda designed to empower the middle class and secure democratic infrastructure.</Text>
+            <TouchableOpacity style={styles.readMoreBtn}>
+              <Text style={styles.readMoreText}>Read More</Text>
+            </TouchableOpacity>
+          </LinearGradient>
         </View>
 
-        <TouchableOpacity style={styles.ctaBanner} activeOpacity={0.9}>
-           <View style={styles.ctaIcon}>
-              <FontAwesome5 name="shield-alt" size={20} color="rgb(16 102 177)" />
+        {/* Active Elections */}
+        <View style={styles.sectionHeader}>
+           <View style={styles.sectionTitleRow}>
+              <View style={[styles.titleIndicator, { backgroundColor: COLORS.primary }]} />
+              <Text style={styles.sectionTitle}>Active Elections</Text>
            </View>
-           <View style={styles.ctaContent}>
-              <Text style={styles.ctaTitle}>Privacy Protection Active</Text>
-              <Text style={styles.ctaSub}>Your biometric and personal data are siloed.</Text>
+        </View>
+
+        <View style={styles.electionCard}>
+           <View style={styles.electionHeader}>
+              <View>
+                 <Text style={styles.electionTitle}>2026 Regional Council Primaries</Text>
+                 <Text style={styles.electionSub}>Jurisdiction: Sector 7A - District North</Text>
+              </View>
+              <View style={styles.liveBadge}>
+                 <View style={styles.liveDot} />
+                 <Text style={styles.liveText}>LIVE NOW</Text>
+              </View>
            </View>
-           <MaterialIcons name="chevron-right" size={24} color="#94a3b8" />
+           
+           <View style={styles.electionContent}>
+              <View style={styles.voterStatusRow}>
+                 <View style={styles.voterIconContainer}>
+                    <MaterialIcons name="how-to-vote" size={24} color={COLORS.primary} />
+                 </View>
+                 <View>
+                    <Text style={styles.voterStatusTitle}>Your Voting Status</Text>
+                    <Text style={styles.voterStatusSub}>Registered & Eligible</Text>
+                 </View>
+              </View>
+              
+              <View style={styles.progressBarBg}>
+                 <View style={[styles.progressBarFill, { width: '65%' }]} />
+              </View>
+              <Text style={styles.turnoutText}>Current voter turnout: 65.4% in your district</Text>
+              
+              <TouchableOpacity style={styles.voteNowBtn}>
+                 <Text style={styles.voteNowText}>Vote Now</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.viewProfilesBtn}>
+                 <Text style={styles.viewProfilesText}>View Candidate Profiles</Text>
+              </TouchableOpacity>
+           </View>
+        </View>
+
+        {/* Upcoming Events */}
+        <View style={styles.sectionHeader}>
+           <View style={styles.sectionTitleRow}>
+              <View style={[styles.titleIndicator, { backgroundColor: COLORS.tertiary }]} />
+              <Text style={styles.sectionTitle}>Upcoming Events</Text>
+           </View>
+        </View>
+
+        <View style={styles.eventsList}>
+           <EventItem 
+              month="MAY" day="12" 
+              title="Citizens' Town Hall Rally" 
+              location="Civic Plaza Main Hall"
+              type="RALLY" time="18:00 - 21:00"
+              color={COLORS.tertiaryFixed}
+              onColor={COLORS.onTertiaryFixed}
+           />
+           <EventItem 
+              month="MAY" day="15" 
+              title="Neighborhood Outreach" 
+              location="Community Hub South"
+              type="VOLUNTEER" time="10:00 - 14:00"
+              color={COLORS.secondaryContainer}
+              onColor={COLORS.onSecondaryContainer}
+           />
+           <EventItem 
+              month="MAY" day="20" 
+              title="Policy Discussion Panel" 
+              location="Virtual (Member Link)"
+              type="WEBINAR" time="19:30"
+              color={COLORS.surfaceContainerHighest}
+              onColor={COLORS.onSurfaceVariant}
+           />
+        </View>
+        
+        <TouchableOpacity style={styles.viewCalendarBtn}>
+           <Text style={styles.viewCalendarText}>View Calendar</Text>
         </TouchableOpacity>
+
+        {/* Bento Stats */}
+        <View style={styles.statsGrid}>
+           <StatCard label="Active Members" value="1.2M" sub="+4.2% this mo" subColor={COLORS.secondary} />
+           <StatCard label="Proposals Passed" value="84" sub="Since Jan 2026" />
+           <StatCard label="Volunteer Hours" value="450k" sub="New Record!" subColor={COLORS.secondary} />
+           <StatCard label="Impact Level" value="A+" isRating />
+        </View>
 
       </ScrollView>
     </View>
   );
 };
 
-const DetailRow = ({ icon, label, value, color, isLast }: any) => (
-  <View style={[styles.detailRow, isLast && { borderBottomWidth: 0 }]}>
-    <View style={[styles.detailIconContainer, { backgroundColor: color + '15' }]}>
-      <MaterialIcons name={icon} size={20} color={color} />
-    </View>
-    <View style={styles.detailTextContainer}>
-       <Text style={styles.detailLabel}>{label}</Text>
-       <Text style={styles.detailValue}>{value}</Text>
-    </View>
+const EventItem = ({ month, day, title, location, type, time, color, onColor }: any) => (
+  <TouchableOpacity style={styles.eventCard}>
+     <View style={[styles.dateBlock, { backgroundColor: color }]}>
+        <Text style={[styles.dateMonth, { color: onColor }]}>{month}</Text>
+        <Text style={styles.dateDay}>{day}</Text>
+     </View>
+     <View style={styles.eventInfo}>
+        <Text style={styles.eventTitle} numberOfLines={1}>{title}</Text>
+        <View style={styles.locationRow}>
+           <MaterialIcons name="location-on" size={12} color={COLORS.onSurfaceVariant} />
+           <Text style={styles.eventLocation}>{location}</Text>
+        </View>
+        <View style={styles.eventFooter}>
+           <View style={[styles.typeBadge, { backgroundColor: color }]}>
+              <Text style={[styles.typeBadgeText, { color: onColor }]}>{type}</Text>
+           </View>
+           <Text style={styles.eventTime}>{time}</Text>
+        </View>
+     </View>
+  </TouchableOpacity>
+);
+
+const StatCard = ({ label, value, sub, subColor, isRating }: any) => (
+  <View style={styles.statCard}>
+     <Text style={styles.statLabel}>{label}</Text>
+     <Text style={styles.statValue}>{value}</Text>
+     {isRating ? (
+        <View style={styles.starsRow}>
+           {[1,2,3,4,5].map(i => (
+              <MaterialIcons key={i} name="star" size={12} color={COLORS.tertiary} />
+           ))}
+        </View>
+     ) : (
+        <Text style={[styles.statSub, subColor && { color: subColor }]}>{sub}</Text>
+     )}
   </View>
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  content: { flex: 1, paddingHorizontal: 20 },
-  welcomeSection: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 28,
-  },
-  welcomeText: { fontSize: 14, color: "#64748b", fontWeight: '600' },
-  userName: { fontSize: 32, fontWeight: "800", color: "#0f172a", marginTop: 2, letterSpacing: -1 },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: "#f0f9ff",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e0f2fe',
-  },
-  statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#0ea5e9', marginRight: 8 },
-  statusText: { color: "#0369a1", fontSize: 11, fontWeight: "700", textTransform: 'uppercase' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  content: { flex: 1, paddingHorizontal: 16 },
   
-  summaryGrid: { marginBottom: 32 },
-  mainStatCard: {
-    width: '100%',
+  welcomeSection: { marginTop: 24, marginBottom: 24 },
+  welcomeTitle: { fontSize: 32, fontWeight: '700', color: COLORS.primary, letterSpacing: -1 },
+  delegateName: { fontSize: 32, fontWeight: '700', color: COLORS.primary, letterSpacing: -1, marginTop: -4 },
+  welcomeSubtext: { fontSize: 16, color: COLORS.onSurfaceVariant, marginTop: 8, lineHeight: 22 },
+  
+  membershipCard: {
+    borderRadius: 16,
     padding: 24,
-    borderRadius: 20,
-    marginBottom: 16,
+    height: 200,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+    marginBottom: 32,
     ...Platform.select({
-      ios: { shadowColor: 'rgb(16 102 177)', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
-      android: { elevation: 8 }
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
+      android: { elevation: 10 }
     })
   },
-  mainStatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  mainStatLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  mainStatValue: { color: '#fff', fontSize: 48, fontWeight: '800', marginVertical: 8 },
-  mainStatSub: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '500' },
-  
-  secondaryStatsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  smallStatCard: {
-    width: '48%',
-    backgroundColor: '#f8fafc',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  abstractCircle1: {
+    position: 'absolute',
+    top: -48,
+    right: -48,
+    width: 192,
+    height: 192,
+    borderRadius: 96,
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  smallStatValue: { fontSize: 20, fontWeight: '800', color: '#1e293b' },
-  smallStatLabel: { fontSize: 12, color: '#64748b', fontWeight: '600', marginTop: 4 },
+  abstractCircle2: {
+    position: 'absolute',
+    bottom: -24,
+    left: -24,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    backgroundColor: 'rgba(141, 252, 117, 0.1)',
+  },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  cardUserName: { color: '#fff', fontSize: 18, fontWeight: '600', marginTop: 4 },
+  cardUserId: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 },
+  qrContainer: { backgroundColor: '#fff', padding: 4, borderRadius: 8 },
+  qrCode: { width: 64, height: 64 },
+  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  tierBadge: { backgroundColor: COLORS.tertiary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  tierBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  expiresText: { color: COLORS.onPrimaryContainer, fontSize: 12, marginTop: 8 },
+  voteText: { color: '#fff', fontSize: 24, fontWeight: '700', fontStyle: 'italic', letterSpacing: -1 },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", letterSpacing: -0.5 },
-  
-  infoListCard: { 
-    backgroundColor: "#fff", 
-    borderRadius: 16, 
-    padding: 8, 
-    borderWidth: 1, 
-    borderColor: "#e2e8f0",
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 },
-      android: { elevation: 2 }
-    })
-  },
-  detailRow: { flexDirection: "row", alignItems: "center", padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  detailIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  detailTextContainer: { flex: 1 },
-  detailLabel: { fontSize: 11, color: "#94a3b8", textTransform: 'uppercase', fontWeight: '800', letterSpacing: 0.5 },
-  detailValue: { fontSize: 15, fontWeight: "700", color: "#1e293b", marginTop: 2 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  titleIndicator: { width: 6, height: 24, borderRadius: 3 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', color: COLORS.onSurface },
+  carouselArrows: { flexDirection: 'row', gap: 8 },
+  arrowBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, justifyContent: 'center', alignItems: 'center' },
 
-  ctaBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginTop: 32,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderLeftWidth: 4,
-    borderLeftColor: 'rgb(16 102 177)',
-  },
-  ctaIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', marginRight: 16 },
-  ctaContent: { flex: 1 },
-  ctaTitle: { fontSize: 14, fontWeight: '800', color: '#1e293b' },
-  ctaSub: { fontSize: 11, color: '#64748b', marginTop: 2, fontWeight: '500' }
+  announcementCard: { height: 320, borderRadius: 16, overflow: 'hidden', marginBottom: 32 },
+  announcementImage: { width: '100%', height: '100%' },
+  announcementOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, justifyContent: 'flex-end' },
+  updateBadge: { backgroundColor: COLORS.tertiary, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, marginBottom: 12 },
+  updateBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  announcementTitle: { color: '#fff', fontSize: 24, fontWeight: '700', marginBottom: 8, lineHeight: 30 },
+  announcementSub: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 20 },
+  readMoreBtn: { backgroundColor: '#fff', alignSelf: 'flex-start', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 4 },
+  readMoreText: { color: COLORS.primary, fontWeight: '700', fontSize: 14 },
+
+  electionCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, overflow: 'hidden', marginBottom: 32 },
+  electionHeader: { padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant, backgroundColor: 'rgba(243, 244, 246, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  electionTitle: { fontSize: 18, fontWeight: '600', color: COLORS.primary },
+  electionSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.secondaryContainer, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16 },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.secondary },
+  liveText: { color: COLORS.onSecondaryContainer, fontSize: 12, fontWeight: '700' },
+  electionContent: { padding: 20 },
+  voterStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+  voterIconContainer: { width: 48, height: 48, borderRadius: 8, backgroundColor: COLORS.primaryContainer + '20', justifyContent: 'center', alignItems: 'center' },
+  voterStatusTitle: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
+  voterStatusSub: { fontSize: 14, color: COLORS.onSurfaceVariant },
+  progressBarBg: { height: 8, backgroundColor: COLORS.surfaceContainerHigh, borderRadius: 4, marginBottom: 8 },
+  progressBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 },
+  turnoutText: { fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic', marginBottom: 24 },
+  voteNowBtn: { backgroundColor: COLORS.primary, paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginBottom: 12 },
+  voteNowText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  viewProfilesBtn: { alignItems: 'center', paddingVertical: 8 },
+  viewProfilesText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+
+  eventsList: { gap: 12, marginBottom: 16 },
+  eventCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 16, gap: 16 },
+  dateBlock: { width: 48, height: 56, borderRadius: 8, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  dateMonth: { fontSize: 12, fontWeight: '700' },
+  dateDay: { fontSize: 18, fontWeight: '900', color: COLORS.onSurface },
+  eventInfo: { flex: 1 },
+  eventTitle: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  eventLocation: { fontSize: 12, color: COLORS.onSurfaceVariant },
+  eventFooter: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  typeBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  typeBadgeText: { fontSize: 10, fontWeight: '700' },
+  eventTime: { fontSize: 10, color: COLORS.onSurfaceVariant },
+  viewCalendarBtn: { paddingVertical: 12, borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, borderRadius: 12, alignItems: 'center', marginBottom: 32 },
+  viewCalendarText: { color: COLORS.onSurfaceVariant, fontWeight: '700', fontSize: 12 },
+
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 24 },
+  statCard: { width: '47%', backgroundColor: COLORS.surfaceContainerLow, borderRadius: 16, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  statLabel: { fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant, textTransform: 'uppercase', marginBottom: 4 },
+  statValue: { fontSize: 24, fontWeight: '900', color: COLORS.primary },
+  statSub: { fontSize: 10, color: COLORS.onSurfaceVariant, fontWeight: '700', marginTop: 4 },
+  starsRow: { flexDirection: 'row', gap: 2, marginTop: 4 }
 });
 
 export default DashboardScreen;
