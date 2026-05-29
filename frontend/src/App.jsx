@@ -124,7 +124,7 @@ export default function App() {
         {/* SuperAdmin Only */}
         <Route path="/tenants" element={<PrivateRoute roles={['superadmin']}><TenantsPage /></PrivateRoute>} />
         <Route path="/audit-logs" element={<PrivateRoute roles={['superadmin', 'admin']}><AuditLogsPage /></PrivateRoute>} />
-        <Route path="/revenue" element={<PrivateRoute roles={['admin']}><RevenuePage /></PrivateRoute>} />
+        <Route path="/revenue" element={<PrivateRoute roles={['admin', 'superadmin']}><RevenuePage /></PrivateRoute>} />
         <Route path="/candidate-committees" element={<PrivateRoute roles={['admin']}><CandidateCommitteesPage /></PrivateRoute>} />
         <Route path="/targets" element={<PrivateRoute roles={['superadmin']}><TargetsPage /></PrivateRoute>} />
 

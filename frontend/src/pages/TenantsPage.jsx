@@ -14,6 +14,8 @@ import {
   Search,
   X,
   Building,
+  MapPin,
+  TrendingUp,
 } from 'lucide-react';
 import {
   fetchTenants,
@@ -69,7 +71,7 @@ function getTenantId(tenant) {
 
 const PLAN_STYLES = {
   starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-blue-100 text-[rgb(16_102_177)] ring-1 ring-blue-200',
+  professional: 'bg-blue-100 text-[#1A237E] ring-1 ring-blue-200',
   enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
 };
 
@@ -355,14 +357,14 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -393,7 +395,7 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Suspend Tenant" size="md">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-100 rounded-xl">
+        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-100 rounded-lg">
           <Ban className="text-orange-500 mt-0.5 flex-shrink-0 w-5 h-5" />
           <p className="text-sm font-medium text-orange-800">
             Suspending <span className="font-bold underline">{tenant?.name}</span> will block all access to the platform.
@@ -413,14 +415,14 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all disabled:opacity-60"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all disabled:opacity-60"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -454,7 +456,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
       label: 'Users',
       value: stats.user_count ?? tenant.user_count ?? 0,
       icon: Users,
-      color: 'text-[rgb(16_102_177)]',
+      color: 'text-[#1A237E]',
       bg: 'bg-blue-50',
     },
     {
@@ -481,7 +483,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             src={tenant.logo_url}
             name={tenant.name}
             sizeClass="w-16 h-16"
-            shapeClass="rounded-2xl"
+            shapeClass="rounded-lg"
             imageClassName="border border-gray-200 shadow-sm"
             fallbackClassName="text-white text-3xl shadow-sm"
             style={{ backgroundColor: tenant.primary_color || '#000' }}
@@ -502,8 +504,8 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {usageStats.map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="p-5 rounded-2xl border border-gray-100 bg-gray-50 flex flex-col items-center shadow-sm">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white border border-gray-100 shadow-sm`}>
+              <div key={label} className="p-5 rounded-lg border border-gray-100 bg-gray-50 flex flex-col items-center shadow-sm">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 bg-white border border-gray-100 shadow-sm`}>
                   <Icon className={`w-5 h-5 ${color}`} />
                 </div>
                 <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
@@ -532,7 +534,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
         <div className="flex justify-end pt-6 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Close Overview
           </button>
@@ -548,7 +550,7 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Delete Tenant" size="sm">
       <div className="space-y-6">
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-lg">
           <Trash2 className="text-red-500 mt-0.5 flex-shrink-0 w-5 h-5" />
           <p className="text-sm font-medium text-red-800">
             Are you sure you want to <span className="font-bold underline">permanently delete</span> {tenant?.name}? This action cannot be undone.
@@ -558,14 +560,14 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
           <button
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center min-w-[120px]"
+            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center min-w-[120px]"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -734,69 +736,90 @@ export default function TenantsPage() {
   }, [tenants, search]);
 
   const totalPages = Math.ceil(total / PER_PAGE);
+  const activeCount = tenants.filter((tenant) => tenant.status === 'active').length;
+  const suspendedCount = tenants.filter((tenant) => tenant.status === 'suspended').length;
+  const enterpriseCount = tenants.filter((tenant) => tenant.plan === 'enterprise').length;
 
   return (
     <MainLayout title="Tenant Management">
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[#1066b1]">Organisations</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {total} organisation{total !== 1 ? 's' : ''} on the platform
-            </p>
+      <div className="w-full space-y-8">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="relative overflow-hidden rounded-lg bg-[#1A237E] p-6 text-white shadow-lg md:col-span-2">
+            <div className="relative z-10">
+              <p className="text-sm font-semibold uppercase tracking-widest text-[#dde1ff]">Total Platform Tenants</p>
+              <h2 className="mt-2 text-4xl font-black">{total.toLocaleString()}</h2>
+              <p className="mt-4 flex items-center gap-1 text-xs font-semibold text-[#c1c6ff]">
+                <TrendingUp className="h-4 w-4" /> {activeCount.toLocaleString()} active organizations across all jurisdictions
+              </p>
+            </div>
+            <Building className="absolute -bottom-8 -right-8 h-40 w-40 text-white/10" />
           </div>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[rgb(16_102_177)] text-white text-sm font-semibold rounded-xl hover:bg-[rgb(12_85_148)] transition-all shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            New Tenant
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl border border-gray-200">
-            {STATUS_FILTERS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => handleStatusFilter(value)}
-                className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  statusFilter === value
-                    ? 'bg-white text-[rgb(16_102_177)] shadow-sm ring-1 ring-gray-200'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
+            <p className="text-sm font-bold text-[#44474e]">Active Tenants</p>
+            <h3 className="mt-1 text-3xl font-bold text-[#1A237E]">{activeCount.toLocaleString()}</h3>
+            <span className="mt-4 inline-flex rounded bg-[#2e7d32]/10 px-2 py-1 text-[10px] font-bold text-[#2e7d32]">
+              {total ? Math.round((activeCount / total) * 100) : 0}% Active
+            </span>
           </div>
+          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
+            <p className="text-sm font-bold text-[#44474e]">Subscription Health</p>
+            <h3 className="mt-1 text-3xl font-bold text-[#3F51B5]">Tier A+</h3>
+            <p className="mt-4 text-xs text-[#44474e]">{enterpriseCount} enterprise tenants, {suspendedCount} suspended</p>
+          </div>
+        </section>
 
-          <div className="relative flex-1 min-w-[300px] max-w-sm group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[rgb(16_102_177)] transition-colors" />
+        <section className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#74777f]" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, slug or email…"
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-[rgb(16_102_177)]/5 focus:border-[rgb(16_102_177)] bg-white transition-all shadow-sm"
+              placeholder="Search jurisdictional tenants..."
+              className="w-full rounded-lg border-0 bg-[#e2e2e6] py-3 pl-10 pr-10 text-sm text-[#1a1c1e] focus:ring-2 focus:ring-[#1A237E]"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#74777f] hover:text-[#1A237E]"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+            <div className="flex items-center gap-1 rounded-lg bg-[#ebecf0] p-1">
+              {STATUS_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleStatusFilter(value)}
+                  className={`rounded-lg px-4 py-2 text-xs font-black uppercase transition ${
+                    statusFilter === value
+                      ? 'bg-[#1A237E] text-white shadow-sm'
+                      : 'text-[#44474e] hover:bg-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#1A237E] px-6 py-3 text-sm font-bold text-white transition hover:brightness-110 active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+              Add New Tenant
+            </button>
+          </div>
+        </section>
+
+        <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
           {loading && filteredTenants.length === 0 ? (
             <div className="py-20 flex justify-center"><LoadingSpinner /></div>
           ) : filteredTenants.length === 0 ? (
             <div className="px-6 py-20 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-lg bg-gray-50 flex items-center justify-center border border-gray-100">
                 <Building className="w-8 h-8 text-gray-300" />
               </div>
               <p className="text-gray-700 font-semibold text-base">No tenants found</p>
@@ -810,10 +833,10 @@ export default function TenantsPage() {
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+              <table className="w-full min-w-[900px] border-collapse text-left text-sm">
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {['Organisation', 'Identifier', 'Plan', 'Status', 'Users', 'Created', 'Actions'].map((col) => (
+                  <tr className="border-b border-[#c4c6d0] bg-[#f4f3f7] text-xs font-black uppercase tracking-wider text-[#44474e]">
+                    {['Tenant Identity', 'Region / Identifier', 'Status', 'Tier', 'Users', 'Created', 'Actions'].map((col) => (
                       <th
                         key={col}
                         className={`px-3 py-4 sm:px-6 ${col === 'Actions' ? 'text-right' : ''}`}
@@ -823,60 +846,64 @@ export default function TenantsPage() {
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-[#c4c6d0]">
                   {filteredTenants.map((tenant) => {
                     const id = getTenantId(tenant);
                     const isSuspended = tenant.status === 'suspended';
                     return (
-                      <tr key={id} className="hover:bg-[#e6edfb]/50 transition-colors group">
-                        <td className="px-3 py-4 sm:px-6">
+                      <tr key={id} className="transition-colors hover:bg-[#fbfcff]">
+                        <td className="px-3 py-5 sm:px-6">
                           <div className="flex items-center gap-3">
                             <ImageAvatar
                               src={tenant.logo_url}
                               name={tenant.name}
                               sizeClass="w-10 h-10"
-                              shapeClass="rounded-xl"
-                              imageClassName="border border-gray-200 shadow-sm"
+                              shapeClass="rounded-lg"
+                              imageClassName="border border-[#c4c6d0] shadow-sm"
                               fallbackClassName="text-white text-xs shadow-sm"
-                              style={{ backgroundColor: tenant.primary_color || 'rgb(16_102_177)' }}
+                              style={{ backgroundColor: tenant.primary_color || '#1A237E' }}
                             />
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-800 truncate max-w-[160px]">
+                              <p className="max-w-[180px] truncate font-bold text-[#1a1c1e]">
                                 {tenant.name}
                               </p>
+                              <p className="text-xs text-[#74777f]">ID: TEN-{String(id).padStart(4, '0')}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6 font-mono text-[10px] text-gray-400">
-                          {tenant.slug}
+                        <td className="px-3 py-5 sm:px-6">
+                          <div className="flex items-center gap-2 text-sm font-medium text-[#44474e]">
+                            <MapPin className="h-4 w-4 text-[#74777f]" />
+                            <span className="font-mono text-xs">{tenant.slug}</span>
+                          </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6">
-                          <PlanBadge plan={tenant.plan} />
-                        </td>
-                        <td className="px-3 py-4 sm:px-6">
+                        <td className="px-3 py-5 sm:px-6">
                           <Badge status={tenant.status} />
                         </td>
-                        <td className="px-3 py-4 sm:px-6">
-                          <div className="flex items-center gap-1.5 text-gray-600 font-semibold">
-                            <Users className="w-4 h-4 text-gray-400" />
+                        <td className="px-3 py-5 sm:px-6">
+                          <PlanBadge plan={tenant.plan} />
+                        </td>
+                        <td className="px-3 py-5 sm:px-6">
+                          <div className="flex items-center gap-1.5 font-semibold text-[#44474e]">
+                            <Users className="h-4 w-4 text-[#74777f]" />
                             {tenant.user_count ?? 0}
                           </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6 text-xs text-gray-500 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-3 py-5 text-xs text-[#74777f] sm:px-6">
                           {safeFormat(tenant.created_at || tenant.createdAt)}
                         </td>
-                        <td className="px-3 py-4 sm:px-6 text-right">
+                        <td className="px-3 py-5 text-right sm:px-6">
                           <div className="flex items-center justify-end gap-1">
                             <button
                               onClick={() => handleViewDetails(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[rgb(16_102_177)] transition-colors"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#74777f] transition hover:bg-[#e8eaf6] hover:text-[#1A237E]"
                               title="View Details"
                             >
                               <Eye size={16} />
                             </button>
                             <button
                               onClick={() => setEditTenant(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#74777f] transition hover:bg-[#fff8e1] hover:text-[#f9a825]"
                               title="Edit"
                             >
                               <Edit size={16} />
@@ -884,7 +911,7 @@ export default function TenantsPage() {
                             {isSuspended ? (
                               <button
                                 onClick={() => handleActivate(tenant)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#74777f] transition hover:bg-[#2e7d32]/10 hover:text-[#2e7d32]"
                                 title="Activate"
                               >
                                 <CheckCircle2 size={16} />
@@ -892,7 +919,7 @@ export default function TenantsPage() {
                             ) : (
                               <button
                                 onClick={() => setSuspendTarget(tenant)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#74777f] transition hover:bg-[#f9a825]/10 hover:text-[#d84315]"
                                 title="Suspend"
                               >
                                 <Ban size={16} />
@@ -900,7 +927,7 @@ export default function TenantsPage() {
                             )}
                             <button
                               onClick={() => setDeleteTarget(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#74777f] transition hover:bg-[#ba1a1a]/10 hover:text-[#ba1a1a]"
                               title="Delete"
                             >
                               <Trash2 size={16} />
@@ -916,7 +943,7 @@ export default function TenantsPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="border-t border-gray-100 bg-gray-50/50">
+            <div className="border-t border-[#c4c6d0] bg-[#f4f3f7]">
               <Pagination
                 page={page}
                 totalPages={totalPages}

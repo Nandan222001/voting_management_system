@@ -92,7 +92,7 @@ export default function CandidateCommitteesPage() {
     <MainLayout title="Candidate Committees">
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">Committees</h1>
+          
           <button
             onClick={openCreate}
             className="flex items-center gap-2 px-4 py-2 bg-[rgb(16_102_177)] text-white text-sm font-medium rounded-lg hover:bg-[rgb(12_85_148)]"

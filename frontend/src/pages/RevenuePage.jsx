@@ -150,8 +150,12 @@ export default function RevenuePage() {
   }
 
   return (
-    <MainLayout title="Revenue & Payments">
-      <div className="space-y-6">
+    <MainLayout title="Revenue">
+      <div className="w-full space-y-6">
+        <div className="border-b border-[#c4c6d0] pb-5">
+          {/* <h2 className="text-2xl font-black text-[#1A237E]">Revenue</h2> */}
+          <p className="mt-1 text-sm text-[#44464f]">Track platform revenue, payment configuration, and transaction records.</p>
+        </div>
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatsCard
@@ -176,11 +180,11 @@ export default function RevenuePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Razorpay Configuration */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+          <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#c4c6d0] bg-[#f4f3f7] px-6 py-5">
               <div className="flex items-center gap-2">
                 <FaKey className="text-gray-400" />
-                <h3 className="font-bold text-gray-900">Razorpay Configuration</h3>
+                <h3 className="font-bold text-[#1b1b1f]">Razorpay Configuration</h3>
               </div>
               {keySaved ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
@@ -202,7 +206,7 @@ export default function RevenuePage() {
                   value={keyForm.razorpay_key_id}
                   onChange={e => setKeyForm(f => ({ ...f, razorpay_key_id: e.target.value }))}
                   placeholder="rzp_live_xxxxxxxxxxxx"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                  className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 font-mono text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                 />
               </div>
               <div>
@@ -215,7 +219,7 @@ export default function RevenuePage() {
                     value={keyForm.razorpay_key_secret}
                     onChange={e => setKeyForm(f => ({ ...f, razorpay_key_secret: e.target.value }))}
                     placeholder="••••••••••••••••••••"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 pr-10 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                    className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 pr-10 font-mono text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                   />
                   <button
                     type="button"
@@ -229,7 +233,7 @@ export default function RevenuePage() {
               <button
                 type="submit"
                 disabled={keySaving}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-white bg-[rgb(16_102_177)] rounded-xl hover:bg-[rgb(12_85_148)] font-semibold disabled:opacity-60 transition-colors"
+                className="flex items-center gap-2 rounded-lg bg-[#1A237E] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
               >
                 <FaSave className="text-xs" />
                 {keySaving ? 'Saving…' : 'Save Keys'}
@@ -238,10 +242,10 @@ export default function RevenuePage() {
           </div>
 
           {/* Collect Payment */}
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+          <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
+            <div className="flex items-center gap-2 border-b border-[#c4c6d0] bg-[#f4f3f7] px-6 py-5">
               <FaCreditCard className="text-gray-400" />
-              <h3 className="font-bold text-gray-900">Collect Payment</h3>
+              <h3 className="font-bold text-[#1b1b1f]">Collect Payment</h3>
             </div>
             <form onSubmit={handleCollectPayment} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -257,7 +261,7 @@ export default function RevenuePage() {
                     onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}
                     placeholder="0.00"
                     required
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                    className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                   />
                 </div>
                 <div>
@@ -269,7 +273,7 @@ export default function RevenuePage() {
                     value={payForm.name}
                     onChange={e => setPayForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="Full name"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                    className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                   />
                 </div>
               </div>
@@ -282,7 +286,7 @@ export default function RevenuePage() {
                   value={payForm.email}
                   onChange={e => setPayForm(f => ({ ...f, email: e.target.value }))}
                   placeholder="email@example.com"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                  className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                 />
               </div>
               <div>
@@ -294,13 +298,13 @@ export default function RevenuePage() {
                   value={payForm.description}
                   onChange={e => setPayForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="e.g. Registration fee"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
+                  className="w-full rounded-lg border border-[#c4c6d0] px-3 py-2.5 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={payLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-white bg-[rgb(16_102_177)] rounded-xl hover:bg-[rgb(12_85_148)] font-semibold disabled:opacity-60 transition-colors"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1A237E] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
               >
                 <FaCreditCard className="text-xs" />
                 {payLoading ? 'Opening Checkout…' : 'Open Razorpay Checkout'}
@@ -310,10 +314,10 @@ export default function RevenuePage() {
         </div>
 
         {/* Transaction History */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-2">
+        <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
+          <div className="flex items-center gap-2 border-b border-[#c4c6d0] bg-[#f4f3f7] px-6 py-5">
             <FaHistory className="text-gray-400" />
-            <h3 className="font-bold text-gray-900">Transaction History</h3>
+            <h3 className="font-bold text-[#1b1b1f]">Transaction History</h3>
             {payments.length > 0 && (
               <span className="ml-auto text-xs text-gray-400">{payments.length} records</span>
             )}

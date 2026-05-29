@@ -2,31 +2,111 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
+  FaArrowUp,
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaChevronRight,
+  FaFilter,
+  FaHistory,
+  FaPlus,
+  FaSearch,
+  FaShieldAlt,
+  FaSyncAlt,
+  FaUserCheck,
   FaUsers,
   FaVoteYea,
-  FaCheckCircle,
-  FaClock,
-  FaPlus,
-  FaChevronRight,
-  FaHistory
 } from 'react-icons/fa';
-import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
-} from 'recharts';
 import MainLayout from '../components/layout/MainLayout';
-import StatsCard from '../components/common/StatsCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import Badge from '../components/common/Badge';
 import { fetchElections, fetchElectionStats } from '../store/slices/electionSlice';
 import { fetchUserStats } from '../store/slices/userSlice';
-import Badge from '../components/common/Badge';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const velocityBars = [40, 55, 65, 85, 95, 70, 45, 40, 30, 25];
+
+const activityItems = [
+  {
+    tone: 'bg-[#003d9b] ring-[#dae2ff]',
+    title: 'Region 7',
+    text: 'ballot records synchronized with central registry.',
+    time: '2 mins ago',
+  },
+  {
+    tone: 'bg-[#056e00] ring-[#8dfc75]/40',
+    title: 'Security Audit',
+    text: 'completed for District 12 infrastructure.',
+    time: '14 mins ago',
+  },
+  {
+    tone: 'bg-[#ba1a1a] ring-[#ffdad6]',
+    title: 'Anomalous Activity',
+    text: 'detected in Precinct 4 and resolved.',
+    time: '45 mins ago',
+  },
+  {
+    tone: 'bg-[#737685] ring-[#e1e2e4]',
+    title: 'Credential Issued',
+    text: 'for a new election moderator.',
+    time: '1 hr ago',
+  },
+];
+
+const precinctRows = [
+  {
+    jurisdiction: 'Precinct 001 - Downtown',
+    overseer: 'Sarah Jenkins',
+    status: 'Operational',
+    sync: 'Real-time',
+    reporting: '98.2%',
+    delayed: false,
+  },
+  {
+    jurisdiction: 'Precinct 042 - Valley West',
+    overseer: 'Michael Chen',
+    status: 'Operational',
+    sync: 'Real-time',
+    reporting: '94.0%',
+    delayed: false,
+  },
+  {
+    jurisdiction: 'Precinct 109 - River North',
+    overseer: 'Elena Rodriguez',
+    status: 'Delayed Sync',
+    sync: '12m Lag',
+    reporting: '82.5%',
+    delayed: true,
+  },
+];
+
+function numberValue(...values) {
+  return values.find((value) => typeof value === 'number') ?? 0;
+}
+
+function compactNumber(value) {
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value || 0);
+}
+
+function formatDate(value) {
+  if (!value) return 'Date pending';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Date pending' : date.toLocaleDateString();
+}
+
+function StatTile({ label, value, children }) {
+  return (
+    <div className="flex flex-col rounded-lg border border-[#c3c6d6] bg-white p-4">
+      <span className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#434654]">{label}</span>
+      <div className="flex items-end justify-between gap-3">
+        <span className="text-3xl font-black leading-10 text-[#003d9b]">{value}</span>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
   const { elections, stats: electionStats, loading: electionsLoading } = useSelector((state) => state.elections);
   const { stats: userStats, loading: userLoading } = useSelector((state) => state.users);
 
@@ -36,25 +116,16 @@ export default function DashboardPage() {
     dispatch(fetchUserStats());
   }, [dispatch]);
 
-  const activeElections = elections.filter(e => e.status === 'active');
-  
-  const electionPieData = electionStats ? [
-    { name: 'Draft', value: electionStats.draft || 0 },
-    { name: 'Active', value: electionStats.active || 0 },
-    { name: 'Closed', value: electionStats.closed || 0 },
-    { name: 'Cancelled', value: electionStats.cancelled || 0 },
-  ].filter(d => d.value > 0) : [];
-
-  const userBarData = userStats ? [
-    { name: 'Active', count: userStats.active_count || 0 },
-    { name: 'Pending', count: userStats.pending_count || 0 },
-    { name: 'Blocked', count: userStats.blocked_count || 0 },
-  ] : [];
+  const activeElections = elections.filter((election) => election.status === 'active');
+  const totalVoters = numberValue(userStats?.total_users, userStats?.total_voters, userStats?.active_voters);
+  const pendingApprovals = numberValue(userStats?.pending_users, userStats?.pending_count);
+  const blockedUsers = numberValue(userStats?.blocked_users, userStats?.blocked_count);
+  const turnoutRate = totalVoters ? Math.min(99, Math.round(((totalVoters - pendingApprovals - blockedUsers) / totalVoters) * 100)) : 0;
 
   if (electionsLoading || userLoading) {
     return (
-      <MainLayout title="Dashboard">
-        <div className="flex items-center justify-center h-64">
+      <MainLayout title="Election Operations">
+        <div className="flex h-64 items-center justify-center">
           <LoadingSpinner />
         </div>
       </MainLayout>
@@ -62,197 +133,155 @@ export default function DashboardPage() {
   }
 
   return (
-    <MainLayout title="Dashboard Overview">
-      <div className="space-y-6 animate-fade-in">
-        {/* Page Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[rgb(16_102_177)]">Welcome back, {user?.full_name?.split(' ')[0] || 'Admin'}!</h2>
-            <p className="text-sm text-gray-500 mt-1">Here is what is happening with your elections today.</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/elections')}
-              className="px-4 py-2 text-sm font-semibold text-[rgb(16_102_177)] bg-white border border-[rgb(16_102_177)]/20 rounded-lg hover:bg-[#e6edfb] transition-colors shadow-sm"
-            >
-              View All
-            </button>
-            <button
-              onClick={() => navigate('/elections')}
-              className="px-4 py-2 text-sm font-semibold text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] transition-colors shadow-lg shadow-[rgb(16_102_177)]/20 flex items-center gap-2"
-            >
-              <FaPlus className="text-xs" />
-              New Election
-            </button>
-          </div>
-        </div>
+    <MainLayout title="Election Operations">
+      <div className="mx-auto w-full max-w-[1440px] space-y-6">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <StatTile label="Total Voters" value={compactNumber(totalVoters)}>
+            <span className="mb-1 flex items-center gap-1 text-xs font-bold text-[#056e00]">
+              <FaArrowUp className="h-3 w-3" /> +2.4%
+            </span>
+          </StatTile>
+          <StatTile label="Active Elections" value={activeElections.length}>
+            <span className="rounded bg-[#8dfc75] px-2 py-0.5 text-xs font-bold uppercase text-[#035300]">On Track</span>
+          </StatTile>
+          <StatTile label="Turnout Rate" value={`${turnoutRate}%`}>
+            <div className="mb-3 h-2 w-24 overflow-hidden rounded-full bg-[#edeef0]">
+              <div className="h-full bg-[#003d9b]" style={{ width: `${turnoutRate}%` }} />
+            </div>
+          </StatTile>
+          <StatTile label="System Uptime" value="99.98%">
+            <span className="mb-1 text-xs font-bold uppercase text-[#056e00]">Stable</span>
+          </StatTile>
+        </section>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatsCard
-            title="Total Voters"
-            value={userStats?.total_users || 0}
-            icon={FaUsers}
-            color="blue"
-          />
-          <StatsCard
-            title="Active Elections"
-            value={activeElections.length}
-            icon={FaVoteYea}
-            color="green"
-          />
-          <StatsCard
-            title="Total Admins"
-            value={userStats?.total_admins || 0}
-            icon={FaCheckCircle}
-            color="blue"
-          />
-          <StatsCard
-            title="Pending Approvals"
-            value={userStats?.pending_count || 0}
-            icon={FaClock}
-            color="orange"
-          />
-        </div>
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <div className="overflow-hidden rounded-lg border border-[#c3c6d6] bg-white">
+              <div className="flex items-center justify-between border-b border-[#c3c6d6] bg-[#f3f4f6] px-6 py-4">
+                <h2 className="text-lg font-semibold text-[#191c1e]">Active Elections</h2>
+                <button
+                  type="button"
+                  onClick={() => navigate('/elections')}
+                  className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#003d9b] hover:underline"
+                >
+                  View Registry <FaChevronRight className="h-3 w-3" />
+                </button>
+              </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4">Election Status Distribution</h3>
-            <div className="h-64">
-              {electionPieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={electionPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              <div className="divide-y divide-[#c3c6d6]">
+                {elections.length === 0 ? (
+                  <div className="p-12 text-center text-[#737685]">
+                    <FaVoteYea className="mx-auto mb-4 h-12 w-12 opacity-20" />
+                    <p className="text-sm font-medium">No elections found.</p>
+                  </div>
+                ) : (
+                  elections.slice(0, 2).map((election) => (
+                    <button
+                      key={election.id || election._id}
+                      type="button"
+                      onClick={() => navigate(`/elections/${election.id || election._id}`)}
+                      className="flex w-full items-center justify-between gap-4 p-6 text-left transition hover:bg-[#f8f9fb]"
                     >
-                      {electionPieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">No data available</div>
-              )}
+                      <div className="flex min-w-0 gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-[#edeef0] text-[#003d9b]">
+                          {election.status === 'active' ? <FaUserCheck className="h-6 w-6" /> : <FaCalendarAlt className="h-6 w-6" />}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="truncate text-lg font-semibold text-[#191c1e]">{election.title}</h3>
+                          <div className="mt-1 flex flex-wrap items-center gap-3">
+                            <Badge status={election.status} />
+                            <span className="text-sm text-[#434654]">{formatDate(election.election_date || election.start_date)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="hidden text-right sm:block">
+                        <p className="text-sm font-bold text-[#003d9b]">{compactNumber(election.vote_count || 0)} Votes</p>
+                        <p className="text-xs font-semibold uppercase text-[#434654]">Participation</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-            <h3 className="font-bold text-gray-900 mb-4">Voter Status Overview</h3>
-            <div className="h-64">
-              {userBarData.some(d => d.count > 0) ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={userBarData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="rgb(16 102 177)" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">No data available</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Elections */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="font-bold text-gray-900">Recent Elections</h3>
-              <button onClick={() => navigate('/elections')} className="text-sm font-bold text-[rgb(16_102_177)] hover:underline">
-                See all
-              </button>
-            </div>
-            <div className="divide-y divide-gray-100">
-              {elections.length === 0 ? (
-                <div className="p-12 text-center text-gray-400">
-                  <FaVoteYea className="mx-auto h-12 w-12 opacity-10 mb-4" />
-                  <p className="text-sm font-medium">No elections found. Create your first one to get started!</p>
+            <div className="rounded-lg border border-[#c3c6d6] bg-white p-6">
+              <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                <div>
+                  <h2 className="text-lg font-semibold text-[#191c1e]">Participation Velocity</h2>
+                  <p className="text-sm text-[#434654]">Hourly voter check-ins across all districts</p>
                 </div>
-              ) : (
-                elections.slice(0, 5).map((election) => (
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#434654]">
+                  <span className="h-3 w-3 rounded-full bg-[#003d9b]" />
+                  Actual
+                  <span className="ml-2 h-3 w-3 rounded-full border-2 border-dashed border-[#003d9b]" />
+                  Projected
+                </div>
+              </div>
+              <div className="relative flex h-48 w-full items-end gap-2 border-b border-l border-[#c3c6d6] px-4">
+                {velocityBars.map((height, index) => (
                   <div
-                    key={election.id}
-                    onClick={() => navigate(`/elections/${election.id}`)}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors group"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-[#e6edfb] flex items-center justify-center text-[rgb(16_102_177)] font-bold group-hover:bg-[rgb(16_102_177)] group-hover:text-white transition-colors border border-[rgb(16_102_177)]/10">
-                        {election.title.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="font-bold text-gray-900 leading-tight">{election.title}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">{new Date(election.start_date).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <Badge status={election.status} />
-                      <FaChevronRight className="text-gray-300 group-hover:text-[rgb(16_102_177)] group-hover:translate-x-1 transition-all" />
+                    key={`${height}-${index}`}
+                    className={`flex-1 rounded-t-sm transition hover:bg-[#003d9b]/50 ${
+                      index > 6 ? 'border-t-2 border-dashed border-[#003d9b]' : index === 4 ? 'bg-[#003d9b]' : 'bg-[#003d9b]/25'
+                    }`}
+                    style={{ height: `${height}%` }}
+                  />
+                ))}
+              </div>
+              <div className="mt-4 flex justify-between px-4 text-xs font-semibold text-[#434654]">
+                {['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'].map((time) => (
+                  <span key={time}>{time}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <aside className="space-y-6">
+            <div className="rounded-lg border border-[#c3c6d6] bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold text-[#191c1e]">Membership Pulse</h2>
+              <div className="relative mb-6 h-32 overflow-hidden rounded bg-[#f3f4f6]">
+                <div className="absolute inset-x-5 bottom-8 h-20 border-b border-l border-[#c3c6d6]">
+                  <div className="absolute bottom-5 left-0 h-10 w-full rounded-t-full border-t-4 border-[#003d9b]/40" />
+                  <div className="absolute bottom-2 left-1/4 h-16 w-3/4 rounded-t-full border-t-4 border-[#003d9b]" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-3xl font-black text-[#003d9b]">+{compactNumber(numberValue(userStats?.active_voters, userStats?.active_count))}</span>
+                </div>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between"><span className="text-[#434654]">Registered</span><span className="font-bold">{totalVoters.toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-[#434654]">Pending Approval</span><span className="font-bold">{pendingApprovals.toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-[#434654]">Conversion</span><span className="font-bold text-[#056e00]">{turnoutRate}%</span></div>
+              </div>
+            </div>
+
+            <div className="flex max-h-[500px] flex-col rounded-lg border border-[#c3c6d6] bg-white">
+              <div className="border-b border-[#c3c6d6] px-6 py-4">
+                <h2 className="text-lg font-semibold text-[#191c1e]">Recent Activities</h2>
+              </div>
+              <div className="flex-1 space-y-4 overflow-y-auto p-4">
+                {activityItems.map((item) => (
+                  <div key={`${item.title}-${item.time}`} className="flex gap-3">
+                    <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ring-4 ${item.tone}`} />
+                    <div>
+                      <p className="text-sm text-[#191c1e]"><span className="font-bold">{item.title}</span> {item.text}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-[#434654]">{item.time}</p>
                     </div>
                   </div>
-                ))
-              )}
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/audit-logs')}
+                className="w-full bg-[#e7e8ea] py-3 text-[10px] font-bold uppercase tracking-widest text-[#434654] transition hover:bg-[#e1e2e4]"
+              >
+                View Full Audit Log
+              </button>
             </div>
-          </div>
+          </aside>
+        </section>
 
-          {/* Quick Actions / Activity */}
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4">Platform Status</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 font-medium">System Health</span>
-                  <span className="flex items-center gap-1.5 text-green-600 text-xs font-bold bg-green-50 px-2 py-1 rounded-full border border-green-100">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                    Operational
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 font-medium">Blockchain Network</span>
-                  <span className="text-xs font-bold text-[rgb(16_102_177)]">Secure Protocol v2.4</span>
-                </div>
-              </div>
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <button
-                  onClick={() => navigate('/audit-logs')}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm font-bold rounded-xl border border-gray-200 transition-colors"
-                >
-                  <FaHistory className="text-gray-400" />
-                  System Audit Logs
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-[rgb(16_102_177)] p-6 rounded-2xl shadow-xl shadow-[rgb(16_102_177)]/20 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                <FaUsers size={80} className="text-white" />
-              </div>
-              <div className="relative z-10">
-                <h3 className="text-white font-bold text-lg mb-2">Voter Approvals</h3>
-                <p className="text-[rgb(16_102_177)]/10 text-sm mb-4 leading-relaxed">You have {userStats?.pending_count || 0} pending voter registrations to review.</p>
-                <button
-                  onClick={() => navigate('/users?status=pending')}
-                  className="px-4 py-2 bg-white text-[rgb(16_102_177)] text-xs font-bold rounded-lg hover:bg-[#e6edfb] transition-colors"
-                >
-                  Review Now
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+         
       </div>
     </MainLayout>
   );
