@@ -31,9 +31,9 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
           if (route.name === 'Dashboard') {
             iconName = 'dashboard';
           } else if (route.name === 'Identity') {
-            iconName = 'how-to-vote';
+            iconName = 'verified-user';
           } else if (route.name === 'Elections') {
-            iconName = 'ballot';
+            iconName = 'how-to-vote';
           } else if (route.name === 'Analytics') {
             iconName = 'groups';
           } else if (route.name === 'Profile') {

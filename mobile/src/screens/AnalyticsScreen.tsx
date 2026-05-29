@@ -196,7 +196,7 @@ const AnalyticsScreen = () => {
            </View>
            <View style={styles.sealContent}>
               <Text style={styles.sealTitle}>Authenticated Registry</Text>
-              <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed ballots stored on the precinct ledger.</Text>
+              <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed votes stored on the precinct ledger.</Text>
            </View>
         </View>
       </ScrollView>

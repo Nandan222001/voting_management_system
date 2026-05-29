@@ -45,6 +45,23 @@ class PaymentService:
         tenant_repo.update(tenant, settings)
         return True
 
+    def get_payment_settings(self, db: Session, tenant_id: int) -> dict:
+        """
+        Retrieve Razorpay credentials for a tenant.
+        """
+        tenant_repo = TenantRepository(db)
+        tenant = tenant_repo.get_by_id(tenant_id)
+        if not tenant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Tenant not found",
+            )
+            
+        return {
+            "razorpay_key_id": tenant.razorpay_key_id,
+            "razorpay_key_secret": tenant.razorpay_key_secret,
+        }
+
     def create_payment_record(
         self, db: Session, tenant_id: int, data: PaymentCreate
     ) -> Payment:

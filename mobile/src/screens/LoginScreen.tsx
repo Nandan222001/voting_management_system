@@ -67,7 +67,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginS
           </View>
           
           <Text style={styles.mainHeading}>Authorized Access</Text>
-          <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active ballots.</Text>
+          <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active elections.</Text>
         </View>
 
         <View style={styles.formBorderCard}>

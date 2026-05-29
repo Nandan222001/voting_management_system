@@ -242,7 +242,7 @@ export default function ElectionsPage() {
         <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="rounded bg-[#8dfc75] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-[#067500]">
+              <span className="rounded bg-[#003d9b] px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white">
                 Active Lifecycle
               </span>
               <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#434654]">
