@@ -22,7 +22,6 @@ import ElectionDetailPage from './pages/ElectionDetailPage'
 import SettingsPage from './pages/SettingsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
-import PlansPage from './pages/PlansPage'
 
 import { getMe } from './store/slices/authSlice'
 
@@ -121,7 +120,6 @@ export default function App() {
         <Route path="/users" element={<PrivateRoute roles={['admin', 'superadmin']}><UsersPage /></PrivateRoute>} />
         <Route path="/results" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />
         <Route path="/results/:id" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />
-        <Route path="/plans" element={<PrivateRoute><PlansPage /></PrivateRoute>} />
         
         {/* SuperAdmin Only */}
         <Route path="/tenants" element={<PrivateRoute roles={['superadmin']}><TenantsPage /></PrivateRoute>} />

@@ -140,10 +140,20 @@ class ElectionService:
                     )
 
         repo = ElectionRepository(db)
-        election_data = data.model_dump()
+        election_data = data.model_dump(exclude={"target_ids"})
         election_data["created_by"] = created_by
         election_data["tenant_id"] = tenant_id
-        return repo.create(election_data)
+        
+        election = repo.create(election_data)
+        
+        # Link multiple targets if provided
+        if data.target_ids:
+            from app.models.target import Target
+            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
+            election.targets = targets
+            db.commit()
+            
+        return election
 
     # ------------------------------------------------------------------
     # Read operations
@@ -247,19 +257,6 @@ class ElectionService:
     ) -> Election:
         """
         Apply a partial update to an election.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key of the election to update.
-            data:        Pydantic schema containing only the fields to change.
-            tenant_id:   When supplied, verify tenant ownership before updating.
-
-        Returns:
-            The updated ``Election`` instance.
-
-        Raises:
-            HTTPException 404: If the election does not exist or is not in tenant.
-            HTTPException 400: If trying to update a closed or cancelled election.
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -270,7 +267,18 @@ class ElectionService:
                 detail=f"Cannot update an election in '{election.status.value}' status.",
             )
 
-        return repo.update(election, data)
+        # Update base fields
+        update_data = data.model_dump(exclude_unset=True, exclude={"target_ids"})
+        updated = repo.update(election, update_data)
+        
+        # Update targets relationship if target_ids provided
+        if data.target_ids is not None:
+            from app.models.target import Target
+            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
+            updated.targets = targets
+            db.commit()
+
+        return updated
 
     def delete_election(
         self,

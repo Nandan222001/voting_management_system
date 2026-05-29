@@ -10,12 +10,10 @@ import {
   FaChartLine,
   FaCog,
   FaLayerGroup,
-  FaGem,
 } from 'react-icons/fa';
 import {
   BarChart3,
   Building2,
-  Gem,
   LogOut,
   MapPinned,
   Monitor,
@@ -28,7 +26,6 @@ const adminNavLinks = [
   { to: '/dashboard', icon: FaHome, label: 'Dashboard', roles: ['admin', 'moderator', 'voter'] },
   { to: '/elections', icon: FaVoteYea, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
   { to: '/candidates', icon: FaUsers, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
-  { to: '/plans', icon: FaGem, label: 'Plans', roles: ['admin', 'moderator', 'voter'] },
   { to: '/candidate-committees', icon: FaLayerGroup, label: 'Committees', roles: ['admin'] },
   { to: '/users', icon: FaUserCog, label: 'Users', roles: ['admin'] },
   { to: '/results', icon: FaChartBar, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
@@ -41,8 +38,7 @@ const superAdminNavLinks = [
   { to: '/dashboard', icon: BarChart3, label: 'Global Analytics' },
   { to: '/tenants', icon: Building2, label: 'Tenant Management' },
   { to: '/elections?superadmin=true', icon: Monitor, label: 'Election Monitoring' },
-  { to: '/plans', icon: Gem, label: 'Voter Plans' },
-  { to: '/targets', icon: MapPinned, label: 'Targets' },
+  { to: '/targets', icon: MapPinned, label: 'Committee Management' },
   { to: '/audit-logs', icon: Shield, label: 'Security Logs' },
   // { to: '/settings', icon: SettingsIcon, label: 'Settings' },
 ];

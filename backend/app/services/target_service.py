@@ -23,6 +23,14 @@ class TargetService:
         """
         repo = self.TargetRepository(db)
         
+        # Check for duplicate name
+        existing = db.query(Target).filter(Target.name == data.name).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A committee with the name '{data.name}' already exists.",
+            )
+
         # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
@@ -72,6 +80,15 @@ class TargetService:
         target = self.get_target_by_id(db, target_id)
         repo = self.TargetRepository(db)
         
+        # Check for duplicate name (if name is being changed)
+        if data.name and data.name != target.name:
+            existing = db.query(Target).filter(Target.name == data.name).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A committee with the name '{data.name}' already exists.",
+                )
+
         # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
