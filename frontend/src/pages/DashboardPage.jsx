@@ -28,7 +28,7 @@ const activityItems = [
   {
     tone: 'bg-[#003d9b] ring-[#dae2ff]',
     title: 'Region 7',
-    text: 'ballot records synchronized with central registry.',
+    text: 'election records synchronized with central registry.',
     time: '2 mins ago',
   },
   {
@@ -142,7 +142,7 @@ export default function DashboardPage() {
             </span>
           </StatTile>
           <StatTile label="Active Elections" value={activeElections.length}>
-            <span className="rounded bg-[#8dfc75] px-2 py-0.5 text-xs font-bold uppercase text-[#035300]">On Track</span>
+            <span className="rounded bg-[#003d9b] px-2 py-0.5 text-xs font-bold uppercase text-white">On Track</span>
           </StatTile>
           <StatTile label="Turnout Rate" value={`${turnoutRate}%`}>
             <div className="mb-3 h-2 w-24 overflow-hidden rounded-full bg-[#edeef0]">

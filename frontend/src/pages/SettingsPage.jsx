@@ -123,24 +123,13 @@ export default function SettingsPage() {
   return (
     <MainLayout title="Settings">
       <div className="w-full space-y-8">
-        <section className="flex flex-col justify-between gap-4 border-b border-[#c4c6d0] pb-6 md:flex-row md:items-end">
-          <div>
-            <nav className="mb-2 flex gap-2 text-xs font-semibold uppercase tracking-wider text-[#74777f]">
-              <span>Platform</span><span>/</span><span className="text-[#1A237E]">System Settings</span>
-            </nav>
-            <h2 className="text-3xl font-black tracking-tight text-[#0d1245]">Platform Configuration</h2>
-            <p className="mt-1 text-[#44464f]">Manage global parameters, security protocols, and account access.</p>
-          </div>
-          
-        </section>
-
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
  
           <form onSubmit={handleProfileSubmit} className="rounded-lg border border-[#c4c6d0] bg-white p-8 lg:col-span-12">
             <div className="mb-6 flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#1A237E] text-lg font-bold text-white">{initials || 'U'}</div>
               <div>
-                <h3 className="text-xl font-bold text-[#0d1245]">Super Admin Profile</h3>
+                <h3 className="text-xl font-bold text-[#0d1245]">Admin Profile</h3>
                 <p className="text-sm text-[#44464f]">{user?.email || 'Signed-in account'}</p>
               </div>
             </div>

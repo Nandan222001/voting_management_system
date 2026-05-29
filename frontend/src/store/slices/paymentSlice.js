@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import paymentService from '../../services/paymentService';
 
 // ─── Async Thunks ────────────────────────────────────────────────────────────
 
@@ -7,12 +7,25 @@ export const fetchPayments = createAsyncThunk(
   'payments/fetchPayments',
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get('/payments', { params });
-      // The backend returns a list of items and a summary
-      return response.data;
+      const response = await paymentService.getRevenueOverview(params);
+      return response.data; // { status, message, data: { transactions, summary } }
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to fetch payment records.'
+      );
+    }
+  }
+);
+
+export const fetchPaymentSettings = createAsyncThunk(
+  'payments/fetchPaymentSettings',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await paymentService.getPaymentSettings();
+      return response.data; // { status, message, data: { razorpay_key_id, razorpay_key_secret } }
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch payment settings.'
       );
     }
   }
@@ -23,9 +36,12 @@ export const fetchPayments = createAsyncThunk(
 const initialState = {
   payments: [],
   total: 0,
-  stats: null, // summary from backend
+  stats: null,
+  settings: {
+    razorpay_key_id: '',
+    razorpay_key_secret: '',
+  },
   loading: false,
-  actionLoading: false,
   error: null,
 };
 
@@ -41,19 +57,25 @@ const paymentSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Fetch Revenue
       .addCase(fetchPayments.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchPayments.fulfilled, (state, action) => {
         state.loading = false;
-        state.payments = action.payload.items || [];
-        state.total = action.payload.total || 0;
-        state.stats = action.payload.summary || null;
+        const { transactions, summary } = action.payload.data;
+        state.payments = transactions.items || [];
+        state.total = transactions.total || 0;
+        state.stats = summary || null;
       })
       .addCase(fetchPayments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // Fetch Settings
+      .addCase(fetchPaymentSettings.fulfilled, (state, action) => {
+        state.settings = action.payload.data || { razorpay_key_id: '', razorpay_key_secret: '' };
       });
   },
 });
@@ -64,5 +86,6 @@ export const { clearError } = paymentSlice.actions;
 export const selectPayments = (state) => state.payments.payments;
 export const selectPaymentStats = (state) => state.payments.stats;
 export const selectPaymentLoading = (state) => state.payments.loading;
+export const selectPaymentSettings = (state) => state.payments.settings;
 
 export default paymentSlice.reducer;

@@ -161,7 +161,6 @@ export default function CandidatesPage() {
     _result: results?.candidates?.find(r => r.candidate_id === c.id)
   }))
 
-  const featuredCandidate = rows[0]
   const totalVotes = rows.reduce((sum, candidate) => sum + Number(getVoteCount(candidate)), 0)
   const topShare = rows.reduce((max, candidate) => Math.max(max, getVotePercentage(candidate)), 0)
 
@@ -234,14 +233,6 @@ export default function CandidatesPage() {
           />
         ) : (
           <>
-            <CandidateHero
-              candidate={featuredCandidate}
-              selectedElection={selectedElection}
-              canManage={isAdmin && selectedElection?.status === 'draft'}
-              onEdit={openEdit}
-              onDelete={setDeleteCandidateTarget}
-            />
-
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
               <div className="space-y-8 lg:col-span-8">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -418,67 +409,6 @@ export default function CandidatesPage() {
         variant="danger"
       />
     </MainLayout>
-  )
-}
-
-function CandidateHero({ candidate, selectedElection, canManage, onEdit, onDelete }) {
-  if (!candidate) return null
-
-  return (
-    <section className="relative min-h-[360px] overflow-hidden rounded-3xl border border-[#e2e8f0] bg-[#1a365d] shadow-xl">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(219,234,254,0.42),transparent_34%),linear-gradient(135deg,#1a365d_0%,#0f172a_100%)]" />
-      <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(120deg, transparent 0%, rgba(255,255,255,.18) 45%, transparent 46%)' }} />
-      <div className="relative z-10 flex min-h-[360px] flex-col justify-end gap-6 p-6 md:flex-row md:items-end md:p-10">
-        <div className="relative flex-shrink-0">
-          <ImageAvatar
-            src={candidate.image_url}
-            name={candidate.full_name}
-            sizeClass="w-32 h-32 md:w-40 md:h-40"
-            imageClassName="rounded-2xl border-4 border-white shadow-xl bg-white object-cover"
-            fallbackClassName="rounded-2xl border-4 border-white shadow-xl bg-white text-[#1a365d] text-4xl font-black"
-          />
-          <div className="absolute -bottom-2 -right-2 rounded-full border-2 border-white bg-blue-500 p-1 text-white">
-            <BadgeCheck className="h-5 w-5" />
-          </div>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            {candidate.symbol && (
-              <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase text-white backdrop-blur-md">
-                {candidate.symbol}
-              </span>
-            )}
-            <span className="rounded-full border border-green-500/30 bg-green-500/20 px-3 py-1 text-xs font-bold uppercase text-green-200 backdrop-blur-md">
-              Verified Candidate
-            </span>
-          </div>
-          <h2 className="truncate text-3xl font-black tracking-tight text-white md:text-5xl">{candidate.full_name}</h2>
-          <p className="mt-2 text-lg font-medium text-blue-100 md:text-xl">
-            Candidate for {selectedElection?.title || 'Selected Election'}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button className="rounded-xl bg-white px-6 py-3 font-bold text-[#1a365d] shadow-lg transition active:scale-95" type="button">
-            Follow Candidate
-          </button>
-          <button className="rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-bold text-white backdrop-blur-md transition active:scale-95" type="button">
-            <MessageSquare className="mr-2 inline h-4 w-4" />
-            Contact Campaign
-          </button>
-          {canManage && (
-            <ActionDropdown
-              align="right"
-              actions={[
-                { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
-                { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
-              ]}
-            />
-          )}
-        </div>
-      </div>
-    </section>
   )
 }
 
