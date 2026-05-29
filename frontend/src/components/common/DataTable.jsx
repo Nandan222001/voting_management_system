@@ -58,19 +58,19 @@ export default function DataTable({
   }, [currentPage, totalPages]);
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm transition-all">
-      <div className="w-full">
-        <table className="w-full table-fixed text-sm text-left border-collapse">
+    <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm transition-all">
+      <div className="w-full overflow-x-auto">
+        <table className="w-full min-w-[860px] text-sm text-left border-collapse">
           {/* Head */}
           <thead>
-            <tr className="bg-gray-50/50 border-b border-gray-200">
+            <tr className="bg-[#f4f3f7] border-b border-[#c4c6d0]">
               {columns.map((col) => {
                 const header = getColumnHeader(col);
                 const actionColumn = isActionColumn(col);
                 return (
                   <th
                     key={col.key || header}
-                    className={`px-3 py-3 text-xs font-semibold text-gray-500 uppercase sm:px-4 ${
+                    className={`px-3 py-3 text-xs font-bold text-[#74777f] uppercase tracking-wider sm:px-4 ${
                       actionColumn ? 'w-24 whitespace-nowrap text-right' : 'break-words'
                     }`}
                     style={col.width || actionColumn ? { width: col.width || '6rem' } : {}}
@@ -80,7 +80,7 @@ export default function DataTable({
                 );
               })}
               {showActions && (
-                <th className="w-24 px-3 py-3 text-right text-xs font-semibold text-gray-500 uppercase whitespace-nowrap sm:px-4">
+                <th className="w-24 px-3 py-3 text-right text-xs font-bold text-[#74777f] uppercase tracking-wider whitespace-nowrap sm:px-4">
                   Action
                 </th>
               )}
@@ -88,7 +88,7 @@ export default function DataTable({
           </thead>
 
           {/* Body */}
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-[#c4c6d0]/70">
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <SkeletonRow key={i} cols={colCount} />
@@ -97,7 +97,7 @@ export default function DataTable({
               <tr>
                 <td colSpan={colCount} className="px-6 py-20 text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="p-4 bg-[#f4f3f7] rounded-lg border border-[#c4c6d0]">
                       <MoreHorizontal className="w-6 h-6 text-gray-300" />
                     </div>
                     <p className="text-sm font-bold text-gray-900">No records found</p>
@@ -107,13 +107,13 @@ export default function DataTable({
               </tr>
             ) : (
               pageData?.map((row, rowIdx) => (
-                <tr key={row.id ?? rowIdx} className="hover:bg-[#e6edfb]/50 transition-colors group">
+                <tr key={row.id ?? rowIdx} className="hover:bg-[#1A237E]/[0.04] transition-colors group">
                   {columns.map((col) => {
                     const actionColumn = isActionColumn(col);
                     return (
                       <td
                         key={col.key || col.header}
-                        className={`px-3 py-3 align-top text-sm font-medium text-gray-700 sm:px-4 ${
+                        className={`px-3 py-3 align-top text-sm font-medium text-[#44464f] sm:px-4 ${
                           actionColumn ? 'whitespace-nowrap text-right' : 'break-words'
                         }`}
                       >
@@ -160,7 +160,7 @@ export default function DataTable({
         </table>
       </div>
       {pagination && totalPages > 1 && (
-        <div className="border-t border-gray-100 bg-gray-50/50">
+        <div className="border-t border-[#c4c6d0] bg-[#f4f3f7]">
           <Pagination page={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </div>
       )}

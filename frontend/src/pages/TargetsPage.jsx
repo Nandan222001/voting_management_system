@@ -88,20 +88,23 @@ export default function TargetsPage() {
   ]
 
   return (
-    <MainLayout title="Geographical Targets">
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">Targets</h1>
+    <MainLayout title="Targets">
+      <div className="w-full space-y-6">
+        <div className="flex items-end justify-between gap-4 border-b border-[#c4c6d0] pb-5">
+          <div>
+            <h1 className="text-2xl font-black text-[#1A237E]">Geographical Targets</h1>
+            <p className="mt-1 text-sm text-[#44464f]">Define state, district, and block level election scopes.</p>
+          </div>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-[rgb(16_102_177)] text-white text-sm font-medium rounded-lg hover:bg-[rgb(12_85_148)]"
+            className="flex items-center gap-2 rounded-lg bg-[#1A237E] px-5 py-3 text-sm font-bold text-white hover:brightness-110"
           >
             <FaPlus className="h-4 w-4" /> Add Target
           </button>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100">
+        <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
+          <div className="border-b border-[#c4c6d0] bg-[#f4f3f7] p-4">
             <div className="relative max-w-xs">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -109,7 +112,7 @@ export default function TargetsPage() {
                 placeholder="Search areas..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#c4c6d0] py-2 pl-9 pr-4 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
               />
             </div>
           </div>
@@ -160,7 +163,7 @@ export default function TargetsPage() {
             <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] disabled:opacity-60">
+            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] disabled:opacity-60">
               {submitting ? 'Saving...' : editTarget ? 'Update' : 'Create'}
             </button>
           </div>

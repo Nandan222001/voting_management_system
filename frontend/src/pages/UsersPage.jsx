@@ -76,11 +76,11 @@ export default function UsersPage() {
       key: 'full_name',
       render: (_, u) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[rgb(16_102_177)] font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-[#1A237E] font-bold text-sm">
             {u.full_name?.[0]?.toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-[rgb(16_102_177)] text-sm">{u.full_name}</p>
+            <p className="font-medium text-[#1A237E] text-sm">{u.full_name}</p>
             <p className="text-xs text-gray-500">{u.email}</p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function UsersPage() {
       key: 'role',
       render: (value) => (
         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${value === 'admin'
-            ? 'bg-[#e6edfb] text-[rgb(16_102_177)]'
+            ? 'bg-[#e8eaf6] text-[#1A237E]'
             : 'bg-gray-200 text-gray-900'
           }`}>
           {value}
@@ -144,7 +144,7 @@ export default function UsersPage() {
       header: 'Actions',
       render: (_, u) => (
         <div className="flex items-center gap-2">
-          <button onClick={() => setViewUser(u)} className="text-xs text-[rgb(16_102_177)] hover:text-indigo-800 font-medium">View</button>
+          <button onClick={() => setViewUser(u)} className="text-xs text-[#1A237E] hover:text-indigo-800 font-medium">View</button>
           {u.status === 'pending' && (
             <button onClick={() => handleApprove(u)} className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800">
               <FaUserCheck className="h-3 w-3" /> Approve
@@ -166,8 +166,12 @@ export default function UsersPage() {
   ]
 
   return (
-    <MainLayout title="User Management">
-      <div className="space-y-6">
+    <MainLayout title="Users">
+      <div className="w-full space-y-6">
+        <div className="border-b border-[#c4c6d0] pb-5">
+          <h2 className="text-2xl font-black text-[#1A237E]">Users</h2>
+          <p className="mt-1 text-sm text-[#44464f]">Review identities, approvals, verification status, and access controls.</p>
+        </div>
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -201,14 +205,14 @@ export default function UsersPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
           {/* Tabs */}
-          <div className="border-b border-gray-200 px-6 flex gap-6">
+          <div className="flex gap-6 border-b border-[#c4c6d0] bg-[#f4f3f7] px-6">
             {TABS.map(t => (
               <button
                 key={t.key}
                 onClick={() => { setActiveTab(t.key); setPage(1) }}
-                className={`py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === t.key ? 'border-[rgb(16_102_177)] text-[rgb(16_102_177)]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                className={`border-b-2 py-4 text-sm font-bold transition-colors ${activeTab === t.key ? 'border-[#1A237E] text-[#1A237E]' : 'border-transparent text-[#74777f] hover:text-[#44464f]'}`}
               >
                 {t.label}
               </button>
@@ -216,7 +220,7 @@ export default function UsersPage() {
           </div>
 
           {/* Search */}
-          <div className="p-4 border-b border-gray-100">
+          <div className="border-b border-[#c4c6d0] p-4">
             <div className="relative max-w-xs">
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -224,7 +228,7 @@ export default function UsersPage() {
                 placeholder="Search users…"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1) }}
-                className="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-[#c4c6d0] py-2 pl-9 pr-4 text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
               />
             </div>
           </div>
@@ -246,11 +250,11 @@ export default function UsersPage() {
         {viewUser && (
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[rgb(16_102_177)] text-2xl font-bold">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-[#1A237E] text-2xl font-bold">
                 {viewUser.full_name?.[0]?.toUpperCase()}
               </div>
               <div>
-                <p className="text-lg font-semibold text-[rgb(16_102_177)]">{viewUser.full_name}</p>
+                <p className="text-lg font-semibold text-[#1A237E]">{viewUser.full_name}</p>
                 <p className="text-gray-500">{viewUser.email}</p>
               </div>
             </div>
