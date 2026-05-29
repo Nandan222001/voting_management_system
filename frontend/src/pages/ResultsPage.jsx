@@ -10,6 +10,7 @@ import MainLayout from '../components/layout/MainLayout'
 import StatsCard from '../components/common/StatsCard'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import EmptyState from '../components/common/EmptyState'
+import Select from '../components/common/Select'
 import { fetchElections } from '../store/slices/electionSlice'
 import { fetchElectionResults } from '../store/slices/candidateSlice'
 import ImageAvatar from '../components/common/ImageAvatar'
@@ -57,18 +58,16 @@ export default function ResultsPage() {
     <MainLayout title="Election Results">
       <div className="space-y-6">
         {/* Election Selector */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Select Election to View Results</label>
-          <select
-            value={electionId}
-            onChange={(e) => setSearchParams({ election: e.target.value })}
-            className="w-full sm:w-96 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]"
-          >
-            <option value="">-- Choose an election --</option>
-            {elections.map(e => (
-              <option key={e.id} value={e.id}>{e.title} ({e.status})</option>
-            ))}
-          </select>
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="max-w-md">
+            <Select
+              label="Select Election to View Results"
+              value={electionId}
+              onChange={(e) => setSearchParams({ election: e.target.value })}
+              options={elections.map(e => ({ value: e.id, label: `${e.title} (${e.status})` }))}
+              placeholder="-- Choose an election --"
+            />
+          </div>
         </div>
 
         {!electionId ? (
@@ -83,11 +82,10 @@ export default function ResultsPage() {
           <EmptyState
             icon={<FaVoteYea className="h-12 w-12 text-gray-300" />}
             title="No Votes Yet"
-            message="There are no votes cast for this election yet. Results will appear once voting begins."
-            action={
-              selectedElection?.status === 'draft' && (
-                <Badge status="draft" />
-              )
+            message={
+              selectedElection?.status === 'draft' 
+                ? "This election is currently in Draft mode. Results will appear once voting begins."
+                : "There are no votes cast for this election yet. Results will appear once voting begins."
             }
           />
         ) : (

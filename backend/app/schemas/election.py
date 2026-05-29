@@ -16,8 +16,14 @@ class ElectionBase(BaseModel):
 
     title: str = Field(..., min_length=3, max_length=255, examples=["Student Council 2025"])
     description: Optional[str] = Field(default=None, examples=["Annual student council election."])
+    nomination_start_date: Optional[datetime] = None
+    nomination_end_date: Optional[datetime] = None
     start_date: datetime = Field(..., examples=["2025-09-01T08:00:00"])
     end_date: datetime = Field(..., examples=["2025-09-01T18:00:00"])
+    
+    committee_level: Optional[str] = Field(default=None, examples=["district"])
+    target_ids: Optional[List[int]] = Field(default=None, examples=[[1, 2, 3]])
+
     target_district: Optional[str] = Field(
         default=None,
         max_length=100,
@@ -58,8 +64,14 @@ class ElectionUpdate(BaseModel):
 
     title: Optional[str] = Field(default=None, min_length=3, max_length=255)
     description: Optional[str] = None
+    nomination_start_date: Optional[datetime] = None
+    nomination_end_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    
+    committee_level: Optional[str] = None
+    target_ids: Optional[List[int]] = None
+
     target_district: Optional[str] = Field(default=None, max_length=100)
     target_id: Optional[int] = None
     status: Optional[ElectionStatus] = None
@@ -96,6 +108,7 @@ class ElectionResponse(ElectionBase):
     winner_declared: bool = False
 
     target: Optional[TargetResponse] = None
+    targets: List[TargetResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

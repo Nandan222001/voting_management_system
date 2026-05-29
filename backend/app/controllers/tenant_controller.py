@@ -94,6 +94,8 @@ def create_tenant(
     name: str = Form(...),
     slug: str | None = Form(None),
     contact_email: EmailStr | None = Form(None),
+    contact_phone: str | None = Form(None),
+    status: str = Form('draft'),
     plan: str = Form('starter'),
     admin_full_name: str = Form(...),
     admin_email: EmailStr = Form(...),
@@ -107,6 +109,8 @@ def create_tenant(
         name=name,
         slug=slug,
         contact_email=contact_email,
+        contact_phone=contact_phone,
+        status=status,
         plan=plan,
         logo_url=None,
         admin_full_name=admin_full_name,
@@ -139,6 +143,7 @@ def update_tenant(
     name: str | None = Form(None),
     slug: str | None = Form(None),
     contact_email: EmailStr | None = Form(None),
+    contact_phone: str | None = Form(None),
     plan: str | None = Form(None),
     logo: UploadFile | None = File(None),
     _: User = Depends(require_superadmin),
@@ -152,6 +157,8 @@ def update_tenant(
         update_data['slug'] = slug
     if contact_email is not None:
         update_data['contact_email'] = contact_email
+    if contact_phone is not None:
+        update_data['contact_phone'] = contact_phone
     if plan is not None:
         update_data['plan'] = plan
 

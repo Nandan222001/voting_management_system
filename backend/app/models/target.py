@@ -19,8 +19,11 @@ from app.config.database import Base
 class TargetType(str, enum.Enum):
     """Types of geographical or administrative targets."""
 
+    country = "country"
     state = "state"
     district = "district"
+    block = "block"
+    booth = "booth"
     taluka = "taluka"
     city = "city"
     village = "village"
@@ -47,7 +50,7 @@ class Target(Base):
     )
 
     # Target details
-    name = Column(String(150), nullable=False)
+    name = Column(String(150), nullable=False, unique=True)
     type = Column(
         Enum(TargetType, name="target_type_enum"),
         nullable=False,

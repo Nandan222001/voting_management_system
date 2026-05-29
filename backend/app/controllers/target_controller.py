@@ -46,7 +46,6 @@ def get_targets(
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
-    response_model=TargetResponse,
     summary="Define a new target (superadmin only)",
 )
 def create_target(
@@ -54,34 +53,39 @@ def create_target(
     tenant_id: Optional[int] = Query(None, description="Optional tenant scoping"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superadmin),
-) -> TargetResponse:
+) -> JSONResponse:
     """
     Define a new State, District, Taluka, etc. Requires superadmin privileges.
     """
     target = target_service.create_target(db, payload, tenant_id)
-    return TargetResponse.model_validate(target)
+    return success_response(
+        data=TargetResponse.model_validate(target).model_dump(mode="json"),
+        message="Target created successfully.",
+        status_code=status.HTTP_201_CREATED
+    )
 
 
 @router.get(
-    "/{target_id}",
-    response_model=TargetResponse,
+    "/{target_id}/",
     summary="Get a single target by ID",
 )
 def get_target(
     target_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> TargetResponse:
+) -> JSONResponse:
     """
     Fetch details for a specific target.
     """
     target = target_service.get_target_by_id(db, target_id)
-    return TargetResponse.model_validate(target)
+    return success_response(
+        data=TargetResponse.model_validate(target).model_dump(mode="json"),
+        message="Target details retrieved."
+    )
 
 
 @router.put(
-    "/{target_id}",
-    response_model=TargetResponse,
+    "/{target_id}/",
     summary="Update a target (superadmin only)",
 )
 def update_target(
@@ -89,16 +93,19 @@ def update_target(
     payload: TargetUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_superadmin),
-) -> TargetResponse:
+) -> JSONResponse:
     """
     Update target details. Requires superadmin privileges.
     """
     updated = target_service.update_target(db, target_id, payload)
-    return TargetResponse.model_validate(updated)
+    return success_response(
+        data=TargetResponse.model_validate(updated).model_dump(mode="json"),
+        message="Target updated successfully."
+    )
 
 
 @router.delete(
-    "/{target_id}",
+    "/{target_id}/",
     summary="Delete a target (superadmin only)",
 )
 def delete_target(

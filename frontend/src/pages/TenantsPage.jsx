@@ -20,6 +20,7 @@ import {
 import {
   fetchTenants,
   fetchTenantById,
+  fetchPlatformStats,
   createTenant,
   updateTenant,
   suspendTenant,
@@ -28,6 +29,7 @@ import {
   selectTenants,
   selectCurrentTenant,
   selectTenantTotal,
+  selectPlatformStats,
   selectTenantLoading,
   selectTenantActionLoading,
   selectTenantError,
@@ -42,6 +44,7 @@ import Pagination from '../components/common/Pagination';
 import { format, parseISO } from 'date-fns';
 import ImageUpload from '../components/common/ImageUpload';
 import ImageAvatar from '../components/common/ImageAvatar';
+import Select from '../components/common/Select';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,25 +68,6 @@ function slugify(str) {
 
 function getTenantId(tenant) {
   return tenant?._id ?? tenant?.id ?? '';
-}
-
-// ─── Plan Badge ───────────────────────────────────────────────────────────────
-
-const PLAN_STYLES = {
-  starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-blue-100 text-[#1A237E] ring-1 ring-blue-200',
-  enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
-};
-
-function PlanBadge({ plan }) {
-  if (!plan) return <span className="text-gray-400 text-xs">—</span>;
-  const key = plan.toLowerCase();
-  const style = PLAN_STYLES[key] ?? PLAN_STYLES.starter;
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${style}`}>
-      {plan}
-    </span>
-  );
 }
 
 // ─── Field Component ──────────────────────────────────────────────────────────
@@ -125,7 +109,8 @@ const EMPTY_FORM = {
   name: '',
   slug: '',
   contact_email: '',
-  plan: 'starter',
+  contact_phone: '',
+  status: 'draft',
   logo_file: null,
   logo_url: '',
   admin_name: '',
@@ -147,7 +132,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         name: editTenant.name || '',
         slug: editTenant.slug || '',
         contact_email: editTenant.contact_email || editTenant.email || '',
-        plan: editTenant.plan || 'starter',
+        contact_phone: editTenant.contact_phone || '',
+        status: editTenant.status || 'draft',
         logo_file: null,
         logo_url: editTenant.logo_url || '',
         admin_name: '',
@@ -185,6 +171,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
     if (!form.name.trim()) errs.name = 'Required.';
     if (!form.slug.trim()) errs.slug = 'Required.';
     if (!form.contact_email.trim()) errs.contact_email = 'Required.';
+    if (!form.contact_phone.trim()) errs.contact_phone = 'Required.';
     if (!isEdit) {
       if (!form.admin_name.trim()) errs.admin_name = 'Required.';
       if (!form.admin_email.trim()) errs.admin_email = 'Required.';
@@ -208,14 +195,16 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
       payload.append('name', form.name.trim());
       payload.append('slug', form.slug.trim());
       payload.append('contact_email', form.contact_email.trim());
-      payload.append('plan', form.plan);
+      payload.append('contact_phone', form.contact_phone.trim());
+      payload.append('status', form.status);
       payload.append('logo', form.logo_file);
     } else {
       payload = {
         name: form.name.trim(),
         slug: form.slug.trim(),
         contact_email: form.contact_email.trim(),
-        plan: form.plan,
+        contact_phone: form.contact_phone.trim(),
+        status: form.status,
       };
     }
 
@@ -286,18 +275,30 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                 hasError={!!errors.contact_email}
               />
             </Field>
-            <Field label="Plan">
-              <select
-                value={form.plan}
-                onChange={set('plan')}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="starter">Starter — 5 elections, 1,000 voters</option>
-                <option value="professional">Professional — 25 elections, 10,000 voters</option>
-                <option value="enterprise">Enterprise — Unlimited</option>
-              </select>
+            <Field label="Phone Number" required error={errors.contact_phone}>
+              <Input
+                type="tel"
+                name="tenant_contact_phone_field"
+                value={form.contact_phone}
+                onChange={set('contact_phone')}
+                placeholder="+91 XXXXX XXXXX"
+                autoComplete="off"
+                required
+                hasError={!!errors.contact_phone}
+              />
             </Field>
           </div>
+
+          <Select
+            label="Initial Status"
+            value={form.status}
+            onChange={set('status')}
+            options={[
+              { value: 'draft', label: 'Draft (Setup mode)' },
+              { value: 'active', label: 'Active (Go-live)' },
+              { value: 'suspended', label: 'Suspended (Access blocked)' },
+            ]}
+          />
 
           <Field label="Logo">
             <ImageUpload
@@ -445,7 +446,7 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
     { label: 'Organization Name', value: tenant.name },
     { label: 'URL Identifier', value: tenant.slug, mono: true },
     { label: 'Admin Email', value: tenant.contact_email || tenant.email },
-    { label: 'Subscription Plan', value: <PlanBadge plan={tenant.plan} /> },
+    { label: 'Admin Phone', value: tenant.contact_phone },
     { label: 'Current Status', value: <Badge status={tenant.status} /> },
     { label: 'Created On', value: safeFormat(tenant.created_at || tenant.createdAt) },
   ];
@@ -493,7 +494,6 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
             <div className="flex items-center gap-2 mt-1">
               <Badge status={tenant.status} />
-              <PlanBadge plan={tenant.plan} />
             </div>
           </div>
         </div>
@@ -585,7 +585,7 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
-  { value: 'trial', label: 'Trial' },
+  { value: 'draft', label: 'Draft' },
   { value: 'active', label: 'Active' },
   { value: 'suspended', label: 'Suspended' },
 ];
@@ -598,6 +598,7 @@ export default function TenantsPage() {
 
   const tenants = useSelector(selectTenants);
   const currentTenant = useSelector(selectCurrentTenant);
+  const platformStats = useSelector(selectPlatformStats);
   const total = useSelector(selectTenantTotal);
   const loading = useSelector(selectTenantLoading);
   const actionLoading = useSelector(selectTenantActionLoading);
@@ -622,6 +623,7 @@ export default function TenantsPage() {
       const result = await dispatch(activateTenant(id));
       if (activateTenant.fulfilled.match(result)) {
         toast.success('Tenant activated.');
+        dispatch(fetchPlatformStats());
       }
     },
     [dispatch]
@@ -632,6 +634,7 @@ export default function TenantsPage() {
     if (createTenant.fulfilled.match(result)) {
       toast.success('Tenant created successfully!');
       setCreateOpen(false);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -642,6 +645,7 @@ export default function TenantsPage() {
     if (updateTenant.fulfilled.match(result)) {
       toast.success('Tenant updated successfully!');
       setEditTenant(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -652,6 +656,7 @@ export default function TenantsPage() {
     if (suspendTenant.fulfilled.match(result)) {
       toast.success('Tenant suspended.');
       setSuspendTarget(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -662,6 +667,7 @@ export default function TenantsPage() {
     if (deleteTenant.fulfilled.match(result)) {
       toast.success('Tenant deleted.');
       setDeleteTarget(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -677,6 +683,10 @@ export default function TenantsPage() {
   };
 
   // ── Effects ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    dispatch(fetchPlatformStats());
+  }, [dispatch]);
 
   useEffect(() => {
     const params = { page, per_page: PER_PAGE };
@@ -736,35 +746,54 @@ export default function TenantsPage() {
   }, [tenants, search]);
 
   const totalPages = Math.ceil(total / PER_PAGE);
-  const activeCount = tenants.filter((tenant) => tenant.status === 'active').length;
-  const suspendedCount = tenants.filter((tenant) => tenant.status === 'suspended').length;
-  const enterpriseCount = tenants.filter((tenant) => tenant.plan === 'enterprise').length;
+  
+  // Real platform-wide counts from platformStats
+  const totalCount = platformStats?.total_tenants || 0;
+  const activeCount = platformStats?.active_tenants || 0;
+  const draftCount = platformStats?.draft_tenants || 0;
+  const suspendedCount = platformStats?.suspended_tenants || 0;
 
   return (
     <MainLayout title="Tenant Management">
       <div className="w-full space-y-8">
         <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div className="relative overflow-hidden rounded-lg bg-[#1A237E] p-6 text-white shadow-lg md:col-span-2">
+          {/* Total Tenants */}
+          <div className="relative overflow-hidden rounded-lg bg-[#1A237E] p-6 text-white shadow-lg">
             <div className="relative z-10">
-              <p className="text-sm font-semibold uppercase tracking-widest text-[#dde1ff]">Total Platform Tenants</p>
-              <h2 className="mt-2 text-4xl font-black">{total.toLocaleString()}</h2>
-              <p className="mt-4 flex items-center gap-1 text-xs font-semibold text-[#c1c6ff]">
-                <TrendingUp className="h-4 w-4" /> {activeCount.toLocaleString()} active organizations across all jurisdictions
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#dde1ff]/80">Total Tenants</p>
+              <h2 className="mt-1 text-3xl font-black">{totalCount.toLocaleString()}</h2>
+              <p className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-[#c1c6ff]">
+                <TrendingUp className="h-3 w-3" /> Combined reach
               </p>
             </div>
-            <Building className="absolute -bottom-8 -right-8 h-40 w-40 text-white/10" />
+            <Building className="absolute -bottom-4 -right-4 h-24 w-24 text-white/10" />
           </div>
+
+          {/* Active Tenants */}
           <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
-            <p className="text-sm font-bold text-[#44474e]">Active Tenants</p>
-            <h3 className="mt-1 text-3xl font-bold text-[#1A237E]">{activeCount.toLocaleString()}</h3>
-            <span className="mt-4 inline-flex rounded bg-[#2e7d32]/10 px-2 py-1 text-[10px] font-bold text-[#2e7d32]">
-              {total ? Math.round((activeCount / total) * 100) : 0}% Active
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Active</p>
+            <h3 className="mt-1 text-3xl font-bold text-[#2e7d32]">{activeCount.toLocaleString()}</h3>
+            <span className="mt-3 inline-flex rounded bg-[#2e7d32]/10 px-2 py-0.5 text-[9px] font-bold text-[#2e7d32]">
+              {totalCount ? Math.round((activeCount / totalCount) * 100) : 0}% of platform
             </span>
           </div>
+
+          {/* Draft Tenants */}
           <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
-            <p className="text-sm font-bold text-[#44474e]">Subscription Health</p>
-            <h3 className="mt-1 text-3xl font-bold text-[#3F51B5]">Tier A+</h3>
-            <p className="mt-4 text-xs text-[#44474e]">{enterpriseCount} enterprise tenants, {suspendedCount} suspended</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Draft</p>
+            <h3 className="mt-1 text-3xl font-bold text-[#1A237E]">{draftCount.toLocaleString()}</h3>
+            <span className="mt-3 inline-flex rounded bg-[#1A237E]/10 px-2 py-0.5 text-[9px] font-bold text-[#1A237E]">
+              Setup in progress
+            </span>
+          </div>
+
+          {/* Suspended Tenants */}
+          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Suspended</p>
+            <h3 className="mt-1 text-3xl font-bold text-[#d32f2f]">{suspendedCount.toLocaleString()}</h3>
+            <span className="mt-3 inline-flex rounded bg-[#d32f2f]/10 px-2 py-0.5 text-[9px] font-bold text-[#d32f2f]">
+              Access restricted
+            </span>
           </div>
         </section>
 
@@ -836,7 +865,7 @@ export default function TenantsPage() {
               <table className="w-full min-w-[900px] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b border-[#c4c6d0] bg-[#f4f3f7] text-xs font-black uppercase tracking-wider text-[#44474e]">
-                    {['Tenant Identity', 'Region / Identifier', 'Status', 'Tier', 'Users', 'Created', 'Actions'].map((col) => (
+                    {['Tenant Identity', 'Region / Identifier', 'Contact Info', 'Status', 'Users', 'Created', 'Actions'].map((col) => (
                       <th
                         key={col}
                         className={`px-3 py-4 sm:px-6 ${col === 'Actions' ? 'text-right' : ''}`}
@@ -878,10 +907,15 @@ export default function TenantsPage() {
                           </div>
                         </td>
                         <td className="px-3 py-5 sm:px-6">
-                          <Badge status={tenant.status} />
+                          <div className="flex flex-col gap-0.5">
+                            <p className="text-sm font-semibold text-gray-800">{tenant.contact_email || tenant.email || '—'}</p>
+                            {tenant.contact_phone && (
+                              <p className="text-xs text-gray-500 font-medium">{tenant.contact_phone}</p>
+                            )}
+                          </div>
                         </td>
                         <td className="px-3 py-5 sm:px-6">
-                          <PlanBadge plan={tenant.plan} />
+                          <Badge status={tenant.status} />
                         </td>
                         <td className="px-3 py-5 sm:px-6">
                           <div className="flex items-center gap-1.5 font-semibold text-[#44474e]">

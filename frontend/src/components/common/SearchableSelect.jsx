@@ -1,67 +1,46 @@
 import { Fragment, useState } from 'react'
 import { Combobox, ComboboxButton, ComboboxInput, ComboboxOption, ComboboxOptions, Transition } from '@headlessui/react'
-import { Check, ChevronDown, Search } from 'lucide-react'
+import { Check, ChevronDown, Search, Plus } from 'lucide-react'
 
-export default function FancySelect({ 
-  id, 
-  name, 
+export default function SearchableSelect({ 
+  label, 
+  options = [], 
   value, 
   onChange, 
-  options = [], 
-  className = '', 
-  placeholder, 
-  disabled = false 
+  placeholder = 'Search/Select...', 
+  onAddNew, 
+  disabled = false,
+  required = false
 }) {
   const [query, setQuery] = useState('')
 
-  // Normalize options to { value, label }
-  const normalizedOptions = options.map(opt => {
-    if (typeof opt === 'object' && opt !== null) {
-      return { value: opt.value ?? '', label: opt.label ?? String(opt) }
-    }
-    return { value: opt, label: String(opt) }
-  })
-
-  // If there's a placeholder, add it to the top if not already there
-  let displayOptions = normalizedOptions
-  if (placeholder && !normalizedOptions.some(o => o.value === '')) {
-    displayOptions = [{ value: '', label: placeholder }, ...normalizedOptions]
-  }
-
   const filteredOptions = query === ''
-    ? displayOptions
-    : displayOptions.filter((option) =>
-        option.label
+    ? options
+    : options.filter((option) =>
+        (option.name || '')
           .toLowerCase()
           .replace(/\s+/g, '')
           .includes(query.toLowerCase().replace(/\s+/g, ''))
       )
 
-  // Find selected option
-  const selectedOption = displayOptions.find(o => String(o.value) === String(value)) || displayOptions[0]
-
-  const handleChange = (val) => {
-    if (onChange) {
-      onChange({
-        target: {
-          name,
-          id,
-          value: val
-        }
-      })
-    }
-  }
+  const selectedOption = options.find(o => String(o.id) === String(value))
 
   return (
-    <div className={`w-full ${className}`}>
-      <Combobox value={value} onChange={handleChange} disabled={disabled}>
+    <div className={`w-full space-y-1.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      {label && (
+        <label className="block text-[10px] font-black uppercase text-gray-400 tracking-widest ml-1">
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+      )}
+      <Combobox value={value} onChange={onChange} disabled={disabled}>
         <div className="relative group">
-          <div className={`relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-gray-200 transition-all focus-within:ring-2 focus-within:ring-[#1A237E]/10 focus-within:border-[#1A237E] hover:border-gray-300 disabled:opacity-60 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
+          <div className={`relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-gray-200 transition-all focus-within:ring-2 focus-within:ring-[#1A237E]/10 focus-within:border-[#1A237E] hover:border-gray-300 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
             <ComboboxInput
               className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-gray-900 font-bold bg-transparent focus:ring-0 outline-none placeholder-gray-400"
-              displayValue={() => selectedOption?.label || ''}
+              displayValue={() => selectedOption?.name || ''}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={placeholder || 'Select...'}
+              placeholder={placeholder}
             />
             <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
               <ChevronDown
@@ -83,27 +62,27 @@ export default function FancySelect({
             >
               {filteredOptions.length === 0 && query !== '' ? (
                 <div className="relative cursor-default select-none py-3 px-4 text-gray-400 font-medium italic text-center">
-                  No matching options found.
+                  No matching results.
                 </div>
               ) : (
-                filteredOptions.map((option, idx) => (
+                filteredOptions.map((option) => (
                   <ComboboxOption
-                    key={idx}
+                    key={option.id}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
                         active ? 'bg-blue-50 text-[#1A237E]' : 'text-gray-700'
                       }`
                     }
-                    value={option.value}
+                    value={option.id}
                   >
-                    {({ selected, active }) => (
+                    {({ selected }) => (
                       <>
                         <span
                           className={`block truncate ${
                             selected ? 'font-black' : 'font-bold'
                           }`}
                         >
-                          {option.label}
+                          {option.name}
                         </span>
                         {selected ? (
                           <span
@@ -117,6 +96,20 @@ export default function FancySelect({
                   </ComboboxOption>
                 ))
               )}
+
+              {onAddNew && query.trim() !== '' && (
+                <div 
+                  className="sticky bottom-0 p-2 mt-1 border-t border-gray-100 bg-gray-50 hover:bg-blue-50 cursor-pointer flex items-center gap-2 text-xs font-black text-[#1A237E] uppercase tracking-wider transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddNew(query);
+                    setQuery('');
+                  }}
+                >
+                  <Plus size={14} className="bg-[#1A237E] text-white rounded p-0.5" />
+                  Add New "{query}"
+                </div>
+              )}
             </ComboboxOptions>
           </Transition>
         </div>
@@ -124,4 +117,3 @@ export default function FancySelect({
     </div>
   )
 }
-

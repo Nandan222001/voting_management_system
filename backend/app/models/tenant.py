@@ -18,7 +18,7 @@ from app.config.database import Base
 class TenantStatus(str, enum.Enum):
     """Lifecycle status of a tenant account."""
 
-    trial = "trial"
+    draft = "draft"
     active = "active"
     suspended = "suspended"
     cancelled = "cancelled"
@@ -53,7 +53,7 @@ class Tenant(Base):
     status = Column(
         Enum(TenantStatus, name="tenant_status_enum"),
         nullable=False,
-        default=TenantStatus.trial,
+        default=TenantStatus.draft,
     )
     plan = Column(
         Enum(TenantPlan, name="tenant_plan_enum"),
@@ -67,6 +67,7 @@ class Tenant(Base):
 
     # Contact
     contact_email = Column(String(255), nullable=True)
+    contact_phone = Column(String(20), nullable=True)
 
     # Payment Gateway (Razorpay)
     razorpay_key_id = Column(String(255), nullable=True)

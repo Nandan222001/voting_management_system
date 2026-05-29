@@ -15,6 +15,8 @@ class TenantCreate(BaseModel):
         description="URL-safe identifier; auto-generated from name if omitted.",
     )
     contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = Field(None, max_length=20)
+    status: str = Field(default="draft")
     plan: str = Field(default="starter")
     logo_url: Optional[str] = Field(None, max_length=500)
 
@@ -31,6 +33,7 @@ class TenantUpdate(BaseModel):
     domain: Optional[str] = Field(None, max_length=255)
     logo_url: Optional[str] = Field(None, max_length=500)
     contact_email: Optional[EmailStr] = None
+    contact_phone: Optional[str] = Field(None, max_length=20)
     plan: Optional[str] = Field(None, description="Subscription plan tier.")
     
     # Optional Razorpay updates via main update schema
@@ -61,6 +64,7 @@ class TenantResponse(BaseModel):
     max_elections: int
     max_voters: int
     contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
     
     # Razorpay settings (Included in response for admin management)
     razorpay_key_id: Optional[str] = None

@@ -1,10 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
+  BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts'
-import { FaArrowLeft, FaPlus, FaTrophy, FaEdit, FaTrash } from 'react-icons/fa'
+import {
+  ArrowLeft,
+  CalendarDays,
+  CheckCircle2,
+  CircleDot,
+  Clock3,
+  Edit3,
+  Eye,
+  FileText,
+  Filter,
+  MapPinned,
+  PlayCircle,
+  Plus,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  StopCircle,
+  Trophy,
+  BarChart,
+  Trash2,
+  Users,
+  Vote,
+  Globe,
+  Landmark,
+  Check,
+  AlertTriangle,
+  UserCheck,
+  MessageSquare,
+  ChevronRight,
+  ExternalLink,
+} from 'lucide-react'
+import { FaPlus, FaChevronRight } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import Modal from '../components/common/Modal'
@@ -12,6 +43,7 @@ import FancySelect from '../components/common/FancySelect'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import Badge from '../components/common/Badge'
 import LoadingSpinner from '../components/common/LoadingSpinner'
+import ActionDropdown from '../components/common/ActionDropdown'
 import useAuth from '../hooks/useAuth'
 import { fetchElectionById } from '../store/slices/electionSlice'
 import {
@@ -23,9 +55,19 @@ import {
 } from '../store/slices/candidateSlice'
 import { fetchCandidateCommittees } from '../store/slices/candidateCommitteeSlice'
 import { fetchTargets } from '../store/slices/targetSlice'
-import WinnerCard from '../components/common/WinnerCard'
+import ImageUpload from '../components/common/ImageUpload'
+import ImageAvatar from '../components/common/ImageAvatar'
+import SearchableSelect from '../components/common/SearchableSelect'
 
-const CHART_COLORS = ['rgb(16 102 177)', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
+const CHART_COLORS = ['#1A237E', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
+
+const COMMITTEE_TYPES = [
+  { value: 'country', label: 'Working Committee - India', levels: [] },
+  { value: 'state', label: 'Pradesh Committee', levels: ['state'] },
+  { value: 'district', label: 'District Committee', levels: ['state', 'district'] },
+  { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'] },
+  { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'] },
+]
 
 const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
 
@@ -36,14 +78,24 @@ export default function ElectionDetailPage() {
   const { isAdmin } = useAuth()
 
   const { currentElection, loading: electionLoading } = useSelector(s => s.elections)
-  const { candidates, results, loading: candLoading } = useSelector(s => s.candidates)
+  const { candidates, results, loading: candLoading, actionLoading } = useSelector(s => s.candidates)
+  const { committees } = useSelector(s => s.candidateCommittees)
   const { targets } = useSelector(s => s.targets)
 
+  // CRUD State
   const [showModal, setShowModal] = useState(false)
   const [editCandidateTarget, setEditCandidateTarget] = useState(null)
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
-  const [submitting, setSubmitting] = useState(false)
+  
+  // Hierarchy State
+  const [committeeType, setCommitteeType] = useState('state')
+  const [selections, setSelections] = useState({
+    state: '',
+    district: '',
+    block: '',
+    booth: ''
+  })
 
   useEffect(() => {
     dispatch(fetchElectionById(id))
@@ -53,43 +105,99 @@ export default function ElectionDetailPage() {
     dispatch(fetchTargets())
   }, [id, dispatch])
 
-  function openCreate() {
+  const country = useMemo(() => targets.find(t => t.type === 'country'), [targets])
+
+  const openCreate = () => {
     setEditCandidateTarget(null)
     setForm(emptyForm)
+    setCommitteeType('state')
+    setSelections({ state: '', district: '', block: '', booth: '' })
     setShowModal(true)
   }
 
-  function openEdit(c) {
+  const openEdit = (c) => {
     setEditCandidateTarget(c)
     setForm({
       full_name: c.full_name,
-      symbol: c.symbol,
+      symbol: c.symbol || '',
       bio: c.bio || '',
       image_url: c.image_url || '',
       image_file: null,
       committee_id: c.committee_id || '',
       target_id: c.target_id || ''
     })
+    
+    if (c.target_id) {
+       const t = targets.find(i => i.id === c.target_id)
+       if (t) {
+          setCommitteeType(t.type)
+          const newSels = { state: '', district: '', block: '', booth: '' }
+          if (t.type === 'state') newSels.state = t.id
+          if (t.type === 'district') {
+            newSels.district = t.id
+            newSels.state = t.parent_id
+          }
+          if (t.type === 'block') {
+            newSels.block = t.id
+            const dist = targets.find(i => i.id === t.parent_id)
+            newSels.district = t.parent_id
+            newSels.state = dist?.parent_id || ''
+          }
+          if (t.type === 'booth') {
+            newSels.booth = t.id
+            const block = targets.find(i => i.id === t.parent_id)
+            const dist = targets.find(i => i.id === block?.parent_id)
+            newSels.block = t.parent_id
+            newSels.district = block?.parent_id || ''
+            newSels.state = dist?.parent_id || ''
+          }
+          setSelections(newSels)
+       }
+    }
     setShowModal(true)
   }
 
-  async function handleSubmit(e) {
+  const handleLevelChange = (level, value) => {
+    setSelections(prev => {
+      const next = { ...prev, [level]: value }
+      if (level === 'state') { next.district = ''; next.block = ''; next.booth = ''; }
+      if (level === 'district') { next.block = ''; next.booth = ''; }
+      if (level === 'block') { next.booth = ''; }
+      return next
+    })
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitting(true)
+    const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
+    let targetId = null
+    if (committeeType === 'country') targetId = country?.id
+    else {
+      const leafLevel = activeConfig.levels[activeConfig.levels.length - 1]
+      targetId = selections[leafLevel]
+    }
+
+    if (!targetId && committeeType !== 'country') {
+      toast.error('Please complete the location selection')
+      return
+    }
+
     try {
-      let payload = form
+      let payload = { ...form, target_id: targetId }
       if (form.image_file) {
-        payload = new FormData()
-        payload.append('full_name', form.full_name)
-        payload.append('symbol', form.symbol || '')
-        payload.append('bio', form.bio || '')
-        if (form.committee_id) payload.append('committee_id', String(form.committee_id))
-        if (form.target_id) payload.append('target_id', String(form.target_id))
-        payload.append('image', form.image_file)
-        if (!editCandidateTarget) payload.append('election_id', String(parseInt(id)))
+        const formData = new FormData()
+        formData.append('full_name', form.full_name)
+        formData.append('symbol', form.symbol || '')
+        formData.append('bio', form.bio || '')
+        formData.append('target_id', String(targetId))
+        if (form.committee_id) formData.append('committee_id', String(form.committee_id))
+        formData.append('image', form.image_file)
+        if (!editCandidateTarget) formData.append('election_id', String(parseInt(id)))
+        payload = formData
       } else {
-        const copy = { ...form }
+        const copy = { ...payload }
         delete copy.image_file
+        if (!editCandidateTarget) copy.election_id = parseInt(id)
         payload = copy
       }
 
@@ -97,20 +205,19 @@ export default function ElectionDetailPage() {
         await dispatch(updateCandidate({ id: editCandidateTarget.id, data: payload })).unwrap()
         toast.success('Candidate updated')
       } else {
-        await dispatch(addCandidate(payload instanceof FormData ? payload : { ...payload, election_id: parseInt(id) })).unwrap()
+        await dispatch(addCandidate(payload)).unwrap()
         toast.success('Candidate added')
       }
       setShowModal(false)
       dispatch(fetchCandidatesByElection(id))
       dispatch(fetchElectionResults(id))
     } catch (err) {
-      toast.error(err?.message || 'Operation failed')
-    } finally {
-      setSubmitting(false)
+      toast.error(typeof err === 'string' ? err : 'Operation failed')
     }
   }
 
-  async function handleDelete() {
+  const handleDelete = async () => {
+    if (!deleteCandidateTarget) return
     try {
       await dispatch(deleteCandidate(deleteCandidateTarget.id)).unwrap()
       toast.success('Candidate removed')
@@ -118,218 +225,416 @@ export default function ElectionDetailPage() {
       dispatch(fetchCandidatesByElection(id))
       dispatch(fetchElectionResults(id))
     } catch (err) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err || 'Delete failed')
     }
   }
 
-  const showResults = currentElection?.status === 'active' || currentElection?.status === 'closed'
   const rankedResults = (results?.candidates || [])
     .slice()
     .sort((a, b) => (a.rank || 999) - (b.rank || 999) || b.vote_count - a.vote_count)
+  
   const totalVotes = results?.total_votes ?? 0
-  const winnerDeclared = Boolean(results?.winner_declared && results?.winner)
+  
   const chartData = rankedResults.map(c => ({
     name: c.candidate_name,
     votes: c.vote_count,
     percentage: c.percentage
   }))
-  const displayCandidates = rankedResults.length > 0
-    ? rankedResults.map(result => ({
-        ...candidates.find(c => c.id === result.candidate_id),
-        ...result,
-        id: result.candidate_id,
-        full_name: result.candidate_name,
-      }))
-    : candidates
 
-  if (electionLoading) return <MainLayout title="Election Detail"><LoadingSpinner message="Loading election..." /></MainLayout>
+  const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
+
+  if (electionLoading) return <MainLayout title="Election Monitoring"><LoadingSpinner message="Loading election context..." /></MainLayout>
 
   return (
-    <MainLayout title="Election Detail">
-      <div className="space-y-6">
-        {/* Back + header */}
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/elections')} className="text-gray-500 hover:text-gray-700">
-            <FaArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">{currentElection?.title}</h1>
-            <p className="text-sm text-gray-500">{currentElection?.description}</p>
-          </div>
-          <Badge status={currentElection?.status} />
-        </div>
-
-        {/* Election info cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Status', value: <Badge status={currentElection?.status} /> },
-            { label: 'Target Area', value: currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'All Regions' },
-            { label: 'Start Date', value: currentElection?.start_date ? new Date(currentElection.start_date).toLocaleDateString() : '—' },
-            { label: 'Total Votes', value: totalVotes },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-              <p className="mt-1 text-lg font-semibold text-[rgb(16_102_177)]">{value}</p>
+    <MainLayout title="Election Control Room">
+      <div className="mx-auto w-full max-w-7xl space-y-8">
+        {/* Header Navigation */}
+        <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div className="flex items-center gap-5">
+            <button
+              onClick={() => navigate('/elections')}
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-gray-200 text-gray-400 hover:text-[#1A237E] hover:border-[#1A237E] transition-all shadow-sm group"
+            >
+              <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+            </button>
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <Badge status={currentElection?.status} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-0.5 rounded">ID: {id}</span>
+              </div>
+              <h2 className="text-3xl font-black leading-tight tracking-tight text-[#191c1e]">
+                {currentElection?.title}
+              </h2>
             </div>
-          ))}
-        </div>
-
-        <WinnerCard
-          winner={results?.winner}
-          winners={results?.winners || []}
-          isTie={results?.is_tie}
-          winnerDeclared={winnerDeclared}
-          totalVotes={totalVotes}
-          electionStatus={currentElection?.status}
-        />
-
-        {/* Results chart */}
-        {showResults && chartData.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-[rgb(16_102_177)] mb-4">Vote Distribution</h2>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(v, n) => [v, n === 'votes' ? 'Votes' : '%']} />
-                <Bar dataKey="votes" radius={[4, 4, 0, 0]}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
           </div>
-        )}
-
-        {/* Candidates section */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-[rgb(16_102_177)]">
-              Candidates ({candidates.length})
-            </h2>
-            {isAdmin && currentElection?.status === 'draft' && (
-              <button
-                onClick={openCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-[rgb(16_102_177)] text-white text-sm font-medium rounded-lg hover:bg-[rgb(12_85_148)]"
-              >
-                <FaPlus className="h-4 w-4" /> Add Candidate
-              </button>
-            )}
+          <div className="flex gap-2">
+             <button
+                onClick={() => dispatch(fetchElectionResults(id))}
+                className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all"
+             >
+                <BarChart className="h-4 w-4" />
+                Refresh Results
+             </button>
+             {isAdmin && currentElection?.status === 'draft' && (
+                <button
+                  onClick={openCreate}
+                  className="flex items-center gap-2 rounded-xl bg-[#1A237E] px-6 py-3 text-sm font-bold text-white shadow-xl shadow-blue-900/20 hover:brightness-110 active:scale-95 transition-all"
+                >
+                  <Plus className="h-5 w-5" />
+                  Register Candidate
+                </button>
+             )}
           </div>
+        </section>
 
-          {candLoading ? (
-            <LoadingSpinner message="Loading candidates..." />
-          ) : displayCandidates.length === 0 ? (
-            <div className="py-16 text-center text-gray-400">No candidates added yet.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
-              {displayCandidates.map((c, i) => {
-                const result = rankedResults.find(r => r.candidate_id === c.id)
-                const isWinner = Boolean(result?.is_winner)
-                return (
-                  <div
-                    key={c.id}
-                    className={`border rounded-xl p-4 relative transition-shadow ${
-                      isWinner
-                        ? 'border-amber-300 bg-amber-50/40 shadow-md shadow-amber-100'
-                        : 'border-gray-200 bg-white'
-                    }`}
-                  >
-                    <div className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold ${
-                      isWinner ? 'bg-amber-500 text-white shadow-sm' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      #{result?.rank || i + 1}
-                    </div>
-                    {isWinner && (
-                      <span className="absolute top-12 right-3 text-amber-500"><FaTrophy /></span>
-                    )}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-[rgb(16_102_177)] font-bold text-lg">
-                        {c.symbol || c.full_name[0]}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+           {/* Main Content: Results & Chart */}
+           <div className="lg:col-span-8 space-y-8">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                 <MetricCard icon={Users} label="Total Candidates" value={candidates.length} tone="blue" />
+                 <MetricCard icon={Vote} label="Total Votes Cast" value={compactNumber(totalVotes)} tone="green" />
+                 <MetricCard icon={ShieldCheck} label="Winner Status" value={results?.winner_declared ? 'Declared' : 'Awaiting'} tone="orange" />
+              </div>
+
+              {/* Chart Section */}
+              {(currentElection?.status === 'active' || currentElection?.status === 'closed') && chartData.length > 0 && (
+                <article className="rounded-3xl border border-[#e2e8f0] bg-white p-8 shadow-sm">
+                   <div className="flex items-center justify-between mb-8">
+                      <h3 className="flex items-center gap-2 text-xl font-black text-[#1A237E]">
+                        <BarChart3 className="h-5 w-5" />
+                        Vote Distribution
+                      </h3>
+                      <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                         <span className="flex items-center gap-1.5"><CircleDot className="h-3 w-3 text-blue-500 animate-pulse" /> Live Feed</span>
                       </div>
-                      <div>
-                        <p className="font-semibold text-[rgb(16_102_177)]">{c.full_name}</p>
-                        <p className="text-sm text-gray-500">{c.party}</p>
-                      </div>
-                    </div>
-                    {c.bio && <p className="text-xs text-gray-500 mb-3 line-clamp-2">{c.bio}</p>}
-                    {result && (
-                      <div className="mb-3">
-                        <div className="flex justify-between text-xs text-gray-600 mb-1">
-                          <span>{result.vote_count} votes</span>
-                          <span>{result.percentage.toFixed(1)}%</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div
-                            className="rounded-full h-2"
-                            style={{ width: `${result.percentage}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
+                   </div>
+                   <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ReBarChart data={chartData} layout="vertical" margin={{ left: 20, right: 40 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 11, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                           />
-                        </div>
+                          <Bar dataKey="votes" radius={[0, 4, 4, 0]}>
+                            {chartData.map((_, i) => (
+                              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </ReBarChart>
+                      </ResponsiveContainer>
+                   </div>
+                </article>
+              )}
+
+              {/* Candidates Registry */}
+              <article className="rounded-3xl border border-[#e2e8f0] bg-white p-8 shadow-sm">
+                 <div className="flex items-center justify-between mb-6">
+                    <h3 className="flex items-center gap-2 text-xl font-black text-[#1A237E]">
+                      <UserCheck className="h-5 w-5" />
+                      Candidate Registry
+                    </h3>
+                    <span className="text-[10px] font-black uppercase text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full border border-gray-100">
+                       {candidates.length} Profiles
+                    </span>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    {candLoading ? (
+                      <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+                    ) : candidates.length === 0 ? (
+                      <div className="py-20 text-center bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
+                         <Users className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                         <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No candidates registered.</p>
                       </div>
+                    ) : (
+                      candidates.map(candidate => (
+                        <CandidateProfileCard
+                          key={candidate.id}
+                          candidate={candidate}
+                          result={rankedResults.find(r => r.candidate_id === candidate.id)}
+                          canManage={isAdmin && currentElection?.status === 'draft'}
+                          onEdit={openEdit}
+                          onDelete={setDeleteCandidateTarget}
+                        />
+                      ))
                     )}
-                    {currentElection?.status === 'draft' && (
-                      <div className="flex gap-2">
-                        <button onClick={() => openEdit(c)} className="flex items-center gap-1 text-xs text-[rgb(16_102_177)] hover:text-indigo-800">
-                          <FaEdit /> Edit
-                        </button>
-                        <button onClick={() => setDeleteCandidateTarget(c)} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700">
-                          <FaTrash /> Remove
-                        </button>
+                 </div>
+              </article>
+           </div>
+
+           {/* Sidebar: Context & Actions */}
+           <aside className="lg:col-span-4 space-y-8">
+              <InfoPanel title="Operational Intel" badge={currentElection?.status}>
+                 <div className="space-y-4">
+                    <InfoRow icon={Globe} label="Jurisdiction" value={currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'National Level'} />
+                    <InfoRow icon={CalendarDays} label="Start Date" value={safeFormat(currentElection?.start_date)} />
+                    <InfoRow icon={Clock3} label="Created At" value={safeFormat(currentElection?.created_at)} />
+                 </div>
+                 <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Description</p>
+                    <p className="text-sm font-medium text-gray-600 leading-relaxed italic">
+                       "{currentElection?.description || 'No detailed briefing provided for this election.'}"
+                    </p>
+                 </div>
+              </InfoPanel>
+
+              {results?.winner_declared && results?.winner && (
+                <div className="rounded-3xl bg-gradient-to-br from-amber-400 to-orange-600 p-6 text-white shadow-xl shadow-amber-900/20 animate-in zoom-in-95 duration-500">
+                   <div className="flex items-center justify-between mb-6">
+                      <p className="text-xs font-black uppercase tracking-widest opacity-80">Elected Representative</p>
+                      <Trophy className="h-6 w-6 text-white/50" />
+                   </div>
+                   <div className="flex items-center gap-4">
+                      <ImageAvatar
+                        src={results.winner.image_url}
+                        name={results.winner.candidate_name}
+                        sizeClass="w-16 h-16"
+                        imageClassName="ring-4 ring-white/20"
+                        fallbackClassName="bg-white/20 text-white font-black"
+                      />
+                      <div>
+                         <p className="text-2xl font-black tracking-tight">{results.winner.candidate_name}</p>
+                         <p className="text-xs font-bold text-white/70">{results.winner.vote_count.toLocaleString()} Total Votes</p>
                       </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                   </div>
+                   <div className="mt-6 pt-6 border-t border-white/20">
+                      <div className="flex justify-between items-end">
+                         <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Victory Share</p>
+                            <p className="text-xl font-black">{results.winner.percentage.toFixed(1)}%</p>
+                         </div>
+                         <button onClick={() => navigate('/results')} className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition-all">Details</button>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              <div className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
+                 <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 mb-6">Security & Audit</h3>
+                 <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                       <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                       <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase text-gray-400">Ledger Integrity</p>
+                          <p className="text-xs font-bold text-slate-700 truncate">SHA-256 Verified</p>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                       <Eye className="h-5 w-5 text-blue-500" />
+                       <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase text-gray-400">Public Observer</p>
+                          <p className="text-xs font-bold text-slate-700 truncate">Access Restricted</p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </aside>
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {[
-            { name: 'full_name', label: 'Full Name', required: true },
-            { name: 'party', label: 'Party', required: true },
-            { name: 'symbol', label: 'Symbol / Initial', required: false },
-            { name: 'image_url', label: 'Image URL', required: false },
-          ].map(({ name, label, required }) => (
-            <div key={name}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-              <input
-                type="text"
-                value={form[name]}
-                onChange={e => setForm(f => ({ ...f, [name]: e.target.value }))}
-                required={required}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+      {/* Advanced Candidate Form Modal */}
+      <Modal 
+        isOpen={showModal} 
+        onClose={() => setShowModal(false)} 
+        title={editCandidateTarget ? 'Update Candidate Profile' : 'Register New Candidate'}
+        size="2xl"
+      >
+        <form onSubmit={handleSubmit} className="space-y-0" autoComplete="off">
+          <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+            {/* Left Column: Profile & Info */}
+            <div className="md:col-span-6 p-6 space-y-5 bg-gray-50/50">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
+                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Candidate Identity</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                  <div className="relative group">
+                    <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <input
+                      type="text"
+                      value={form.full_name}
+                      onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+                      required
+                      placeholder="Enter legal name"
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Symbol / Initial</label>
+                  <div className="relative group">
+                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <input
+                      type="text"
+                      value={form.symbol}
+                      onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))}
+                      placeholder="e.g. Lotus, Hand, etc."
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Candidate Photo</label>
+                  <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                    <ImageUpload
+                      file={form.image_file}
+                      existingUrl={form.image_url}
+                      onFileChange={(f) => setForm(prev => ({ ...prev, image_file: f }))}
+                      id="candidate-image-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Professional Bio</label>
+                  <div className="relative group">
+                    <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <textarea
+                      value={form.bio}
+                      onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                      rows={3}
+                      placeholder="Describe candidate's background..."
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          ))}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Target / Area</label>
-            <FancySelect
-              value={form.target_id}
-              onChange={e => setForm(f => ({ ...f, target_id: e.target.value }))}
-              options={[{ value: '', label: '-- No specific area --' }, ...targets.map(t => ({ value: t.id, label: `${t.name} (${t.type})` }))]}
-            />
+
+            {/* Right Column: Jurisdiction */}
+            <div className="md:col-span-6 p-6 space-y-6 border-l border-gray-100 bg-white">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
+                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Jurisdictional Scope</p>
+              </div>
+              
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Level</label>
+                  <div className="grid grid-cols-1 gap-1.5 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
+                    {COMMITTEE_TYPES.map(ct => (
+                      <button
+                        key={ct.value}
+                        type="button"
+                        onClick={() => {
+                          setCommitteeType(ct.value)
+                          setSelections({ state: '', district: '', block: '', booth: '' })
+                        }}
+                        className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
+                          committeeType === ct.value 
+                            ? 'bg-[#1A237E] text-white font-bold shadow-md ring-1 ring-[#1A237E]' 
+                            : 'text-gray-500 hover:bg-white hover:text-[#1A237E]'
+                        }`}
+                      >
+                        <span className="text-[11px] uppercase tracking-wider">{ct.label}</span>
+                        {committeeType === ct.value ? <Check size={12} /> : <ChevronRight size={10} className="opacity-30" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-1 border-t border-gray-50 mt-2">
+                  {committeeType === 'country' ? (
+                    <div className="py-8 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                       <Globe className="text-[#1A237E] w-8 h-8 mx-auto animate-pulse" />
+                       <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">National Level (India)</p>
+                       <p className="text-[10px] text-blue-600/70 font-medium">Automatic jurisdiction assignment</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {activeConfig && activeConfig.levels.includes('state') && (
+                        <SearchableSelect
+                          label="Pradesh / State"
+                          placeholder="Search state..."
+                          options={targets.filter(t => t.type === 'state')}
+                          value={selections.state}
+                          onChange={(v) => handleLevelChange('state', v)}
+                        />
+                      )}
+
+                      {activeConfig && activeConfig.levels.includes('district') && selections.state && (
+                        <SearchableSelect
+                          label="District"
+                          placeholder="Search district..."
+                          options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
+                          value={selections.district}
+                          onChange={(v) => handleLevelChange('district', v)}
+                        />
+                      )}
+
+                      {activeConfig && activeConfig.levels.includes('block') && selections.district && (
+                        <SearchableSelect
+                          label="Block"
+                          placeholder="Search block..."
+                          options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
+                          value={selections.block}
+                          onChange={(v) => handleLevelChange('block', v)}
+                        />
+                      )}
+
+                      {activeConfig && activeConfig.levels.includes('booth') && selections.block && (
+                        <SearchableSelect
+                          label="Booth"
+                          placeholder="Search booth..."
+                          options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
+                          value={selections.booth}
+                          onChange={(v) => handleLevelChange('booth', v)}
+                        />
+                      )}
+                      
+                      {activeConfig && activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]] && (
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-2 items-start">
+                          <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                          <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider leading-relaxed">
+                            Please complete the geographic path to assign the candidate.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-gray-50">
+                  <FancySelect
+                    label="Functional Committee"
+                    value={form.committee_id}
+                    onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
+                    placeholder="-- No Functional Group --"
+                    options={committees.map(c => ({ value: c.id, label: c.name }))}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-            <textarea
-              value={form.bio}
-              onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
-              rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-              Cancel
+
+          <div className="flex items-center justify-between p-6 bg-gray-50 border-t border-gray-100 rounded-b-2xl">
+            <button 
+              type="button" 
+              onClick={() => setShowModal(false)} 
+              className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Discard Changes
             </button>
-            <button type="submit" disabled={submitting} className="px-4 py-2 text-sm text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] disabled:opacity-60">
-              {submitting ? 'Saving…' : editCandidateTarget ? 'Update' : 'Add'}
+            <button 
+              type="submit" 
+              disabled={actionLoading} 
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1A237E] rounded-xl hover:brightness-110 shadow-xl shadow-blue-900/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {actionLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FaPlus className="w-3 h-3" />
+              )}
+              {editCandidateTarget ? 'Update Profile' : 'Confirm Registration'}
             </button>
           </div>
         </form>
@@ -348,3 +653,144 @@ export default function ElectionDetailPage() {
   )
 }
 
+function MetricCard({ icon: Icon, label, value, tone }) {
+  const toneClasses = {
+    blue: 'bg-blue-50 text-[#1a365d]',
+    green: 'bg-emerald-50 text-emerald-600',
+    orange: 'bg-orange-50 text-orange-600',
+  }
+
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
+      <div className={`rounded-xl p-3 ${toneClasses[tone] || toneClasses.blue}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.05em] text-[#64748b]">{label}</p>
+        <p className="text-2xl font-black text-slate-800">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }) {
+  const voteCount = result?.vote_count ?? 0
+  const votePercentage = result?.percentage ?? 0
+  const isWinner = result?.is_winner
+
+  return (
+    <div className={`flex flex-col gap-6 rounded-2xl border p-4 transition-all hover:shadow-md md:flex-row md:items-center ${
+      isWinner ? 'border-amber-300 bg-amber-50/30' : 'border-[#e2e8f0] bg-white'
+    }`}>
+      <div className="relative">
+        <ImageAvatar
+          src={candidate.image_url}
+          name={candidate.full_name}
+          sizeClass="w-20 h-20"
+          imageClassName="rounded-xl border border-[#e2e8f0] object-cover"
+          fallbackClassName="rounded-xl border border-[#e2e8f0] bg-slate-100 text-[#1A237E] text-xl font-black"
+        />
+        {isWinner && (
+           <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1 rounded-full shadow-lg">
+              <Trophy size={14} />
+           </div>
+        )}
+      </div>
+      
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex flex-wrap items-center gap-3">
+          <h4 className="truncate text-lg font-black text-slate-800">{candidate.full_name}</h4>
+          {candidate.committee?.name && (
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1A237E] border border-blue-100">
+              {candidate.committee.name}
+            </span>
+          )}
+          {isWinner && (
+            <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700 border border-amber-200">
+               Winner
+            </span>
+          )}
+        </div>
+        <p className="line-clamp-2 text-sm text-[#64748b]">{candidate.bio || 'No biography has been provided.'}</p>
+        <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b]">
+          <span className="inline-flex items-center gap-1">
+            <MapPinned className="h-3.5 w-3.5 text-blue-400" />
+            {candidate.target?.name || 'No area assigned'}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[#1A237E]">
+            <Vote className="h-3.5 w-3.5" />
+            {compactNumber(voteCount)} votes
+          </span>
+          {candidate.symbol && (
+            <span className="inline-flex items-center gap-1">
+              <Trophy className="h-3.5 w-3.5 text-amber-400" />
+              {candidate.symbol}
+            </span>
+          )}
+        </div>
+      </div>
+      
+      <div className="flex w-full items-center gap-3 md:w-44">
+        <div className="w-full">
+           <div className="flex justify-between text-[10px] text-gray-500 mb-1 font-black uppercase">
+              <span>{votePercentage.toFixed(1)}% Share</span>
+           </div>
+           <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+              <div
+                className="bg-[#1A237E] h-full transition-all duration-1000"
+                style={{ width: `${votePercentage}%` }}
+              />
+           </div>
+        </div>
+        {canManage && (
+          <ActionDropdown
+            align="right"
+            actions={[
+              { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
+              { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
+            ]}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function InfoPanel({ title, badge, children }) {
+  return (
+    <section className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
+      <h3 className="mb-6 flex items-center justify-between text-lg font-black text-slate-800">
+        {title}
+        {badge && <Badge status={badge} />}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+function InfoRow({ icon: Icon, label, value }) {
+  return (
+    <div className="flex gap-4">
+      <div className="flex h-[48px] min-w-[48px] items-center justify-center rounded-xl bg-slate-50 text-[#1A237E] border border-gray-100 shadow-sm">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-[#64748b]">{label}</p>
+        <p className="truncate font-bold text-slate-800 text-sm">{value || '—'}</p>
+      </div>
+    </div>
+  )
+}
+
+function compactNumber(value) {
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
+}
+
+function safeFormat(dateStr) {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
