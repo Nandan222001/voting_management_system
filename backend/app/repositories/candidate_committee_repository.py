@@ -27,3 +27,4 @@ class CandidateCommitteeRepository(BaseRepository[CandidateCommittee]):
             .filter(CandidateCommittee.tenant_id == tenant_id)
             .all()
         )
+
