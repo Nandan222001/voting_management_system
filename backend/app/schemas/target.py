@@ -27,6 +27,10 @@ class TargetBase(BaseModel):
         default=None,
         examples=[1],
     )
+    president_id: Optional[int] = Field(
+        default=None,
+        examples=[42],
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,6 +54,7 @@ class TargetUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     type: Optional[TargetType] = None
     parent_id: Optional[int] = None
+    president_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -58,11 +63,21 @@ class TargetUpdate(BaseModel):
 # Response
 # ---------------------------------------------------------------------------
 
+class PresidentMiniResponse(BaseModel):
+    """Simplified user record for president assignment."""
+    id: int
+    full_name: str
+    email: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class TargetResponse(TargetBase):
     """Full record for a target returned by the API."""
 
     id: int
     tenant_id: Optional[int] = None
+    president: Optional[PresidentMiniResponse] = None
     created_at: datetime
     updated_at: datetime
 

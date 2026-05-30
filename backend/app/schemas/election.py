@@ -49,9 +49,21 @@ class ElectionCreate(ElectionBase):
     status: ElectionStatus = Field(default=ElectionStatus.draft)
 
     @model_validator(mode="after")
-    def end_after_start(self) -> "ElectionCreate":
+    def validate_dates(self) -> "ElectionCreate":
+        # 1. End must be after start
         if self.end_date <= self.start_date:
             raise ValueError("end_date must be after start_date")
+        
+        # 2. Nomination end must be after nomination start
+        if self.nomination_start_date and self.nomination_end_date:
+            if self.nomination_end_date <= self.nomination_start_date:
+                raise ValueError("nomination_end_date must be after nomination_start_date")
+        
+        # 3. Voting start must be after nomination end
+        if self.nomination_end_date and self.start_date:
+            if self.start_date < self.nomination_end_date:
+                raise ValueError("voting start_date must be after nomination_end_date")
+                
         return self
 
 
@@ -79,10 +91,23 @@ class ElectionUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @model_validator(mode="after")
-    def end_after_start(self) -> "ElectionUpdate":
+    def validate_dates(self) -> "ElectionUpdate":
+        # Note: In updates, some fields might be None. 
+        # For a full check we'd need the current values from DB, 
+        # but we can at least check what's provided in the payload.
+        
         if self.start_date and self.end_date:
             if self.end_date <= self.start_date:
                 raise ValueError("end_date must be after start_date")
+                
+        if self.nomination_start_date and self.nomination_end_date:
+            if self.nomination_end_date <= self.nomination_start_date:
+                raise ValueError("nomination_end_date must be after nomination_start_date")
+                
+        if self.nomination_end_date and self.start_date:
+            if self.start_date < self.nomination_end_date:
+                raise ValueError("voting start_date must be after nomination_end_date")
+                
         return self
 
 
