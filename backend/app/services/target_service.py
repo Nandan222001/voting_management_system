@@ -31,6 +31,15 @@ class TargetService:
                 detail=f"A committee with the name '{data.name}' already exists.",
             )
 
+        # Check for duplicate president_id
+        if data.president_id:
+            existing_p = db.query(Target).filter(Target.president_id == data.president_id).first()
+            if existing_p:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This user is already assigned as a president to another committee.",
+                )
+
         # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
@@ -87,6 +96,15 @@ class TargetService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"A committee with the name '{data.name}' already exists.",
+                )
+
+        # Check for duplicate president_id
+        if data.president_id and data.president_id != target.president_id:
+            existing_p = db.query(Target).filter(Target.president_id == data.president_id).first()
+            if existing_p:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This user is already assigned as a president to another committee.",
                 )
 
         # Optional: Validate parent_id

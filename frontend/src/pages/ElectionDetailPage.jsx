@@ -23,6 +23,7 @@ import {
   StopCircle,
   Trophy,
   BarChart,
+  BarChart3,
   Trash2,
   Users,
   Vote,
@@ -243,11 +244,11 @@ export default function ElectionDetailPage() {
 
   const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
 
-  if (electionLoading) return <MainLayout title="Election Monitoring"><LoadingSpinner message="Loading election context..." /></MainLayout>
+  if (electionLoading) return <MainLayout title="Election Monitoring" noPadding={true}><LoadingSpinner message="Loading election context..." /></MainLayout>
 
   return (
-    <MainLayout title="Election Control Room">
-      <div className="mx-auto w-full max-w-7xl space-y-8">
+    <MainLayout title="Election Control Room" noPadding={true}>
+      <div className="w-full px-4 md:px-6 space-y-8 pt-4">
         {/* Header Navigation */}
         <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div className="flex items-center gap-5">
@@ -368,7 +369,7 @@ export default function ElectionDetailPage() {
 
            {/* Sidebar: Context & Actions */}
            <aside className="lg:col-span-4 space-y-8">
-              <InfoPanel title="Operational Intel" badge={currentElection?.status}>
+              <InfoPanel title="Election Detail" badge={currentElection?.status}>
                  <div className="space-y-4">
                     <InfoRow icon={Globe} label="Jurisdiction" value={currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'National Level'} />
                     <InfoRow icon={CalendarDays} label="Start Date" value={safeFormat(currentElection?.start_date)} />
@@ -413,25 +414,7 @@ export default function ElectionDetailPage() {
                 </div>
               )}
 
-              <div className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-                 <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 mb-6">Security & Audit</h3>
-                 <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                       <ShieldCheck className="h-5 w-5 text-emerald-500" />
-                       <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase text-gray-400">Ledger Integrity</p>
-                          <p className="text-xs font-bold text-slate-700 truncate">SHA-256 Verified</p>
-                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                       <Eye className="h-5 w-5 text-blue-500" />
-                       <div className="min-w-0">
-                          <p className="text-[10px] font-black uppercase text-gray-400">Public Observer</p>
-                          <p className="text-xs font-bold text-slate-700 truncate">Access Restricted</p>
-                       </div>
-                    </div>
-                 </div>
-              </div>
+               
            </aside>
         </div>
       </div>
