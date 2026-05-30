@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, require_admin
+from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id, require_admin
 from app.models.user import User
 from app.schemas.candidate_committee import (
     CandidateCommitteeCreate,
@@ -37,13 +39,22 @@ def get_committees(
     summary="List all candidate committees for a specific tenant (Public)",
 )
 def get_public_committees(
-    tenant_id: int,
+    tenant_id: Optional[int] = Query(None, description="Tenant integer ID. Mobile clients may omit this and use X-Tenant-ID header instead."),
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
     Returns all committees defined by the specified tenant. Publicly accessible.
+    Tenant can be identified via the ``tenant_id`` query parameter (web) or
+    the ``X-Tenant-ID`` header (mobile).
     """
-    committees = candidate_committee_service.get_committees_by_tenant(db, tenant_id)
+    effective_tenant_id = tenant_id or header_tenant_id
+    if not effective_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant ID is required. Pass it as the 'tenant_id' query parameter or in the X-Tenant-ID header.",
+        )
+    committees = candidate_committee_service.get_committees_by_tenant(db, effective_tenant_id)
     data = [CandidateCommitteeResponse.model_validate(c).model_dump(mode="json") for c in committees]
     return success_response(data=data, message="Public candidate committees retrieved.")
 

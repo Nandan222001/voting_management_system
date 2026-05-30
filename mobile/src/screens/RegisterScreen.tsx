@@ -218,8 +218,8 @@ const RegisterScreen = ({ navigation }: any) => {
       const statesData = await tenantService.getPublicTargets(undefined, 'state');
       setStates(statesData);
 
-      // 3. Fetch specific data for this tenant
-      fetchTenantSpecificData(tenant.id);
+      // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
+      fetchTenantSpecificData();
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
       fetchTenants();
@@ -293,7 +293,7 @@ const RegisterScreen = ({ navigation }: any) => {
 
   useEffect(() => {
     if (formData.tenant_id) {
-      fetchTenantSpecificData(formData.tenant_id);
+      fetchTenantSpecificData();
     }
   }, [formData.tenant_id]);
 
@@ -306,11 +306,11 @@ const RegisterScreen = ({ navigation }: any) => {
     }
   };
 
-  const fetchTenantSpecificData = async (tenantId: number) => {
+  const fetchTenantSpecificData = async () => {
     try {
-      const commData = await tenantService.getPublicCommittees(tenantId);
+      const commData = await tenantService.getPublicCommittees();
       setCommittees(commData);
-      const planData = await tenantService.getPublicPlans(tenantId);
+      const planData = await tenantService.getPublicPlans();
       setPlans(planData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
@@ -412,7 +412,10 @@ const RegisterScreen = ({ navigation }: any) => {
     } else if (modalType === 'tenant') {
       title = "Select Organization";
       data = tenants;
-      onSelect = (item) => {
+      onSelect = async (item) => {
+        if (item.uuid) {
+          await tenantService.selectTenant(item.uuid);
+        }
         handleChange('tenant_id', item.id);
         setSelectedTenantName(item.name);
       };

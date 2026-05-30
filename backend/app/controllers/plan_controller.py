@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, Query, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, require_admin
+from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id, require_admin
 from app.models.user import User
 from app.schemas.plan import PlanCreate, PlanUpdate, PlanResponse, PlanListResponse
 from app.services.plan_service import plan_service
@@ -40,14 +42,23 @@ def get_plans(
     summary="List all subscription plans for a specific tenant (Public)",
 )
 def get_public_plans(
-    tenant_id: int,
+    tenant_id: Optional[int] = Query(None, description="Tenant integer ID. Mobile clients may omit this and use X-Tenant-ID header instead."),
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
     Returns a list of all active plans defined by the specified tenant. Publicly accessible.
+    Tenant can be identified via the ``tenant_id`` query parameter (web) or
+    the ``X-Tenant-ID`` header (mobile).
     """
-    items, total = plan_service.get_plans(db, tenant_id=tenant_id, active_only=True)
-    
+    effective_tenant_id = tenant_id or header_tenant_id
+    if not effective_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant ID is required. Pass it as the 'tenant_id' query parameter or in the X-Tenant-ID header.",
+        )
+    items, total = plan_service.get_plans(db, tenant_id=effective_tenant_id, active_only=True)
+
     return success_response(
         data={
             "total": total,

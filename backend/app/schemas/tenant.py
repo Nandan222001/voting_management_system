@@ -100,4 +100,5 @@ class TenantPublicResponse(BaseModel):
 
     id: int
     name: str
+    uuid: Optional[str] = None
     logo_url: Optional[str] = None
