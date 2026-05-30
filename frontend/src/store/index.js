@@ -8,6 +8,7 @@ import tenantReducer from './slices/tenantSlice'
 import candidateCommitteeReducer from './slices/candidateCommitteeSlice'
 import targetReducer from './slices/targetSlice'
 import paymentReducer from './slices/paymentSlice'
+import planReducer from './slices/planSlice'
 
 export const store = configureStore({
   reducer: {
@@ -20,6 +21,7 @@ export const store = configureStore({
     candidateCommittees: candidateCommitteeReducer,
     targets: targetReducer,
     payments: paymentReducer,
+    plans: planReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

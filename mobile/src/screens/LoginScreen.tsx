@@ -14,7 +14,7 @@ import {
   Image,
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
-import { authService } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 import Header from "../components/common/Header";
 
 const { width } = Dimensions.get('window');
@@ -24,7 +24,8 @@ const getInputStyle = () => {
   return Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : {};
 };
 
-const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginSuccess: () => void }) => {
+const LoginScreen = ({ navigation }: { navigation: any }) => {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,11 +41,25 @@ const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginS
     }
     setLoading(true);
     try {
-      await authService.login(email, password);
-      onLoginSuccess();
+      await login(email, password);
     } catch (error: any) {
       const message = error.response?.data?.detail || "Invalid credentials. Please check your email and password.";
-      Alert.alert("Sign In Failed", message);
+      
+      if (message === "Account email not verified") {
+        Alert.alert(
+          "Verification Required",
+          "Your email address is not verified. Would you like to verify it now?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Verify Now", 
+              onPress: () => navigation.navigate("Verify", { email }) 
+            }
+          ]
+        );
+      } else {
+        Alert.alert("Sign In Failed", message);
+      }
     } finally {
       setLoading(false);
     }
@@ -67,7 +82,7 @@ const LoginScreen = ({ navigation, onLoginSuccess }: { navigation: any, onLoginS
           </View>
           
           <Text style={styles.mainHeading}>Authorized Access</Text>
-          <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active ballots.</Text>
+          <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active elections.</Text>
         </View>
 
         <View style={styles.formBorderCard}>

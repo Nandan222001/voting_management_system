@@ -18,7 +18,7 @@ export const createTarget = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await targetService.createTarget(data);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create target');
     }
@@ -30,7 +30,7 @@ export const updateTarget = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await targetService.updateTarget(id, data);
-      return response.data;
+      return response.data.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update target');
     }

@@ -6,7 +6,7 @@ Wires together all routers, middleware, and startup/shutdown hooks.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -21,6 +21,9 @@ from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
 from app.controllers.vote_controller import router as vote_router
 from app.controllers.payment_controller import router as payment_router
+from app.controllers.plan_controller import router as plan_router
+from app.controllers.media_controller import router as media_router
+from app.middlewares.auth_middleware import verify_tenant_header
 from app.utils.uploads import STATIC_ROOT
 
 
@@ -62,16 +65,21 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(tenant_router, prefix="/api/v1")
-app.include_router(user_router, prefix="/api/v1")
-app.include_router(election_router, prefix="/api/v1")
-app.include_router(candidate_router, prefix="/api/v1")
-app.include_router(candidate_committee_router, prefix="/api/v1")
-app.include_router(target_router, prefix="/api/v1")
-app.include_router(vote_router, prefix="/api/v1")
-app.include_router(payment_router, prefix="/api/v1")
-app.include_router(report_router, prefix="/api/v1")
+# Applying verify_tenant_header globally to all API routes (header is optional where not needed)
+common_dependencies = [Depends(verify_tenant_header)]
+
+app.include_router(auth_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(tenant_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(user_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(election_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(candidate_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(payment_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(plan_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(media_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(report_router, prefix="/api/v1", dependencies=common_dependencies)
 
 # Serve uploaded static files from an absolute path so it works regardless of
 # the process working directory.

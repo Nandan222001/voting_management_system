@@ -45,19 +45,55 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
     date_of_birth = Column(String(20), nullable=True)
+    gender = Column(String(20), nullable=True)
+    parent_name = Column(String(150), nullable=True)
     voter_id = Column(String(50), unique=True, index=True, nullable=True)
     designation = Column(String(100), nullable=True)
+
+    # KYC Details
+    kyc_type = Column(String(50), nullable=True)
+    kyc_front_url = Column(String(500), nullable=True)
+    kyc_back_url = Column(String(500), nullable=True)
+
+    # Address Information (Permanent)
+    house_number = Column(String(100), nullable=True)
     street_address = Column(String(300), nullable=True)
+    village = Column(String(100), nullable=True)
+    landmark = Column(String(200), nullable=True)
+    pincode = Column(String(20), nullable=True)
     city = Column(String(100), nullable=True)
+    taluka = Column(String(100), nullable=True)
     district = Column(String(100), nullable=True, index=True)
     state = Column(String(100), nullable=True)
-    country = Column(String(100), nullable=True)
-    pincode = Column(String(20), nullable=True)
+    country = Column(String(100), nullable=True, default="India")
+
+    # Current Address (if different)
+    current_street_address = Column(String(300), nullable=True)
+    current_city = Column(String(100), nullable=True)
+    current_district = Column(String(100), nullable=True)
+    current_state = Column(String(100), nullable=True)
+    current_pincode = Column(String(20), nullable=True)
 
     # Scoping – link to structured geographical target
     target_id = Column(
         Integer,
         ForeignKey("targets.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Organization / Committee Mapping
+    committee_id = Column(
+        Integer,
+        ForeignKey("candidate_committees.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Membership Plan
+    membership_plan_id = Column(
+        Integer,
+        ForeignKey("plans.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )

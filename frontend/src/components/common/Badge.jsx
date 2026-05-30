@@ -12,10 +12,9 @@ const STATUS_STYLES = {
   // Neutral
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   'pending approval': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-  trial: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
   provisioning: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
   // Draft
-  draft: 'bg-gray-50 text-gray-500 border-gray-100',
+  draft: 'bg-gray-100 text-gray-600 border-gray-200',
   inactive: 'bg-gray-50 text-gray-500 border-gray-100',
   // Roles
   admin: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',

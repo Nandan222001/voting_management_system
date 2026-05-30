@@ -1,8 +1,49 @@
-import api from './api';
+import api, { setTenantUUID, getTenantUUID, clearTenantUUID } from './api';
 
 export const tenantService = {
+  // ─── Tenant selection ─────────────────────────────────────────────────────
+  // Call this when the user picks a tenant during onboarding / registration.
+  // Persists the UUID so every subsequent request carries X-Tenant-ID.
+
+  selectTenant: async (tenantUUID: string): Promise<void> => {
+    await setTenantUUID(tenantUUID);
+  },
+
+  getStoredTenantUUID: getTenantUUID,
+  clearStoredTenant: clearTenantUUID,
+
+  // ─── Public endpoints ─────────────────────────────────────────────────────
+
+  // Returns all active tenants for the initial selection screen (no auth, no header needed).
   getPublicTenants: async () => {
     const response = await api.get('/tenants/public');
-    return response.data.data; // Data is wrapped in { data: [...] } from backend utils
+    return response.data.data;
+  },
+
+  // Returns the branding/config for the current tenant using X-Tenant-ID header.
+  getCurrentTenant: async () => {
+    const response = await api.get('/tenants/me');
+    return response.data.data;
+  },
+
+  // Public data endpoints — tenant is resolved from X-Tenant-ID header,
+  // no query parameter needed from the mobile client.
+
+  getPublicCommittees: async () => {
+    const response = await api.get('/candidate-committees/public');
+    return response.data.data;
+  },
+
+  getPublicPlans: async () => {
+    const response = await api.get('/plans/public');
+    return response.data.data?.items ?? response.data.data;
+  },
+
+  getPublicTargets: async (parentId?: number, type?: string) => {
+    const params: Record<string, string> = {};
+    if (parentId !== undefined) params.parent_id = String(parentId);
+    if (type) params.target_type = type;
+    const response = await api.get('/targets/public', { params });
+    return response.data.data;
   },
 };

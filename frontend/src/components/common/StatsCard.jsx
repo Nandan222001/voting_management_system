@@ -2,9 +2,9 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 
 const COLOR_MAP = {
   indigo: {
-    bg: 'bg-[#e6edfb]',
-    icon: 'bg-[rgb(16_102_177)] text-white',
-    ring: 'ring-[rgb(16_102_177)]/20',
+    bg: 'bg-[#e8eaf6]',
+    icon: 'bg-[#1A237E] text-white',
+    ring: 'ring-[#1A237E]/20',
   },
   green: {
     bg: 'bg-green-50',
@@ -12,9 +12,9 @@ const COLOR_MAP = {
     ring: 'ring-green-200',
   },
   blue: {
-    bg: 'bg-[#e6edfb]',
-    icon: 'bg-[rgb(16_102_177)] text-white',
-    ring: 'ring-[rgb(16_102_177)]/20',
+    bg: 'bg-[#e8eaf6]',
+    icon: 'bg-[#1A237E] text-white',
+    ring: 'ring-[#1A237E]/20',
   },
   orange: {
     bg: 'bg-orange-50',
@@ -39,15 +39,15 @@ export default function StatsCard({ title, value, icon: Icon, color = 'indigo', 
   const absChange = typeof change === 'number' ? Math.abs(change) : null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm transition-all group hover:shadow-md">
+    <div className="rounded-lg border border-[#c4c6d0] bg-white p-5 shadow-sm transition-all group hover:shadow-md">
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</h3>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${colorClass.icon} shadow-sm`}>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-[#74777f]">{title}</h3>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClass.icon} shadow-sm`}>
           {Icon && <Icon size={20} />}
         </div>
       </div>
       
-      <div className="text-3xl font-bold text-gray-900 mb-1">
+      <div className="mb-1 text-3xl font-bold text-[#1b1b1f]">
         {value !== undefined && value !== null ? value.toLocaleString() : '0'}
       </div>
 

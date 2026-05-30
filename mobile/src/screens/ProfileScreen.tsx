@@ -7,39 +7,40 @@ import {
   ScrollView,
   Alert,
   Platform,
-  Switch,
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { authService } from '../services/authService';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../context/AuthContext';
+import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import Header from '../components/common/Header';
 
-const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isBiometricAuth, setIsBiometricAuth] = useState(true);
+const COLORS = {
+  primary: '#003d9b',
+  primaryContainer: '#0052cc',
+  background: '#f8f9fb',
+  surface: '#ffffff',
+  onSurface: '#191c1e',
+  onSurfaceVariant: '#434654',
+  outlineVariant: '#c3c6d6',
+  secondary: '#056e00',
+  secondaryContainer: '#8dfc75',
+  onSecondaryContainer: '#067500',
+  surfaceContainer: '#edeef0',
+  surfaceContainerLow: '#f3f4f6',
+  surfaceContainerHighest: '#e1e2e4',
+  outline: '#737685',
+  error: '#ba1a1a',
+  primaryFixed: '#dae2ff',
+};
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to load user in Profile", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+const ProfileScreen = () => {
+  const { user, logout, isLoading } = useAuth();
 
   const handleLogout = () => {
     const performLogout = async () => {
       try {
-        console.log('Starting logout process...');
-        await authService.logout();
-        onLogout();
+        await logout();
       } catch (error) {
         console.error('Logout error:', error);
         Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -62,348 +63,235 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="rgb(16 102 177)" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Header title="Verified Profile" />
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <Header title="Member Profile" />
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         
-        {/* Profile Header Block */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarWrapper}>
-            <Image 
-              source={{ uri: 'https://ui-avatars.com/api/?name=' + (user?.full_name || 'User') + '&background=3b82f6&color=fff&size=200' }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.verifiedBadge}>
-              <MaterialIcons name="verified" size={18} color="#fff" />
-            </View>
-          </View>
-          <Text style={styles.userName}>{user?.full_name || "Verified Voter"}</Text>
-          <View style={styles.secureIdBadge}>
-            <Ionicons name="finger-print" size={14} color="rgb(16 102 177)" style={{ marginRight: 4 }} />
-            <Text style={styles.secureIdText}>SECURE ID: {(user?.id || '4209').toString().padStart(4, '0')}</Text>
-          </View>
-        </View>
-
-        {/* IDENTITY DETAILS SECTION */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>IDENTITY DETAILS</Text>
-            <MaterialIcons name="info-outline" size={18} color="#6b7280" />
-          </View>
-          
-          <View style={styles.infoCard}>
-            <View style={styles.detailItem}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Full Legal Name</Text>
-                <Text style={styles.detailValue}>{user?.full_name || 'N/A'}</Text>
-              </View>
-              <MaterialIcons name="lock-outline" size={20} color="#9ca3af" />
-            </View>
-
-            <View style={styles.detailItem}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Email Address</Text>
-                <Text style={styles.detailValue}>{user?.email || 'N/A'}</Text>
-              </View>
-              <MaterialIcons name="mail-outline" size={18} color="#9ca3af" />
-            </View>
-
-            <View style={[styles.detailItem, { borderBottomWidth: 0 }]}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Account Status</Text>
-                <Text style={styles.detailValue}>{(user?.status || 'Pending').toUpperCase()}</Text>
-              </View>
-              <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? '#a7f3d0' : '#fee2e2' }]}>
-                <Text style={[styles.statusText, { color: user?.status === 'active' ? '#047857' : '#991b1b' }]}>
-                  {(user?.status || 'PENDING').toUpperCase()}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* SECURITY SETTINGS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SECURITY SETTINGS</Text>
-          <View style={styles.infoCard}>
-            
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="password" size={20} color="#1f2937" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Change Password</Text>
-                <Text style={styles.menuSubtitle}>Enhance your registry security</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-            </TouchableOpacity>
-
-            <View style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="face" size={20} color="#1f2937" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Biometric Auth</Text>
-                <Text style={styles.menuSubtitle}>Use FaceID or Fingerprint</Text>
-              </View>
-              <Switch
-                value={isBiometricAuth}
-                onValueChange={setIsBiometricAuth}
-                trackColor={{ false: '#e5e7eb', true: 'rgb(16 102 177)' }}
-                thumbColor={'#fff'}
+        {/* Profile Header Card */}
+        <View style={styles.headerCard}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryFixed]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.headerGradient}
+          />
+          <View style={styles.headerContent}>
+            <View style={styles.avatarWrapper}>
+              <Image 
+                source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff' }} 
+                style={styles.avatar} 
               />
+              <View style={styles.verifiedIconBadge}>
+                <MaterialIcons name="verified" size={16} color={COLORS.onSecondaryContainer} />
+              </View>
             </View>
-
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="vpn-key" size={20} color="#1f2937" />
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.userName}>{user?.full_name || "Member"}</Text>
+              <View style={styles.badgeRow}>
+                <View style={styles.memberBadge}>
+                   <MaterialIcons name="shield" size={14} color={COLORS.primary} />
+                   <Text style={styles.memberBadgeText}>{user?.is_verified ? 'VERIFIED MEMBER' : 'UNVERIFIED'}</Text>
+                </View>
+                <View style={styles.idBadge}>
+                   <Text style={styles.idBadgeText}>ID: {user?.voter_id || `FED-${(user?.id || 0).toString().padStart(4, '0')}-X`}</Text>
+                </View>
               </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Two-Factor Auth</Text>
-                <Text style={[styles.menuSubtitle, { color: '#10b981', fontWeight: '500' }]}>Active Protection</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+            </View>
+            <TouchableOpacity style={styles.editBtn}>
+               <MaterialIcons name="edit" size={18} color="#fff" />
+               <Text style={styles.editBtnText}>Edit Profile</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* VERIFICATION DOCUMENTS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>VERIFICATION DOCUMENTS</Text>
-          
-          <View style={styles.documentCard}>
-            <View style={styles.documentDetails}>
-              <Text style={styles.documentTitle}>Voter Registration Card</Text>
-              <Text style={styles.documentSubtitle}>Verified in Digital Registry</Text>
+        {/* Settings Grid */}
+        <View style={styles.settingsGrid}>
+          {/* Personal Info */}
+          <View style={styles.settingCard}>
+            <TouchableOpacity style={styles.cardHeader}>
+              <View style={styles.cardTitleRow}>
+                 <View style={styles.iconBox}>
+                    <MaterialIcons name="person" size={20} color={COLORS.primary} />
+                 </View>
+                 <View>
+                    <Text style={styles.cardTitle}>Personal Information</Text>
+                    <Text style={styles.cardSub}>Manage your public and private data</Text>
+                 </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
+            </TouchableOpacity>
+            <View style={styles.cardBody}>
+               <View style={styles.infoRow}>
+                  <View style={styles.infoItem}>
+                     <Text style={styles.infoLabel}>EMAIL ADDRESS</Text>
+                     <Text style={styles.infoValue} numberOfLines={1}>{user?.email || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.infoItem}>
+                     <Text style={styles.infoLabel}>PHONE NUMBER</Text>
+                     <Text style={styles.infoValue}>{user?.phone || 'N/A'}</Text>
+                  </View>
+               </View>
             </View>
-            <MaterialIcons name="check-circle" size={22} color="#10b981" />
           </View>
 
-          <View style={styles.documentCard}>
-            <View style={styles.documentDetails}>
-              <Text style={styles.documentTitle}>Identity Confirmation</Text>
-              <Text style={styles.documentSubtitle}>Verified by System Admin</Text>
-            </View>
-            <MaterialIcons name="check-circle" size={22} color="#10b981" />
+          {/* Security */}
+          <TouchableOpacity style={styles.settingCard}>
+             <View style={styles.cardHeader}>
+                <View style={styles.cardTitleRow}>
+                   <View style={styles.iconBox}>
+                      <MaterialIcons name="lock" size={20} color={COLORS.primary} />
+                   </View>
+                   <View>
+                      <Text style={styles.cardTitle}>Security & Login</Text>
+                      <Text style={styles.cardSub}>Passwords, 2FA, and session control</Text>
+                   </View>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
+             </View>
+             <View style={styles.securityStatus}>
+                <View style={styles.tfaBadge}>
+                   <MaterialIcons name="check-circle" size={12} color={COLORS.secondary} />
+                   <Text style={styles.tfaText}>2FA ENABLED</Text>
+                </View>
+                <Text style={styles.passChangeText}>Last password change: 14 days ago</Text>
+             </View>
+          </TouchableOpacity>
+
+          {/* Notifications */}
+          <TouchableOpacity style={styles.settingCard}>
+             <View style={styles.cardHeader}>
+                <View style={styles.cardTitleRow}>
+                   <View style={styles.iconBox}>
+                      <MaterialIcons name="notifications-active" size={20} color={COLORS.primary} />
+                   </View>
+                   <View>
+                      <Text style={styles.cardTitle}>Notification Preferences</Text>
+                      <Text style={styles.cardSub}>Alert thresholds and channel routing</Text>
+                   </View>
+                </View>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
+             </View>
+          </TouchableOpacity>
+
+          {/* Volunteer History */}
+          <View style={[styles.settingCard, { backgroundColor: COLORS.primary }]}>
+             <View style={styles.volunteerHeader}>
+                <Text style={styles.volunteerTitle}>Volunteer History</Text>
+                <MaterialIcons name="history" size={20} color="#fff" />
+             </View>
+             <View style={styles.volunteerStats}>
+                <View style={styles.volStatItem}>
+                   <Text style={styles.volStatLabel}>Total Hours</Text>
+                   <Text style={styles.volStatValue}>412</Text>
+                </View>
+                <View style={styles.volStatDivider} />
+                <View style={styles.volStatItem}>
+                   <Text style={styles.volStatLabel}>Events Managed</Text>
+                   <Text style={styles.volStatValue}>18</Text>
+                </View>
+             </View>
+             <TouchableOpacity style={styles.volTranscriptBtn}>
+                <Text style={styles.volTranscriptText}>View Full Transcript</Text>
+             </TouchableOpacity>
           </View>
+
+          {/* Support */}
+          <View style={styles.settingCard}>
+             <Text style={styles.cardTitle}>Support</Text>
+             <View style={styles.supportList}>
+                <TouchableOpacity style={styles.supportItem}>
+                   <MaterialIcons name="help-center" size={20} color={COLORS.onSurfaceVariant} />
+                   <Text style={styles.supportText}>Help Center</Text>
+                   <MaterialIcons name="open-in-new" size={14} color={COLORS.onSurfaceVariant} style={{ marginLeft: 'auto' }} />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.supportItem}>
+                   <MaterialIcons name="forum" size={20} color={COLORS.onSurfaceVariant} />
+                   <Text style={styles.supportText}>Contact Admin Support</Text>
+                </TouchableOpacity>
+             </View>
+          </View>
+
+          {/* Logout Button */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+             <MaterialIcons name="logout" size={20} color={COLORS.error} />
+             <Text style={styles.logoutText}>Logout Account</Text>
+          </TouchableOpacity>
+
+          {/* Footer Meta */}
+          <Text style={styles.footerMeta}>
+            Session ID: AWS-NODE-PRM-99201-B | System Version 4.8.2-GA
+          </Text>
         </View>
-
-        {/* Log Out Action Trigger */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <MaterialIcons name="logout" size={20} color="#dc2626" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutButtonText}>Log out of SecureVote</Text>
-        </TouchableOpacity>
-        
-        {/* Footer Build Specifications */}
-        <Text style={styles.buildVersionText}>Version 2.2.0-secure | Built for Civic Integrity</Text>
-        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-  },
-  content: {
-    flex: 1,
-  },
-  profileHeader: {
-    alignItems: 'center',
-    paddingTop: 40,
-    paddingBottom: 24,
-  },
-  avatarWrapper: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  verifiedBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: 'rgb(16 102 177)',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#f8fafc',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  secureIdBadge: {
-   flexDirection: 'row',
-   alignItems: 'center',
-   backgroundColor: '#eff6ff',
-   paddingHorizontal: 14,
-   paddingVertical: 6,
-   borderRadius: 20,
-  },
-  secureIdText: {
-   fontSize: 12,
-   fontWeight: '600',
-   color: 'rgb(16 102 177)',
-   letterSpacing: 0.5,
-  },  section: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#475569',
-    letterSpacing: 0.5,
-    flex: 1,
-  },
-  infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    overflow: 'hidden',
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  detailTextContainer: {
-    flex: 1,
-  },
-  detailLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  menuIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  menuTextContainer: {
-    flex: 1,
-  },
-  menuTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
-  },
-  menuSubtitle: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  documentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
-    marginBottom: 12,
-  },
-  documentDetails: {
-    flex: 1,
-  },
-  documentTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
-  },
-  documentSubtitle: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 24,
-    paddingVertical: 14,
-    borderWidth: 1.5,
-    borderColor: '#dc2626',
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-  },
-  logoutButtonText: {
-    fontSize: 15,
-    color: '#dc2626',
-    fontWeight: '700',
-  },
-  buildVersionText: {
-    textAlign: 'center',
-    color: '#94a3b8',
-    fontSize: 12,
-    marginTop: 20,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  content: { flex: 1 },
+  
+  headerCard: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant, overflow: 'hidden' },
+  headerGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 100, opacity: 0.05 },
+  headerContent: { padding: 24, paddingTop: 32, alignItems: 'center' },
+  avatarWrapper: { position: 'relative', marginBottom: 16 },
+  avatar: { width: 110, height: 110, borderRadius: 16, borderWidth: 4, borderColor: '#fff', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }, android: { elevation: 4 } }) },
+  verifiedIconBadge: { position: 'absolute', bottom: -6, right: -6, backgroundColor: COLORS.secondaryContainer, padding: 4, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
+  headerTextWrapper: { alignItems: 'center', gap: 8 },
+  userName: { fontSize: 24, fontWeight: '800', color: COLORS.onSurface },
+  badgeRow: { flexDirection: 'row', gap: 8 },
+  memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0, 61, 155, 0.05)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+  memberBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.primary, letterSpacing: 0.5 },
+  idBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
+  idBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant },
+  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, marginTop: 24 },
+  editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+
+  settingsGrid: { padding: 16, gap: 16 },
+  settingCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 20, overflow: 'hidden' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  iconBox: { width: 40, height: 40, borderRadius: 10, backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
+  cardSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
+  cardBody: { marginTop: 20 },
+  infoRow: { flexDirection: 'row', gap: 16 },
+  infoItem: { flex: 1, gap: 4 },
+  infoLabel: { fontSize: 8, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
+  infoValue: { fontSize: 14, color: COLORS.onSurface },
+  
+  securityStatus: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
+  tfaBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(5, 110, 0, 0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  tfaText: { fontSize: 10, fontWeight: '800', color: COLORS.secondary },
+  passChangeText: { fontSize: 12, color: COLORS.onSurfaceVariant },
+
+  volunteerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  volunteerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  volunteerStats: { flexDirection: 'row', alignItems: 'center', gap: 24, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 16 },
+  volStatItem: { flex: 1, gap: 4 },
+  volStatLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  volStatValue: { fontSize: 28, fontWeight: '800', color: '#fff' },
+  volStatDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)' },
+  volTranscriptBtn: { marginTop: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center' },
+  volTranscriptText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+
+  supportList: { gap: 8, marginTop: 16 },
+  supportItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, backgroundColor: COLORS.surfaceContainerLow },
+  supportText: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
+
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.error, marginTop: 8 },
+  logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.error },
+  footerMeta: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant, opacity: 0.6, marginTop: 16, letterSpacing: 0.5 },
 });
 
 export default ProfileScreen;

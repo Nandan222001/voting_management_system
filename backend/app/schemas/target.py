@@ -62,7 +62,7 @@ class TargetResponse(TargetBase):
     """Full record for a target returned by the API."""
 
     id: int
-    tenant_id: int
+    tenant_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

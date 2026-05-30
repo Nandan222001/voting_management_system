@@ -267,6 +267,44 @@ class UserService:
             )
         return updated
 
+    def unblock_user(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> User:
+        """
+        Unblock a blocked user.
+
+        Args:
+            db:        Active database session.
+            user_id:   Primary key of the user to unblock.
+            tenant_id: When supplied, verify the user belongs to this tenant.
+
+        Returns:
+            The updated ``User`` instance.
+
+        Raises:
+            HTTPException 404: If the user does not exist or is not in tenant.
+            HTTPException 400: If the user is not blocked.
+        """
+        repo = UserRepository(db)
+        user = self.get_user_by_id(db, user_id, tenant_id=tenant_id)
+
+        if user.status != UserStatus.blocked:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is not blocked.",
+            )
+
+        updated = repo.update_status(user_id, UserStatus.active)
+        if updated is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User with id={user_id} not found.",
+            )
+        return updated
+
     def delete_user(
         self,
         db: Session,

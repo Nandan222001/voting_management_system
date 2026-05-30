@@ -14,6 +14,11 @@ const paymentService = {
   updatePaymentSettings: (data) => api.put('/payments/settings', data),
 
   /**
+   * Fetch current Razorpay configuration.
+   */
+  getPaymentSettings: () => api.get('/payments/settings'),
+
+  /**
    * Initiate a new payment/order.
    * @param {Object} data { amount, description, user_id }
    */
