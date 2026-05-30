@@ -87,7 +87,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
 
         <View style={styles.formBorderCard}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Identity / Email</Text>
+            <Text style={styles.label}>Email</Text>
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="person-outline"
@@ -109,14 +109,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
 
           <View style={styles.inputGroup}>
             <View style={styles.passwordLabelRow}>
-              <Text style={styles.label}>Secure Password</Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert("Forgot Password", "Please contact your organization's administrator to reset your credentials.")
-                }
-              >
-                <Text style={styles.forgotText}>Recovery Options</Text>
-              </TouchableOpacity>
+              <Text style={styles.label}>Password</Text>
             </View>
             <View style={styles.inputWrapper}>
               <MaterialIcons

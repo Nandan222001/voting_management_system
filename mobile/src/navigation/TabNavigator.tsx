@@ -5,9 +5,9 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
-import IdentityScreen from '../screens/IdentityScreen';
 import VotingScreen from '../screens/VotingScreen';
 import CandidateDetailScreen from '../screens/CandidateDetailScreen';
+import NominationScreen from '../screens/NominationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +19,7 @@ const VoteStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Voting" component={VotingScreen} />
     <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
+    <Stack.Screen name="Nomination" component={NominationScreen} />
   </Stack.Navigator>
 );
 
@@ -31,8 +32,6 @@ const TabNavigator = () => {
 
           if (route.name === 'Dashboard') {
             iconName = 'dashboard';
-          } else if (route.name === 'Identity') {
-            iconName = 'verified-user';
           } else if (route.name === 'Elections') {
             iconName = 'how-to-vote';
           } else if (route.name === 'Analytics') {
@@ -62,11 +61,6 @@ const TabNavigator = () => {
         name="Dashboard" 
         component={DashboardScreen} 
         options={{ tabBarLabel: 'Home' }}
-      />
-      <Tab.Screen 
-        name="Identity" 
-        component={IdentityScreen} 
-        options={{ tabBarLabel: 'Identity' }}
       />
       <Tab.Screen 
         name="Elections" 
