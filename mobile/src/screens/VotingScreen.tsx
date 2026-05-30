@@ -12,8 +12,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
+import Header from '../components/common/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -94,19 +96,20 @@ const VotingScreen = ({ navigation, route }: any) => {
     if (selectedElection) {
       fetchElectionDetails(selectedElection.id);
     } else {
-      fetchActiveElections();
+      fetchElections();
     }
   }, [selectedElection]);
 
-  const fetchActiveElections = async () => {
+  const fetchElections = async () => {
     try {
       setLoading(true);
       const allElections = await electionService.getElections();
-      const active = allElections.filter((e: any) => e.status === 'active');
-      setElections(active);
+      // Show all except drafts
+      const filtered = allElections.filter((e: any) => e.status !== 'draft');
+      setElections(filtered);
     } catch (error) {
-      console.error("Failed to load active elections", error);
-      Alert.alert("Error", "Failed to load active elections.");
+      console.error("Failed to load elections", error);
+      Alert.alert("Error", "Failed to load elections.");
     } finally {
       setLoading(false);
     }
@@ -174,51 +177,62 @@ const VotingScreen = ({ navigation, route }: any) => {
   if (!selectedElection) {
     return (
       <View style={styles.container}>
-        {/* Top App Bar */}
-        <View style={styles.votingHeader}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-          <Text style={styles.votingHeaderText}>Active Ballots</Text>
-          <TouchableOpacity style={styles.headerIcon}>
-            <MaterialIcons name="info-outline" size={24} color={COLORS.onSurfaceVariant} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
-          <View style={styles.instructionBox}>
-             <Text style={styles.instructionTitle}>Select an Election</Text>
-             <Text style={styles.instructionSub}>Choose one of the ongoing ballots below to view candidate profiles and cast your secure vote.</Text>
+        <Header />
+        <ScrollView 
+          style={styles.scrollContent} 
+          contentContainerStyle={{ paddingBottom: 60, paddingTop: 24 }} 
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.instructionBannerMini}>
+             <Text style={styles.instructionHeaderSmall}>Select an active session</Text>
+             <Text style={styles.instructionDetailSmall}>Access secure voting sessions currently open for your district.</Text>
           </View>
 
-          <View style={styles.candidatesStack}>
+          <View style={styles.modernListContainer}>
             {elections.length === 0 ? (
-               <View style={styles.emptyContainer}>
-                 <MaterialIcons name="how-to-vote" size={48} color={COLORS.onSurfaceVariant} style={{ marginBottom: 12 }} />
-                 <Text style={styles.emptyText}>No active elections currently.</Text>
+               <View style={styles.emptyCandidatesBox}>
+                 <MaterialIcons name="how-to-vote" size={48} color={COLORS.outline} />
+                 <Text style={styles.emptyCandidatesText}>No active elections available.</Text>
                </View>
             ) : (
               elections.map(elec => (
                 <TouchableOpacity 
                   key={elec.id}
-                  style={styles.electionCardItem}
+                  style={styles.modernElectionCard}
                   onPress={() => setSelectedElection(elec)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.9}
                 >
-                  <View style={styles.electionCardTop}>
-                    <Text style={styles.electionCardTitle}>{elec.title}</Text>
-                    <View style={styles.liveBadgeMini}>
-                      <View style={styles.liveDot} />
-                      <Text style={styles.liveTextMini}>LIVE</Text>
+                  <View style={styles.modernElecCardTop}>
+                    <View style={styles.modernElecTitleGroup}>
+                      <Text style={styles.modernElecTitle}>{elec.title}</Text>
+                      <View style={styles.modernElecBadgeRow}>
+                        <View style={styles.modernTypeBadgeSmall}>
+                          <Text style={styles.modernTypeBadgeTextSmall}>{elec.election_type || 'GENERAL'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={styles.elecArrowBtn}>
+                      <MaterialIcons name="chevron-right" size={24} color={COLORS.primary} />
                     </View>
                   </View>
-                  <Text style={styles.electionCardType}>Type: {elec.election_type || 'General'}</Text>
                   
-                  <View style={styles.electionCardBottom}>
-                    <Text style={styles.endDateText}>Closes: {new Date(elec.end_date).toLocaleDateString()}</Text>
-                    <View style={styles.actionLinkRow}>
-                      <Text style={styles.enterBallotText}>Enter Ballot</Text>
-                      <MaterialIcons name="chevron-right" size={20} color={COLORS.primary} />
+                  <View style={styles.modernElecCardBottom}>
+                    <View style={styles.elecMetaItem}>
+                      <Text style={styles.statusLabel}>STATUS:</Text>
+                      {elec.status === 'active' ? (
+                        <View style={[styles.statusBadgeSmall, { backgroundColor: COLORS.secondary }]}>
+                          <View style={styles.liveDotSmall} />
+                          <Text style={styles.statusBadgeTextSmall}>ACTIVE</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.statusBadgeSmall, { backgroundColor: COLORS.error }]}>
+                          <Text style={[styles.statusBadgeTextSmall, { color: '#fff' }]}>CLOSED</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.elecMetaItem}>
+                      <MaterialIcons name="people" size={14} color={COLORS.onSurfaceVariant} />
+                      <Text style={styles.elecMetaText}>Candidates Listed</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -233,108 +247,160 @@ const VotingScreen = ({ navigation, route }: any) => {
   // --- RENDER SINGLE ELECTION DETAIL & CANDIDATES ---
   return (
     <View style={styles.container}>
-      {/* Top App Bar */}
-      <View style={styles.votingHeader}>
-        <TouchableOpacity style={styles.headerIcon} onPress={handleBack}>
-          <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
-        </TouchableOpacity>
-        <Text style={styles.votingHeaderText}>{selectedElection.title || 'Voting'}</Text>
-        <TouchableOpacity style={styles.headerIcon}>
-          <MaterialIcons name="info-outline" size={24} color={COLORS.onSurfaceVariant} />
-        </TouchableOpacity>
-      </View>
+      <Header />
+      <ScrollView 
+        style={styles.scrollContent} 
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: 24 }} 
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Election Session Header Info */}
+        <View style={styles.sessionHeaderInfo}>
+           <Text style={styles.sessionLabel}>SECURE VOTING SESSION</Text>
+           <Text style={styles.sessionTitle}>{selectedElection.title}</Text>
+           
+           <View style={styles.sessionMetaRow}>
+             <View style={styles.sessionBadge}>
+               <MaterialIcons name="access-time" size={14} color={COLORS.primary} />
+               <Text style={styles.sessionBadgeText}>CLOSES IN</Text>
+               <CountdownTimer endDate={selectedElection.end_date || new Date(Date.now() + 86400000).toISOString()} />
+             </View>
+             <View style={styles.sessionBadge}>
+               <MaterialIcons name="layers" size={14} color={COLORS.primary} />
+               <Text style={styles.sessionBadgeText}>{selectedElection.election_type || 'GENERAL'}</Text>
+             </View>
+           </View>
 
-      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {/* Election Banner */}
-        <View style={styles.electionBanner}>
-          <View style={styles.bannerTop}>
-            <View>
-              <Text style={styles.bannerLabel}>CURRENT ELECTION</Text>
-              <Text style={styles.bannerTitle}>{selectedElection.title}</Text>
-            </View>
-            <MaterialIcons name="verified-user" size={32} color="#fff" />
-          </View>
-          <Text style={styles.countdownLabel}>Voting closes in:</Text>
-          <CountdownTimer endDate={selectedElection.end_date || new Date(Date.now() + 86400000).toISOString()} />
+           <TouchableOpacity 
+             style={styles.nominationBtn}
+             onPress={() => navigation.navigate('Nomination', { election: selectedElection })}
+           >
+              <LinearGradient
+                colors={['#ff8c00', '#f4511e']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.nominationGradient}
+              >
+                <MaterialIcons name="assignment-ind" size={20} color="#fff" />
+                <Text style={styles.nominationBtnText}>Apply for Nomination</Text>
+              </LinearGradient>
+           </TouchableOpacity>
         </View>
 
         {/* Instructions */}
-        <View style={styles.instructionBox}>
-           <Text style={styles.instructionTitle}>{existingVote ? "Your vote has been recorded" : "Select your candidate"}</Text>
-           <Text style={styles.instructionSub}>{existingVote ? "You have already participated in this election." : "Please choose one individual to represent your district."}</Text>
+        <View style={styles.instructionBanner}>
+           <View style={styles.instructionIcon}>
+             <MaterialIcons 
+               name={existingVote ? "task-alt" : "touch-app"} 
+               size={24} 
+               color={existingVote ? COLORS.secondary : COLORS.primary} 
+             />
+           </View>
+           <View style={{ flex: 1 }}>
+             <Text style={styles.instructionHeader}>
+               {existingVote ? "Participation Recorded" : "Cast Your Vote"}
+             </Text>
+             <Text style={styles.instructionDetail}>
+               {existingVote 
+                 ? "You have already cast your secure vote in this election session." 
+                 : "Please select one candidate from the list below to represent your interests."}
+             </Text>
+           </View>
         </View>
 
+        <Text style={styles.listSectionTitle}>OFFICIAL CANDIDATES</Text>
+
         {/* Candidate List */}
-        <View style={styles.candidatesStack}>
+        <View style={styles.candidatesGrid}>
           {candidates.length === 0 ? (
-             <Text style={{ textAlign: 'center', marginTop: 20 }}>No candidates found for this election.</Text>
+             <View style={styles.emptyCandidatesBox}>
+               <MaterialIcons name="person-off" size={32} color={COLORS.outline} />
+               <Text style={styles.emptyCandidatesText}>No candidates registered yet.</Text>
+             </View>
           ) : (
             candidates.map(candidate => (
               <TouchableOpacity 
                 key={candidate.id}
                 style={[
-                  styles.candidateCard,
-                  selectedCandidateId === candidate.id && styles.candidateCardSelected
+                  styles.modernCandidateCard,
+                  selectedCandidateId === candidate.id && styles.modernCandidateCardSelected
                 ]}
                 onPress={() => !existingVote && setSelectedCandidateId(candidate.id)}
-                activeOpacity={existingVote ? 1 : 0.9}
+                activeOpacity={existingVote ? 1 : 0.8}
               >
-                <Image 
-                  source={{ uri: candidate.manifesto_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(candidate.full_name) + '&background=0D8ABC&color=fff' }} 
-                  style={styles.candidateImg} 
-                />
-                <View style={styles.candidateInfo}>
-                  <Text style={styles.candidateName}>{candidate.full_name}</Text>
-                  <View style={styles.partyRow}>
-                     <View style={styles.partyBadge}>
-                        <Text style={styles.partyBadgeText}>{candidate.committee?.name?.toUpperCase() || 'INDEPENDENT'}</Text>
-                     </View>
-                     <TouchableOpacity onPress={() => navigateToDetails(candidate)}>
-                        <Text style={styles.detailsLink}>View Details</Text>
-                     </TouchableOpacity>
+                <View style={styles.candidateTopRow}>
+                  <View style={styles.candidateAvatarContainer}>
+                    <Image 
+                      source={{ uri: candidate.manifesto_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(candidate.full_name) + '&background=003d9b&color=fff' }} 
+                      style={styles.modernCandidateImg} 
+                    />
+                    {selectedCandidateId === candidate.id && (
+                      <View style={styles.selectionCheck}>
+                        <MaterialIcons name="check" size={12} color="#fff" />
+                      </View>
+                    )}
                   </View>
+                  <View style={styles.candidateMainInfo}>
+                    <Text style={styles.modernCandidateName}>{candidate.full_name}</Text>
+                    <View style={styles.modernPartyBadge}>
+                       <Text style={styles.modernPartyText}>{candidate.committee?.name?.toUpperCase() || 'INDEPENDENT'}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.detailsIconButton}
+                    onPress={() => navigateToDetails(candidate)}
+                  >
+                    <MaterialIcons name="info-outline" size={20} color={COLORS.primary} />
+                  </TouchableOpacity>
                 </View>
-                <View style={[
-                  styles.checkCircle,
-                  selectedCandidateId === candidate.id && styles.checkCircleSelected
-                ]}>
-                  {selectedCandidateId === candidate.id && <View style={styles.checkDot} />}
-                </View>
+
+                {selectedCandidateId === candidate.id && (
+                  <View style={styles.selectionHighlight} />
+                )}
               </TouchableOpacity>
             ))
           )}
         </View>
 
-        {/* Verification Note */}
-        <View style={styles.verificationNote}>
-           <MaterialIcons name="shield" size={20} color={COLORS.onSurfaceVariant} />
-           <Text style={styles.verificationText}>
-              Your identity has been verified via <Text style={{fontWeight: '700'}}>Federal Biometric ID</Text>. This vote is end-to-end encrypted and anonymous.
+        {/* Audit Disclaimer */}
+        <View style={styles.auditDisclaimer}>
+           <MaterialIcons name="fingerprint" size={16} color={COLORS.onSurfaceVariant} style={{ opacity: 0.6 }} />
+           <Text style={styles.auditText}>
+              Session ID: <Text style={{fontWeight: '700'}}>{selectedElection.id}-AUDIT-2026</Text> • All actions are cryptographically signed.
            </Text>
         </View>
       </ScrollView>
 
-      {/* Bottom Action Bar */}
+      {/* Bottom Floating Action Bar */}
       {!existingVote && (
-        <View style={styles.bottomBar}>
+        <View style={styles.modernBottomBar}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
+            style={styles.bottomBarFade}
+          />
           <TouchableOpacity 
               style={[
-                styles.castBtn,
-                (!selectedCandidateId || submitting) && styles.castBtnDisabled
+                styles.modernCastBtn,
+                (!selectedCandidateId || submitting) && styles.modernCastBtnDisabled
               ]}
               disabled={!selectedCandidateId || submitting}
               onPress={handleCastVote}
           >
-              {submitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <MaterialIcons name="lock" size={20} color="#fff" />
-                  <Text style={styles.castBtnText}>Cast Secure Vote</Text>
-                </>
-              )}
+              <LinearGradient
+                colors={selectedCandidateId ? [COLORS.primary, COLORS.primaryContainer] : [COLORS.outlineVariant, COLORS.outlineVariant]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.castBtnGradient}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <MaterialIcons name="verified-user" size={22} color="#fff" />
+                    <Text style={styles.modernCastBtnText}>Confirm Selection</Text>
+                  </>
+                )}
+              </LinearGradient>
           </TouchableOpacity>
-          <Text style={styles.signedAction}>Cryptographically Signed Action</Text>
         </View>
       )}
 
@@ -368,6 +434,220 @@ const VotingScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   
+  // Session Detail Header Info
+  sessionHeaderInfo: {
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  sessionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.primary,
+    letterSpacing: 1.5,
+    opacity: 0.7,
+  },
+  sessionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  sessionMetaRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  sessionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.surfaceContainerLow,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  sessionBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.8,
+  },
+
+  nominationBtn: {
+    marginTop: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#f4511e', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      android: { elevation: 4 }
+    })
+  },
+  nominationGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  nominationBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  
+  instructionBannerMini: {
+    paddingHorizontal: 4,
+    marginBottom: 24,
+  },
+  instructionHeaderSmall: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    letterSpacing: -0.5,
+  },
+  instructionDetailSmall: {
+    fontSize: 14,
+    color: COLORS.onSurfaceVariant,
+    marginTop: 4,
+    opacity: 0.7,
+  },
+
+  modernListContainer: {
+    gap: 16,
+  },
+  modernElectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
+  },
+  modernElecCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  modernElecTitleGroup: {
+    flex: 1,
+    marginRight: 12,
+  },
+  modernElecTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.primary,
+    lineHeight: 24,
+  },
+  modernElecBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  modernTypeBadgeSmall: {
+    backgroundColor: COLORS.surfaceContainerLow,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+  },
+  modernTypeBadgeTextSmall: {
+    fontSize: 9, fontWeight: '800', color: COLORS.onSurfaceVariant, letterSpacing: 0.5,
+  },
+  statusBadgeSmall: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6,
+  },
+  statusBadgeTextSmall: {
+    fontSize: 9, fontWeight: '800', color: '#fff',
+  },
+  liveDotSmall: {
+    width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#fff',
+  },
+  elecArrowBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center',
+  },
+  modernElecCardBottom: {
+    flexDirection: 'row', alignItems: 'center', gap: 16, borderTopWidth: 1, borderTopColor: COLORS.surfaceContainerLow, paddingTop: 12,
+  },
+  elecMetaItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+  },
+  elecMetaText: {
+    fontSize: 11, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.8,
+  },
+  statusLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    marginRight: 6,
+    opacity: 0.6,
+  },
+  glassBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  headerTitleGroup: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  headerLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  headerMainTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  headerStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 16,
+    padding: 12,
+    marginTop: 10,
+  },
+  headerStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerStatLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 9,
+    fontWeight: '800',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  headerStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  headerTypeBadge: {
+    backgroundColor: COLORS.secondaryContainer,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  headerTypeBadgeText: {
+    color: COLORS.onSecondaryContainer,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
   votingHeader: {
     height: 64,
     backgroundColor: '#fff',
@@ -381,71 +661,218 @@ const styles = StyleSheet.create({
   headerIcon: { padding: 10 },
   votingHeaderText: { fontSize: 18, fontWeight: '900', color: COLORS.primary },
 
-  scrollContent: { flex: 1, padding: 16 },
+  scrollContent: { flex: 1, paddingHorizontal: 16 },
   
-  electionBanner: {
-    backgroundColor: COLORS.primaryContainer,
-    borderRadius: 12,
-    padding: 24,
+  timerContainer: { flexDirection: 'row', gap: 6 },
+  timerBlock: { alignItems: 'center', minWidth: 36 },
+  timerValue: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  timerLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 8, fontWeight: '700' },
+
+  instructionBanner: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    gap: 16,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
     marginBottom: 24,
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 10 },
-      android: { elevation: 4 }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+      android: { elevation: 2 }
     })
   },
-  bannerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  bannerLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  bannerTitle: { color: '#fff', fontSize: 24, fontWeight: '700', marginTop: 4 },
-  countdownLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginBottom: 8 },
-  
-  timerContainer: { flexDirection: 'row', gap: 12 },
-  timerBlock: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, minWidth: 56, alignItems: 'center' },
-  timerValue: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  timerLabel: { color: '#fff', fontSize: 10, fontWeight: '700', opacity: 0.8 },
-
-  instructionBox: { marginBottom: 16 },
-  instructionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  instructionSub: { fontSize: 14, color: COLORS.onSurfaceVariant, marginTop: 2 },
-
-  candidatesStack: { gap: 12 },
-  candidateCard: { 
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: COLORS.outlineVariant, 
-    padding: 16, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 16 
+  instructionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.surfaceContainerLow,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  candidateCardSelected: { borderColor: COLORS.primary, backgroundColor: '#f0f7ff' },
-  candidateImg: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.surfaceContainerLow },
-  candidateInfo: { flex: 1 },
-  candidateName: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  partyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  partyBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12 },
-  partyBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant },
-  detailsLink: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
-  checkCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.outlineVariant, justifyContent: 'center', alignItems: 'center' },
-  checkCircleSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
-  checkDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' },
+  instructionHeader: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+  },
+  instructionDetail: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 18,
+    marginTop: 4,
+  },
 
-  verificationNote: { flexDirection: 'row', gap: 12, backgroundColor: COLORS.surfaceContainerLow, padding: 16, borderRadius: 12, marginTop: 24, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  verificationText: { flex: 1, fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 18 },
+  listSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    marginLeft: 4,
+    opacity: 0.6,
+  },
 
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, backgroundColor: 'rgba(255,255,255,0.8)', borderTopWidth: 1, borderTopColor: COLORS.outlineVariant },
-  castBtn: { 
-    backgroundColor: COLORS.primary, 
-    height: 56, 
-    borderRadius: 12, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
+  candidatesGrid: { gap: 16 },
+  modernCandidateCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
+      android: { elevation: 3 }
+    })
+  },
+  modernCandidateCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: '#f6faff',
+  },
+  candidateTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  candidateAvatarContainer: {
+    width: 70,
+    height: 70,
+    position: 'relative',
+  },
+  modernCandidateImg: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  selectionCheck: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  candidateMainInfo: {
+    flex: 1,
+  },
+  modernCandidateName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  modernPartyBadge: {
+    backgroundColor: COLORS.surfaceContainerHighest,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  modernPartyText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.5,
+  },
+  detailsIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.surfaceContainerLow,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectionHighlight: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 6,
+    backgroundColor: COLORS.primary,
+  },
+
+  emptyCandidatesBox: {
+    padding: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRadius: 24,
+    borderStyle: 'dashed',
+    borderWidth: 2,
+    borderColor: COLORS.outlineVariant,
+  },
+  emptyCandidatesText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+  },
+
+  auditDisclaimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 32,
+    paddingHorizontal: 20,
+  },
+  auditText: {
+    fontSize: 10,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+    textAlign: 'center',
+    opacity: 0.5,
+    lineHeight: 16,
+  },
+
+  modernBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  bottomBarFade: {
+    position: 'absolute',
+    top: -40,
+    left: 0,
+    right: 0,
+    height: 40,
+  },
+  modernCastBtn: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
+      android: { elevation: 8 },
+      web: { boxShadow: `0px 10px 20px ${COLORS.primary}4D` }
+    })
+  },
+  modernCastBtnDisabled: {
+    opacity: 0.6,
+  },
+  castBtnGradient: {
+    height: 64,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 12,
   },
-  castBtnDisabled: { opacity: 0.5, backgroundColor: COLORS.primaryContainer },
-  castBtnText: { color: '#fff', fontSize: 18, fontWeight: '700' },
-  signedAction: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant, textTransform: 'uppercase', marginTop: 12, letterSpacing: 0.5 },
+  modernCastBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
   successBox: { backgroundColor: '#fff', width: '100%', borderRadius: 24, padding: 24, alignItems: 'center' },
@@ -522,7 +949,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4
   },
-  enterBallotText: {
+  actionLinkText: {
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: '700'

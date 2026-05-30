@@ -172,6 +172,22 @@ class VoteService:
         return vote
 
     # ------------------------------------------------------------------
+    # User's vote
+    # ------------------------------------------------------------------
+
+    def get_user_vote(
+        self,
+        db: Session,
+        user_id: int,
+        election_id: int,
+    ) -> Optional[Vote]:
+        """
+        Retrieve the vote record for a specific user in a specific election.
+        """
+        vote_repo = VoteRepository(db)
+        return vote_repo.get_user_vote(user_id, election_id)
+
+    # ------------------------------------------------------------------
     # Election results
     # ------------------------------------------------------------------
 

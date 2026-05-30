@@ -55,7 +55,7 @@ const InputField = ({
   rightIcon,
   focusedField,
   setFocusedField,
-  errors,
+  errors = {},
   onChangeText,
 }: any) => (
   <View style={styles.inputGroup}>
@@ -64,7 +64,7 @@ const InputField = ({
       style={[
         styles.inputWrapper,
         focusedField === name && styles.inputWrapperFocused,
-        errors[name] && styles.inputWrapperError,
+        name && errors[name] && styles.inputWrapperError,
       ]}>
       <Ionicons name={icon} size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
       <TextInput
@@ -85,7 +85,7 @@ const InputField = ({
         </TouchableOpacity>
       )}
     </View>
-    {errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
+    {name && errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
   </View>
 );
 
@@ -342,11 +342,15 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   const validateStep2 = () => {
+    let newErrors: Record<string, string> = {};
     if (!formData.kyc_type) {
-      setErrors({ kyc_type: 'Please select identity proof' });
-      return false;
+      newErrors.kyc_type = 'Please select identity proof';
     }
-    return true;
+    if (!formData.kyc_front_url || formData.kyc_front_url === 'mock_front.jpg') {
+      newErrors.kyc_front_url = 'Photo of identity proof is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
@@ -380,8 +384,8 @@ const RegisterScreen = ({ navigation }: any) => {
       await register(submissionData);
       Alert.alert(
         'Success',
-        'Registration successful! Please verify your email with the OTP sent.',
-        [{ text: 'Verify', onPress: () => navigation.navigate('Verify', { email: formData.email }) }]
+        'Registration successful! Please sign in with your credentials.',
+        [{ text: 'Sign In', onPress: () => navigation.navigate('Login') }]
       );
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.detail || 'An error occurred');
@@ -823,13 +827,6 @@ const RegisterScreen = ({ navigation }: any) => {
               </View>
 
               <PickerField
-                label="Organization"
-                icon="business-outline"
-                value={selectedTenantName}
-                onPress={() => setModalType('tenant')}
-              />
-
-              <PickerField
                 label="State"
                 icon="map-outline"
                 value={selectedStateName}
@@ -975,7 +972,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
-  formSection: { padding: 24, backgroundColor: COLORS.white, margin: 16, borderRadius: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  formSection: { 
+    padding: 24, 
+    backgroundColor: COLORS.white, 
+    margin: 16, 
+    borderRadius: 16, 
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }
+    })
+  },
   sectionHeaderContainer: { marginBottom: 24 },
   stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
   stepBadgeText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
@@ -1034,7 +1041,16 @@ const styles = StyleSheet.create({
   loginText: { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: height * 0.7 },
+  modalContent: { 
+    backgroundColor: COLORS.white, 
+    borderTopLeftRadius: 24, 
+    borderTopRightRadius: 24, 
+    padding: 24, 
+    maxHeight: height * 0.7,
+    ...Platform.select({
+      web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
+    })
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },

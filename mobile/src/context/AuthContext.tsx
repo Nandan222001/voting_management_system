@@ -14,6 +14,14 @@ interface User {
   tenant_id: number | null;
   district: string | null;
   designation: string | null;
+  date_of_birth?: string;
+  gender?: string;
+  parent_name?: string;
+  kyc_type?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
 }
 
 interface AuthContextType {

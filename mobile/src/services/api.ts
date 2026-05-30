@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const ENV_TENANT_UUID = process.env.EXPO_PUBLIC_TENANT_UUID;
 
 // AsyncStorage key used to persist the selected tenant's UUID across sessions
 const TENANT_UUID_KEY = 'tenant_uuid';
@@ -42,7 +43,7 @@ api.interceptors.request.use(
     // Attach X-Tenant-ID for all mobile requests so the backend can scope
     // public/pre-auth endpoints without requiring a query parameter.
     // Web clients never send this header — they rely on JWT tenant_id instead.
-    const tenantUUID = await AsyncStorage.getItem(TENANT_UUID_KEY);
+    const tenantUUID = (await AsyncStorage.getItem(TENANT_UUID_KEY)) || ENV_TENANT_UUID;
     if (tenantUUID) {
       config.headers['X-Tenant-ID'] = tenantUUID;
     }

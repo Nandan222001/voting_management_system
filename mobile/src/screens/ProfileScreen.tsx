@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import Header from '../components/common/Header';
 
 const COLORS = {
@@ -33,6 +33,18 @@ const COLORS = {
   error: '#ba1a1a',
   primaryFixed: '#dae2ff',
 };
+
+const DetailItem = ({ icon, label, value, isLast = false }: any) => (
+  <View style={[styles.detailItem, isLast && { borderBottomWidth: 0 }]}>
+     <View style={styles.detailIconBox}>
+        <MaterialIcons name={icon} size={18} color={COLORS.primary} />
+     </View>
+     <View style={styles.detailTextContent}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={styles.detailValue}>{value || 'Not provided'}</Text>
+     </View>
+  </View>
+);
 
 const ProfileScreen = () => {
   const { user, logout, isLoading } = useAuth();
@@ -117,91 +129,65 @@ const ProfileScreen = () => {
         <View style={styles.settingsGrid}>
           {/* Personal Info */}
           <View style={styles.settingCard}>
-            <TouchableOpacity style={styles.cardHeader}>
+            <View style={styles.cardHeader}>
               <View style={styles.cardTitleRow}>
                  <View style={styles.iconBox}>
-                    <MaterialIcons name="person" size={20} color={COLORS.primary} />
+                    <MaterialIcons name="badge" size={20} color={COLORS.primary} />
                  </View>
                  <View>
-                    <Text style={styles.cardTitle}>Personal Information</Text>
-                    <Text style={styles.cardSub}>Manage your public and private data</Text>
+                    <Text style={styles.cardTitle}>Identity & Contact</Text>
+                    <Text style={styles.cardSub}>Verified member credentials</Text>
                  </View>
               </View>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
+            </View>
+            
             <View style={styles.cardBody}>
-               <View style={styles.infoRow}>
-                  <View style={styles.infoItem}>
-                     <Text style={styles.infoLabel}>EMAIL ADDRESS</Text>
-                     <Text style={styles.infoValue} numberOfLines={1}>{user?.email || 'N/A'}</Text>
-                  </View>
-                  <View style={styles.infoItem}>
-                     <Text style={styles.infoLabel}>PHONE NUMBER</Text>
-                     <Text style={styles.infoValue}>{user?.phone || 'N/A'}</Text>
-                  </View>
-               </View>
+               <DetailItem icon="person" label="Full Name" value={user?.full_name} />
+               <DetailItem icon="email" label="Email Address" value={user?.email} isLast={false} />
+               <DetailItem icon="phone" label="Phone Number" value={user?.phone} />
+               <DetailItem icon="cake" label="Date of Birth" value={user?.date_of_birth} />
+               <DetailItem icon="wc" label="Gender" value={user?.gender} />
+               <DetailItem icon="family-restroom" label="Guardian/Parent" value={user?.parent_name} />
             </View>
           </View>
 
-          {/* Security */}
-          <TouchableOpacity style={styles.settingCard}>
-             <View style={styles.cardHeader}>
-                <View style={styles.cardTitleRow}>
-                   <View style={styles.iconBox}>
-                      <MaterialIcons name="lock" size={20} color={COLORS.primary} />
-                   </View>
-                   <View>
-                      <Text style={styles.cardTitle}>Security & Login</Text>
-                      <Text style={styles.cardSub}>Passwords, 2FA, and session control</Text>
-                   </View>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
-             </View>
-             <View style={styles.securityStatus}>
-                <View style={styles.tfaBadge}>
-                   <MaterialIcons name="check-circle" size={12} color={COLORS.secondary} />
-                   <Text style={styles.tfaText}>2FA ENABLED</Text>
-                </View>
-                <Text style={styles.passChangeText}>Last password change: 14 days ago</Text>
-             </View>
-          </TouchableOpacity>
+          {/* Identity Verification Card */}
+          <View style={styles.settingCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitleRow}>
+                 <View style={[styles.iconBox, { backgroundColor: COLORS.secondaryContainer + '30' }]}>
+                    <MaterialIcons name="verified-user" size={20} color={COLORS.secondary} />
+                 </View>
+                 <View>
+                    <Text style={styles.cardTitle}>KYC Verification</Text>
+                    <Text style={styles.cardSub}>Official documents on file</Text>
+                 </View>
+              </View>
+            </View>
+            <View style={styles.cardBody}>
+               <DetailItem icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
+               <DetailItem icon="fingerprint" label="Member ID / Voter ID" value={user?.voter_id} />
+            </View>
+          </View>
 
-          {/* Notifications */}
-          <TouchableOpacity style={styles.settingCard}>
-             <View style={styles.cardHeader}>
-                <View style={styles.cardTitleRow}>
-                   <View style={styles.iconBox}>
-                      <MaterialIcons name="notifications-active" size={20} color={COLORS.primary} />
-                   </View>
-                   <View>
-                      <Text style={styles.cardTitle}>Notification Preferences</Text>
-                      <Text style={styles.cardSub}>Alert thresholds and channel routing</Text>
-                   </View>
-                </View>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.onSurfaceVariant} />
-             </View>
-          </TouchableOpacity>
-
-          {/* Volunteer History */}
-          <View style={[styles.settingCard, { backgroundColor: COLORS.primary }]}>
-             <View style={styles.volunteerHeader}>
-                <Text style={styles.volunteerTitle}>Volunteer History</Text>
-                <MaterialIcons name="history" size={20} color="#fff" />
-             </View>
-             <View style={styles.volunteerStats}>
-                <View style={styles.volStatItem}>
-                   <Text style={styles.volStatLabel}>Total Hours</Text>
-                   <Text style={styles.volStatValue}>412</Text>
-                </View>
-                <View style={styles.volStatDivider} />
-                <View style={styles.volStatItem}>
-                   <Text style={styles.volStatLabel}>Events Managed</Text>
-                   <Text style={styles.volStatValue}>18</Text>
-                </View>
-             </View>
-             <TouchableOpacity style={styles.volTranscriptBtn}>
-                <Text style={styles.volTranscriptText}>View Full Transcript</Text>
-             </TouchableOpacity>
+          {/* Address Card */}
+          <View style={styles.settingCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardTitleRow}>
+                 <View style={[styles.iconBox, { backgroundColor: COLORS.primaryFixed + '40' }]}>
+                    <MaterialIcons name="location-on" size={20} color={COLORS.primary} />
+                 </View>
+                 <View>
+                    <Text style={styles.cardTitle}>Primary Address</Text>
+                    <Text style={styles.cardSub}>Residential mapping data</Text>
+                 </View>
+              </View>
+            </View>
+            <View style={styles.cardBody}>
+               <DetailItem icon="home" label="Street Address" value={user?.street_address} />
+               <DetailItem icon="map" label="Region" value={`${user?.city || ''}, ${user?.state || ''}`} />
+               <DetailItem icon="pin-drop" label="Pincode" value={user?.pincode} />
+            </View>
           </View>
 
           {/* Support */}
@@ -265,25 +251,16 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
   cardSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
   cardBody: { marginTop: 20 },
+  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant + '30' },
+  detailIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
+  detailTextContent: { flex: 1 },
+  detailLabel: { fontSize: 11, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6, marginBottom: 2 },
+  detailValue: { fontSize: 15, fontWeight: '600', color: COLORS.onSurface },
   infoRow: { flexDirection: 'row', gap: 16 },
   infoItem: { flex: 1, gap: 4 },
   infoLabel: { fontSize: 8, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
   infoValue: { fontSize: 14, color: COLORS.onSurface },
-  
-  securityStatus: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
-  tfaBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(5, 110, 0, 0.05)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  tfaText: { fontSize: 10, fontWeight: '800', color: COLORS.secondary },
-  passChangeText: { fontSize: 12, color: COLORS.onSurfaceVariant },
-
-  volunteerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  volunteerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  volunteerStats: { flexDirection: 'row', alignItems: 'center', gap: 24, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)', paddingBottom: 16 },
-  volStatItem: { flex: 1, gap: 4 },
-  volStatLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  volStatValue: { fontSize: 28, fontWeight: '800', color: '#fff' },
-  volStatDivider: { width: 1, height: 40, backgroundColor: 'rgba(255,255,255,0.1)' },
-  volTranscriptBtn: { marginTop: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center' },
-  volTranscriptText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  divider: { height: 1, backgroundColor: COLORS.outlineVariant, marginVertical: 16, opacity: 0.5 },
 
   supportList: { gap: 8, marginTop: 16 },
   supportItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, backgroundColor: COLORS.surfaceContainerLow },
