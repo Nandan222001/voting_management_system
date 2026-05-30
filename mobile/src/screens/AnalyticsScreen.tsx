@@ -1,49 +1,65 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity, Image, Alert, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/common/Header';
-import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { reportService } from '../services/reportService';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { tenantService } from '../services/tenantService';
 
 const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#003d9b',
-  primaryContainer: '#0052cc',
-  background: '#f8f9fb',
+  primaryContainer: '#eff6ff',
+  background: '#f8fafc',
   surface: '#ffffff',
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#434654',
-  outlineVariant: '#c3c6d6',
+  onSurface: '#0f172a',
+  onSurfaceVariant: '#64748b',
+  outlineVariant: '#e2e8f0',
   secondary: '#056e00',
-  secondaryContainer: '#8dfc75',
-  onSecondaryContainer: '#067500',
-  surfaceContainerLow: '#f3f4f6',
-  surfaceContainerHighest: '#e1e2e4',
-  outline: '#737685',
-  primaryFixed: '#dae2ff',
+  accent: '#ff8c00',
+  error: '#ef4444',
 };
 
 const AnalyticsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState<any>({
-    total_users: 0,
-    total_elections: 0,
-    total_votes: 0,
-    active_elections: 0,
-    pending_users: 0,
-    closed_elections: 0,
-    draft_elections: 0,
-  });
+  const [committees, setCommittees] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const loadAnalytics = async () => {
+  const loadPeople = async () => {
     try {
-      const data = await reportService.getDashboardOverview();
-      setStats(data);
+      const data = await tenantService.getPublicTargets();
+      
+      // Hierarchy order for sorting
+      const typeOrder: Record<string, number> = {
+        'country': 1,
+        'state': 2,
+        'district': 3,
+        'block': 4,
+        'booth': 5,
+        'taluka': 6,
+        'city': 7,
+        'village': 8,
+        'other': 9
+      };
+
+      // Filter and Sort
+      const sortedLeaders = data
+        .filter((item: any) => item.president !== null || item.winner !== null)
+        .sort((a: any, b: any) => {
+          const orderA = typeOrder[a.type] || 99;
+          const orderB = typeOrder[b.type] || 99;
+          
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          return a.name.localeCompare(b.name);
+        });
+
+      setCommittees(sortedLeaders);
     } catch (error) {
-      console.error('Failed to load analytics', error);
-      Alert.alert("Error", "Could not load analytics.");
+      console.error('Failed to load people data', error);
+      Alert.alert("Error", "Could not load committee leadership data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -51,8 +67,22 @@ const AnalyticsScreen = () => {
   };
 
   useEffect(() => {
-    loadAnalytics();
+    loadPeople();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadPeople();
+  };
+
+  const filteredCommittees = committees.filter(item => {
+    const query = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(query) ||
+      item.president?.full_name.toLowerCase().includes(query) ||
+      item.winner?.full_name.toLowerCase().includes(query)
+    );
+  });
 
   if (loading) {
     return (
@@ -62,214 +92,209 @@ const AnalyticsScreen = () => {
     );
   }
 
+  const PersonItem = ({ title, person, isWinner = false }: any) => {
+    if (!person) return null;
+    return (
+      <View style={styles.leadershipMember}>
+         <View style={styles.memberAvatarContainer}>
+            {person.image ? (
+              <Image source={{ uri: person.image }} style={styles.memberImg} />
+            ) : (
+              <View style={[styles.initialsAvatarSmall, isWinner && { backgroundColor: COLORS.secondary + '15' }]}>
+                 <Text style={[styles.initialsTextSmall, isWinner && { color: COLORS.secondary }]}>
+                    {person.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                 </Text>
+              </View>
+            )}
+            <View style={[styles.verifiedBadgeSmall, isWinner && { backgroundColor: COLORS.secondary }]}>
+               <MaterialIcons name={isWinner ? "emoji-events" : "verified"} size={10} color="#fff" />
+            </View>
+         </View>
+         <View style={styles.memberInfo}>
+            <Text style={styles.memberLabel}>{title}</Text>
+            <Text style={styles.memberName}>{person.full_name}</Text>
+            <Text style={styles.memberEmail}>{person.email}</Text>
+         </View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Header title="Network Insights" />
+      <Header title="People" />
+      
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchWrapper}>
+           <MaterialIcons name="search" size={20} color={COLORS.onSurfaceVariant} style={styles.searchIcon} />
+           <TextInput
+              style={styles.searchInput}
+              placeholder="Search by committee or name..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor={COLORS.onSurfaceVariant + '80'}
+           />
+           {searchQuery.length > 0 && (
+             <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <MaterialIcons name="cancel" size={18} color={COLORS.onSurfaceVariant} />
+             </TouchableOpacity>
+           )}
+        </View>
+      </View>
+
       <ScrollView
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => {
-            setRefreshing(true);
-            loadAnalytics();
-          }} colors={[COLORS.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
         <View style={styles.screenHeader}>
-           <Text style={styles.screenTitle}>Registry Operations</Text>
-           <Text style={styles.screenSub}>Real-time metrics and participation data across the federal network.</Text>
+           <Text style={styles.screenTitle}>Registry Directory</Text>
+           <Text style={styles.screenSub}>Access authorized leadership data across active administrative regions.</Text>
         </View>
 
-        {/* Main Metrics Row */}
-        <View style={styles.metricsRow}>
-           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryContainer]}
-            style={styles.mainMetric}
-           >
-              <View style={styles.metricHeader}>
-                 <Text style={styles.metricLabel}>TOTAL SESSIONS</Text>
-                 <MaterialIcons name="insights" size={20} color="rgba(255,255,255,0.6)" />
+        <View style={styles.peopleList}>
+           {filteredCommittees.length === 0 ? (
+              <View style={styles.emptyState}>
+                 <MaterialIcons name="search-off" size={48} color={COLORS.onSurfaceVariant} />
+                 <Text style={styles.emptyText}>No matching leadership records found.</Text>
               </View>
-              <Text style={styles.metricValue}>{stats.total_elections}</Text>
-              <View style={styles.metricFooter}>
-                 <MaterialIcons name="trending-up" size={14} color={COLORS.secondaryContainer} />
-                 <Text style={styles.trendText}>Active: {stats.active_elections}</Text>
-              </View>
-           </LinearGradient>
-           
-           <View style={styles.sideMetrics}>
-              <View style={styles.miniCard}>
-                 <Text style={styles.miniLabel}>VOTES</Text>
-                 <Text style={[styles.miniValue, { color: COLORS.secondary }]}>{stats.total_votes}</Text>
-              </View>
-              <View style={styles.miniCard}>
-                 <Text style={styles.miniLabel}>MEMBERS</Text>
-                 <Text style={[styles.miniValue, { color: COLORS.primary }]}>{stats.total_users}</Text>
-              </View>
-           </View>
+           ) : (
+             filteredCommittees.map((item: any) => (
+               <View key={item.id} style={styles.targetCard}>
+                  <View style={styles.targetHeader}>
+                    <View style={styles.targetTitleRow}>
+                       <Ionicons name="location" size={18} color={COLORS.primary} />
+                       <Text style={styles.targetName}>{item.name}</Text>
+                    </View>
+                    <View style={styles.targetTypeBadge}>
+                       <Text style={styles.targetTypeText}>{item.type.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.leadershipBody}>
+                     <PersonItem title="Current President" person={item.president} />
+                     <View style={styles.cardDivider} />
+                     <PersonItem title="Winning Candidate" person={item.winner} isWinner />
+                  </View>
+               </View>
+             ))
+           )}
         </View>
 
-        {/* Participation Index Chart */}
-        <View style={styles.sectionCard}>
-          <View style={styles.cardHeader}>
-            <View>
-               <Text style={styles.cardTitle}>Participation Index</Text>
-               <Text style={styles.cardSub}>Monthly verified turnout (Anonymized)</Text>
-            </View>
-            <TouchableOpacity style={styles.filterBtn}>
-               <Text style={styles.filterText}>6M</Text>
-               <MaterialIcons name="keyboard-arrow-down" size={16} color={COLORS.onSurfaceVariant} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.chartVisualization}>
-             <View style={styles.yAxis}>
-                <Text style={styles.axisText}>100%</Text>
-                <Text style={styles.axisText}>50%</Text>
-                <Text style={styles.axisText}>0%</Text>
-             </View>
-             <View style={styles.chartArea}>
-                <Bar height={45} />
-                <Bar height={75} active />
-                <Bar height={55} />
-                <Bar height={95} active />
-                <Bar height={65} />
-                <Bar height={120} active />
-             </View>
-          </View>
-          <View style={styles.xAxis}>
-             <Text style={styles.axisText}>JAN</Text>
-             <Text style={styles.axisText}>FEB</Text>
-             <Text style={styles.axisText}>MAR</Text>
-             <Text style={styles.axisText}>APR</Text>
-             <Text style={styles.axisText}>MAY</Text>
-             <Text style={styles.axisText}>JUN</Text>
-          </View>
-        </View>
-
-        {/* Jurisdiction Health Bento */}
-        <View style={styles.bentoHeader}>
-           <Text style={styles.bentoTitle}>Jurisdiction Health</Text>
-           <TouchableOpacity><Text style={styles.viewAllText}>View All</Text></TouchableOpacity>
-        </View>
-        
-        <View style={styles.bentoGrid}>
-           <View style={styles.bentoItem}>
-              <MaterialIcons name="speed" size={24} color={COLORS.primary} />
-              <Text style={styles.bentoLabel}>Response Time</Text>
-              <Text style={styles.bentoValue}>240ms</Text>
-              <Text style={styles.bentoStatus}>Optimal</Text>
-           </View>
-           <View style={styles.bentoItem}>
-              <MaterialIcons name="security" size={24} color={COLORS.secondary} />
-              <Text style={styles.bentoLabel}>Integrity Rate</Text>
-              <Text style={styles.bentoValue}>99.9%</Text>
-              <Text style={styles.bentoStatus}>Verified</Text>
-           </View>
-           <View style={styles.bentoItem}>
-              <MaterialIcons name="people-outline" size={24} color={COLORS.primary} />
-              <Text style={styles.bentoLabel}>Voter Turnout</Text>
-              <Text style={styles.bentoValue}>68.4%</Text>
-              <Text style={styles.bentoStatus}>Above Avg</Text>
-           </View>
-           <View style={styles.bentoItem}>
-              <MaterialIcons name="cloud-done" size={24} color={COLORS.primary} />
-              <Text style={styles.bentoLabel}>Sync Status</Text>
-              <Text style={styles.bentoValue}>100%</Text>
-              <Text style={styles.bentoStatus}>Encrypted</Text>
-           </View>
-        </View>
-
-        <View style={styles.securitySeal}>
-           <View style={styles.sealIconBg}>
-              <FontAwesome5 name="fingerprint" size={20} color={COLORS.primary} />
-           </View>
-           <View style={styles.sealContent}>
-              <Text style={styles.sealTitle}>Authenticated Registry</Text>
-              <Text style={styles.sealText}>All analytics are derived from anonymized, cryptographically signed votes stored on the precinct ledger.</Text>
-           </View>
+        <View style={styles.footerNote}>
+           <MaterialIcons name="security" size={14} color={COLORS.onSurfaceVariant} style={{ opacity: 0.5 }} />
+           <Text style={styles.footerText}>Records are cryptographically locked and verified by Central Command.</Text>
         </View>
       </ScrollView>
     </View>
   );
 };
 
-const Bar = ({ height, active }: any) => (
-  <View style={styles.barWrapper}>
-    <View style={[styles.barBody, { height: height, backgroundColor: active ? COLORS.primary : COLORS.outlineVariant }]} />
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   content: { flex: 1, paddingHorizontal: 16 },
-  
-  screenHeader: { marginTop: 24, marginBottom: 24 },
+
+  screenHeader: { marginTop: 24, marginBottom: 24, paddingHorizontal: 4 },
   screenTitle: { fontSize: 32, fontWeight: '800', color: COLORS.primary, letterSpacing: -1 },
   screenSub: { fontSize: 14, color: COLORS.onSurfaceVariant, marginTop: 8, lineHeight: 22 },
-  
-  metricsRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
-  mainMetric: { 
-    flex: 1.5, 
-    borderRadius: 20, 
-    padding: 24,
+
+  // Search Bar Styles
+  searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  searchWrapper: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#fff', 
+    borderRadius: 16, 
+    paddingHorizontal: 12, 
+    height: 52,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 15 },
-      android: { elevation: 8 }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)' }
     })
   },
-  metricHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  metricLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  metricValue: { color: '#fff', fontSize: 42, fontWeight: '800', marginVertical: 8 },
-  metricFooter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trendText: { color: COLORS.secondaryContainer, fontSize: 10, fontWeight: '800' },
-  
-  sideMetrics: { flex: 1, gap: 12 },
-  miniCard: { flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, justifyContent: 'center' },
-  miniLabel: { fontSize: 10, fontWeight: '800', color: COLORS.outline, letterSpacing: 0.5 },
-  miniValue: { fontSize: 24, fontWeight: '800', marginTop: 4 },
-
-  sectionCard: { backgroundColor: '#fff', borderRadius: 20, padding: 24, borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: 24 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  cardSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4 },
-  filterBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surfaceContainerLow, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  filterText: { fontSize: 12, fontWeight: '700', color: COLORS.onSurfaceVariant },
-
-  chartVisualization: { flexDirection: 'row', height: 180 },
-  yAxis: { width: 40, justifyContent: 'space-between', paddingBottom: 10 },
-  axisText: { fontSize: 10, fontWeight: '700', color: COLORS.outlineVariant, textAlign: 'right', paddingRight: 12 },
-  chartArea: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', borderLeftWidth: 1, borderBottomWidth: 1, borderColor: COLORS.surfaceContainerLow, paddingHorizontal: 12 },
-  barWrapper: { flex: 1, alignItems: 'center' },
-  barBody: { width: 16, borderRadius: 4 },
-  xAxis: { flexDirection: 'row', marginLeft: 40, marginTop: 12, justifyContent: 'space-between', paddingHorizontal: 12 },
-
-  bentoHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingHorizontal: 4 },
-  bentoTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  viewAllText: { fontSize: 14, fontWeight: '700', color: COLORS.primary },
-  
-  bentoGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 32 },
-  bentoItem: { width: '48%', backgroundColor: '#fff', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant, gap: 8, marginBottom: 16 },
-  bentoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant },
-  bentoValue: { fontSize: 20, fontWeight: '800', color: COLORS.onSurface },
-  bentoStatus: { fontSize: 10, fontWeight: '800', color: COLORS.secondary, textTransform: 'uppercase' },
-
-  securitySeal: { 
-    flexDirection: 'row', 
-    backgroundColor: COLORS.surfaceContainerLow, 
-    padding: 20, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    borderColor: COLORS.outlineVariant,
-    alignItems: 'center',
-    gap: 16
+  searchIcon: { marginRight: 10 },
+  searchInput: { 
+    flex: 1, 
+    fontSize: 15, 
+    color: COLORS.onSurface, 
+    fontWeight: '500',
+    ...Platform.select({
+      web: { outlineStyle: 'none' }
+    })
   },
-  sealIconBg: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.outlineVariant },
-  sealContent: { flex: 1 },
-  sealTitle: { fontSize: 14, fontWeight: '800', color: COLORS.onSurface },
-  sealText: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4, lineHeight: 18, fontWeight: '500' }
-});
 
+  peopleList: { gap: 20, marginTop: 8 },
+  targetCard: { 
+    backgroundColor: '#fff', 
+    borderRadius: 24, 
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
+      android: { elevation: 3 },
+      web: { boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.04)' }
+    })
+  },
+  targetHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    padding: 16, 
+    backgroundColor: COLORS.primaryContainer + '30',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.outlineVariant,
+  },
+  targetTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  targetName: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
+  targetTypeBadge: { backgroundColor: COLORS.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  targetTypeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+
+  leadershipBody: { padding: 16, gap: 16 },
+  leadershipMember: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  memberAvatarContainer: { position: 'relative' },
+  memberImg: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.surfaceContainerLow },
+  initialsAvatarSmall: { 
+    width: 52, 
+    height: 52, 
+    borderRadius: 26, 
+    backgroundColor: COLORS.primary + '10', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  initialsTextSmall: { color: COLORS.primary, fontSize: 16, fontWeight: '800' },
+  verifiedBadgeSmall: { 
+    position: 'absolute', 
+    bottom: -2, 
+    right: -2, 
+    backgroundColor: COLORS.primary, 
+    width: 18, 
+    height: 18, 
+    borderRadius: 9, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff'
+  },
+
+  memberInfo: { flex: 1 },
+  memberLabel: { fontSize: 9, fontWeight: '800', color: COLORS.onSurfaceVariant, opacity: 0.6, letterSpacing: 0.5, marginBottom: 2 },
+  memberName: { fontSize: 15, fontWeight: '700', color: COLORS.onSurface },
+  memberEmail: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 1 },
+
+  cardDivider: { height: 1, backgroundColor: COLORS.outlineVariant, opacity: 0.4 },
+
+  emptyState: { padding: 60, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  emptyText: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '600', textAlign: 'center' },
+
+  footerNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 32, paddingHorizontal: 20 },
+  footerText: { fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', textAlign: 'center', opacity: 0.5, lineHeight: 16 },
+});
 export default AnalyticsScreen;

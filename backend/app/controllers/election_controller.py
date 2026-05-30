@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 from app.config.database import get_db
 from app.middlewares.auth_middleware import (
     get_current_user,
+    get_header_tenant_id,
     require_admin,
 )
 from app.models.election import ElectionStatus
@@ -29,6 +30,42 @@ from app.services.election_service import election_service
 from app.utils.response import paginated_response, success_response
 
 router = APIRouter(prefix="/elections", tags=["Elections"])
+
+
+# ---------------------------------------------------------------------------
+# GET /public — List elections for registration/pre-auth
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/public",
+    summary="List elections (Public, scoped by tenant)",
+)
+def get_public_elections(
+    tenant_id: Optional[int] = Query(None, description="Filter by tenant ID (web)"),
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Returns a list of active and upcoming elections for a tenant.
+    Does not require a JWT.  Scoped via ``tenant_id`` or ``X-Tenant-ID``.
+    """
+    effective_tenant_id = tenant_id or header_tenant_id
+    if not effective_tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tenant identification required (tenant_id query or X-Tenant-ID header).",
+        )
+
+    elections, total = election_service.get_all(
+        db,
+        skip=0,
+        limit=100,
+        status_filter=ElectionStatus.active,
+        tenant_id=effective_tenant_id,
+    )
+    
+    data = [ElectionResponse.model_validate(e).model_dump(mode="json") for e in elections]
+    return success_response(data=data, message="Public elections retrieved.")
 
 
 # ---------------------------------------------------------------------------

@@ -31,6 +31,10 @@ class TargetBase(BaseModel):
         default=None,
         examples=[42],
     )
+    winner_id: Optional[int] = Field(
+        default=None,
+        examples=[43],
+    )
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,6 +59,7 @@ class TargetUpdate(BaseModel):
     type: Optional[TargetType] = None
     parent_id: Optional[int] = None
     president_id: Optional[int] = None
+    winner_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -63,11 +68,13 @@ class TargetUpdate(BaseModel):
 # Response
 # ---------------------------------------------------------------------------
 
-class PresidentMiniResponse(BaseModel):
-    """Simplified user record for president assignment."""
+class UserMiniResponse(BaseModel):
+    """Simplified user record for leadership assignment (President/Winner)."""
     id: int
     full_name: str
     email: str
+    phone: Optional[str] = None
+    image: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,7 +84,8 @@ class TargetResponse(TargetBase):
 
     id: int
     tenant_id: Optional[int] = None
-    president: Optional[PresidentMiniResponse] = None
+    president: Optional[UserMiniResponse] = None
+    winner: Optional[UserMiniResponse] = None
     created_at: datetime
     updated_at: datetime
 

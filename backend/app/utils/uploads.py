@@ -12,41 +12,64 @@ ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg"}
 MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
 
-def save_uploaded_image(
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def save_uploaded_image(
     upload: UploadFile,
     subdir: str,
     filename_prefix: str,
 ) -> str:
+    """
+    Saves an uploaded image to the local disk and returns the relative URL.
+    """
     content_type = getattr(upload, "content_type", "") or ""
     if content_type not in ALLOWED_IMAGE_TYPES:
+        logger.error(f"Invalid content type: {content_type}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only PNG/JPEG images are allowed.",
         )
 
-    original_name = Path(upload.filename or "image").name
+    original_name = Path(upload.filename or "image.jpg").name
     safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
     timestamp = int(time.time() * 1000)
+    
+    # Ensure directory exists
     target_dir = UPLOADS_ROOT / subdir if subdir else UPLOADS_ROOT
     target_dir.mkdir(parents=True, exist_ok=True)
+    
     filename = f"{filename_prefix}_{timestamp}_{safe_name}"
     dest_path = target_dir / filename
 
     total = 0
-    with dest_path.open("wb") as buffer:
-        while True:
-            chunk = upload.file.read(1024 * 64)
-            if not chunk:
-                break
-            total += len(chunk)
-            if total > MAX_IMAGE_SIZE:
-                buffer.close()
-                dest_path.unlink(missing_ok=True)
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Image exceeds 2 MB size limit.",
-                )
-            buffer.write(chunk)
+    try:
+        with dest_path.open("wb") as buffer:
+            while True:
+                # Use async read
+                chunk = await upload.read(1024 * 64)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_IMAGE_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Image exceeds 2 MB size limit.",
+                    )
+                buffer.write(chunk)
+        
+        logger.info(f"Saved file to {dest_path} (Size: {total} bytes)")
+    except Exception as e:
+        if dest_path.exists():
+            dest_path.unlink()
+        if isinstance(e, HTTPException):
+            raise e
+        logger.exception("Failed to save upload")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error saving file.",
+        )
 
     rel_parts = ["static", "uploads"]
     if subdir:

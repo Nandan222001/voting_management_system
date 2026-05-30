@@ -46,7 +46,7 @@ const DetailItem = ({ icon, label, value, isLast = false }: any) => (
   </View>
 );
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading } = useAuth();
 
   const handleLogout = () => {
@@ -118,7 +118,10 @@ const ProfileScreen = () => {
                 </View>
               </View>
             </View>
-            <TouchableOpacity style={styles.editBtn}>
+            <TouchableOpacity 
+              style={styles.editBtn}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
                <MaterialIcons name="edit" size={18} color="#fff" />
                <Text style={styles.editBtnText}>Edit Profile</Text>
             </TouchableOpacity>
@@ -231,7 +234,18 @@ const styles = StyleSheet.create({
   headerGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 100, opacity: 0.05 },
   headerContent: { padding: 24, paddingTop: 32, alignItems: 'center' },
   avatarWrapper: { position: 'relative', marginBottom: 16 },
-  avatar: { width: 110, height: 110, borderRadius: 16, borderWidth: 4, borderColor: '#fff', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }, android: { elevation: 4 } }) },
+  avatar: { 
+    width: 110, 
+    height: 110, 
+    borderRadius: 16, 
+    borderWidth: 4, 
+    borderColor: '#fff', 
+    ...Platform.select({ 
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }, 
+      android: { elevation: 4 },
+      web: { boxShadow: '0px 4px 8px rgba(0,0,0,0.1)' }
+    }) 
+  },
   verifiedIconBadge: { position: 'absolute', bottom: -6, right: -6, backgroundColor: COLORS.secondaryContainer, padding: 4, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
   headerTextWrapper: { alignItems: 'center', gap: 8 },
   userName: { fontSize: 24, fontWeight: '800', color: COLORS.onSurface },

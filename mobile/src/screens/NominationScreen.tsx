@@ -16,10 +16,10 @@ import {
   Dimensions,
   Image,
   Switch,
-  Checkbox,
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
+import { candidateService } from '../services/candidateService';
 import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -55,35 +55,47 @@ const InputField = ({
   focusedField,
   setFocusedField,
   errors = {},
+  error,
   onChangeText,
   editable = true,
-}: any) => (
-  <View style={styles.inputGroup}>
-    <Text style={styles.label}>{label}</Text>
-    <View
-      style={[
-        styles.inputWrapper,
-        focusedField === name && styles.inputWrapperFocused,
-        name && errors[name] && styles.inputWrapperError,
-        !editable && { backgroundColor: '#f1f5f9' }
-      ]}>
-      <Ionicons name={icon} size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
-      <TextInput
-        style={styles.input}
-        placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
-        value={value}
-        onChangeText={onChangeText}
-        onFocus={() => setFocusedField(name)}
-        onBlur={() => setFocusedField(null)}
-        keyboardType={keyboardType || 'default'}
-        autoCapitalize={autoCapitalize || 'none'}
-        editable={editable}
-      />
+}: any) => {
+  // Ultra-safe error detection
+  const fieldError = (name && errors && typeof errors === 'object') ? errors[name] : null;
+  const hasError = Boolean(fieldError || error);
+  const errorMessage = fieldError || error;
+
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View
+        style={[
+          styles.inputWrapper,
+          (name && focusedField === name) && styles.inputWrapperFocused,
+          hasError && styles.inputWrapperError,
+          !editable && { backgroundColor: '#f1f5f9' }
+        ]}>
+        <Ionicons name={icon} size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          placeholder={placeholder}
+          placeholderTextColor="#9ca3af"
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => {
+            if (name && setFocusedField) setFocusedField(name);
+          }}
+          onBlur={() => {
+            if (setFocusedField) setFocusedField(null);
+          }}
+          keyboardType={keyboardType || 'default'}
+          autoCapitalize={autoCapitalize || 'none'}
+          editable={editable}
+        />
+      </View>
+      {hasError && <Text style={styles.errorText}>{errorMessage}</Text>}
     </View>
-    {name && errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
-  </View>
-);
+  );
+};
 
 const PickerField = ({ label, value, icon, onPress, error }: any) => (
   <View style={styles.inputGroup}>
@@ -264,19 +276,38 @@ const NominationScreen = ({ navigation, route }: any) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.agree_constitution || !formData.accept_results || !formData.info_correct || !formData.signature_url) {
       Alert.alert("Incomplete", "Please complete all mandatory declarations and upload signature.");
       return;
     }
+    
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const submissionData = {
+        ...formData,
+        election_id: election?.id,
+        // Map UI field names to API field names
+        voter_id_number: formData.voter_id,
+        image_url: formData.profile_photo_url,
+        is_willing: formData.willing_to_contest,
+        is_disciplined: formData.suspended_disciplined,
+        has_complaints: formData.pending_complaints,
+        agreed_constitution: formData.agree_constitution,
+        accepted_results: formData.accept_results,
+      };
+
+      await candidateService.nominate(submissionData);
+      
       Alert.alert("Success", "Your nomination has been submitted successfully for scrutiny.", [
         { text: "OK", onPress: () => navigation.goBack() }
       ]);
-    }, 1500);
+    } catch (error: any) {
+      console.error('Nomination failed', error);
+      Alert.alert("Error", error.response?.data?.message || "Failed to submit nomination. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderModal = () => (

@@ -34,7 +34,7 @@ class CandidateService:
     # Create
     # ------------------------------------------------------------------
 
-    def add_candidate(
+    async def add_candidate(
         self,
         db: Session,
         data: CandidateCreate,
@@ -91,7 +91,7 @@ class CandidateService:
 
         # Handle uploaded image file if provided
         if image_file is not None:
-            candidate_data["image_url"] = save_uploaded_image(
+            candidate_data["image_url"] = await save_uploaded_image(
                 image_file,
                 subdir="candidates",
                 filename_prefix="candidate",
@@ -156,7 +156,7 @@ class CandidateService:
     # Update / Delete
     # ------------------------------------------------------------------
 
-    def update_candidate(
+    async def update_candidate(
         self, db: Session, candidate_id: int, data: CandidateUpdate, image_file: UploadFile | None = None
     ) -> Candidate:
         """
@@ -198,7 +198,7 @@ class CandidateService:
         # Handle image replacement
         update_dict = data.model_dump(exclude_unset=True)
         if image_file is not None:
-            served_path = save_uploaded_image(
+            served_path = await save_uploaded_image(
                 image_file,
                 subdir="candidates",
                 filename_prefix=f"candidate_{candidate_id}",

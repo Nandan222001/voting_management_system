@@ -1,8 +1,14 @@
 import api from './api';
 
 export const electionService = {
-  getElections: async () => {
-    const response = await api.get('/elections/');
+  getElections: async (isPublic: boolean = false) => {
+    const endpoint = isPublic ? '/elections/public' : '/elections/';
+    const response = await api.get(endpoint);
+    return response.data.data;
+  },
+
+  getPublicElections: async () => {
+    const response = await api.get('/elections/public');
     return response.data.data;
   },
 
