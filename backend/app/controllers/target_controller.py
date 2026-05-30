@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, require_superadmin
+from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id, require_superadmin
 from app.models.user import User
 from app.schemas.target import (
     TargetCreate,
@@ -42,20 +42,24 @@ def get_targets(
 def get_public_targets(
     parent_id: Optional[int] = Query(None),
     target_type: Optional[str] = Query(None),
-    tenant_id: Optional[int] = Query(None),
+    tenant_id: Optional[int] = Query(None, description="Mobile clients may omit this and use X-Tenant-ID header instead."),
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
     Publicly list targets. Useful for registration dropdowns.
+    Tenant can be identified via the ``tenant_id`` query parameter (web) or
+    the ``X-Tenant-ID`` header (mobile).
     """
+    effective_tenant_id = tenant_id or header_tenant_id
     query = db.query(target_service.TargetRepository.model)
     if parent_id is not None:
         query = query.filter_by(parent_id=parent_id)
     if target_type:
         query = query.filter_by(type=target_type)
-    if tenant_id:
-        query = query.filter_by(tenant_id=tenant_id)
-        
+    if effective_tenant_id:
+        query = query.filter_by(tenant_id=effective_tenant_id)
+
     targets = query.all()
     data = [TargetResponse.model_validate(t).model_dump(mode="json") for t in targets]
     return success_response(data=data, message="Public targets retrieved.")

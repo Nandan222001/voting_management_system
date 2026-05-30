@@ -236,6 +236,27 @@ def require_tenant_admin(current_user: User = Depends(get_current_user)) -> User
 # ---------------------------------------------------------------------------
 
 
+def get_header_tenant_id(
+    tenant: Optional[Tenant] = Depends(verify_tenant_header),
+) -> Optional[int]:
+    """
+    Return the integer ``tenant_id`` that corresponds to the ``X-Tenant-ID``
+    header, or ``None`` when the header is absent.
+
+    This is the primary way **mobile clients** pass their tenant scope.
+    Web clients do not send this header — they rely on the ``tenant_id``
+    embedded in the user's JWT instead.
+
+    Usage::
+
+        @router.post("/some-endpoint")
+        def endpoint(
+            header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+        ): ...
+    """
+    return tenant.id if tenant else None
+
+
 def get_tenant_context(
     current_user: User = Depends(get_current_user),
 ) -> Optional[int]:
