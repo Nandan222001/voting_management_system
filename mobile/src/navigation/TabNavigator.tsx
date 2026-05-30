@@ -10,18 +10,19 @@ import VotingScreen from '../screens/VotingScreen';
 import CandidateDetailScreen from '../screens/CandidateDetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 const VoteStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="VotingMain" component={VotingScreen} />
+    <Stack.Screen name="Voting" component={VotingScreen} />
     <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
   </Stack.Navigator>
 );
 
-const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
+const TabNavigator = () => {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -79,10 +80,9 @@ const TabNavigator = ({ onLogout }: { onLogout: () => void }) => {
       />
       <Tab.Screen 
         name="Profile"
+        component={ProfileScreen}
         options={{ tabBarLabel: 'Account' }}
-      >
-        {(props) => <ProfileScreen {...props} onLogout={onLogout} />}
-      </Tab.Screen>
+      />
     </Tab.Navigator>
   );
 };

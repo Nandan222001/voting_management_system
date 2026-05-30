@@ -24,7 +24,8 @@ def check_database_connection():
     print_section("STEP 1: Database Connection Check")
     try:
         db = SessionLocal()
-        result = db.execute("SELECT 1").fetchone()
+        from sqlalchemy import text
+        result = db.execute(text("SELECT 1")).fetchone()
         db.close()
         print("✓ Database connection successful")
         return True

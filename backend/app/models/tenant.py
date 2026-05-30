@@ -44,6 +44,7 @@ class Tenant(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(100), unique=True, nullable=False, index=True)
     domain = Column(String(255), nullable=True)
+    uuid = Column(String(100), unique=True, nullable=True, index=True) # Secure identifier for API headers
 
     # Branding
     logo_url = Column(String(500), nullable=True)

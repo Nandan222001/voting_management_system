@@ -35,6 +35,28 @@ def get_plans(
     )
 
 
+@router.get(
+    "/public",
+    summary="List all subscription plans for a specific tenant (Public)",
+)
+def get_public_plans(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Returns a list of all active plans defined by the specified tenant. Publicly accessible.
+    """
+    items, total = plan_service.get_plans(db, tenant_id=tenant_id, active_only=True)
+    
+    return success_response(
+        data={
+            "total": total,
+            "items": [PlanResponse.model_validate(i).model_dump(mode="json") for i in items]
+        },
+        message="Public plans retrieved successfully."
+    )
+
+
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,

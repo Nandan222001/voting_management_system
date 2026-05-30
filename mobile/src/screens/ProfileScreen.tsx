@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { authService } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import Header from '../components/common/Header';
 
@@ -34,29 +34,13 @@ const COLORS = {
   primaryFixed: '#dae2ff',
 };
 
-const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to load user in Profile", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+const ProfileScreen = () => {
+  const { user, logout, isLoading } = useAuth();
 
   const handleLogout = () => {
     const performLogout = async () => {
       try {
-        await authService.logout();
-        onLogout();
+        await logout();
       } catch (error) {
         console.error('Logout error:', error);
         Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -79,7 +63,7 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -103,7 +87,7 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
           <View style={styles.headerContent}>
             <View style={styles.avatarWrapper}>
               <Image 
-                source={{ uri: user?.image || 'https://lh3.googleusercontent.com/aida-public/AB6AXuB7fexfX48dXnDIKywv_kuu2aLM-4zz7nhySq4s_DI9CdWFCJXv3u2qU8VSRHPzMoPx9Cas4Zf11qaLtcBh-dkdpMrPZMHuq677s2Snns_hQX4M4a6GUpK524URch9qgRr4im_J0-ajKKTR7cao-VfQpSqwfc6XvqvHTPwIGMEDORU9nesftmbk4aPpHVzq8_78nPBSoD1tRRP_2mjCqSCCj3xCC3RC_Zl5yhnpqM9CptI6zm6qcJfiEQsPEm8fyja_M14DpVyWoEM' }} 
+                source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff' }} 
                 style={styles.avatar} 
               />
               <View style={styles.verifiedIconBadge}>
@@ -111,14 +95,14 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
-              <Text style={styles.userName}>{user?.full_name || "Alexander Vance"}</Text>
+              <Text style={styles.userName}>{user?.full_name || "Member"}</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.memberBadge}>
                    <MaterialIcons name="shield" size={14} color={COLORS.primary} />
-                   <Text style={styles.memberBadgeText}>VERIFIED MEMBER</Text>
+                   <Text style={styles.memberBadgeText}>{user?.is_verified ? 'VERIFIED MEMBER' : 'UNVERIFIED'}</Text>
                 </View>
                 <View style={styles.idBadge}>
-                   <Text style={styles.idBadgeText}>ID: FED-{(user?.id || 8829).toString().padStart(4, '0')}-X</Text>
+                   <Text style={styles.idBadgeText}>ID: {user?.voter_id || `FED-${(user?.id || 0).toString().padStart(4, '0')}-X`}</Text>
                 </View>
               </View>
             </View>
@@ -149,11 +133,11 @@ const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
                <View style={styles.infoRow}>
                   <View style={styles.infoItem}>
                      <Text style={styles.infoLabel}>EMAIL ADDRESS</Text>
-                     <Text style={styles.infoValue} numberOfLines={1}>{user?.email || 'a.vance @election-ops.gov'}</Text>
+                     <Text style={styles.infoValue} numberOfLines={1}>{user?.email || 'N/A'}</Text>
                   </View>
                   <View style={styles.infoItem}>
                      <Text style={styles.infoLabel}>PHONE NUMBER</Text>
-                     <Text style={styles.infoValue}>+1 (202) 555-0198</Text>
+                     <Text style={styles.infoValue}>{user?.phone || 'N/A'}</Text>
                   </View>
                </View>
             </View>

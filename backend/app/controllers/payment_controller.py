@@ -6,6 +6,7 @@ from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.payment import (
+    PaymentCreate,
     PaymentListResponse,
     PaymentResponse,
     RevenueSummary,
@@ -15,6 +16,27 @@ from app.services.payment_service import payment_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/payments", tags=["Revenue & Payments"])
+
+
+@router.post(
+    "/create",
+    response_model=PaymentResponse,
+    summary="Initialize a new payment (Authenticated)",
+)
+def create_payment(
+    payload: PaymentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PaymentResponse:
+    """
+    Create a pending payment record.
+    """
+    payment = payment_service.create_payment_record(
+        db, 
+        tenant_id=current_user.tenant_id, 
+        data=payload
+    )
+    return PaymentResponse.model_validate(payment)
 
 
 @router.get(

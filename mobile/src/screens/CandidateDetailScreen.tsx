@@ -37,14 +37,15 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   const [activeTab, setActiveTab] = useState('biography');
   
   // Default data from template, could be overridden by route params
-  const candidate = route.params?.candidate || {
-    full_name: 'Amitav R. Bharadwaj',
-    role: 'Minister of Urban Development & Infrastructure',
-    constituency: 'South Delhi Constituency',
-    party: "National People's Party",
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDQdV_knkcvdeI10Dw9S_MuEhlnu-4YXUCDc88ajKtaUq1xSXBnB_ThUUWYn-RI_oynHeKjuh4UEjzRrNuCWnSK8Ve9RnOr8sGIAw_zbZsikGKG9gxKN40_W2PFml-0x3cYdPRLjDzB56fDbmHoztaQ2Vg-FqmCdgfMEOMmSi-jyrGpJ48eLwTPbM_eIp1maaejZffo3EjdqyJWistYkqGSoPIZg9by07U-6SnpCOujAxjFKiNSH03rhurfXeE-ZWPLpA1JE0FwavM',
-    cover: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCCQHjDXBuZy3unGDlf-zaQ6qqlAWjEjLYxu2BmRHM-F9UmkMVvAKMZAKKqC0ifzoIf7VQeVX7niwpMExanQzxVuQhK7Uz_6CHu7lSDr3cdSV7r_Fc8wxI8V0QwJaW3dSZoDrOYZB_IHOBfQj9b_SGytcFPio-TbjIWpNjoKGOSiZcOgJdC6qSm0kJIPxADnzX1bMbR8TkYIrsJrvF7JH1jDQUunU6k2EwriHwDKmvrfagL6yezSfj-hz66ITdKgzUM6idWJtkz-Bc'
-  };
+  const candidate = route.params?.candidate || {};
+
+  const fullName = candidate.full_name || 'Unknown Candidate';
+  const role = candidate.committee?.name || 'Candidate';
+  const constituency = candidate.target?.name || 'Independent District';
+  const party = candidate.committee?.name || "Independent";
+  const portraitUrl = candidate.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName) + '&background=0D8ABC&color=fff';
+  const coverUrl = candidate.image_url || 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?auto=format&fit=crop&q=80&w=1200';
+  const bioText = candidate.bio || "No biography available for this candidate.";
 
   const BiographyTab = () => (
     <View style={styles.tabContent}>
@@ -52,25 +53,20 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         <MaterialIcons name="article" size={24} color={COLORS.primary} />
         <Text style={styles.contentTitle}>Candidate Vision & Statement</Text>
       </View>
-      <Text style={styles.quoteText}>
-        "Transforming our cities into global hubs of sustainability and technological excellence requires more than just policy—it requires a shared national commitment to integrity and innovation."
-      </Text>
-      <Text style={styles.bodyText}>
-        Amitav R. Bharadwaj has served as the Minister of Urban Development for the past five years, overseeing the implementation of the 'Smart City Initiative' across 12 major metropolitan areas.
-      </Text>
+      {candidate.image_url ? (
+        <Text style={styles.quoteText}>"Committed to progress and democratic integrity."</Text>
+      ) : null}
+      <Text style={styles.bodyText}>{bioText}</Text>
       <View style={styles.eduExpGrid}>
         <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>EDUCATION</Text>
-          <Text style={styles.eduExpValue}>M.P.P. Harvard Kennedy School</Text>
+          <Text style={styles.eduExpLabel}>STATUS</Text>
+          <Text style={styles.eduExpValue}>Official Nominee</Text>
         </View>
         <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>EXPERIENCE</Text>
-          <Text style={styles.eduExpValue}>15+ Years Public Service</Text>
+          <Text style={styles.eduExpLabel}>ID</Text>
+          <Text style={styles.eduExpValue}>CAND-{candidate.id || 'N/A'}</Text>
         </View>
       </View>
-      <Text style={styles.bodyText}>
-        Throughout his tenure, Minister Bharadwaj has focused on high-density utility planning, significantly reducing urban congestion by 22% through the 'Green-Flow' transit protocol.
-      </Text>
     </View>
   );
 
@@ -78,13 +74,8 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
     <View style={styles.tabContent}>
       <View style={styles.proposalCard}>
         <MaterialIcons name="bolt" size={32} color={COLORS.primary} />
-        <Text style={styles.proposalTitle}>Renewable Grid 2030</Text>
-        <Text style={styles.proposalDesc}>Transitioning all municipal buildings to 100% solar energy by the end of the next fiscal term.</Text>
-      </View>
-      <View style={styles.proposalCard}>
-        <MaterialIcons name="school" size={32} color={COLORS.primary} />
-        <Text style={styles.proposalTitle}>Tech-Ed Literacy</Text>
-        <Text style={styles.proposalDesc}>Providing vocational AI and coding training to 1 million youth in urban under-served districts.</Text>
+        <Text style={styles.proposalTitle}>Key Initiative</Text>
+        <Text style={styles.proposalDesc}>Developing sustainable infrastructure and transparent governance protocols for the constituency.</Text>
       </View>
     </View>
   );
@@ -107,7 +98,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
           </View>
         </View>
         <Text style={styles.endorsementQuote}>
-          "Minister Bharadwaj has shown unparalleled commitment to technical rigor." — Federation of Indian Industries
+          "Committed to technical rigor and public service." — Federation of Industries
         </Text>
       </View>
     </View>
@@ -118,7 +109,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Hero Section */}
         <View style={styles.heroContainer}>
-          <Image source={{ uri: candidate.cover }} style={styles.coverImage} />
+          <Image source={{ uri: coverUrl }} style={styles.coverImage} />
           <View style={styles.coverOverlay} />
           
           <TouchableOpacity 
@@ -130,7 +121,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
           <View style={styles.profileInfoContainer}>
              <View style={styles.portraitWrapper}>
-                <Image source={{ uri: candidate.image }} style={styles.portrait} />
+                <Image source={{ uri: portraitUrl }} style={styles.portrait} />
              </View>
              
              <View style={styles.mainMeta}>
@@ -138,21 +129,18 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
                    <View style={styles.verifiedBadge}>
                       <Text style={styles.badgeText}>VERIFIED CANDIDATE</Text>
                    </View>
-                   <View style={styles.incumbentBadge}>
-                      <Text style={styles.badgeText}>INCUMBENT</Text>
-                   </View>
                 </View>
-                <Text style={styles.candidateName}>{candidate.full_name}</Text>
-                <Text style={styles.candidateRole}>{candidate.role}</Text>
+                <Text style={styles.candidateName}>{fullName}</Text>
+                <Text style={styles.candidateRole}>{role}</Text>
                 
                 <View style={styles.locationPartyRow}>
                    <View style={styles.metaItem}>
                       <MaterialIcons name="location-on" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{candidate.constituency}</Text>
+                      <Text style={styles.metaText}>{constituency}</Text>
                    </View>
                    <View style={styles.metaItem}>
                       <MaterialIcons name="groups" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{candidate.party}</Text>
+                      <Text style={styles.metaText}>{party}</Text>
                    </View>
                 </View>
              </View>

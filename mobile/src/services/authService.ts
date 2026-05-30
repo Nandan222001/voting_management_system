@@ -28,6 +28,11 @@ export const authService = {
     return response.data;
   },
 
+  verifyOtp: async (email: string, otp: string) => {
+    const response = await api.post('/auth/verify-otp', { email, otp_code: otp });
+    return response.data;
+  },
+
   getCurrentUser: async () => {
     const user = await AsyncStorage.getItem('user');
     return user ? JSON.parse(user) : null;
