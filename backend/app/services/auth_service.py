@@ -123,14 +123,39 @@ class AuthService:
             email=normalized_email,
             phone=register_data.phone,
             date_of_birth=register_data.date_of_birth,
+            gender=register_data.gender,
+            parent_name=register_data.parent_name,
             voter_id=register_data.voter_id,
             designation=register_data.designation,
+            
+            # KYC
+            kyc_type=register_data.kyc_type,
+            kyc_front_url=register_data.kyc_front_url,
+            kyc_back_url=register_data.kyc_back_url,
+
+            # Address (Permanent)
+            house_number=register_data.house_number,
             street_address=register_data.street_address,
+            village=register_data.village,
+            landmark=register_data.landmark,
+            pincode=register_data.pincode,
             city=register_data.city,
+            taluka=register_data.taluka,
             district=register_data.district,
             state=register_data.state,
             country=register_data.country,
-            pincode=register_data.pincode,
+
+            # Current Address
+            current_street_address=register_data.current_street_address,
+            current_city=register_data.current_city,
+            current_district=register_data.current_district,
+            current_state=register_data.current_state,
+            current_pincode=register_data.current_pincode,
+
+            # Mapping
+            committee_id=register_data.committee_id,
+            membership_plan_id=register_data.membership_plan_id,
+
             hashed_password=hash_password(register_data.password),
             role=UserRole.voter,
             status=UserStatus.pending,

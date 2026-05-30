@@ -5,12 +5,14 @@ Provides the /api/v1/auth router with endpoints for registration, login,
 OTP verification, token refresh, and current-user profile retrieval.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user
+from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
@@ -39,6 +41,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 )
 def register(
     payload: RegisterRequest,
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
 ) -> UserResponse:
     """
@@ -48,8 +51,10 @@ def register(
     - An OTP is generated and stored; in production it would be e-mailed to
       the user.
     - The account starts in ``pending`` status and ``is_verified=False``.
+    - **Mobile clients** supply the tenant via the ``X-Tenant-ID`` header;
+      ``payload.tenant_id`` (if set) takes precedence.
     """
-    user: User = auth_service.register(db, payload)
+    user: User = auth_service.register(db, payload, tenant_id=header_tenant_id)
     return UserResponse.model_validate(user)
 
 

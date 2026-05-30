@@ -25,6 +25,18 @@ class ElectionStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+# Association table for multi-target elections
+# (e.g. one election covering multiple Districts or Blocks)
+from sqlalchemy import Table
+
+election_targets = Table(
+    "election_targets",
+    Base.metadata,
+    Column("election_id", Integer, ForeignKey("elections.id", ondelete="CASCADE"), primary_key=True),
+    Column("target_id", Integer, ForeignKey("targets.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class Election(Base):
     """ORM model representing a single election event."""
 
@@ -38,11 +50,16 @@ class Election(Base):
     description = Column(Text, nullable=True)
 
     # Schedule
+    nomination_start_date = Column(DateTime, nullable=True)
+    nomination_end_date = Column(DateTime, nullable=True)
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
+    
+    # Scoping
+    committee_level = Column(String(50), nullable=True) # country, state, district, block, booth
     target_district = Column(String(100), nullable=True, index=True)
 
-    # Scoping – link to structured geographical target
+    # Scoping – legacy single link (kept for compatibility)
     target_id = Column(
         Integer,
         ForeignKey("targets.id", ondelete="SET NULL"),
@@ -92,6 +109,10 @@ class Election(Base):
     creator = relationship("User", back_populates="elections_created", lazy="select")
     tenant = relationship("Tenant", back_populates="elections", lazy="select")
     target = relationship("Target", back_populates="elections", lazy="select")
+    
+    # Multi-jurisdiction relationship
+    targets = relationship("Target", secondary=election_targets, lazy="select")
+
     candidates = relationship(
         "Candidate",
         back_populates="election",

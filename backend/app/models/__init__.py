@@ -12,6 +12,7 @@ from app.models.candidate_committee import CandidateCommittee                # n
 from app.models.candidate import Candidate                                  # noqa: F401
 from app.models.vote import Vote                                            # noqa: F401
 from app.models.payment import Payment, PaymentStatus                       # noqa: F401
+from app.models.plan import Plan                                           # noqa: F401
 from app.models.audit_log import AuditLog                                   # noqa: F401
 
 __all__ = [
@@ -31,5 +32,6 @@ __all__ = [
     "Vote",
     "Payment",
     "PaymentStatus",
+    "Plan",
     "AuditLog",
 ]

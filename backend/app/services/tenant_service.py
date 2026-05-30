@@ -55,12 +55,13 @@ class TenantService:
             name=data.name,
             slug=slug,
             contact_email=data.contact_email,
+            contact_phone=data.contact_phone,
             plan=data.plan or "starter",
             logo_url=data.logo_url,
             primary_color=getattr(data, 'primary_color', None) or "#0051D5",
             max_elections=max_e,
             max_voters=max_v,
-            status=TenantStatus.trial,
+            status=TenantStatus.draft,
             created_by=created_by,
         )
         db.add(tenant)
@@ -202,7 +203,7 @@ class TenantService:
 
         total_tenants = db.query(Tenant).count()
         active_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.active).count()
-        trial_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.trial).count()
+        draft_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.draft).count()
         suspended_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.suspended).count()
         total_users = db.query(User).filter(User.tenant_id.isnot(None)).count()
         total_elections = db.query(Election).count()
@@ -211,7 +212,7 @@ class TenantService:
         return {
             "total_tenants": total_tenants,
             "active_tenants": active_tenants,
-            "trial_tenants": trial_tenants,
+            "draft_tenants": draft_tenants,
             "suspended_tenants": suspended_tenants,
             "total_users": total_users,
             "total_elections": total_elections,
