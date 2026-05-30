@@ -40,7 +40,18 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
 
   const loadData = async () => {
     try {
-      const elections = await electionService.getElections();
+      let elections;
+      try {
+        elections = await electionService.getElections();
+      } catch (err: any) {
+        // If 401, try the public endpoint as a fallback for the dashboard
+        if (err.response?.status === 401) {
+          elections = await electionService.getPublicElections();
+        } else {
+          throw err;
+        }
+      }
+      
       const now = new Date();
       
       const active = elections.filter((e: any) => {
@@ -136,57 +147,56 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
 
         {/* Active Elections Hero */}
         {activeElections.length > 0 && (
-          <View style={styles.activeHeroContainer}>
-            <View style={styles.heroHeader}>
-               <View style={styles.heroTitleRow}>
-                  <View style={[styles.liveIndicator, { backgroundColor: COLORS.secondary }]}>
-                    <View style={[styles.livePulse, { backgroundColor: '#fff' }]} />
-                    <Text style={[styles.liveLabel, { color: '#fff' }]}>LIVE VOTING</Text>
-                  </View>
-                  <Text style={styles.heroCurrentDate}>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Text>
+          <>
+            <View style={styles.sectionHeader}>
+               <View style={styles.sectionTitleRow}>
+                  <View style={[styles.titleIndicator, { backgroundColor: COLORS.secondary }]} />
+                  <Text style={styles.sectionTitle}>Live Voting</Text>
                </View>
             </View>
 
-            {activeElections.slice(0, 1).map((election, index) => (
-              <TouchableOpacity 
-                key={election.id || index}
-                style={styles.heroCard}
-                onPress={() => navigation.navigate('Elections', { screen: 'Voting', params: { election } })}
-                activeOpacity={0.9}
-              >
-                <LinearGradient
-                  colors={['#ffffff', '#f0f4ff']}
-                  style={styles.heroCardGradient}
+            <View style={styles.activeHeroContainer}>
+              {activeElections.slice(0, 1).map((election, index) => (
+                <TouchableOpacity 
+                  key={election.id || index}
+                  style={styles.heroCard}
+                  onPress={() => navigation.navigate('Elections', { screen: 'Voting', params: { election } })}
+                  activeOpacity={0.9}
                 >
-                  <View style={styles.heroCardContent}>
-                    <View style={styles.heroInfoSection}>
-                      <Text style={styles.heroElectionTitle}>{election.title}</Text>
-                      <View style={styles.heroBadgeRow}>
-                        <View style={styles.heroTypeBadge}>
-                          <Text style={styles.heroTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
+                  <LinearGradient
+                    colors={['#ffffff', '#f0f4ff']}
+                    style={styles.heroCardGradient}
+                  >
+                    <View style={styles.heroCardContent}>
+                      <View style={styles.heroInfoSection}>
+                        <Text style={styles.heroElectionTitle}>{election.title}</Text>
+                        <View style={styles.heroBadgeRow}>
+                          <View style={styles.heroTypeBadge}>
+                            <Text style={styles.heroTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.heroDivider} />
+
+                      <View style={styles.heroStatusRow}>
+                        <View style={styles.heroStatusIcon}>
+                          <MaterialIcons name="verified" size={20} color={COLORS.secondary} />
+                        </View>
+                        <View>
+                          <Text style={styles.heroStatusTitle}>Status: Eligible to Vote</Text>
+                          <Text style={styles.heroStatusSub}>Your vote is pending</Text>
+                        </View>
+                        <View style={styles.heroArrow}>
+                          <MaterialIcons name="chevron-right" size={24} color={COLORS.primary} />
                         </View>
                       </View>
                     </View>
-
-                    <View style={styles.heroDivider} />
-
-                    <View style={styles.heroStatusRow}>
-                      <View style={styles.heroStatusIcon}>
-                        <MaterialIcons name="verified" size={20} color={COLORS.secondary} />
-                      </View>
-                      <View>
-                        <Text style={styles.heroStatusTitle}>Status: Eligible to Vote</Text>
-                        <Text style={styles.heroStatusSub}>Your vote is pending</Text>
-                      </View>
-                      <View style={styles.heroArrow}>
-                        <MaterialIcons name="chevron-right" size={24} color={COLORS.primary} />
-                      </View>
-                    </View>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </>
         )}
 
         {activeElections.length === 0 && (
@@ -285,13 +295,7 @@ const styles = StyleSheet.create({
   voteText: { color: '#fff', fontSize: 24, fontWeight: '700', fontStyle: 'italic', letterSpacing: -1 },
 
   // Active Hero Styles
-  activeHeroContainer: { marginBottom: 32 },
-  heroHeader: { marginBottom: 16 },
-  heroTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.error + '15', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  livePulse: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.error },
-  liveLabel: { fontSize: 10, fontWeight: '800', color: COLORS.error, letterSpacing: 1 },
-  heroCurrentDate: { fontSize: 12, fontWeight: '700', color: COLORS.onSurfaceVariant, textTransform: 'uppercase', opacity: 0.8 },
+  activeHeroContainer: { marginBottom: 16 },
   
   heroCard: { borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: COLORS.outlineVariant },
   heroCardGradient: { padding: 2 },
@@ -310,9 +314,6 @@ const styles = StyleSheet.create({
   heroStatusTitle: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
   heroStatusSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
   heroArrow: { marginLeft: 'auto' },
-  
-  heroViewAllBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
-  heroViewAllText: { fontSize: 13, fontWeight: '700', color: COLORS.primary },
 
   emptyActiveCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: 24, padding: 40, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, marginBottom: 32 },
   emptyActiveText: { marginTop: 12, fontSize: 14, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.7 },
@@ -321,25 +322,6 @@ const styles = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   titleIndicator: { width: 6, height: 24, borderRadius: 3 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: COLORS.onSurface },
-  currentDateText: { fontSize: 12, color: COLORS.onSurfaceVariant, fontWeight: '500' },
-
-  electionCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, overflow: 'hidden', marginBottom: 32 },
-  electionHeader: { padding: 20, borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant, backgroundColor: 'rgba(243, 244, 246, 0.3)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  electionTitle: { fontSize: 18, fontWeight: '600', color: COLORS.primary },
-  electionSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
-  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: COLORS.secondaryContainer, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.secondary },
-  liveText: { color: COLORS.onSecondaryContainer, fontSize: 12, fontWeight: '700' },
-  electionContent: { padding: 20 },
-  voterStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
-  voterIconContainer: { width: 48, height: 48, borderRadius: 8, backgroundColor: COLORS.primaryContainer + '20', justifyContent: 'center', alignItems: 'center' },
-  voterStatusTitle: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
-  voterStatusSub: { fontSize: 14, color: COLORS.onSurfaceVariant },
-  progressBarBg: { height: 8, backgroundColor: COLORS.surfaceContainerHigh, borderRadius: 4, marginBottom: 8 },
-  progressBarFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 },
-  turnoutText: { fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic', marginBottom: 24 },
-  viewProfilesBtn: { alignItems: 'center', paddingVertical: 8 },
-  viewProfilesText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
 
   eventsList: { gap: 12, marginBottom: 16 },
   eventCard: { flexDirection: 'row', backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 16, gap: 16 },

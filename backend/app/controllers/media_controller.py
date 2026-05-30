@@ -15,5 +15,5 @@ async def upload_file(
     """
     # For now, we use save_uploaded_image. 
     # We can expand this to handle PDFs etc.
-    url = save_uploaded_image(file, subdir="kyc", filename_prefix="kyc_doc")
+    url = await save_uploaded_image(file, subdir="kyc", filename_prefix="kyc_doc")
     return success_response(data={"url": url}, message="File uploaded successfully.")

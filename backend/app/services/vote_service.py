@@ -185,7 +185,7 @@ class VoteService:
         Retrieve the vote record for a specific user in a specific election.
         """
         vote_repo = VoteRepository(db)
-        return vote_repo.get_user_vote(user_id, election_id)
+        return vote_repo.get_user_vote_in_election(user_id, election_id)
 
     # ------------------------------------------------------------------
     # Election results

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Header from '../components/common/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -34,176 +35,137 @@ const COLORS = {
 
 const CandidateDetailScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState('biography');
   
-  // Default data from template, could be overridden by route params
+  // Real data passed from navigation
   const candidate = route.params?.candidate || {};
 
   const fullName = candidate.full_name || 'Unknown Candidate';
-  const role = candidate.committee?.name || 'Candidate';
-  const constituency = candidate.target?.name || 'Independent District';
-  const party = candidate.committee?.name || "Independent";
-  const portraitUrl = candidate.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName) + '&background=0D8ABC&color=fff';
-  const coverUrl = candidate.image_url || 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?auto=format&fit=crop&q=80&w=1200';
-  const bioText = candidate.bio || "No biography available for this candidate.";
-
-  const BiographyTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.contentHeader}>
-        <MaterialIcons name="article" size={24} color={COLORS.primary} />
-        <Text style={styles.contentTitle}>Candidate Vision & Statement</Text>
-      </View>
-      {candidate.image_url ? (
-        <Text style={styles.quoteText}>"Committed to progress and democratic integrity."</Text>
-      ) : null}
-      <Text style={styles.bodyText}>{bioText}</Text>
-      <View style={styles.eduExpGrid}>
-        <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>STATUS</Text>
-          <Text style={styles.eduExpValue}>Official Nominee</Text>
-        </View>
-        <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>ID</Text>
-          <Text style={styles.eduExpValue}>CAND-{candidate.id || 'N/A'}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  const ProposalsTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.proposalCard}>
-        <MaterialIcons name="bolt" size={32} color={COLORS.primary} />
-        <Text style={styles.proposalTitle}>Key Initiative</Text>
-        <Text style={styles.proposalDesc}>Developing sustainable infrastructure and transparent governance protocols for the constituency.</Text>
-      </View>
-    </View>
-  );
-
-  const EndorsementsTab = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.bodyText}>Major organizations and leaders supporting this candidate.</Text>
-      <View style={styles.endorsementPreview}>
-        <View style={styles.endorsementAvatars}>
-          {[1, 2, 3].map(i => (
-            <View key={i} style={styles.endorsementRing}>
-               <Image 
-                source={{ uri: `https://ui-avatars.com/api/?name=Org${i}&background=random` }} 
-                style={styles.endorsementAvatar} 
-               />
-            </View>
-          ))}
-          <View style={[styles.endorsementRing, styles.moreEndorsements]}>
-            <Text style={styles.moreText}>+24</Text>
-          </View>
-        </View>
-        <Text style={styles.endorsementQuote}>
-          "Committed to technical rigor and public service." — Federation of Industries
-        </Text>
-      </View>
-    </View>
-  );
+  const role = candidate.committee?.name || 'CANDIDATE';
+  const constituency = candidate.target?.name || 'General Node';
+  const portraitUrl = candidate.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName) + '&background=003d9b&color=fff';
+  const bioText = candidate.bio || "Candidate has not provided a specific mission statement.";
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Hero Section */}
-        <View style={styles.heroContainer}>
-          <Image source={{ uri: coverUrl }} style={styles.coverImage} />
-          <View style={styles.coverOverlay} />
-          
-          <TouchableOpacity 
-            style={[styles.backButton, { top: insets.top + 10 }]}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+      <Header title="Candidate Profile" />
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        {/* Profile Header Card */}
+        <View style={styles.profileHeaderCard}>
+           <View style={styles.headerTop}>
+              <View style={styles.portraitContainer}>
+                 <Image source={{ uri: portraitUrl }} style={styles.portraitImg} />
+                 <View style={styles.activeCheck}>
+                    <MaterialIcons name="verified" size={16} color="#fff" />
+                 </View>
+              </View>
+              <View style={styles.headerInfo}>
+                 <Text style={styles.nameText}>{fullName}</Text>
+                 <View style={styles.roleBadge}>
+                    <Text style={styles.roleBadgeText}>{role.toUpperCase()}</Text>
+                 </View>
+                 <View style={styles.locationRow}>
+                    <MaterialIcons name="location-on" size={14} color={COLORS.primary} />
+                    <Text style={styles.locationText}>{constituency}</Text>
+                 </View>
+              </View>
+           </View>
 
-          <View style={styles.profileInfoContainer}>
-             <View style={styles.portraitWrapper}>
-                <Image source={{ uri: portraitUrl }} style={styles.portrait} />
-             </View>
-             
-             <View style={styles.mainMeta}>
-                <View style={styles.badgeRow}>
-                   <View style={styles.verifiedBadge}>
-                      <Text style={styles.badgeText}>VERIFIED CANDIDATE</Text>
-                   </View>
-                </View>
-                <Text style={styles.candidateName}>{fullName}</Text>
-                <Text style={styles.candidateRole}>{role}</Text>
-                
-                <View style={styles.locationPartyRow}>
-                   <View style={styles.metaItem}>
-                      <MaterialIcons name="location-on" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{constituency}</Text>
-                   </View>
-                   <View style={styles.metaItem}>
-                      <MaterialIcons name="groups" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{party}</Text>
-                   </View>
-                </View>
-             </View>
-
-             <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.followBtn}>
-                   <MaterialIcons name="person-add" size={20} color="#fff" />
-                   <Text style={styles.followBtnText}>FOLLOW</Text>
-                </TouchableOpacity>
-                <View style={styles.socialBtns}>
-                   <TouchableOpacity style={styles.iconBtn}><MaterialIcons name="share" size={20} color="#fff" /></TouchableOpacity>
-                   <TouchableOpacity style={styles.iconBtn}><MaterialIcons name="public" size={20} color="#fff" /></TouchableOpacity>
-                </View>
-             </View>
-          </View>
+           <View style={styles.headerStats}>
+              <View style={styles.statItem}>
+                 <Text style={styles.statValue}>{candidate.vote_count || 0}</Text>
+                 <Text style={styles.statLabel}>SECURE VOTES</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                 <Text style={styles.statValue}>#{(candidate.id || 0).toString().padStart(3, '0')}</Text>
+                 <Text style={styles.statLabel}>REGISTRY ID</Text>
+              </View>
+           </View>
         </View>
 
         <View style={styles.mainContent}>
-          {/* Tabbed Navigation */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'biography' && styles.activeTabButton]}
-              onPress={() => setActiveTab('biography')}
-            >
-              <Text style={[styles.tabText, activeTab === 'biography' && styles.activeTabText]}>Biography</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'proposals' && styles.activeTabButton]}
-              onPress={() => setActiveTab('proposals')}
-            >
-              <Text style={[styles.tabText, activeTab === 'proposals' && styles.activeTabText]}>Proposals</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'endorsements' && styles.activeTabButton]}
-              onPress={() => setActiveTab('endorsements')}
-            >
-              <Text style={[styles.tabText, activeTab === 'endorsements' && styles.activeTabText]}>Endorsements</Text>
-            </TouchableOpacity>
+          {/* Biography Section */}
+          <View style={styles.infoSection}>
+             <View style={styles.sectionHeader}>
+                <MaterialIcons name="description" size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Vision & Bio</Text>
+             </View>
+             <Text style={styles.bioText}>{bioText}</Text>
           </View>
 
-          {/* Active Tab Content */}
-          <View style={styles.contentCard}>
-            {activeTab === 'biography' && <BiographyTab />}
-            {activeTab === 'proposals' && <ProposalsTab />}
-            {activeTab === 'endorsements' && <EndorsementsTab />}
+          {/* Identity & Background */}
+          <View style={styles.infoSection}>
+             <View style={styles.sectionHeader}>
+                <MaterialIcons name="badge" size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Identity & Background</Text>
+             </View>
+             <View style={styles.detailsGrid}>
+                <DetailRow label="Guardian/Parent" value={candidate.parent_name} />
+                <DetailRow label="Date of Birth" value={candidate.date_of_birth} />
+                <DetailRow label="Gender" value={candidate.gender} />
+                <View style={styles.symbolRow}>
+                   <Text style={styles.detailLabel}>Assign Symbol</Text>
+                   {candidate.symbol?.startsWith('http') ? (
+                     <Image source={{ uri: candidate.symbol }} style={styles.symbolImg} />
+                   ) : (
+                     <Text style={styles.detailValue}>{candidate.symbol || 'N/A'}</Text>
+                   )}
+                </View>
+             </View>
           </View>
 
-          {/* Campaign Metrics */}
-          <View style={styles.metaCard}>
-             <Text style={styles.cardLabel}>CAMPAIGN METRICS</Text>
-             <MetricRow label="Voter Approval" value="78.4%" color={COLORS.secondary} />
-             <MetricRow label="Fundraising Goal" value="85% Reached" />
-             <MetricRow label="Volunteers" value="12,400+" isLast />
-             <TouchableOpacity style={styles.fullAnalyticsBtn}>
-                <Text style={styles.fullAnalyticsText}>VIEW FULL ANALYTICS</Text>
-             </TouchableOpacity>
+          {/* Contact Information */}
+          <View style={styles.infoSection}>
+             <View style={styles.sectionHeader}>
+                <MaterialIcons name="contact-mail" size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Contact Directory</Text>
+             </View>
+             <View style={styles.detailsGrid}>
+                <DetailRow label="Official Email" value={candidate.email} isEmail />
+                <DetailRow label="Registry Phone" value={candidate.phone} />
+             </View>
           </View>
 
-          {/* Upcoming Events */}
-          <View style={styles.metaCard}>
-             <Text style={styles.cardLabel}>UPCOMING EVENTS</Text>
-             <EventRow month="OCT" day="12" title="Town Hall: Infrastructure" location="Manekshaw Centre, Delhi" />
-             <EventRow month="OCT" day="15" title="Tech-Summit Keynote" location="Pragati Maidan" isLast />
+          {/* Jurisdictional Scope */}
+          <View style={styles.infoSection}>
+             <View style={styles.sectionHeader}>
+                <MaterialIcons name="map" size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Jurisdictional Scope</Text>
+             </View>
+             <View style={styles.detailsGrid}>
+                <DetailRow label="State" value={candidate.state} />
+                <DetailRow label="District" value={candidate.district} />
+                <DetailRow label="Taluka / Block" value={candidate.taluka} />
+                <DetailRow label="Village / Area" value={candidate.village} />
+                <DetailRow label="Pincode" value={candidate.pincode} />
+             </View>
+          </View>
+
+          {/* Eligibility Checklist */}
+          <View style={styles.infoSection}>
+             <View style={styles.sectionHeader}>
+                <MaterialIcons name="fact_check" size={20} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>Eligibility Checklist</Text>
+             </View>
+             <View style={styles.checklist}>
+                <CheckItem label="Willing to Contest" checked={candidate.is_willing} />
+                <CheckItem label="Previously Held Post" checked={candidate.held_previously} />
+                {candidate.held_previously && (
+                   <View style={styles.subDetail}>
+                      <Text style={styles.subDetailLabel}>Previous Position: {candidate.prev_position} ({candidate.prev_duration})</Text>
+                   </View>
+                )}
+                <CheckItem label="Organizational Discipline" checked={!candidate.is_disciplined} />
+                <CheckItem label="Dispute Free Status" checked={!candidate.has_complaints} />
+                <CheckItem label="Constitutional Agreement" checked={candidate.agreed_constitution} />
+                <CheckItem label="Results Acceptance" checked={candidate.accepted_results} />
+             </View>
+          </View>
+
+          {/* Declarations */}
+          <View style={styles.securityBanner}>
+             <MaterialIcons name="verified-user" size={18} color={COLORS.secondary} />
+             <Text style={styles.securityText}>All candidate data is cryptographically signed and stored in the secure organizational vault.</Text>
           </View>
         </View>
       </ScrollView>
@@ -211,134 +173,105 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   );
 };
 
-const MetricRow = ({ label, value, color, isLast }: any) => (
-  <View style={[styles.metricRow, isLast && { borderBottomWidth: 0 }]}>
-    <Text style={styles.metricLabel}>{label}</Text>
-    <Text style={[styles.metricValue, color && { color }]}>{value}</Text>
+const DetailRow = ({ label, value, isEmail }: any) => (
+  <View style={styles.detailRow}>
+     <Text style={styles.detailLabel}>{label}</Text>
+     <Text style={[styles.detailValue, isEmail && { textTransform: 'lowercase' }]}>{value || 'N/A'}</Text>
   </View>
 );
 
-const EventRow = ({ month, day, title, location, isLast }: any) => (
-  <View style={[styles.eventRow, isLast && { marginBottom: 0 }]}>
-    <View style={styles.eventDateBlock}>
-      <Text style={styles.eventMonth}>{month}</Text>
-      <Text style={styles.eventDay}>{day}</Text>
-    </View>
-    <View>
-      <Text style={styles.eventTitle}>{title}</Text>
-      <Text style={styles.eventLocation}>{location}</Text>
-    </View>
+const CheckItem = ({ label, checked }: any) => (
+  <View style={styles.checkItem}>
+     <MaterialIcons 
+       name={checked ? "check-circle" : "cancel"} 
+       size={18} 
+       color={checked ? COLORS.secondary : COLORS.error} 
+     />
+     <Text style={styles.checkLabel}>{label}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  heroContainer: { height: 500, width: '100%' },
-  coverImage: { width: '100%', height: 400 },
-  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  backButton: { position: 'absolute', left: 20, zIndex: 10 },
   
-  profileInfoContainer: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  portraitWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 12,
-    borderWidth: 4,
-    borderColor: '#fff',
-    overflow: 'hidden',
-    backgroundColor: COLORS.surfaceContainer,
-    marginBottom: 16,
+  profileHeaderCard: {
+    backgroundColor: COLORS.primary,
+    padding: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
-      android: { elevation: 8 }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 10 },
+      web: { boxShadow: '0px 10px 20px rgba(0,0,0,0.2)' }
     })
   },
-  portrait: { width: '100%', height: '100%' },
-  
-  mainMeta: { marginBottom: 20 },
-  badgeRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  verifiedBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  incumbentBadge: { backgroundColor: COLORS.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  badgeText: { color: '#fff', fontSize: 8, fontWeight: '800' },
-  candidateName: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  candidateRole: { fontSize: 16, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
-  
-  locationPartyRow: { flexDirection: 'row', gap: 16, marginTop: 12 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500' },
-  
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  followBtn: { 
-    backgroundColor: COLORS.primary, 
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  portraitContainer: { position: 'relative' },
+  portraitImg: { width: 100, height: 100, borderRadius: 50, borderWidth: 4, borderColor: '#fff' },
+  activeCheck: { 
+    position: 'absolute', 
+    bottom: 0, 
+    right: 0, 
+    backgroundColor: COLORS.secondary, 
+    width: 28, 
+    height: 28, 
+    borderRadius: 14, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff'
+  },
+  headerInfo: { flex: 1 },
+  nameText: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
+  roleBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start', marginVertical: 8 },
+  roleBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  locationText: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '600' },
+
+  headerStats: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 24, 
-    paddingVertical: 12, 
-    borderRadius: 8 
+    marginTop: 24, 
+    paddingTop: 20, 
+    borderTopWidth: 1, 
+    borderTopColor: 'rgba(255,255,255,0.1)' 
   },
-  followBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  socialBtns: { flexDirection: 'row', gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#fff' },
+  statLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.6)', marginTop: 4, letterSpacing: 0.5 },
+  statDivider: { width: 1, height: 30, backgroundColor: 'rgba(255,255,255,0.1)' },
 
-  mainContent: { padding: 16, gap: 16 },
-  tabContainer: { 
+  mainContent: { padding: 20, gap: 20 },
+  infoSection: { 
     backgroundColor: '#fff', 
-    padding: 4, 
-    borderRadius: 12, 
-    flexDirection: 'row', 
+    borderRadius: 20, 
+    padding: 20, 
     borderWidth: 1, 
-    borderColor: COLORS.outlineVariant 
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
   },
-  tabButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
-  activeTabButton: { backgroundColor: COLORS.secondaryContainer },
-  tabText: { fontSize: 13, fontWeight: '700', color: COLORS.onSurfaceVariant },
-  activeTabText: { color: COLORS.primary },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
+  bioText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22, fontWeight: '500' },
 
-  contentCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  tabContent: { gap: 16 },
-  contentHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  contentTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  quoteText: { fontSize: 16, color: COLORS.onSurface, fontWeight: '600', fontStyle: 'italic', lineHeight: 24 },
-  bodyText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22 },
-  eduExpGrid: { gap: 12, paddingVertical: 8 },
-  eduExpCard: { backgroundColor: COLORS.surfaceContainerLow, padding: 16, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
-  eduExpLabel: { fontSize: 8, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
-  eduExpValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface, marginTop: 4 },
+  detailsGrid: { gap: 12 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
+  symbolRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
+  symbolImg: { width: 32, height: 32, borderRadius: 16 },
+  detailLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6 },
+  detailValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
 
-  proposalCard: { backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.outlineVariant, gap: 8 },
-  proposalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  proposalDesc: { fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 18 },
+  checklist: { gap: 12 },
+  checkItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkLabel: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
+  subDetail: { marginLeft: 30, marginTop: -4 },
+  subDetailLabel: { fontSize: 11, color: COLORS.onSurfaceVariant, fontStyle: 'italic' },
 
-  endorsementPreview: { gap: 12 },
-  endorsementAvatars: { flexDirection: 'row' },
-  endorsementRing: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: '#fff', marginLeft: -8, overflow: 'hidden' },
-  endorsementAvatar: { width: '100%', height: '100%' },
-  moreEndorsements: { backgroundColor: COLORS.surfaceContainer, justifyContent: 'center', alignItems: 'center' },
-  moreText: { fontSize: 8, fontWeight: '800', color: COLORS.onSurface },
-  endorsementQuote: { fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic', marginTop: 4 },
-
-  metaCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  cardLabel: { fontSize: 10, fontWeight: '800', color: COLORS.outline, letterSpacing: 1.5, marginBottom: 16 },
-  metricRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainer },
-  metricLabel: { fontSize: 14, color: COLORS.onSurfaceVariant },
-  metricValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
-  fullAnalyticsBtn: { marginTop: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary, alignItems: 'center' },
-  fullAnalyticsText: { color: COLORS.primary, fontWeight: '700', fontSize: 12 },
-
-  eventRow: { flexDirection: 'row', gap: 16, marginBottom: 16 },
-  eventDateBlock: { width: 44, height: 44, borderRadius: 8, backgroundColor: COLORS.primaryFixed, justifyContent: 'center', alignItems: 'center' },
-  eventMonth: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
-  eventDay: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
-  eventTitle: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
-  eventLocation: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
+  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: COLORS.secondary + '08', borderRadius: 12, marginTop: 10 },
+  securityText: { flex: 1, fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: 16 },
 });
 
 export default CandidateDetailScreen;

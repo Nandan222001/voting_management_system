@@ -890,7 +890,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
-      android: { elevation: 2 }
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 8px rgba(0,0,0,0.05)' }
     })
   },
   electionCardTop: {

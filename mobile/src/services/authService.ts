@@ -37,4 +37,11 @@ export const authService = {
     const user = await AsyncStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
+
+  updateProfile: async (userData: any) => {
+    const response = await api.put('/auth/me', userData);
+    const updatedUser = response.data.data;
+    await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+    return updatedUser;
+  },
 };

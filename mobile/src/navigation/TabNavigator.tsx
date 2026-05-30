@@ -10,6 +10,7 @@ import CandidateDetailScreen from '../screens/CandidateDetailScreen';
 import NominationScreen from '../screens/NominationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -20,6 +21,13 @@ const VoteStack = () => (
     <Stack.Screen name="Voting" component={VotingScreen} />
     <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
     <Stack.Screen name="Nomination" component={NominationScreen} />
+  </Stack.Navigator>
+);
+
+const ProfileStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
   </Stack.Navigator>
 );
 
@@ -74,7 +82,7 @@ const TabNavigator = () => {
       />
       <Tab.Screen 
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStack}
         options={{ tabBarLabel: 'Account' }}
       />
     </Tab.Navigator>

@@ -32,6 +32,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   register: (userData: any) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
+  updateProfile: (userData: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,6 +83,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await authService.verifyOtp(email, otp);
   };
 
+  const updateProfile = async (userData: any) => {
+    const updatedUser = await authService.updateProfile(userData);
+    setUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -92,6 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         register,
         verifyOtp,
+        updateProfile,
       }}
     >
       {children}

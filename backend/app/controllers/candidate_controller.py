@@ -64,6 +64,81 @@ def get_candidate(
     return CandidateResponse.model_validate(candidate)
 
 
+@router.post(
+    "/nominate",
+    response_model=CandidateResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Apply for nomination (voters)",
+)
+async def nominate_candidate(
+    full_name: str = Form(...),
+    email: str | None = Form(None),
+    phone: str | None = Form(None),
+    date_of_birth: str | None = Form(None),
+    gender: str | None = Form(None),
+    parent_name: str | None = Form(None),
+    kyc_type: str | None = Form(None),
+    voter_id_number: str | None = Form(None),
+    state: str | None = Form(None),
+    district: str | None = Form(None),
+    taluka: str | None = Form(None),
+    village: str | None = Form(None),
+    pincode: str | None = Form(None),
+    bio: str | None = Form(None),
+    committee_id: int | None = Form(None),
+    target_id: int | None = Form(None),
+    election_id: int = Form(...),
+    image: UploadFile | None = File(None),
+    signature: UploadFile | None = File(None),
+    image_url: str | None = Form(None),
+    signature_url: str | None = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CandidateResponse:
+    """
+    Voter application for candidacy.
+    """
+    from app.utils.uploads import save_uploaded_image
+    
+    final_image_url = image_url
+    if image:
+        final_image_url = await save_uploaded_image(image, subdir="candidates", filename_prefix="cand")
+    
+    final_sig_url = signature_url
+    if signature:
+        final_sig_url = await save_uploaded_image(signature, subdir="signatures", filename_prefix="sig")
+
+    payload = CandidateCreate(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        date_of_birth=date_of_birth,
+        gender=gender,
+        parent_name=parent_name,
+        kyc_type=kyc_type,
+        voter_id_number=voter_id_number,
+        state=state,
+        district=district,
+        taluka=taluka,
+        village=village,
+        pincode=pincode,
+        bio=bio,
+        committee_id=committee_id,
+        target_id=target_id,
+        election_id=election_id,
+        image_url=final_image_url,
+        signature_url=final_sig_url,
+    )
+
+    candidate = candidate_service.add_candidate(
+        db,
+        payload,
+        image_file=None, # Already handled above
+        tenant_id=current_user.tenant_id,
+    )
+    return CandidateResponse.model_validate(candidate)
+
+
 # ---------------------------------------------------------------------------
 # Admin Operations (Candidate Management)
 # ---------------------------------------------------------------------------
