@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Image, Platform, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { authService } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import { electionService } from '../services/electionService';
 import Header from '../components/common/Header';
 
@@ -30,24 +30,23 @@ const COLORS = {
   onPrimaryContainer: '#c4d2ff',
 };
 
-const DashboardScreen = () => {
-  const [user, setUser] = useState<any>(null);
+const DashboardScreen = ({ navigation }: { navigation: any }) => {
+  const { user } = useAuth();
+  const [activeElections, setActiveElections] = useState<any[]>([]);
   const [stats, setStats] = useState({ activeElections: 0, totalElections: 0, completedElections: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
-      const userData = await authService.getCurrentUser();
-      setUser(userData);
-      
       const elections = await electionService.getElections();
-      const active = elections.filter((e: any) => e.status === 'active').length;
-      const completed = elections.filter((e: any) => e.status === 'completed').length;
+      const active = elections.filter((e: any) => e.status === 'active');
+      const completed = elections.filter((e: any) => e.status === 'completed');
+      setActiveElections(active);
       setStats({
-        activeElections: active,
+        activeElections: active.length,
         totalElections: elections.length,
-        completedElections: completed,
+        completedElections: completed.length,
       });
     } catch (error) {
       console.error('Failed to load dashboard data', error);
@@ -167,42 +166,56 @@ const DashboardScreen = () => {
            </View>
         </View>
 
-        <View style={styles.electionCard}>
-           <View style={styles.electionHeader}>
-              <View>
-                 <Text style={styles.electionTitle}>2026 Regional Council Primaries</Text>
-                 <Text style={styles.electionSub}>Jurisdiction: Sector 7A - District North</Text>
-              </View>
-              <View style={styles.liveBadge}>
-                 <View style={styles.liveDot} />
-                 <Text style={styles.liveText}>LIVE NOW</Text>
-              </View>
-           </View>
-           
-           <View style={styles.electionContent}>
-              <View style={styles.voterStatusRow}>
-                 <View style={styles.voterIconContainer}>
-                    <MaterialIcons name="how-to-vote" size={24} color={COLORS.primary} />
-                 </View>
-                 <View>
-                    <Text style={styles.voterStatusTitle}>Your Voting Status</Text>
-                    <Text style={styles.voterStatusSub}>Registered & Eligible</Text>
-                 </View>
-              </View>
-              
-              <View style={styles.progressBarBg}>
-                 <View style={[styles.progressBarFill, { width: '65%' }]} />
-              </View>
-              <Text style={styles.turnoutText}>Current voter turnout: 65.4% in your district</Text>
-              
-              <TouchableOpacity style={styles.voteNowBtn}>
-                 <Text style={styles.voteNowText}>Vote Now</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.viewProfilesBtn}>
-                 <Text style={styles.viewProfilesText}>View Candidate Profiles</Text>
-              </TouchableOpacity>
-           </View>
-        </View>
+        {activeElections.length === 0 ? (
+          <View style={styles.electionCard}>
+             <View style={styles.electionContent}>
+               <Text style={styles.electionTitle}>No active elections currently.</Text>
+             </View>
+          </View>
+        ) : (
+            activeElections.map((election, index) => (
+             <View key={election.id || index} style={styles.electionCard}>
+                <TouchableOpacity 
+                   style={styles.electionHeader}
+                   onPress={() => navigation.navigate('Voting', { election })}
+                   activeOpacity={0.7}
+                >
+                  <View>
+                     <Text style={styles.electionTitle}>{election.title}</Text>
+                     <Text style={styles.electionSub}>Type: {election.election_type}</Text>
+                  </View>
+                  <View style={styles.liveBadge}>
+                     <View style={styles.liveDot} />
+                     <Text style={styles.liveText}>LIVE NOW</Text>
+                  </View>
+               </TouchableOpacity>
+               
+               <View style={styles.electionContent}>
+                  <View style={styles.voterStatusRow}>
+                     <View style={styles.voterIconContainer}>
+                        <MaterialIcons name="how-to-vote" size={24} color={COLORS.primary} />
+                     </View>
+                     <View>
+                        <Text style={styles.voterStatusTitle}>Your Voting Status</Text>
+                        <Text style={styles.voterStatusSub}>Registered & Eligible</Text>
+                     </View>
+                  </View>
+                  
+                  <View style={styles.progressBarBg}>
+                     <View style={[styles.progressBarFill, { width: '0%' }]} />
+                  </View>
+                  <Text style={styles.turnoutText}>Turnout data pending...</Text>
+                  
+                  <TouchableOpacity style={styles.voteNowBtn} onPress={() => navigation.navigate('Voting', { election })}>
+                     <Text style={styles.voteNowText}>Vote Now</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.viewProfilesBtn} onPress={() => navigation.navigate('Voting', { election })}>
+                     <Text style={styles.viewProfilesText}>View Candidate Profiles</Text>
+                  </TouchableOpacity>
+               </View>
+            </View>
+          ))
+        )}
 
         {/* Upcoming Events */}
         <View style={styles.sectionHeader}>

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/common/Header';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { electionService } from '../services/electionService';
+import { reportService } from '../services/reportService';
 
 const { width } = Dimensions.get('window');
 
@@ -27,32 +27,23 @@ const COLORS = {
 const AnalyticsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({
-    totalElections: 0,
-    activeElections: 0,
-    completedElections: 0,
-    totalCandidates: 0,
+  const [stats, setStats] = useState<any>({
+    total_users: 0,
+    total_elections: 0,
+    total_votes: 0,
+    active_elections: 0,
+    pending_users: 0,
+    closed_elections: 0,
+    draft_elections: 0,
   });
 
   const loadAnalytics = async () => {
     try {
-      const elections = await electionService.getElections();
-      const active = elections.filter((e: any) => e.status === 'active').length;
-      
-      let totalCands = 0;
-      const sampleElections = elections.slice(0, 5);
-      const candidatesPromises = sampleElections.map(e => electionService.getCandidates(e.id));
-      const candidatesResults = await Promise.all(candidatesPromises);
-      totalCands = candidatesResults.reduce((acc, curr) => acc + curr.length, 0);
-
-      setStats({
-        totalElections: elections.length,
-        activeElections: active,
-        completedElections: elections.length - active,
-        totalCandidates: totalCands,
-      });
+      const data = await reportService.getDashboardOverview();
+      setStats(data);
     } catch (error) {
       console.error('Failed to load analytics', error);
+      Alert.alert("Error", "Could not load analytics.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -100,21 +91,21 @@ const AnalyticsScreen = () => {
                  <Text style={styles.metricLabel}>TOTAL SESSIONS</Text>
                  <MaterialIcons name="insights" size={20} color="rgba(255,255,255,0.6)" />
               </View>
-              <Text style={styles.metricValue}>{stats.totalElections}</Text>
+              <Text style={styles.metricValue}>{stats.total_elections}</Text>
               <View style={styles.metricFooter}>
                  <MaterialIcons name="trending-up" size={14} color={COLORS.secondaryContainer} />
-                 <Text style={styles.trendText}>+4.2% THIS MO</Text>
+                 <Text style={styles.trendText}>Active: {stats.active_elections}</Text>
               </View>
            </LinearGradient>
            
            <View style={styles.sideMetrics}>
               <View style={styles.miniCard}>
-                 <Text style={styles.miniLabel}>LIVE</Text>
-                 <Text style={[styles.miniValue, { color: COLORS.secondary }]}>{stats.activeElections}</Text>
+                 <Text style={styles.miniLabel}>VOTES</Text>
+                 <Text style={[styles.miniValue, { color: COLORS.secondary }]}>{stats.total_votes}</Text>
               </View>
               <View style={styles.miniCard}>
-                 <Text style={styles.miniLabel}>VETTED</Text>
-                 <Text style={[styles.miniValue, { color: COLORS.primary }]}>{stats.totalCandidates}</Text>
+                 <Text style={styles.miniLabel}>MEMBERS</Text>
+                 <Text style={[styles.miniValue, { color: COLORS.primary }]}>{stats.total_users}</Text>
               </View>
            </View>
         </View>

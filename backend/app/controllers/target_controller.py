@@ -30,17 +30,35 @@ def get_targets(
     Returns geographical/administrative targets.
     Can be filtered by parent_id to support dependent dropdowns.
     """
-    # If parent_id is provided, filter by it. Otherwise return top-level or all?
-    # Usually, for dropdowns, we want either top-level (states) or children of a specific parent.
-    if parent_id is not None:
-        targets = db.query(target_service.TargetRepository.model).filter_by(parent_id=parent_id).all()
-    else:
-        # If no parent_id, might want to return all or just top-level. 
-        # Let's return all for now, but in hierarchy management we usually need filtered.
-        targets = db.query(target_service.TargetRepository.model).all()
-        
+    targets = target_service.TargetRepository(db).get_all(parent_id=parent_id)
     data = [TargetResponse.model_validate(t).model_dump(mode="json") for t in targets]
     return success_response(data=data, message="Targets retrieved.")
+
+
+@router.get(
+    "/public",
+    summary="List targets (Public, filterable by parent/type)",
+)
+def get_public_targets(
+    parent_id: Optional[int] = Query(None),
+    target_type: Optional[str] = Query(None),
+    tenant_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Publicly list targets. Useful for registration dropdowns.
+    """
+    query = db.query(target_service.TargetRepository.model)
+    if parent_id is not None:
+        query = query.filter_by(parent_id=parent_id)
+    if target_type:
+        query = query.filter_by(type=target_type)
+    if tenant_id:
+        query = query.filter_by(tenant_id=tenant_id)
+        
+    targets = query.all()
+    data = [TargetResponse.model_validate(t).model_dump(mode="json") for t in targets]
+    return success_response(data=data, message="Public targets retrieved.")
 
 
 @router.post(

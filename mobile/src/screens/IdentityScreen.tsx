@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
-import { authService } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import Header from '../components/common/Header';
 
 const { width } = Dimensions.get('window');
@@ -22,24 +22,9 @@ const COLORS = {
 };
 
 const IdentityScreen = () => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error('Failed to load user', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -111,7 +96,7 @@ const IdentityScreen = () => {
               <View style={styles.cardFooter}>
                 <View>
                   <Text style={styles.idLabel}>UNIQUE MEMBER ID</Text>
-                  <Text style={styles.idNumber}>ID: 8829-1029-{(user?.id || 7731).toString().padStart(4, '0')}-X</Text>
+                  <Text style={styles.idNumber}>ID: {user?.voter_id || `8829-1029-${(user?.id || 7731).toString().padStart(4, '0')}-X`}</Text>
                 </View>
                 <View style={styles.qrContainer}>
                   <View style={styles.qrGrid}>

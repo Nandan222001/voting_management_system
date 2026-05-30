@@ -9,8 +9,11 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { electionService } from '../services/electionService';
 
 const { width } = Dimensions.get('window');
 
@@ -29,42 +32,30 @@ const COLORS = {
   surfaceContainerHighest: '#e1e2e4',
 };
 
-const STATIC_CANDIDATES = [
-  {
-    id: 1,
-    full_name: 'Eleanor Vance',
-    party: 'Party Alpha',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDaLbJYG0FFa0HHd53_Eke-vUdcbPYbrx5WdZZI6YpRZPjOSHUi0odKNAMTX-CUXoGUzl0goUw97eEBk-hXbKGeemP9hHlMlA217OJ3zSiW0W3trX6iIbeFnek_uGanlmjXN2o3QIwxEDta7qeyM1_5jBnd8SGhZRRJ8mR9iOY8FYWi5ZXy7lmTZYMCQU45FlsqhaOsJ9j_vk5SDw2pFLECx6dfNdq4sR2YXtuyG6_ctCV-aPyY_gSxDrSGt9TnztuU63keBlT204k'
-  },
-  {
-    id: 2,
-    full_name: 'Marcus Thorne',
-    party: 'Party Beta',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAX2Dj6GuygdzUOiNkTrqb7Z-pcJ9WcpBqqPftIK6UOpBKqMLiJ2SHJWvmuqM94vcl6T3f2AD31FDkIIQvQqgPX6iAvw2bKrWFWGf7eKvy-IYKnSVm1bskLuK7TS2Bp6qEJsNwLBivodoTnABldfmJQWCaTWaMhANwS4sHpSUyM2PG_tu_oTH9hg7XYwfuZXOhuwvn8_Qyeq-juFp-qAJNJjdK9PglwBNJPqmCCetAIbzbeFr-FZiYECufjxGb-H_98iSNDB_y55n8'
-  },
-  {
-    id: 3,
-    full_name: 'Sarah Jenkins',
-    party: 'Independent',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBeJZIR1yzhYZg2veql8hvLtb92w66inF-snv8lK0bCYJiSSVNARDlvpu-WISLAVPPRu8UPplLZtFwLhF8qx0npfVJwPXJd8gl3M_SpZXMNJAYTIpPOQlvtN0_rQjE8nrEehWCABiwLVidWshb0uWmb9hvcvKqA7hqFlLx8Dp_Q0cf1Z4Koh8LuDv0vbGb-UZp_MuB4t_69HaDNWefAhD1aUSq0ATgEVPCqg4W1JWsoBt9QYpaX9gsugcxAyuSaJ3qtCV4K5iJUrJc'
-  }
-];
-
-const CountdownTimer = () => {
-  const [time, setTime] = useState({ h: 4, m: 22, s: 45 });
+const CountdownTimer = ({ endDate }: { endDate: string }) => {
+  const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
 
   useEffect(() => {
+    const end = new Date(endDate).getTime();
+    
     const timer = setInterval(() => {
-      setTime(prev => {
-        let { h, m, s } = prev;
-        s--;
-        if (s < 0) { s = 59; m--; }
-        if (m < 0) { m = 59; h--; }
-        return { h, m, s };
-      });
+      const now = new Date().getTime();
+      const distance = end - now;
+
+      if (distance < 0) {
+        clearInterval(timer);
+        setTime({ h: 0, m: 0, s: 0 });
+        return;
+      }
+
+      const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const s = Math.floor((distance % (1000 * 60)) / 1000);
+      
+      setTime({ h, m, s });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [endDate]);
 
   const Block = ({ label, value }: any) => (
     <View style={styles.timerBlock}>
@@ -82,13 +73,80 @@ const CountdownTimer = () => {
   );
 };
 
-const VotingScreen = ({ navigation }: any) => {
+const VotingScreen = ({ navigation, route }: any) => {
+  const { election: routeElection } = route.params || {};
+  const [selectedElection, setSelectedElection] = useState<any>(routeElection);
+  const [elections, setElections] = useState<any[]>([]);
+  const [candidates, setCandidates] = useState<any[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [existingVote, setExistingVote] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleCastVote = () => {
-    if (selectedCandidateId) {
+  useEffect(() => {
+    if (routeElection) {
+      setSelectedElection(routeElection);
+    }
+  }, [routeElection]);
+
+  useEffect(() => {
+    if (selectedElection) {
+      fetchElectionDetails(selectedElection.id);
+    } else {
+      fetchActiveElections();
+    }
+  }, [selectedElection]);
+
+  const fetchActiveElections = async () => {
+    try {
+      setLoading(true);
+      const allElections = await electionService.getElections();
+      const active = allElections.filter((e: any) => e.status === 'active');
+      setElections(active);
+    } catch (error) {
+      console.error("Failed to load active elections", error);
+      Alert.alert("Error", "Failed to load active elections.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchElectionDetails = async (electionId: number) => {
+    try {
+      setLoading(true);
+      const [cands, vote] = await Promise.all([
+        electionService.getCandidates(electionId),
+        electionService.getMyVote(electionId).catch(() => null)
+      ]);
+      setCandidates(cands);
+      if (vote) {
+        setExistingVote(vote);
+        setSelectedCandidateId(vote.candidate_id);
+      } else {
+        setExistingVote(null);
+        setSelectedCandidateId(null);
+      }
+    } catch (error) {
+      console.error("Failed to load election data", error);
+      Alert.alert("Error", "Failed to load election details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCastVote = async () => {
+    if (!selectedCandidateId || !selectedElection) return;
+    
+    setSubmitting(true);
+    try {
+      await electionService.castVote(selectedElection.id, selectedCandidateId);
       setShowSuccessModal(true);
+      fetchElectionDetails(selectedElection.id); // Refresh vote status
+    } catch (error: any) {
+      Alert.alert("Voting Failed", error.response?.data?.detail || "An error occurred.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -96,74 +154,155 @@ const VotingScreen = ({ navigation }: any) => {
     navigation.navigate('CandidateDetail', { candidate });
   };
 
+  const handleBack = () => {
+    if (routeElection) {
+      navigation.goBack();
+    } else {
+      setSelectedElection(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  // --- RENDER ELECTIONS LIST IF NO ELECTION SELECTED ---
+  if (!selectedElection) {
+    return (
+      <View style={styles.container}>
+        {/* Top App Bar */}
+        <View style={styles.votingHeader}>
+          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
+            <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={styles.votingHeaderText}>Active Ballots</Text>
+          <TouchableOpacity style={styles.headerIcon}>
+            <MaterialIcons name="info-outline" size={24} color={COLORS.onSurfaceVariant} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+          <View style={styles.instructionBox}>
+             <Text style={styles.instructionTitle}>Select an Election</Text>
+             <Text style={styles.instructionSub}>Choose one of the ongoing ballots below to view candidate profiles and cast your secure vote.</Text>
+          </View>
+
+          <View style={styles.candidatesStack}>
+            {elections.length === 0 ? (
+               <View style={styles.emptyContainer}>
+                 <MaterialIcons name="how-to-vote" size={48} color={COLORS.onSurfaceVariant} style={{ marginBottom: 12 }} />
+                 <Text style={styles.emptyText}>No active elections currently.</Text>
+               </View>
+            ) : (
+              elections.map(elec => (
+                <TouchableOpacity 
+                  key={elec.id}
+                  style={styles.electionCardItem}
+                  onPress={() => setSelectedElection(elec)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.electionCardTop}>
+                    <Text style={styles.electionCardTitle}>{elec.title}</Text>
+                    <View style={styles.liveBadgeMini}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveTextMini}>LIVE</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.electionCardType}>Type: {elec.election_type || 'General'}</Text>
+                  
+                  <View style={styles.electionCardBottom}>
+                    <Text style={styles.endDateText}>Closes: {new Date(elec.end_date).toLocaleDateString()}</Text>
+                    <View style={styles.actionLinkRow}>
+                      <Text style={styles.enterBallotText}>Enter Ballot</Text>
+                      <MaterialIcons name="chevron-right" size={20} color={COLORS.primary} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // --- RENDER SINGLE ELECTION DETAIL & CANDIDATES ---
   return (
     <View style={styles.container}>
       {/* Top App Bar */}
       <View style={styles.votingHeader}>
-        <TouchableOpacity style={styles.headerIcon}>
-          <MaterialIcons name="menu" size={24} color={COLORS.primary} />
+        <TouchableOpacity style={styles.headerIcon} onPress={handleBack}>
+          <MaterialIcons name="arrow-back" size={24} color={COLORS.primary} />
         </TouchableOpacity>
-        <Text style={styles.votingHeaderText}>2026 Presidential Primary</Text>
+        <Text style={styles.votingHeaderText}>{selectedElection.title || 'Voting'}</Text>
         <TouchableOpacity style={styles.headerIcon}>
-          <MaterialIcons name="notifications-none" size={24} color={COLORS.onSurfaceVariant} />
+          <MaterialIcons name="info-outline" size={24} color={COLORS.onSurfaceVariant} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 120 }}>
+      <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* Election Banner */}
         <View style={styles.electionBanner}>
           <View style={styles.bannerTop}>
             <View>
               <Text style={styles.bannerLabel}>CURRENT ELECTION</Text>
-              <Text style={styles.bannerTitle}>Federal Primary Results</Text>
+              <Text style={styles.bannerTitle}>{selectedElection.title}</Text>
             </View>
             <MaterialIcons name="verified-user" size={32} color="#fff" />
           </View>
           <Text style={styles.countdownLabel}>Voting closes in:</Text>
-          <CountdownTimer />
+          <CountdownTimer endDate={selectedElection.end_date || new Date(Date.now() + 86400000).toISOString()} />
         </View>
 
         {/* Instructions */}
         <View style={styles.instructionBox}>
-           <Text style={styles.instructionTitle}>Select your candidate</Text>
-           <Text style={styles.instructionSub}>Please choose one individual to represent your district.</Text>
+           <Text style={styles.instructionTitle}>{existingVote ? "Your vote has been recorded" : "Select your candidate"}</Text>
+           <Text style={styles.instructionSub}>{existingVote ? "You have already participated in this election." : "Please choose one individual to represent your district."}</Text>
         </View>
 
         {/* Candidate List */}
         <View style={styles.candidatesStack}>
-          {STATIC_CANDIDATES.map(candidate => (
-            <TouchableOpacity 
-              key={candidate.id}
-              style={[
-                styles.candidateCard,
-                selectedCandidateId === candidate.id && styles.candidateCardSelected
-              ]}
-              onPress={() => setSelectedCandidateId(candidate.id)}
-              activeOpacity={0.9}
-            >
-              <Image 
-                source={{ uri: candidate.image }} 
-                style={styles.candidateImg} 
-              />
-              <View style={styles.candidateInfo}>
-                <Text style={styles.candidateName}>{candidate.full_name}</Text>
-                <View style={styles.partyRow}>
-                   <View style={styles.partyBadge}>
-                      <Text style={styles.partyBadgeText}>{candidate.party.toUpperCase()}</Text>
-                   </View>
-                   <TouchableOpacity onPress={() => navigateToDetails(candidate)}>
-                      <Text style={styles.detailsLink}>View Details</Text>
-                   </TouchableOpacity>
+          {candidates.length === 0 ? (
+             <Text style={{ textAlign: 'center', marginTop: 20 }}>No candidates found for this election.</Text>
+          ) : (
+            candidates.map(candidate => (
+              <TouchableOpacity 
+                key={candidate.id}
+                style={[
+                  styles.candidateCard,
+                  selectedCandidateId === candidate.id && styles.candidateCardSelected
+                ]}
+                onPress={() => !existingVote && setSelectedCandidateId(candidate.id)}
+                activeOpacity={existingVote ? 1 : 0.9}
+              >
+                <Image 
+                  source={{ uri: candidate.manifesto_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(candidate.full_name) + '&background=0D8ABC&color=fff' }} 
+                  style={styles.candidateImg} 
+                />
+                <View style={styles.candidateInfo}>
+                  <Text style={styles.candidateName}>{candidate.full_name}</Text>
+                  <View style={styles.partyRow}>
+                     <View style={styles.partyBadge}>
+                        <Text style={styles.partyBadgeText}>{candidate.committee?.name?.toUpperCase() || 'INDEPENDENT'}</Text>
+                     </View>
+                     <TouchableOpacity onPress={() => navigateToDetails(candidate)}>
+                        <Text style={styles.detailsLink}>View Details</Text>
+                     </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
-              <View style={[
-                styles.checkCircle,
-                selectedCandidateId === candidate.id && styles.checkCircleSelected
-              ]}>
-                {selectedCandidateId === candidate.id && <View style={styles.checkDot} />}
-              </View>
-            </TouchableOpacity>
-          ))}
+                <View style={[
+                  styles.checkCircle,
+                  selectedCandidateId === candidate.id && styles.checkCircleSelected
+                ]}>
+                  {selectedCandidateId === candidate.id && <View style={styles.checkDot} />}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         {/* Verification Note */}
@@ -176,20 +315,28 @@ const VotingScreen = ({ navigation }: any) => {
       </ScrollView>
 
       {/* Bottom Action Bar */}
-      <View style={styles.bottomBar}>
-         <TouchableOpacity 
-            style={[
-              styles.castBtn,
-              !selectedCandidateId && styles.castBtnDisabled
-            ]}
-            disabled={!selectedCandidateId}
-            onPress={handleCastVote}
-         >
-            <MaterialIcons name="lock" size={20} color="#fff" />
-            <Text style={styles.castBtnText}>Cast Secure Vote</Text>
-         </TouchableOpacity>
-         <Text style={styles.signedAction}>Cryptographically Signed Action</Text>
-      </View>
+      {!existingVote && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity 
+              style={[
+                styles.castBtn,
+                (!selectedCandidateId || submitting) && styles.castBtnDisabled
+              ]}
+              disabled={!selectedCandidateId || submitting}
+              onPress={handleCastVote}
+          >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <MaterialIcons name="lock" size={20} color="#fff" />
+                  <Text style={styles.castBtnText}>Cast Secure Vote</Text>
+                </>
+              )}
+          </TouchableOpacity>
+          <Text style={styles.signedAction}>Cryptographically Signed Action</Text>
+        </View>
+      )}
 
       {/* Success Modal */}
       <Modal transparent visible={showSuccessModal} animationType="fade">
@@ -200,13 +347,16 @@ const VotingScreen = ({ navigation }: any) => {
             </View>
             <Text style={styles.successTitle}>Vote Submitted</Text>
             <Text style={styles.successSub}>
-              Your choice has been securely recorded on the precinct ledger. Your receipt ID: <Text style={{fontWeight: '700'}}>#VX-9821-AZ</Text>
+              Your choice has been securely recorded on the precinct ledger. Your receipt ID: <Text style={{fontWeight: '700'}}>{existingVote?.receipt_hash?.substring(0, 12) || '#VX-9821-AZ'}</Text>
             </Text>
             <TouchableOpacity 
               style={styles.returnBtn}
-              onPress={() => setShowSuccessModal(false)}
+              onPress={() => {
+                setShowSuccessModal(false);
+                handleBack();
+              }}
             >
-              <Text style={styles.returnBtnText}>Return to Dashboard</Text>
+              <Text style={styles.returnBtnText}>Return</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -304,6 +454,94 @@ const styles = StyleSheet.create({
   successSub: { fontSize: 14, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   returnBtn: { backgroundColor: COLORS.surfaceContainerHighest, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, width: '100%', alignItems: 'center' },
   returnBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
+  electionCardItem: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    padding: 20,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
+  },
+  electionCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  electionCardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.primary,
+    flex: 1,
+    marginRight: 12
+  },
+  liveBadgeMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.secondaryContainer,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.secondary
+  },
+  liveTextMini: {
+    color: COLORS.onSecondaryContainer,
+    fontSize: 10,
+    fontWeight: '700'
+  },
+  electionCardType: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    marginBottom: 16
+  },
+  electionCardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.surfaceContainerLow,
+    paddingTop: 12
+  },
+  endDateText: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    fontStyle: 'italic'
+  },
+  actionLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  enterBallotText: {
+    fontSize: 14,
+    color: COLORS.primary,
+    fontWeight: '700'
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    marginTop: 20
+  },
+  emptyText: {
+    fontSize: 16,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600'
+  }
 });
 
 export default VotingScreen;

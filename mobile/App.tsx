@@ -1,40 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import TabNavigator from './src/navigation/TabNavigator';
 import AuthNavigator from './src/navigation/AuthNavigator';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 
-export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [userToken, setUserToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Check for existing token on app start
-    const bootstrapAsync = async () => {
-      let token;
-      try {
-        token = await AsyncStorage.getItem('token');
-      } catch (e) {
-        console.error('Failed to load token', e);
-      }
-      setUserToken(token);
-      setIsLoading(false);
-    };
-
-    bootstrapAsync();
-  }, []);
-
-  const handleLoginSuccess = async () => {
-    const token = await AsyncStorage.getItem('token');
-    setUserToken(token);
-  };
-
-  const handleLogout = () => {
-    setUserToken(null);
-  };
+function AppContent() {
+  const { user, token, isLoading, logout } = useAuth();
 
   if (isLoading) {
     return (
@@ -47,11 +21,19 @@ export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="auto" />
-      {userToken ? (
-        <TabNavigator onLogout={handleLogout} />
+      {token ? (
+        <TabNavigator />
       ) : (
-        <AuthNavigator onLoginSuccess={handleLoginSuccess} />
+        <AuthNavigator />
       )}
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

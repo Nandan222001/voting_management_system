@@ -13,14 +13,35 @@ Roles
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
+from app.models.tenant import Tenant
 from app.models.user import User, UserRole
 from app.utils.security import decode_token
+
+
+def verify_tenant_header(
+    x_tenant_id: Optional[str] = Header(None, alias="X-Tenant-ID"),
+    db: Session = Depends(get_db),
+) -> Optional[Tenant]:
+    """
+    Validates that the provided X-Tenant-ID header matches a valid tenant UUID.
+    This acts as a 'Mobile API Key' for the platform.
+    """
+    if not x_tenant_id:
+        return None
+    tenant = db.query(Tenant).filter(Tenant.uuid == x_tenant_id).first()
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing Tenant ID in headers.",
+        )
+    return tenant
+
 
 # ---------------------------------------------------------------------------
 # OAuth2 schemes

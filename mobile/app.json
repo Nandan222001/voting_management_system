@@ -21,7 +21,14 @@
     },
     "web": {},
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app needs access to your photos to upload KYC documents.",
+          "cameraPermission": "The app needs access to your camera to take KYC photos."
+        }
+      ]
     ]
   }
 }

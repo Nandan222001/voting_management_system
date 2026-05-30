@@ -32,6 +32,22 @@ def get_committees(
     return success_response(data=data, message="Candidate committees retrieved.")
 
 
+@router.get(
+    "/public",
+    summary="List all candidate committees for a specific tenant (Public)",
+)
+def get_public_committees(
+    tenant_id: int,
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Returns all committees defined by the specified tenant. Publicly accessible.
+    """
+    committees = candidate_committee_service.get_committees_by_tenant(db, tenant_id)
+    data = [CandidateCommitteeResponse.model_validate(c).model_dump(mode="json") for c in committees]
+    return success_response(data=data, message="Public candidate committees retrieved.")
+
+
 @router.post(
     "/",
     status_code=status.HTTP_201_CREATED,
