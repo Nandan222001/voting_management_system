@@ -55,7 +55,7 @@ function BottomNav({ links, activeClass = 'scale-110 bg-[#003d9b] text-white' })
   );
 }
 
-export default function MainLayout({ children, title }) {
+export default function MainLayout({ children, title, noPadding = false }) {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
 
@@ -67,7 +67,7 @@ export default function MainLayout({ children, title }) {
         <Sidebar />
         <div className="md:pl-[260px]">
           <Header title={title} />
-          <main className="w-full p-4 pb-24 md:p-6 md:pb-8 lg:p-8">
+          <main className={`w-full pb-24 md:pb-8 ${noPadding ? 'p-0' : 'p-4 md:p-6 lg:p-8'}`}>
             {children}
           </main>
         </div>
@@ -81,7 +81,7 @@ export default function MainLayout({ children, title }) {
       <Sidebar />
       <div className="md:pl-[260px]">
         <Header title={title} />
-        <main className="p-4 pb-24 md:p-8 md:pb-8">
+        <main className={`pb-24 md:pb-8 ${noPadding ? 'p-0' : 'p-4 md:p-8'}`}>
           {children}
         </main>
       </div>

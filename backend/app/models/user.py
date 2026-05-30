@@ -120,6 +120,7 @@ class User(Base):
     target = relationship(
         "Target",
         back_populates="users",
+        foreign_keys=[target_id],
         lazy="select",
     )
 

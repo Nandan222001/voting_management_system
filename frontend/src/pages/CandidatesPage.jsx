@@ -21,11 +21,19 @@ import {
   Plus,
   ShieldCheck,
   Trash2,
+  TrendingUp,
   Trophy,
+  User,
   UserCheck,
   Users,
   Vote,
   Check,
+  ChevronRight,
+  Eye,
+  Activity,
+  ArrowUpRight,
+  Shield,
+  Hash,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
@@ -50,23 +58,55 @@ import { fetchCandidateCommittees } from '../store/slices/candidateCommitteeSlic
 import { fetchTargets } from '../store/slices/targetSlice'
 import ImageUpload from '../components/common/ImageUpload'
 import ImageAvatar from '../components/common/ImageAvatar'
+import Badge from '../components/common/Badge'
 
 const COMMITTEE_TYPES = [
-  { value: 'country', label: 'Working Committee - India', levels: [] },
-  { value: 'state', label: 'Pradesh Committee', levels: ['state'] },
-  { value: 'district', label: 'District Committee', levels: ['state', 'district'] },
-  { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'] },
-  { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'] },
+  { value: 'country', label: 'Working Committee - India', levels: [], icon: Globe },
+  { value: 'state', label: 'Pradesh Committee', levels: ['state'], icon: Landmark },
+  { value: 'district', label: 'District Committee', levels: ['state', 'district'], icon: MapPinned },
+  { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'], icon: Users },
+  { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'], icon: Hash },
 ]
 
-const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', committee_id: '', target_id: '' }
+const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', target_id: '' }
 
-function formatNumber(value) {
-  return new Intl.NumberFormat('en-US').format(Number(value || 0))
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-US').format(Number(value || 0));
 }
 
 function compactNumber(value) {
   return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black text-gray-900 tracking-tight">{value}</span>
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function getVoteCount(candidate) {
@@ -77,6 +117,70 @@ function getVotePercentage(candidate) {
   return candidate._result?.percentage ?? 0
 }
 
+// ─── Field Components ────────────────────────────────────────────────────────
+
+function Field({ label, required, children, hint, error }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[10px] font-black uppercase tracking-[0.1em] text-gray-400 ml-1">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-[10px] font-black text-red-600 ml-1">{error}</p>}
+      {hint && !error && <p className="text-[10px] font-bold text-gray-300 ml-1">{hint}</p>}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, icon: Icon, ...props }) {
+  return (
+    <div className="relative group">
+      {Icon && (
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+          <Icon size={16} strokeWidth={2.4} />
+        </div>
+      )}
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        required={required}
+        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner ${
+          hasError ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white'
+        }`}
+        {...props}
+      />
+    </div>
+  );
+}
+
+function Textarea({ value, onChange, placeholder, disabled, required, hasError, rows = 3, icon: Icon, ...props }) {
+  return (
+    <div className="relative group">
+      {Icon && (
+        <div className="absolute left-4 top-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+          <Icon size={16} strokeWidth={2.4} />
+        </div>
+      )}
+      <textarea
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        required={required}
+        rows={rows}
+        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner resize-none ${
+          hasError ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white'
+        }`}
+        {...props}
+      />
+    </div>
+  );
+}
+
 export default function CandidatesPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -84,7 +188,6 @@ export default function CandidatesPage() {
   const { isAdmin } = useAuth()
   const { elections } = useSelector(s => s.elections)
   const { candidates, results, loading, actionLoading } = useSelector(s => s.candidates)
-  const { committees } = useSelector(s => s.candidateCommittees)
   const { targets } = useSelector(s => s.targets)
 
   const [selectedElectionId, setSelectedElectionId] = useState('')
@@ -106,7 +209,6 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     dispatch(fetchElections({}))
-    dispatch(fetchCandidateCommittees())
     dispatch(fetchTargets())
   }, [dispatch])
 
@@ -135,7 +237,6 @@ export default function CandidatesPage() {
       bio: c.bio || '',
       image_url: c.image_url || '',
       image_file: null,
-      committee_id: c.committee_id || '',
       target_id: c.target_id || ''
     })
     
@@ -206,7 +307,6 @@ export default function CandidatesPage() {
         formData.append('symbol', form.symbol || '')
         formData.append('bio', form.bio || '')
         formData.append('target_id', String(targetId))
-        if (form.committee_id) formData.append('committee_id', String(form.committee_id))
         formData.append('image', form.image_file)
         if (!editCandidateTarget) formData.append('election_id', String(parseInt(selectedElectionId)))
         payload = formData
@@ -243,96 +343,108 @@ export default function CandidatesPage() {
 
   const selectedElection = elections.find(e => String(e.id) === String(selectedElectionId))
 
-  const rows = candidates.map(c => ({
+  const rows = useMemo(() => candidates.map(c => ({
     ...c,
     _result: results?.candidates?.find(r => r.candidate_id === c.id)
-  }))
+  })), [candidates, results])
 
-  const totalVotes = rows.reduce((sum, candidate) => sum + Number(getVoteCount(candidate)), 0)
-  const topShare = rows.reduce((max, candidate) => Math.max(max, getVotePercentage(candidate)), 0)
+  const totalVotes = useMemo(() => rows.reduce((sum, candidate) => sum + Number(getVoteCount(candidate)), 0), [rows])
+  const topShare = useMemo(() => rows.reduce((max, candidate) => Math.max(max, getVotePercentage(candidate)), 0), [rows])
 
   const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
 
   return (
-    <MainLayout title="Candidates Management">
-      <div className="mx-auto w-full max-w-7xl space-y-8">
-        <section className="rounded-2xl border border-[#e2e8f0] bg-white p-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div className="flex-1">
-               <Select
-                  label="Select Election"
-                  value={selectedElectionId}
-                  onChange={e => setSelectedElectionId(e.target.value)}
-                  options={elections.map(e => ({ value: e.id, label: `${e.title} (${e.status})` }))}
-                  placeholder="-- Choose an election --"
-               />
-            </div>
-            <div className="flex flex-shrink-0 flex-wrap gap-2 pb-0.5">
-              {selectedElection && (
-                <button
-                  onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                  className="flex items-center gap-2 rounded-xl border border-[#1a365d]/30 px-4 py-2.5 text-sm font-semibold text-[#1a365d] transition hover:bg-[#dbeafe]"
-                  type="button"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Details
-                </button>
-              )}
-              {isAdmin && selectedElection?.status === 'draft' && (
-                <button
-                  onClick={openCreate}
-                  className="flex items-center gap-2 rounded-xl bg-[#1A237E] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/10 transition hover:brightness-110 active:scale-95"
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Candidate
-                </button>
-              )}
-            </div>
+    <MainLayout title="Candidate Registry">
+      <div className="mx-auto w-full space-y-8 animate-in fade-in duration-500">
+        <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between bg-white border border-gray-100 p-8 rounded-[2.5rem] shadow-xl shadow-gray-200/50">
+          <div className="flex-1 max-w-xl">
+             <div className="mb-2 flex items-center gap-2">
+                <div className="h-1.5 w-8 rounded-full bg-indigo-600" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Personnel Operations</span>
+             </div>
+             <h2 className="text-4xl font-black tracking-tight text-gray-900 mb-6">Candidate Management</h2>
+             <Select
+                label="Switch Election Context"
+                value={selectedElectionId}
+                onChange={e => setSelectedElectionId(e.target.value)}
+                options={elections.map(e => ({ value: e.id, label: `${e.title} (${e.status.toUpperCase()})` }))}
+                placeholder="-- Select Active Node --"
+             />
           </div>
-        </section>
+          <div className="flex flex-wrap gap-3">
+            {selectedElection && (
+              <button
+                onClick={() => navigate(`/elections/${selectedElectionId}`)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-3 text-xs font-black uppercase tracking-widest text-gray-600 transition hover:bg-gray-50 active:scale-95 shadow-sm"
+                type="button"
+              >
+                <Eye className="h-4 w-4" />
+                Inspect Protocol
+              </button>
+            )}
+            {isAdmin && selectedElection?.status === 'draft' && (
+              <button
+                onClick={openCreate}
+                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95"
+                type="button"
+              >
+                <Plus className="h-5 w-5" />
+                Register Candidate
+              </button>
+            )}
+          </div>
+        </header>
 
         {!selectedElectionId ? (
-          <EmptyState
-            icon={<FaUserTie className="h-12 w-12 text-gray-300" />}
-            title="Select an Election"
-            message="Choose an election above to view its candidates."
-          />
+          <div className="bg-white border border-gray-100 rounded-[2.5rem] p-24 text-center shadow-xl shadow-gray-200/50">
+            <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100 shadow-inner">
+               <Activity className="h-12 w-12 text-gray-200" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Protocol Offline</h3>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2 max-w-xs mx-auto leading-relaxed">
+               Select an active election context to initialize the candidate registry.
+            </p>
+          </div>
         ) : loading ? (
-          <LoadingSpinner message="Loading candidates..." />
-        ) : candidates.length === 0 ? (
-          <EmptyState
-            icon={<FaUserTie className="h-12 w-12 text-gray-300" />}
-            title="No Candidates"
-            message="No candidates have been added to this election yet."
-            action={
-              selectedElection?.status === 'draft' && (
-                <button
-                  onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                  className="rounded-lg bg-[#1a365d] px-4 py-2 text-sm text-white hover:brightness-110"
-                >
-                  Add Candidates
-                </button>
-              )
-            }
-          />
+          <div className="flex h-64 items-center justify-center bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-gray-200/50">
+            <LoadingSpinner />
+          </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-              <div className="space-y-8 lg:col-span-8">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <MetricCard icon={UserCheck} label="Candidates" value={rows.length} tone="blue" />
-                  <MetricCard icon={Vote} label="Recorded Votes" value={compactNumber(totalVotes)} tone="green" />
-                  <MetricCard icon={BarChart3} label="Top Share" value={`${topShare.toFixed(1)}%`} tone="orange" />
-                </div>
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+            <div className="space-y-8 lg:col-span-8">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <MetricCard title="Candidates" value={numberFormat(rows.length)} icon={UserCheck} tone="blue">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Authorized personnel</p>
+                </MetricCard>
+                <MetricCard title="Total Votes" value={compactNumber(totalVotes)} icon={Vote} tone="emerald">
+                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Cast to date</p>
+                </MetricCard>
+                <MetricCard title="Top Share" value={`${topShare.toFixed(1)}%`} icon={BarChart3} tone="amber">
+                   <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500" style={{ width: `${topShare}%` }} />
+                   </div>
+                </MetricCard>
+              </div>
 
-                <article className="rounded-3xl border border-[#e2e8f0] bg-white p-8 shadow-sm">
-                  <h3 className="mb-6 flex items-center gap-2 text-xl font-black text-[#1a365d]">
-                    <UserCheck className="h-5 w-5" />
-                    Candidate Registry
-                  </h3>
-                  <div className="space-y-4">
-                    {rows.map(candidate => (
+              <article className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 overflow-hidden">
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
+                   <div className="flex items-center gap-3">
+                      <div className="w-1 h-5 bg-indigo-600 rounded-full" />
+                      <h3 className="text-xl font-black tracking-tight text-gray-900">Personnel Registry</h3>
+                   </div>
+                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                      Sync: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                   </span>
+                </div>
+                
+                <div className="space-y-4">
+                  {candidates.length === 0 ? (
+                    <div className="py-20 text-center">
+                       <Users className="h-16 w-16 mx-auto opacity-10 text-indigo-900 mb-4" />
+                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">Registry Empty</p>
+                    </div>
+                  ) : (
+                    rows.map(candidate => (
                       <CandidateProfileCard
                         key={candidate.id}
                         candidate={candidate}
@@ -340,119 +452,101 @@ export default function CandidatesPage() {
                         onEdit={openEdit}
                         onDelete={setDeleteCandidateTarget}
                       />
-                    ))}
-                  </div>
-                </article>
-              </div>
+                    ))
+                  )}
+                </div>
+              </article>
+            </div>
 
-              <aside className="space-y-8 lg:col-span-4">
-                <InfoPanel title="Election Context" badge={selectedElection?.status || 'Selected'}>
-                  <div className="space-y-4">
-                    <InfoRow icon={CalendarDays} label="Election" value={selectedElection?.title || '—'} />
-                    <InfoRow icon={ShieldCheck} label="Status" value={selectedElection?.status || '—'} />
-                    <InfoRow icon={Users} label="Candidates" value={rows.length} />
-                  </div>
-                  <button
+            <aside className="space-y-8 lg:col-span-4">
+              <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
+                 <div className="flex items-center gap-3 mb-8">
+                    <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
+                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Election Context</h3>
+                 </div>
+                 <div className="space-y-6">
+                    <InfoRow icon={CalendarDays} label="Active Node" value={selectedElection?.title || '—'} />
+                    <div className="flex items-center justify-between">
+                       <InfoRow icon={ShieldCheck} label="Operational Status" value={<Badge status={selectedElection?.status} />} />
+                    </div>
+                    <InfoRow icon={Users} label="Personnel Count" value={`${rows.length} Registered`} />
+                 </div>
+                 <button
                     type="button"
                     onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                    className="mt-6 w-full rounded-xl border border-[#cbd5e1] py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50"
-                  >
-                    View Election Details
-                  </button>
-                </InfoPanel>
+                    className="mt-8 w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
+                 >
+                    View Node Specs
+                 </button>
+              </section>
 
-                <InfoPanel title="Committees">
-                  <div className="space-y-3">
-                    {rows.slice(0, 4).map(candidate => (
-                      <div key={`committee-${candidate.id}`} className="flex items-center gap-4 rounded-xl p-3 transition-colors hover:bg-slate-50">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-[#1a365d]">
-                          <Landmark className="h-5 w-5" />
+              <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-900/30 relative overflow-hidden group">
+                 <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
+                    <TrendingUp size={160} />
+                 </div>
+                 <div className="relative z-10">
+                    <p className="text-xs font-bold uppercase tracking-widest mt-2 text-indigo-200">Aggregate Votes Cast</p>
+                    <div className="mt-8 flex -space-x-3">
+                      {rows.slice(0, 5).map(candidate => (
+                        <ImageAvatar
+                          key={`stack-${candidate.id}`}
+                          src={candidate.image_url}
+                          name={candidate.full_name}
+                          sizeClass="w-12 h-12"
+                          imageClassName="border-4 border-indigo-600 rounded-2xl shadow-lg"
+                          fallbackClassName="border-4 border-indigo-600 bg-indigo-800 text-white text-sm font-black rounded-2xl shadow-lg"
+                        />
+                      ))}
+                      {rows.length > 5 && (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border-4 border-indigo-600 bg-indigo-800 text-[10px] font-black shadow-lg">
+                          +{rows.length - 5}
                         </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-slate-800">{candidate.committee?.name || 'No committee assigned'}</p>
-                          <p className="truncate text-xs text-[#64748b]">{candidate.full_name}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </InfoPanel>
-
-                <div className="rounded-3xl bg-gradient-to-br from-slate-800 to-[#1a365d] p-6 text-white">
-                  <p className="mb-2 text-xs font-bold uppercase opacity-60">Election Impact</p>
-                  <p className="mb-4 text-3xl font-black tracking-tight">{compactNumber(totalVotes)}</p>
-                  <p className="text-sm leading-snug opacity-80">Votes currently represented across the selected candidate field.</p>
-                  <div className="mt-6 flex -space-x-3">
-                    {rows.slice(0, 3).map(candidate => (
-                      <ImageAvatar
-                        key={`stack-${candidate.id}`}
-                        src={candidate.image_url}
-                        name={candidate.full_name}
-                        sizeClass="w-10 h-10"
-                        imageClassName="border-2 border-[#1a365d]"
-                        fallbackClassName="border-2 border-[#1a365d] bg-slate-700 text-white text-xs"
-                      />
-                    ))}
-                    {rows.length > 3 && (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#1a365d] bg-slate-700 text-[10px] font-bold">
-                        +{rows.length - 3}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </aside>
-            </div>
-          </>
+                      )}
+                    </div>
+                 </div>
+              </div>
+            </aside>
+          </div>
         )}
       </div>
 
       <Modal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)} 
-        title={editCandidateTarget ? 'Update Candidate Profile' : 'Register New Candidate'}
-        size="2xl"
+        title={editCandidateTarget ? 'Modify Personnel' : 'Add Candidate'}
+        size="3xl"
       >
         <form onSubmit={handleSubmit} className="space-y-0" autoComplete="off">
           <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
-            {/* Left Column: Profile & Info */}
-            <div className="md:col-span-6 p-6 space-y-5 bg-gray-50/50">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
-                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Candidate Identity</p>
-              </div>
-              
+            {/* Left Column: Identity */}
+            <div className="md:col-span-6 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
               <div className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-                  <div className="relative group">
-                    <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
-                    <input
-                      type="text"
-                      value={form.full_name}
-                      onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
-                      required
-                      placeholder="Enter legal name"
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
-                    />
-                  </div>
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-indigo-600 rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Basic Info</span>
                 </div>
+                
+                <Field label="Full Name" required>
+                  <Input
+                    value={form.full_name}
+                    onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
+                    required
+                    placeholder="e.g. Rahul Sharma"
+                    icon={User}
+                  />
+                </Field>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Symbol / Initial</label>
-                  <div className="relative group">
-                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
-                    <input
-                      type="text"
-                      value={form.symbol}
-                      onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))}
-                      placeholder="e.g. Lotus, Hand, etc."
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
-                    />
-                  </div>
-                </div>
+                <Field label="Symbol / Identifier">
+                  <Input
+                    value={form.symbol}
+                    onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))}
+                    placeholder="e.g. Lotus"
+                    icon={Trophy}
+                  />
+                </Field>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Candidate Photo</label>
-                  <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                <Field label="Personnel Photo">
+                  <div className="bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                     <ImageUpload
                       file={form.image_file}
                       existingUrl={form.image_url}
@@ -460,127 +554,107 @@ export default function CandidatesPage() {
                       id="candidate-image-input"
                     />
                   </div>
-                </div>
+                </Field>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Professional Bio</label>
-                  <div className="relative group">
-                    <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
-                    <textarea
-                      value={form.bio}
-                      onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
-                      rows={3}
-                      placeholder="Describe candidate's background..."
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all resize-none"
-                    />
-                  </div>
-                </div>
+                <Field label="Brief Bio">
+                  <Textarea
+                    value={form.bio}
+                    onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                    rows={3}
+                    placeholder="Candidate credentials..."
+                    icon={MessageSquare}
+                  />
+                </Field>
               </div>
             </div>
 
-            {/* Right Column: Jurisdiction */}
-            <div className="md:col-span-6 p-6 space-y-6 border-l border-gray-100 bg-white">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
-                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Jurisdictional Scope</p>
-              </div>
-              
-              <div className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Level</label>
-                  <div className="grid grid-cols-1 gap-1.5 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
-                    {COMMITTEE_TYPES.map(ct => (
-                      <button
-                        key={ct.value}
-                        type="button"
-                        onClick={() => {
-                          setCommitteeType(ct.value)
-                          setSelections({ state: '', district: '', block: '', booth: '' })
-                        }}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
-                          committeeType === ct.value 
-                            ? 'bg-[#1A237E] text-white font-bold shadow-md ring-1 ring-[#1A237E]' 
-                            : 'text-gray-500 hover:bg-white hover:text-[#1A237E]'
-                        }`}
-                      >
-                        <span className="text-[11px] uppercase tracking-wider">{ct.label}</span>
-                        {committeeType === ct.value ? <Check size={12} /> : <FaChevronRight size={10} className="opacity-30" />}
-                      </button>
-                    ))}
-                  </div>
+            {/* Right Column: Deployment */}
+            <div className="md:col-span-6 p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
+               <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-indigo-600 rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Jurisdictional Path</span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-1 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+                  {COMMITTEE_TYPES.map(ct => (
+                    <button
+                      key={ct.value}
+                      type="button"
+                      onClick={() => {
+                        setCommitteeType(ct.value)
+                        setSelections({ state: '', district: '', block: '', booth: '' })
+                      }}
+                      className={`flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                        committeeType === ct.value 
+                          ? 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-900/20' 
+                          : 'text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                         <ct.icon size={14} />
+                         <span className="text-[11px] uppercase tracking-wider">{ct.label.split(' ')[0]} Tier</span>
+                      </div>
+                      {committeeType === ct.value ? <Check size={14} strokeWidth={3} /> : <ChevronRight size={10} className="opacity-20" />}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="space-y-4 pt-1 border-t border-gray-50 mt-2">
                   {committeeType === 'country' ? (
-                    <div className="py-8 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100">
-                       <Globe className="text-[#1A237E] w-8 h-8 mx-auto animate-pulse" />
-                       <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">National Level (India)</p>
-                       <p className="text-[10px] text-blue-600/70 font-medium">Automatic jurisdiction assignment</p>
+                    <div className="py-8 text-center space-y-4 bg-indigo-50/30 rounded-2xl border border-indigo-100/50">
+                       <Globe className="text-indigo-600 w-8 h-8 mx-auto animate-pulse" />
+                       <p className="text-[10px] font-black uppercase tracking-widest text-indigo-900">National Directorate India</p>
                     </div>
                   ) : (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-4">
                       {activeConfig.levels.includes('state') && (
-                        <SearchableSelect
-                          label="Pradesh / State"
-                          placeholder="Search state..."
-                          options={targets.filter(t => t.type === 'state')}
-                          value={selections.state}
-                          onChange={(v) => handleLevelChange('state', v)}
-                        />
+                        <Field label="Pradesh / State" required>
+                          <SearchableSelect
+                            placeholder="Select State..."
+                            options={targets.filter(t => t.type === 'state')}
+                            value={selections.state}
+                            onChange={(v) => handleLevelChange('state', v)}
+                          />
+                        </Field>
                       )}
 
                       {activeConfig.levels.includes('district') && selections.state && (
-                        <SearchableSelect
-                          label="District"
-                          placeholder="Search district..."
-                          options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
-                          value={selections.district}
-                          onChange={(v) => handleLevelChange('district', v)}
-                        />
+                        <Field label="District Unit" required>
+                          <SearchableSelect
+                            placeholder="Select District..."
+                            options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
+                            value={selections.district}
+                            onChange={(v) => handleLevelChange('district', v)}
+                          />
+                        </Field>
                       )}
 
                       {activeConfig.levels.includes('block') && selections.district && (
-                        <SearchableSelect
-                          label="Block"
-                          placeholder="Search block..."
-                          options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
-                          value={selections.block}
-                          onChange={(v) => handleLevelChange('block', v)}
-                        />
+                        <Field label="Block Unit" required>
+                          <SearchableSelect
+                            placeholder="Select Block..."
+                            options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
+                            value={selections.block}
+                            onChange={(v) => handleLevelChange('block', v)}
+                          />
+                        </Field>
                       )}
 
                       {activeConfig.levels.includes('booth') && selections.block && (
-                        <SearchableSelect
-                          label="Booth"
-                          placeholder="Search booth..."
-                          options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
-                          value={selections.booth}
-                          onChange={(v) => handleLevelChange('booth', v)}
-                        />
-                      )}
-                      
-                      {activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]] && (
-                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-2 items-start">
-                          <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-                          <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider leading-relaxed">
-                            Please complete the geographic path to assign the candidate.
-                          </p>
-                        </div>
+                        <Field label="Booth Unit" required>
+                          <SearchableSelect
+                            placeholder="Select Booth..."
+                            options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
+                            value={selections.booth}
+                            onChange={(v) => handleLevelChange('booth', v)}
+                          />
+                        </Field>
                       )}
                     </div>
                   )}
                 </div>
-
-                <div className="pt-4 mt-2 border-t border-gray-50">
-                  <FancySelect
-                    label="Functional Committee"
-                    value={form.committee_id}
-                    onChange={e => setForm(f => ({ ...f, committee_id: e.target.value }))}
-                    placeholder="-- No Functional Group --"
-                    options={committees.map(c => ({ value: c.id, label: c.name }))}
-                  />
-                </div>
-              </div>
+               </div>
             </div>
           </div>
 
@@ -588,21 +662,20 @@ export default function CandidatesPage() {
             <button 
               type="button" 
               onClick={() => setShowModal(false)} 
-              className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+              className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-colors"
             >
-              Discard Changes
+              Discard
             </button>
             <button 
               type="submit" 
-              disabled={actionLoading} 
-              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1A237E] rounded-xl hover:brightness-110 shadow-xl shadow-[#1A237E]/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+              disabled={actionLoading || (activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]])} 
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-indigo-600 rounded-xl hover:brightness-110 shadow-xl shadow-indigo-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <FaPlus className="w-3 h-3" />
+                editCandidateTarget ? 'Update Profile' : 'Add Candidate'
               )}
-              {editCandidateTarget ? 'Update Profile' : 'Confirm Registration'}
             </button>
           </div>
         </form>
@@ -613,31 +686,11 @@ export default function CandidatesPage() {
         onClose={() => setDeleteCandidateTarget(null)}
         onConfirm={handleDelete}
         title="Remove Candidate"
-        message={`Remove "${deleteCandidateTarget?.full_name}" from this election?`}
+        message={`Remove "${deleteCandidateTarget?.full_name}" from this election? This cannot be undone.`}
         confirmLabel="Remove"
         variant="danger"
       />
     </MainLayout>
-  )
-}
-
-function MetricCard({ icon: Icon, label, value, tone }) {
-  const toneClasses = {
-    blue: 'bg-blue-50 text-[#1a365d]',
-    green: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-600',
-  }
-
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-      <div className={`rounded-xl p-3 ${toneClasses[tone] || toneClasses.blue}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.05em] text-[#64748b]">{label}</p>
-        <p className="text-2xl font-black text-slate-800">{value}</p>
-      </div>
-    </div>
   )
 }
 
@@ -646,113 +699,85 @@ function CandidateProfileCard({ candidate, canManage, onEdit, onDelete }) {
   const votePercentage = getVotePercentage(candidate)
 
   return (
-    <div className="flex flex-col gap-6 rounded-2xl border border-[#e2e8f0] bg-white p-4 transition-shadow hover:shadow-md md:flex-row md:items-center">
+    <div className="group relative flex flex-col gap-6 rounded-3xl border border-gray-100 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl md:flex-row md:items-center overflow-hidden">
       <ImageAvatar
         src={candidate.image_url}
         name={candidate.full_name}
-        sizeClass="w-20 h-20"
-        imageClassName="rounded-xl border border-[#e2e8f0] object-cover"
-        fallbackClassName="rounded-xl border border-[#e2e8f0] bg-slate-100 text-[#1a365d] text-xl font-black"
+        sizeClass="w-24 h-24"
+        imageClassName="rounded-2xl border border-gray-100 shadow-sm transition-transform group-hover:scale-105"
+        fallbackClassName="rounded-2xl border border-gray-100 bg-gray-50 text-indigo-600 text-2xl font-black shadow-inner"
       />
       <div className="min-w-0 flex-1">
-        <div className="mb-1 flex flex-wrap items-center gap-3">
-          <h4 className="truncate text-lg font-black text-slate-800">{candidate.full_name}</h4>
-          {candidate.committee?.name && (
-            <span className="rounded bg-[#f1f5f9] px-2 py-0.5 text-[10px] font-bold uppercase text-[#334155]">
-              {candidate.committee.name}
-            </span>
-          )}
+        <div className="mb-2 flex flex-wrap items-center gap-3">
+          <h4 className="truncate text-xl font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">
+            {candidate.full_name}
+          </h4>
         </div>
-        <p className="line-clamp-2 text-sm text-[#64748b]">{candidate.bio || 'No biography has been provided.'}</p>
-        <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b]">
-          <span className="inline-flex items-center gap-1">
+        <p className="line-clamp-2 text-sm text-gray-500 font-medium leading-relaxed mb-4">{candidate.bio || 'Professional biography pending synchronization with central registry.'}</p>
+        <div className="flex flex-wrap gap-4">
+          <div className="inline-flex items-center gap-1.5 rounded-xl bg-gray-50 border border-gray-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-500">
             <MapPinned className="h-3.5 w-3.5" />
-            {candidate.target?.name || 'No area assigned'}
-          </span>
-          <span className="inline-flex items-center gap-1 text-[#1a365d]">
+            {candidate.target?.name || 'No Area Assigned'}
+          </div>
+          <div className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50 border border-blue-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-blue-700">
             <Vote className="h-3.5 w-3.5" />
-            {formatNumber(voteCount)} votes
-          </span>
+            {numberFormat(voteCount)} Votes Recorded
+          </div>
           {candidate.symbol && (
-            <span className="inline-flex items-center gap-1">
+            <div className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-700">
               <Trophy className="h-3.5 w-3.5" />
               {candidate.symbol}
-            </span>
+            </div>
           )}
         </div>
       </div>
-      <div className="flex w-full items-center gap-3 md:w-44">
-        <VoteShare result={{ percentage: votePercentage }} />
-        {canManage && (
-          <ActionDropdown
-            align="right"
-            actions={[
-              { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
-              { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
-            ]}
-          />
-        )}
+      <div className="flex w-full flex-col items-end gap-4 md:w-56">
+        <div className="w-full">
+           <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-indigo-600 mb-2">
+             <span>Vote Share</span>
+             <span>{votePercentage.toFixed(1)}%</span>
+           </div>
+           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden shadow-inner border border-gray-200">
+             <div
+               className="bg-indigo-600 h-full transition-all duration-1000 shadow-lg"
+               style={{ width: `${votePercentage}%` }}
+             />
+           </div>
+        </div>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+          {canManage && (
+            <>
+              <button
+                onClick={() => onEdit(candidate)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm border border-amber-100"
+                title="Modify Profile"
+              >
+                <Edit3 size={16} strokeWidth={2.4} />
+              </button>
+              <button
+                onClick={() => onDelete(candidate)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100"
+                title="Remove Registry"
+              >
+                <Trash2 size={16} strokeWidth={2.4} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
-  )
-}
-
-function InfoPanel({ title, badge, children }) {
-  return (
-    <section className="rounded-3xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-      <h3 className="mb-6 flex items-center justify-between text-lg font-black text-slate-800">
-        {title}
-        {badge && <span className="rounded-md bg-[#dbeafe] px-2 py-1 text-xs font-bold capitalize text-[#1a365d]">{badge}</span>}
-      </h3>
-      {children}
-    </section>
   )
 }
 
 function InfoRow({ icon: Icon, label, value }) {
   return (
-    <div className="flex gap-4">
-      <div className="flex h-[52px] min-w-[52px] items-center justify-center rounded-xl bg-slate-100 text-[#1a365d]">
-        <Icon className="h-5 w-5" />
+    <div className="flex gap-4 group">
+      <div className="flex h-12 w-12 min-w-[48px] items-center justify-center rounded-2xl bg-gray-50 text-indigo-600 border border-gray-100 shadow-sm transition-transform group-hover:scale-110">
+        <Icon className="h-6 w-6" strokeWidth={2.4} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-bold uppercase tracking-[0.05em] text-[#64748b]">{label}</p>
-        <p className="truncate font-bold text-slate-800">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-function CandidateIdentity({ candidate }) {
-  return (
-    <div className="flex items-center gap-3 min-w-[220px]">
-      <ImageAvatar
-        src={candidate.image_url}
-        name={candidate.full_name}
-        sizeClass="w-10 h-10"
-        imageClassName="ring-1 ring-gray-200"
-        fallbackClassName="bg-gray-100 text-gray-900 text-sm ring-1 ring-gray-200"
-      />
-      <div className="min-w-0">
-        <p className="font-semibold text-gray-900 truncate">{candidate.full_name}</p>
-        {candidate.bio && <p className="text-xs text-gray-500 truncate max-w-xs">{candidate.bio}</p>}
-      </div>
-    </div>
-  )
-}
-
-function VoteShare({ result }) {
-  const value = result?.percentage ?? 0
-  return (
-    <div className="w-24">
-      <div className="flex justify-between text-[10px] text-gray-500 mb-1 font-medium">
-        <span>{value.toFixed(1)}%</span>
-      </div>
-      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-        <div
-          className="bg-[rgb(16_102_177)] h-full transition-all duration-500"
-          style={{ width: `${value}%` }}
-        />
+        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{label}</p>
+        <div className="truncate font-black text-gray-900 tracking-tight text-lg leading-tight mt-0.5">{value}</div>
       </div>
     </div>
   )
