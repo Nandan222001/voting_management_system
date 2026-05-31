@@ -17,7 +17,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
+import { paymentService } from '../services/paymentService';
 import Header from '../components/common/Header';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = {
   primary: '#003d9b',
@@ -84,6 +86,7 @@ const CountdownTimer = ({ endDate }: { endDate: string }) => {
 
 const VotingScreen = ({ navigation, route }: any) => {
   const { election: routeElection } = route.params || {};
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const [selectedElection, setSelectedElection] = useState<any>(routeElection);
   const [elections, setElections] = useState<any[]>([]);
@@ -258,9 +261,35 @@ const VotingScreen = ({ navigation, route }: any) => {
 
   const handleCastVote = async () => {
     if (!selectedCandidateId || !selectedElection) return;
+
+    if (!user?.membership_plan_id) {
+      setShowConfirmModal(false);
+      Alert.alert(
+        'Membership Plan Required',
+        'Please select a Membership Plan first:\nProfile -> Edit Profile -> Select Membership Plan',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Edit Profile',
+            onPress: () => navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' }),
+          },
+        ],
+      );
+      return;
+    }
     
     setSubmitting(true);
     try {
+      const membershipStatus = await paymentService.getMyMembershipStatus();
+      if (!membershipStatus?.payment_completed) {
+        setShowConfirmModal(false);
+        Alert.alert(
+          'Payment Required',
+          'Your selected Membership Plan payment is pending or not completed. Please complete the payment to proceed with voting.',
+        );
+        return;
+      }
+
       await electionService.castVote(selectedElection.id, selectedCandidateId);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
