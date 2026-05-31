@@ -63,10 +63,10 @@ function numberFormat(value) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -130,7 +130,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
         }`}
       {...props}
     />
@@ -272,8 +272,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <div className="md:col-span-7 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                 <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Basic Info</span>
+                 <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                 <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Basic Info</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -356,8 +356,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             {!isEdit ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-2">
-                   <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Admin Details</span>
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Admin Details</span>
                 </div>
                 <div className="space-y-4">
                   <Field label="Admin Name" required error={errors.admin_name}>
@@ -394,7 +394,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   </Field>
                 </div>
                 <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                   <p className="text-[10px] font-bold text-blue-700 leading-relaxed uppercase tracking-wider">
+                   <p className="text-[10px] font-bold text-[#1a337e] leading-relaxed uppercase tracking-wider">
                       Note: This user will have absolute authority over the organizational node.
                    </p>
                 </div>
@@ -402,7 +402,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-12">
                  <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center shadow-inner border border-indigo-100">
-                    <Building className="text-indigo-600 w-10 h-10 animate-pulse" />
+                    <Building className="text-[#1a337e] w-10 h-10 animate-pulse" />
                  </div>
                  <div className="px-6">
                    <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Registry Encrypted</h4>
@@ -425,7 +425,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -471,7 +471,7 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
             onChange={(e) => setReason(e.target.value)}
             rows={3}
             placeholder="Violation of service terms / Requested by node admin..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-inner"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-inner"
           />
         </Field>
         <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
@@ -537,9 +537,9 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
   ];
 
   const toneClasses = {
-    indigo: 'text-indigo-600 bg-indigo-50 border-indigo-100',
+    indigo: 'text-[#1a337e] bg-indigo-50 border-indigo-100',
     emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-    blue: 'text-blue-600 bg-blue-50 border-blue-100',
+    blue: 'text-[#1a337e] bg-blue-50 border-blue-100',
   };
 
   return (
@@ -553,11 +553,11 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
             shapeClass="rounded-2xl"
             imageClassName="border border-gray-200 shadow-md"
             fallbackClassName="text-white text-4xl font-black shadow-inner"
-            style={{ backgroundColor: tenant.primary_color || '#1A237E' }}
+            style={{ backgroundColor: tenant.primary_color || '#1a337e' }}
           />
           <div className="min-w-0">
             <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{tenant.name}</h3>
-            <p className="text-sm text-indigo-500 font-black uppercase tracking-widest mt-1">Node Protocol: {tenant.slug}</p>
+            <p className="text-sm text-[#1a337e] font-black uppercase tracking-widest mt-1">Node Protocol: {tenant.slug}</p>
             <div className="flex items-center gap-2 mt-3">
               <Badge status={tenant.status} />
             </div>
@@ -835,7 +835,7 @@ export default function TenantsPage() {
             value={
               <>
                 <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(totalCount)}</span>
-                <span className="mb-1 flex items-center text-xs font-bold text-indigo-600">
+                <span className="mb-1 flex items-center text-xs font-bold text-[#1a337e]">
                   Tenants
                 </span>
               </>
@@ -869,7 +869,7 @@ export default function TenantsPage() {
             value={
               <>
                 <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(draftCount)}</span>
-                <span className="mb-1 text-xs font-bold text-blue-600">Draft</span>
+                <span className="mb-1 text-xs font-bold text-[#1a337e]">Draft</span>
               </>
             }
           >
@@ -901,12 +901,12 @@ export default function TenantsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search jurisdictional nodes..."
-              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5 outline-none transition-all shadow-inner"
+              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e]"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -920,8 +920,8 @@ export default function TenantsPage() {
                   key={value}
                   onClick={() => handleStatusFilter(value)}
                   className={`rounded-lg px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${statusFilter === value
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                      : 'text-gray-500 hover:text-indigo-600 hover:bg-indigo-50'
+                      ? 'bg-[#1a337e] text-white shadow-lg shadow-indigo-200'
+                      : 'text-gray-500 hover:text-[#1a337e] hover:bg-indigo-50'
                     }`}
                 >
                   {label}
@@ -930,7 +930,7 @@ export default function TenantsPage() {
             </div>
             <button
               onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
             >
               <Plus className="h-5 w-5" />
               Add Tenant
@@ -981,7 +981,7 @@ export default function TenantsPage() {
                               shapeClass="rounded-xl"
                               imageClassName="border border-gray-100 shadow-sm transition-transform group-hover:scale-105"
                               fallbackClassName="text-white text-sm font-black shadow-inner"
-                              style={{ backgroundColor: tenant.primary_color || '#1A237E' }}
+                              style={{ backgroundColor: tenant.primary_color || '#1a337e' }}
                             />
                             <div className="min-w-0">
                               <p className="max-w-[200px] truncate text-sm font-black text-gray-900 tracking-tight">
@@ -993,7 +993,7 @@ export default function TenantsPage() {
                         </td>
                         <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-2">
-                            <span className="rounded-md bg-indigo-50 px-2 py-1 font-mono text-[10px] font-black text-indigo-600 border border-indigo-100">
+                            <span className="rounded-md bg-indigo-50 px-2 py-1 font-mono text-[10px] font-black text-[#1a337e] border border-indigo-100">
                               {tenant.slug}
                             </span>
                           </div>
@@ -1031,7 +1031,7 @@ export default function TenantsPage() {
                           <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                             <button
                               onClick={() => handleViewDetails(tenant)}
-                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100"
+                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1a337e] hover:bg-[#1a337e] hover:text-white transition-all shadow-sm border border-blue-100"
                               title="Inspect Node"
                             >
                               <Eye size={16} strokeWidth={2.4} />

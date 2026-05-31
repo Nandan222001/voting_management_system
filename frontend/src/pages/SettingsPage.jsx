@@ -45,7 +45,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
   return (
     <div className="relative group">
       {Icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors">
           <Icon size={16} strokeWidth={2.4} />
         </div>
       )}
@@ -56,7 +56,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner ${
+        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner ${
           hasError ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white'
         }`}
         {...props}
@@ -165,8 +165,8 @@ export default function SettingsPage() {
       <div className="w-full space-y-8">
         <header>
           <div className="flex items-center gap-2 mb-2">
-            <div className="h-1.5 w-8 rounded-full bg-indigo-600" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">User Preferences</span>
+            <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">User Preferences</span>
           </div>
           <h2 className="text-4xl font-black tracking-tight text-gray-900">Account Settings</h2>
         </header>
@@ -187,8 +187,8 @@ export default function SettingsPage() {
                  <div className="flex items-center gap-4">
                     <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-all duration-300 ${
                       activeTab === tab.id 
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200' 
-                        : 'bg-gray-50 text-gray-400 border-gray-100 group-hover:bg-white group-hover:text-indigo-600'
+                        ? 'bg-[#1a337e] text-white border-[#1a337e] shadow-lg shadow-indigo-200' 
+                        : 'bg-gray-50 text-gray-400 border-gray-100 group-hover:bg-white group-hover:text-[#1a337e]'
                     }`}>
                        <tab.icon size={20} strokeWidth={2.4} />
                     </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                        <p className={`text-sm font-black tracking-tight ${activeTab === tab.id ? 'text-gray-900' : 'text-gray-500'}`}>{tab.label}</p>
                        <p className="text-[10px] font-bold text-gray-400 mt-0.5 truncate uppercase tracking-widest">{tab.description}</p>
                     </div>
-                    <ChevronRight size={14} className={`transition-transform duration-300 ${activeTab === tab.id ? 'text-indigo-600 translate-x-0' : 'text-gray-300 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0'}`} />
+                    <ChevronRight size={14} className={`transition-transform duration-300 ${activeTab === tab.id ? 'text-[#1a337e] translate-x-0' : 'text-gray-300 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0'}`} />
                  </div>
                </button>
              ))}
@@ -208,7 +208,7 @@ export default function SettingsPage() {
                <form onSubmit={handleProfileSubmit} className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="p-8 border-b border-gray-50 bg-gray-50/30 flex items-center justify-between">
                     <div className="flex items-center gap-5">
-                       <div className="h-20 w-20 rounded-3xl bg-indigo-600 text-3xl font-black text-white flex items-center justify-center shadow-2xl shadow-indigo-200 border-4 border-white">
+                       <div className="h-20 w-20 rounded-3xl bg-[#1a337e] text-3xl font-black text-white flex items-center justify-center shadow-2xl shadow-indigo-200 border-4 border-white">
                           {initials || 'U'}
                        </div>
                        <div>
@@ -224,8 +224,8 @@ export default function SettingsPage() {
                   <div className="p-10 space-y-8 flex-1">
                     <div className="space-y-4">
                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Personal Information</span>
+                          <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Personal Information</span>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          {profileFields.slice(0, 4).map(field => (
@@ -244,8 +244,8 @@ export default function SettingsPage() {
 
                     <div className="space-y-4 pt-8 border-t border-gray-50">
                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Address & Location</span>
+                          <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Address & Location</span>
                        </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                          {profileFields.slice(4).map(field => (
@@ -266,7 +266,7 @@ export default function SettingsPage() {
                     <button 
                       type="submit" 
                       disabled={loading}
-                      className="px-12 py-4 bg-indigo-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-900/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
+                      className="px-12 py-4 bg-[#1a337e] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-[#1a337e]/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
                     >
                       {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} strokeWidth={2.4} />}
                       Update Profile

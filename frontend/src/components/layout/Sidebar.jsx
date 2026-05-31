@@ -45,8 +45,8 @@ function NavItem({ to, icon: Icon, label, end = false }) {
         className={({ isActive }) =>
           `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.05em] transition active:scale-[0.98] ${
             isActive
-              ? 'bg-[#dae2ff] text-[#003d9b]'
-              : 'text-[#434654] hover:bg-[#e7e8ea] hover:text-[#003d9b]'
+              ? 'bg-[#dae2ff] text-[#1a337e]'
+              : 'text-[#434654] hover:bg-[#e7e8ea] hover:text-[#1a337e]'
           }`
         }
       >
@@ -92,7 +92,7 @@ export default function Sidebar() {
           <button
             type="button"
             onClick={() => navigate('/dashboard')}
-            className="text-left text-2xl font-bold leading-8 tracking-tight text-[#003d9b]"
+            className="text-left text-2xl font-bold leading-8 tracking-tight text-[#1a337e]"
           >
              SUPERADMIN
           </button>
@@ -108,7 +108,7 @@ export default function Sidebar() {
 
         <div className="mt-auto border-t border-[#c3c6d6] px-2 pt-4">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#0052cc] text-xs font-bold text-[#c4d2ff]">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#1a337e] text-xs font-bold text-[#c4d2ff]">
               {initials}
             </div>
             <div className="min-w-0">
@@ -137,7 +137,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => navigate('/dashboard')}
-          className="text-left text-2xl font-bold leading-8 tracking-tight text-[#003d9b]"
+          className="text-left text-2xl font-bold leading-8 tracking-tight text-[#1a337e]"
         >
           ADMIN CONSOLE
         </button>
@@ -156,7 +156,7 @@ export default function Sidebar() {
 
       <div className="mt-auto border-t border-[#c3c6d6] px-2 pt-4">
         <div className="mb-4 flex items-center gap-3">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#0052cc] text-xs font-bold text-[#c4d2ff]">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#1a337e] text-xs font-bold text-[#c4d2ff]">
             {initials}
           </div>
           <div className="min-w-0">

@@ -92,10 +92,10 @@ function numberFormat(value) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -187,7 +187,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
       {...props}
@@ -204,7 +204,7 @@ function Textarea({ value, onChange, placeholder, disabled, required, hasError, 
       disabled={disabled}
       required={required}
       rows={rows}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors resize-none ${
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors resize-none ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
       {...props}
@@ -410,8 +410,8 @@ export default function ElectionsPage() {
         <section className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <div className="h-1.5 w-8 rounded-full bg-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">
                 Network Protocol Registry
               </span>
             </div>
@@ -433,7 +433,7 @@ export default function ElectionsPage() {
             </button>
             <button
               onClick={openCreateModal}
-              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
               type="button"
             >
               <Plus size={16} />
@@ -446,7 +446,7 @@ export default function ElectionsPage() {
         <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
           <div className="mb-10 flex items-center justify-between">
              <div className="flex items-center gap-3">
-                <div className="w-1 h-4 bg-indigo-600 rounded-full" />
+                <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
                 <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Active Lifecycle Progression</h3>
              </div>
              <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 border border-emerald-100 shadow-sm">
@@ -456,7 +456,7 @@ export default function ElectionsPage() {
           </div>
           <div className="relative overflow-x-auto pb-4 px-2">
             <div className="absolute left-8 right-8 top-6 z-0 h-0.5 bg-gray-100 rounded-full" />
-            <div className="absolute left-8 top-6 z-0 h-0.5 bg-indigo-600 rounded-full transition-all duration-1000" style={{ width: `calc(${lifecycle.progress} - 64px)` }} />
+            <div className="absolute left-8 top-6 z-0 h-0.5 bg-[#1a337e] rounded-full transition-all duration-1000" style={{ width: `calc(${lifecycle.progress} - 64px)` }} />
             <div className="relative z-10 flex justify-between min-w-[700px]">
               {[
                 { label: 'Draft Setup', sub: `${draftCount} Units`, icon: FileText },
@@ -472,9 +472,9 @@ export default function ElectionsPage() {
                     <div
                       className={`flex items-center justify-center rounded-2xl shadow-lg transition-all duration-500 ${
                         isCurrent
-                          ? 'h-14 w-14 border-4 border-white bg-indigo-600 text-white ring-4 ring-indigo-100 scale-110'
+                          ? 'h-14 w-14 border-4 border-white bg-[#1a337e] text-white ring-4 ring-indigo-100 scale-110'
                           : isComplete
-                            ? 'h-12 w-12 bg-indigo-600 text-white'
+                            ? 'h-12 w-12 bg-[#1a337e] text-white'
                             : 'h-12 w-12 bg-gray-50 text-gray-300 border border-gray-100'
                       }`}
                     >
@@ -483,7 +483,7 @@ export default function ElectionsPage() {
                     <span className={`mt-5 text-[11px] font-black uppercase tracking-widest ${isComplete || isCurrent ? 'text-gray-900' : 'text-gray-400'}`}>
                       {label}
                     </span>
-                    <span className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-1.5 ${isCurrent ? 'text-indigo-600' : 'text-gray-300'}`}>
+                    <span className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-1.5 ${isCurrent ? 'text-[#1a337e]' : 'text-gray-300'}`}>
                       {sub}
                     </span>
                   </div>
@@ -504,7 +504,7 @@ export default function ElectionsPage() {
               value={
                 <>
                   <span className="text-4xl font-black text-gray-900 tracking-tight">{compactNumber(totalCandidates)}</span>
-                  <span className="mb-1 flex items-center text-xs font-bold text-indigo-600 ml-2">
+                  <span className="mb-1 flex items-center text-xs font-bold text-[#1a337e] ml-2">
                     Candidates
                   </span>
                 </>
@@ -517,13 +517,13 @@ export default function ElectionsPage() {
                     <span className="text-gray-900">{Math.min(100, dataWithAction.length * 10)}%</span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div className="h-full bg-indigo-600 transition-all duration-1000" style={{ width: `${Math.min(100, dataWithAction.length * 10)}%` }} />
+                    <div className="h-full bg-[#1a337e] transition-all duration-1000" style={{ width: `${Math.min(100, dataWithAction.length * 10)}%` }} />
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => navigate('/users')}
-                  className="w-full rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
+                  className="w-full rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-[#1a337e] bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
                 >
                   Inspect Voter registry
                 </button>
@@ -539,10 +539,10 @@ export default function ElectionsPage() {
                 
               ].map(({ label, value, icon: Icon, tone }) => {
                 const toneMap = {
-                  blue: 'bg-blue-50 text-blue-600 border-blue-100',
+                  blue: 'bg-blue-50 text-[#1a337e] border-blue-100',
                   amber: 'bg-amber-50 text-amber-600 border-amber-100',
                   emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-                  indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+                  indigo: 'bg-indigo-50 text-[#1a337e] border-indigo-100',
                 };
                 return (
                   <div key={label} className="group flex items-center gap-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -570,13 +570,13 @@ export default function ElectionsPage() {
 
             <div className="flex flex-col gap-6 rounded-[2.5rem] border border-gray-100 bg-gray-50/50 p-6 md:flex-row md:items-center shadow-sm">
               <div className="relative flex-1 group">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" />
                 <input
                   type="text"
                   placeholder="Search by node title..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-2xl border border-gray-100 bg-white py-3.5 pl-12 pr-4 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5 outline-none transition-all shadow-inner"
+                  className="w-full rounded-2xl border border-gray-100 bg-white py-3.5 pl-12 pr-4 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
                 />
               </div>
               <div className="flex flex-wrap gap-1.5 bg-white p-1 rounded-2xl border border-gray-100 shadow-sm">
@@ -586,8 +586,8 @@ export default function ElectionsPage() {
                     onClick={() => setStatusFilter(value)}
                     className={`rounded-xl px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${
                       statusFilter === value
-                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-indigo-600'
+                        ? 'bg-[#1a337e] text-white shadow-lg shadow-indigo-200'
+                        : 'text-gray-500 hover:bg-gray-50 hover:text-[#1a337e]'
                     }`}
                     type="button"
                   >
@@ -622,14 +622,14 @@ export default function ElectionsPage() {
                     >
                       <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
                         <div className={`flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-all duration-500 ${
-                          isLive ? 'bg-blue-50 border-blue-100 text-blue-600 animate-in zoom-in duration-500' : 'bg-gray-50 border-gray-100 text-gray-400'
+                          isLive ? 'bg-blue-50 border-blue-100 text-[#1a337e] animate-in zoom-in duration-500' : 'bg-gray-50 border-gray-100 text-gray-400'
                         }`}>
                           {isLive ? <CircleDot className="h-10 w-10 animate-pulse" strokeWidth={2.4} /> : <CalendarDays className="h-10 w-10" strokeWidth={2.4} />}
                         </div>
 
                         <div className="min-w-0 flex-1">
                           <div className="mb-2 flex flex-wrap items-center gap-3">
-                             <h4 className="truncate text-xl font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">
+                             <h4 className="truncate text-xl font-black text-gray-900 tracking-tight group-hover:text-[#1a337e] transition-colors">
                                 {election.title}
                              </h4>
                              <Badge status={election.status} />
@@ -658,14 +658,14 @@ export default function ElectionsPage() {
                           <div className="grid grid-cols-2 gap-2">
                             <button
                               onClick={() => navigate(`/elections/${electionId}`)}
-                              className="flex items-center justify-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-indigo-600 transition-all hover:bg-indigo-600 hover:text-white shadow-sm"
+                              className="flex items-center justify-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#1a337e] transition-all hover:bg-[#1a337e] hover:text-white shadow-sm"
                             >
                               <Eye size={14} strokeWidth={3} />
                               Manage
                             </button>
                             <button
                               onClick={() => navigate(`/results?election=${electionId}`)}
-                              className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-800 shadow-xl shadow-indigo-900/20"
+                              className="flex items-center justify-center gap-2 rounded-xl bg-[#1a337e] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20"
                             >
                               <BarChart size={14} strokeWidth={3} />
                               Results
@@ -834,8 +834,8 @@ export default function ElectionsPage() {
                           }}
                           className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
                             form.jurisdiction_type === j.value 
-                              ? 'bg-[#1A237E] text-white font-bold shadow-md' 
-                              : 'text-gray-500 hover:bg-white hover:text-[#1A237E]'
+                              ? 'bg-[#1a337e] text-white font-bold shadow-md' 
+                              : 'text-gray-500 hover:bg-white hover:text-[#1a337e]'
                           }`}
                         >
                           <span className="text-[10px] uppercase tracking-wider">{j.label}</span>
@@ -860,9 +860,9 @@ export default function ElectionsPage() {
                     <div className="space-y-4 pt-1 border-t border-gray-50 mt-1">
                       {form.jurisdiction_type === 'country' ? (
                         <div className="py-12 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100 animate-in fade-in zoom-in-95">
-                           <Globe className="text-[#1A237E] w-8 h-8 mx-auto animate-pulse" />
-                           <p className="text-[10px] font-black uppercase text-[#1A237E] tracking-widest">National Level (India)</p>
-                           <p className="text-[9px] text-blue-400 font-medium">All registered members eligible</p>
+                           <Globe className="text-[#1a337e] w-8 h-8 mx-auto animate-pulse" />
+                           <p className="text-[10px] font-black uppercase text-[#1a337e] tracking-widest">National Level (India)</p>
+                           <p className="text-[9px] text-[#1a337e] font-medium">All registered members eligible</p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -928,7 +928,7 @@ export default function ElectionsPage() {
               <button
                 type="submit"
                 disabled={actionLoading}
-                className="px-5 py-2 text-sm font-semibold text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
+                className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
               >
                 {actionLoading ? (
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

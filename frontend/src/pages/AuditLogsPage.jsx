@@ -13,10 +13,10 @@ function numberFormat(value) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -43,16 +43,16 @@ function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
 }
 
 const ACTION_COLORS = {
-  login: 'bg-blue-50 text-blue-700 border-blue-100',
+  login: 'bg-blue-50 text-[#1a337e] border-blue-100',
   logout: 'bg-gray-50 text-gray-600 border-gray-100',
   register: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  vote: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-  create: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  vote: 'bg-indigo-50 text-[#1a337e] border-indigo-100',
+  create: 'bg-indigo-50 text-[#1a337e] border-indigo-100',
   update: 'bg-amber-50 text-amber-700 border-amber-100',
   delete: 'bg-red-50 text-red-700 border-red-100',
   approve: 'bg-emerald-50 text-emerald-700 border-emerald-100',
   block: 'bg-orange-50 text-orange-700 border-orange-100',
-  activate: 'bg-blue-50 text-blue-700 border-blue-100',
+  activate: 'bg-blue-50 text-[#1a337e] border-blue-100',
   close: 'bg-slate-50 text-slate-700 border-slate-100',
 }
 
@@ -183,8 +183,8 @@ export default function AuditLogsPage() {
                 }}
                 className={`rounded-xl px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${
                   actionFilter === value 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
-                    : 'bg-white text-gray-500 border border-gray-100 hover:border-indigo-600 hover:text-indigo-600'
+                    ? 'bg-[#1a337e] text-white shadow-lg shadow-indigo-200' 
+                    : 'bg-white text-gray-500 border border-gray-100 hover:border-[#1a337e] hover:text-[#1a337e]'
                 }`}
               >
                 {value || 'All Events'}
@@ -199,10 +199,10 @@ export default function AuditLogsPage() {
               placeholder="Search by action, user, node, IP..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5 outline-none transition-all shadow-inner"
+              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600">
+              <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e]">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -240,7 +240,7 @@ export default function AuditLogsPage() {
                           <span className="whitespace-nowrap text-xs font-black text-gray-900">
                             {log.created_at ? format(new Date(log.created_at), 'MMM d, yyyy') : '-'}
                           </span>
-                          <span className="text-[10px] font-bold text-indigo-500">
+                          <span className="text-[10px] font-bold text-[#1a337e]">
                             {log.created_at ? format(new Date(log.created_at), 'HH:mm:ss') : ''}
                           </span>
                         </div>
