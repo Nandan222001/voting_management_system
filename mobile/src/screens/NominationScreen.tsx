@@ -568,7 +568,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
       android: { elevation: 4 },
-      web: { boxShadow: `0px 4px 8px ${COLORS.primary}33` }
+      web: { 
+        // @ts-ignore
+        boxShadow: `0px 4px 8px ${COLORS.primary}33` 
+      }
     })
   },
   nextBtnHalf: { flex: 2, backgroundColor: COLORS.primary, height: 56, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },

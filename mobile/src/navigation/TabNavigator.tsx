@@ -74,6 +74,15 @@ const TabNavigator = () => {
         name="Elections" 
         component={VoteStack} 
         options={{ tabBarLabel: 'Vote' }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Force reset to the top of the stack and clear selected election
+            navigation.navigate('Elections', { 
+              screen: 'Voting', 
+              params: { election: null } 
+            });
+          },
+        })}
       />
       <Tab.Screen 
         name="Analytics" 
@@ -108,6 +117,7 @@ const styles = StyleSheet.create({
         elevation: 20,
       },
       web: {
+        // @ts-ignore
         boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.05)',
       },
     }),

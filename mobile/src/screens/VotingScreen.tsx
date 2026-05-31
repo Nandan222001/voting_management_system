@@ -11,6 +11,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -79,6 +80,12 @@ const VotingScreen = ({ navigation, route }: any) => {
   const { election: routeElection } = route.params || {};
   const [selectedElection, setSelectedElection] = useState<any>(routeElection);
   const [elections, setElections] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<'active' | 'upcoming'>('active');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 10;
   const [candidates, setCandidates] = useState<any[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -87,26 +94,23 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (routeElection) {
-      setSelectedElection(routeElection);
-    }
+    // We allow setting to null to reset to the election list
+    setSelectedElection(routeElection);
   }, [routeElection]);
 
   useEffect(() => {
-    if (selectedElection) {
-      fetchElectionDetails(selectedElection.id);
-    } else {
+    if (!selectedElection) {
       fetchElections();
     }
-  }, [selectedElection]);
+  }, [selectedElection, currentPage]);
 
   const fetchElections = async () => {
     try {
       setLoading(true);
-      const allElections = await electionService.getElections();
-      // Show all except drafts
-      const filtered = allElections.filter((e: any) => e.status !== 'draft');
-      setElections(filtered);
+      // Fetch all published elections (up to 100) to allow accurate frontend filtering/pagination
+      const response = await electionService.getElections(false, 1, 100, 'active');
+      setElections(response.data || []);
+      // Total items and pages will be calculated by the filtered list
     } catch (error) {
       console.error("Failed to load elections", error);
       Alert.alert("Error", "Failed to load elections.");
@@ -114,6 +118,42 @@ const VotingScreen = ({ navigation, route }: any) => {
       setLoading(false);
     }
   };
+
+  const getFilteredData = () => {
+    const now = new Date().getTime();
+    let filtered = elections.filter(e => {
+      const start = new Date(e.start_date).getTime();
+      const end = new Date(e.end_date).getTime();
+      
+      if (selectedFilter === 'active') {
+        return start <= now && end >= now;
+      } else {
+        return start > now;
+      }
+    });
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(e => 
+        e.title.toLowerCase().includes(query) ||
+        (e.election_type && e.election_type.toLowerCase().includes(query))
+      );
+    }
+    return filtered;
+  };
+
+  const filteredElections = getFilteredData();
+  const paginatedElections = filteredElections.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const currentTotalItems = filteredElections.length;
+  const currentTotalPages = Math.ceil(currentTotalItems / itemsPerPage);
+
+  // Reset page when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedFilter, searchQuery]);
 
   const fetchElectionDetails = async (electionId: number) => {
     try {
@@ -175,27 +215,85 @@ const VotingScreen = ({ navigation, route }: any) => {
 
   // --- RENDER ELECTIONS LIST IF NO ELECTION SELECTED ---
   if (!selectedElection) {
+    const filteredElections = elections.filter(e => 
+      e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (e.election_type && e.election_type.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
     return (
       <View style={styles.container}>
-        <Header />
+        <Header 
+          showBack={!!selectedElection} 
+          onBack={handleBack} 
+          title={selectedElection ? "Election Detail" : "Election Portal"} 
+        />
         <ScrollView 
           style={styles.scrollContent} 
           contentContainerStyle={{ paddingBottom: 60, paddingTop: 24 }} 
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.instructionBannerMini}>
-             <Text style={styles.instructionHeaderSmall}>Select an active session</Text>
-             <Text style={styles.instructionDetailSmall}>Access secure voting sessions currently open for your district.</Text>
+             <Text style={styles.instructionHeaderSmall}>Election Portal</Text>
+             <Text style={styles.instructionDetailSmall}>Securely browse and participate in community-led electoral sessions.</Text>
+          </View>
+
+          {/* Premium Status Filter Tabs */}
+          <View style={styles.premiumFilterContainer}>
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              style={[styles.premiumFilterTab, selectedFilter === 'active' && styles.premiumFilterTabActive]}
+              onPress={() => setSelectedFilter('active')}
+            >
+              <MaterialIcons 
+                name="sensors" 
+                size={20} 
+                color={selectedFilter === 'active' ? '#fff' : COLORS.primary} 
+              />
+              <Text style={[styles.premiumFilterTabText, selectedFilter === 'active' && styles.premiumFilterTabTextActive]}>Active</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              style={[styles.premiumFilterTab, selectedFilter === 'upcoming' && styles.premiumFilterTabActive]}
+              onPress={() => setSelectedFilter('upcoming')}
+            >
+              <MaterialIcons 
+                name="event" 
+                size={20} 
+                color={selectedFilter === 'upcoming' ? '#fff' : COLORS.onSurfaceVariant} 
+              />
+              <Text style={[styles.premiumFilterTabText, selectedFilter === 'upcoming' && styles.premiumFilterTabTextActive]}>Upcoming</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <MaterialIcons name="search" size={20} color={COLORS.onSurfaceVariant} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search elections..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor={COLORS.outlineVariant}
+              underlineColorAndroid="transparent"
+            />
+            {searchQuery !== '' && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <MaterialIcons name="close" size={20} color={COLORS.onSurfaceVariant} />
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.modernListContainer}>
-            {elections.length === 0 ? (
+            {paginatedElections.length === 0 ? (
                <View style={styles.emptyCandidatesBox}>
-                 <MaterialIcons name="how-to-vote" size={48} color={COLORS.outline} />
-                 <Text style={styles.emptyCandidatesText}>No active elections available.</Text>
+                 <MaterialIcons name="how-to-vote" size={48} color={COLORS.outlineVariant} />
+                 <Text style={styles.emptyCandidatesText}>
+                   {searchQuery ? "No matching elections found." : `No ${selectedFilter} elections available.`}
+                 </Text>
                </View>
             ) : (
-              elections.map(elec => (
+              paginatedElections.map(elec => (
                 <TouchableOpacity 
                   key={elec.id}
                   style={styles.modernElectionCard}
@@ -219,26 +317,84 @@ const VotingScreen = ({ navigation, route }: any) => {
                   <View style={styles.modernElecCardBottom}>
                     <View style={styles.elecMetaItem}>
                       <Text style={styles.statusLabel}>STATUS:</Text>
-                      {elec.status === 'active' ? (
+                      {new Date(elec.start_date).getTime() <= new Date().getTime() ? (
                         <View style={[styles.statusBadgeSmall, { backgroundColor: COLORS.secondary }]}>
                           <View style={styles.liveDotSmall} />
                           <Text style={styles.statusBadgeTextSmall}>ACTIVE</Text>
                         </View>
                       ) : (
-                        <View style={[styles.statusBadgeSmall, { backgroundColor: COLORS.error }]}>
-                          <Text style={[styles.statusBadgeTextSmall, { color: '#fff' }]}>CLOSED</Text>
+                        <View style={[styles.statusBadgeSmall, { backgroundColor: '#6366f1' }]}>
+                          <Text style={[styles.statusBadgeTextSmall, { color: '#fff' }]}>UPCOMING</Text>
                         </View>
                       )}
                     </View>
                     <View style={styles.elecMetaItem}>
-                      <MaterialIcons name="people" size={14} color={COLORS.onSurfaceVariant} />
-                      <Text style={styles.elecMetaText}>Candidates Listed</Text>
+                      <MaterialIcons name="event" size={14} color={COLORS.onSurfaceVariant} />
+                      <Text style={styles.elecMetaText}>
+                        {new Date(elec.start_date).toLocaleDateString()}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
               ))
             )}
           </View>
+
+          {/* Pagination Controls */}
+          {currentTotalPages > 1 && (
+            <View style={styles.paginationWrapper}>
+              <View style={styles.resultsInfo}>
+                <Text style={styles.resultsText}>
+                  Showing <Text style={{fontWeight: '700'}}>{(currentPage - 1) * itemsPerPage + 1}</Text> to <Text style={{fontWeight: '700'}}>{Math.min(currentPage * itemsPerPage, currentTotalItems)}</Text> of <Text style={{fontWeight: '700'}}>{currentTotalItems}</Text> elections
+                </Text>
+              </View>
+
+              <View style={styles.paginationContainer}>
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]} 
+                  onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <MaterialIcons name="chevron-left" size={24} color={currentPage === 1 ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+                </TouchableOpacity>
+                
+                <View style={styles.pageNumbersRow}>
+                  {Array.from({ length: Math.min(5, currentTotalPages) }, (_, i) => {
+                    let pageNum;
+                    if (currentTotalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= currentTotalPages - 2) {
+                      pageNum = currentTotalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <TouchableOpacity 
+                        key={pageNum}
+                        style={[styles.pageNumberBtn, currentPage === pageNum && styles.pageNumberBtnActive]}
+                        onPress={() => setCurrentPage(pageNum)}
+                      >
+                        <Text style={[styles.pageNumberText, currentPage === pageNum && styles.pageNumberTextActive]}>
+                          {pageNum}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <TouchableOpacity 
+                  style={[styles.pageBtn, currentPage === currentTotalPages && styles.pageBtnDisabled]} 
+                  onPress={() => setCurrentPage(prev => Math.min(currentTotalPages, prev + 1))}
+                  disabled={currentPage === currentTotalPages}
+                >
+                  <MaterialIcons name="chevron-right" size={24} color={currentPage === currentTotalPages ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </ScrollView>
       </View>
     );
@@ -247,7 +403,11 @@ const VotingScreen = ({ navigation, route }: any) => {
   // --- RENDER SINGLE ELECTION DETAIL & CANDIDATES ---
   return (
     <View style={styles.container}>
-      <Header />
+      <Header 
+        showBack={!!selectedElection} 
+        onBack={handleBack} 
+        title={selectedElection ? "Election Detail" : "Voting Sessions"} 
+      />
       <ScrollView 
         style={styles.scrollContent} 
         contentContainerStyle={{ paddingBottom: 140, paddingTop: 24 }} 
@@ -512,6 +672,41 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     marginTop: 4,
     opacity: 0.7,
+  },
+
+  // Premium Filter Tab Styles
+  premiumFilterContainer: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: 18,
+    padding: 6,
+    marginBottom: 24,
+    gap: 6,
+  },
+  premiumFilterTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  premiumFilterTabActive: {
+    backgroundColor: COLORS.primary,
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      android: { elevation: 4 }
+    })
+  },
+  premiumFilterTabText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.3,
+  },
+  premiumFilterTabTextActive: {
+    color: '#fff',
   },
 
   modernListContainer: {
@@ -969,7 +1164,107 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.onSurfaceVariant,
     fontWeight: '600'
-  }
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    height: 48,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.onSurface,
+    height: '100%',
+    ...Platform.select({
+      web: { 
+        // @ts-ignore
+        outlineStyle: 'none' 
+      } as any,
+    }),
+  },
+  paginationWrapper: {
+    marginTop: 32,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  resultsInfo: {
+    marginBottom: 16,
+  },
+  resultsText: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.7,
+    letterSpacing: 0.2,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
+      android: { elevation: 4 },
+      web: { 
+        // @ts-ignore
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)' 
+      }
+    })
+  },
+  pageBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceContainerLow,
+  },
+  pageBtnDisabled: {
+    opacity: 0.2,
+  },
+  pageNumbersRow: {
+    flexDirection: 'row',
+    marginHorizontal: 8,
+    gap: 6,
+  },
+  pageNumberBtn: {
+    minWidth: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  pageNumberBtnActive: {
+    backgroundColor: COLORS.primary,
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
+      android: { elevation: 4 },
+      web: { 
+        // @ts-ignore
+        boxShadow: `0px 4px 6px ${COLORS.primary}4D` 
+      }
+    })
+  },
+  pageNumberText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+  },
+  pageNumberTextActive: {
+    color: '#fff',
+  },
 });
 
 export default VotingScreen;

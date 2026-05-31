@@ -25,6 +25,8 @@ const AnalyticsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [committees, setCommittees] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const loadPeople = async () => {
     try {
@@ -70,6 +72,10 @@ const AnalyticsScreen = () => {
     loadPeople();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadPeople();
@@ -83,6 +89,12 @@ const AnalyticsScreen = () => {
       item.winner?.full_name.toLowerCase().includes(query)
     );
   });
+
+  const totalPages = Math.ceil(filteredCommittees.length / itemsPerPage);
+  const paginatedCommittees = filteredCommittees.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   if (loading) {
     return (
@@ -144,25 +156,25 @@ const AnalyticsScreen = () => {
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
         <View style={styles.screenHeader}>
-           <Text style={styles.screenTitle}>Registry Directory</Text>
+           <Text style={styles.screenTitle}>Leadership Network</Text>
            <Text style={styles.screenSub}>Access authorized leadership data across active administrative regions.</Text>
         </View>
 
         <View style={styles.peopleList}>
-           {filteredCommittees.length === 0 ? (
+           {paginatedCommittees.length === 0 ? (
               <View style={styles.emptyState}>
                  <MaterialIcons name="search-off" size={48} color={COLORS.onSurfaceVariant} />
                  <Text style={styles.emptyText}>No matching leadership records found.</Text>
               </View>
            ) : (
-             filteredCommittees.map((item: any) => (
+             paginatedCommittees.map((item: any) => (
                <View key={item.id} style={styles.targetCard}>
                   <View style={styles.targetHeader}>
                     <View style={styles.targetTitleRow}>
@@ -183,6 +195,62 @@ const AnalyticsScreen = () => {
              ))
            )}
         </View>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <View style={styles.paginationWrapper}>
+            <View style={styles.resultsInfo}>
+              <Text style={styles.resultsText}>
+                Showing <Text style={{fontWeight: '700'}}>{(currentPage - 1) * itemsPerPage + 1}</Text> to <Text style={{fontWeight: '700'}}>{Math.min(currentPage * itemsPerPage, filteredCommittees.length)}</Text> of <Text style={{fontWeight: '700'}}>{filteredCommittees.length}</Text> records
+              </Text>
+            </View>
+
+            <View style={styles.paginationContainer}>
+              <TouchableOpacity 
+                style={[styles.pageBtn, currentPage === 1 && styles.pageBtnDisabled]} 
+                onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <MaterialIcons name="chevron-left" size={24} color={currentPage === 1 ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+              </TouchableOpacity>
+              
+              <View style={styles.pageNumbersRow}>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <TouchableOpacity 
+                      key={pageNum}
+                      style={[styles.pageNumberBtn, currentPage === pageNum && styles.pageNumberBtnActive]}
+                      onPress={() => setCurrentPage(pageNum)}
+                    >
+                      <Text style={[styles.pageNumberText, currentPage === pageNum && styles.pageNumberTextActive]}>
+                        {pageNum}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity 
+                style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnDisabled]} 
+                onPress={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <MaterialIcons name="chevron-right" size={24} color={currentPage === totalPages ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View style={styles.footerNote}>
            <MaterialIcons name="security" size={14} color={COLORS.onSurfaceVariant} style={{ opacity: 0.5 }} />
@@ -216,7 +284,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
       android: { elevation: 2 },
-      web: { boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)' }
+      web: { 
+        // @ts-ignore
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)' 
+      }
     })
   },
   searchIcon: { marginRight: 10 },
@@ -226,7 +297,10 @@ const styles = StyleSheet.create({
     color: COLORS.onSurface, 
     fontWeight: '500',
     ...Platform.select({
-      web: { outlineStyle: 'none' }
+      web: { 
+        // @ts-ignore
+        outlineStyle: 'none' 
+      }
     })
   },
 
@@ -240,7 +314,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
       android: { elevation: 3 },
-      web: { boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.04)' }
+      web: { 
+        // @ts-ignore
+        boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.04)' 
+      }
     })
   },
   targetHeader: { 
@@ -296,5 +373,73 @@ const styles = StyleSheet.create({
 
   footerNote: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 32, paddingHorizontal: 20 },
   footerText: { fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', textAlign: 'center', opacity: 0.5, lineHeight: 16 },
+
+  // Pagination Styles
+  paginationWrapper: {
+    marginTop: 32,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  resultsInfo: {
+    marginBottom: 16,
+  },
+  resultsText: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.7,
+    letterSpacing: 0.2,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 6,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
+      android: { elevation: 4 }
+    })
+  },
+  pageBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryContainer,
+  },
+  pageBtnDisabled: {
+    opacity: 0.2,
+  },
+  pageNumbersRow: {
+    flexDirection: 'row',
+    marginHorizontal: 8,
+    gap: 6,
+  },
+  pageNumberBtn: {
+    minWidth: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  pageNumberBtnActive: {
+    backgroundColor: COLORS.primary,
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
+      android: { elevation: 4 }
+    })
+  },
+  pageNumberText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+  },
+  pageNumberTextActive: {
+    color: '#fff',
+  },
 });
 export default AnalyticsScreen;
