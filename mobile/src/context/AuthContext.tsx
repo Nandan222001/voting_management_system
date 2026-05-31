@@ -22,6 +22,7 @@ interface User {
   city?: string;
   state?: string;
   pincode?: string;
+  membership_plan_id?: number | null;
 }
 
 interface AuthContextType {
