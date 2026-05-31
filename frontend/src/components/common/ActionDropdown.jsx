@@ -51,7 +51,7 @@ function DropdownItems({ actions, align, open, updatePosition, position }) {
                   onClick={action.onClick}
                   disabled={disabled}
                   className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-bold transition-colors duration-150 ${
-                    active ? 'bg-blue-50 text-[#1A237E]' : action.danger ? 'text-red-600' : 'text-gray-700'
+                    active ? 'bg-blue-50 text-[#1a337e]' : action.danger ? 'text-red-600' : 'text-gray-700'
                   } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
                 >
                   {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
@@ -102,7 +102,7 @@ export default function ActionDropdown({ actions = [], label = 'Open actions', a
             <Menu.Button
               ref={buttonRef}
               aria-label={label}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#1A237E] hover:bg-blue-50 hover:text-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#1A237E]/30 focus:ring-offset-2"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-all duration-150 hover:border-[#1a337e] hover:bg-blue-50 hover:text-[#1a337e] focus:outline-none focus:ring-2 focus:ring-[#1a337e]/30 focus:ring-offset-2"
             >
               <MoreVertical className="h-4 w-4" />
             </Menu.Button>

@@ -54,10 +54,10 @@ function timeAgo(dateString) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
   };
 
   const style = toneMap[tone] || toneMap.blue;
@@ -85,13 +85,13 @@ function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
 function ActivityItem({ tone, icon: Icon, title, time, description, meta, pulse }) {
   const toneClasses = {
     amber: 'bg-amber-50 text-amber-700 border-amber-100',
-    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    blue: 'bg-blue-50 text-[#1a337e] border-blue-100',
     red: 'bg-red-50 text-red-700 border-red-100',
   };
 
   const pulseClasses = {
     amber: 'bg-amber-500 sa-pulse-amber',
-    blue: 'bg-blue-500 sa-pulse-green',
+    blue: 'bg-[#1a337e] sa-pulse-green',
     red: 'bg-red-500',
   };
 
@@ -241,8 +241,8 @@ export default function SuperAdminDashboard() {
             }
           >
             <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-gray-100">
-              <div className="h-full bg-indigo-600 transition-all" title={`Active: ${stats.activeElections}`} style={{ flexGrow: stats.activeElections || 1 }} />
-              <div className="h-full bg-indigo-300 transition-all" title={`Draft: ${stats.draftElections}`} style={{ flexGrow: stats.draftElections || 1 }} />
+              <div className="h-full bg-[#1a337e] transition-all" title={`Active: ${stats.activeElections}`} style={{ flexGrow: stats.activeElections || 1 }} />
+              <div className="h-full bg-[#1a337e] transition-all" title={`Draft: ${stats.draftElections}`} style={{ flexGrow: stats.draftElections || 1 }} />
               <div className="h-full bg-gray-300 transition-all" title={`Closed: ${stats.closedElections}`} style={{ flexGrow: stats.closedElections || 1 }} />
             </div>
           </MetricCard>
@@ -294,7 +294,7 @@ export default function SuperAdminDashboard() {
           <section className="flex h-[640px] flex-col overflow-hidden rounded-3xl border border-[#c4c6d0] bg-white shadow-xl lg:col-span-2">
             <div className="flex items-center justify-between border-b border-gray-100 bg-white p-6">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100 shadow-inner">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1a337e] border border-blue-100 shadow-inner">
                    <Activity className="h-7 w-7" />
                 </div>
                 <div>
@@ -350,7 +350,7 @@ export default function SuperAdminDashboard() {
               <button 
                 type="button" 
                 onClick={() => navigate('/elections?superadmin=true')} 
-                className="group inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-600 transition hover:text-blue-800"
+                className="group inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#1a337e] transition hover:text-[#1a337e]"
               >
                 Inspect Global Registry
                 <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -387,7 +387,7 @@ export default function SuperAdminDashboard() {
                             return { icon: Info, color: 'text-amber-600 bg-amber-50 border-amber-100' };
                           if (action.includes('login')) 
                             return { icon: LockOpen, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' };
-                          return { icon: Info, color: 'text-blue-600 bg-blue-50 border-blue-100' };
+                          return { icon: Info, color: 'text-[#1a337e] bg-blue-50 border-blue-100' };
                         };
                         const { icon: LogIcon, color } = getIconAndColor(log.action);
                         const logTime = new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });

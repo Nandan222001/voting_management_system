@@ -38,7 +38,7 @@ function Toggle({ on, onToggle }) {
     <button
       type="button"
       onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${on ? 'bg-[rgb(16_102_177)]' : 'bg-gray-300'}`}
+      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${on ? 'bg-[#1a337e]' : 'bg-gray-300'}`}
     >
       <span
         className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
@@ -88,8 +88,8 @@ export default function AccountPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[rgb(16_102_177)] text-lg" />
-          <span className="font-bold text-[rgb(16_102_177)] text-base">SecureVote</span>
+          <FaShieldAlt className="text-[#1a337e] text-lg" />
+          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">
           <span className="text-white text-sm font-bold">{initials}</span>
@@ -105,12 +105,12 @@ export default function AccountPage() {
             <div className="w-24 h-24 rounded-full bg-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-md">
               {initials}
             </div>
-            <div className="absolute bottom-0 right-0 w-7 h-7 bg-[rgb(16_102_177)] rounded-full flex items-center justify-center border-2 border-white">
+            <div className="absolute bottom-0 right-0 w-7 h-7 bg-[#1a337e] rounded-full flex items-center justify-center border-2 border-white">
               <FaCheckCircle className="text-white text-sm" />
             </div>
           </div>
           <div className="text-center">
-            <h2 className="text-xl font-bold text-[rgb(16_102_177)]">
+            <h2 className="text-xl font-bold text-[#1a337e]">
               {user?.full_name ?? 'Verified Voter'}
             </h2>
             <div className="inline-flex items-center gap-1.5 mt-1.5 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
@@ -130,7 +130,7 @@ export default function AccountPage() {
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Full Legal Name</p>
-                <p className="text-sm font-bold text-[rgb(16_102_177)] mt-0.5">
+                <p className="text-sm font-bold text-[#1a337e] mt-0.5">
                   {user?.full_name ?? 'Eleanor J. Sterling'}
                 </p>
               </div>
@@ -139,14 +139,14 @@ export default function AccountPage() {
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Date of Birth</p>
-                <p className="text-sm font-bold text-[rgb(16_102_177)] mt-0.5">October 14, 1982</p>
+                <p className="text-sm font-bold text-[#1a337e] mt-0.5">October 14, 1982</p>
               </div>
               <FaLock className="text-gray-300 text-base" />
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
               <div>
                 <p className="text-xs text-gray-400">Voter Registration ID</p>
-                <p className="text-sm font-bold text-[rgb(16_102_177)] mt-0.5">VTR-990-221-X8</p>
+                <p className="text-sm font-bold text-[#1a337e] mt-0.5">VTR-990-221-X8</p>
               </div>
               <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-lg">
                 ACTIVE
@@ -224,10 +224,10 @@ export default function AccountPage() {
                 active ? 'text-white' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <div className={`w-10 h-8 flex items-center justify-center rounded-xl ${active ? 'bg-[rgb(16_102_177)]' : ''}`}>
+              <div className={`w-10 h-8 flex items-center justify-center rounded-xl ${active ? 'bg-[#1a337e]' : ''}`}>
                 <Icon className={`text-lg ${active ? 'text-white' : 'text-gray-400'}`} />
               </div>
-              <span className={active ? 'text-[rgb(16_102_177)] font-semibold' : ''}>{label}</span>
+              <span className={active ? 'text-[#1a337e] font-semibold' : ''}>{label}</span>
             </button>
           );
         })}
