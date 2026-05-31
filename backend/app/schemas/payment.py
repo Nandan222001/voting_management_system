@@ -73,3 +73,15 @@ class PaymentListResponse(BaseModel):
     items: List[PaymentResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MembershipPaymentStatusResponse(BaseModel):
+    """Current user's membership-plan and payment readiness for voting."""
+
+    membership_plan_id: Optional[int] = None
+    has_membership_plan: bool
+    payment_required: bool
+    payment_completed: bool
+    latest_payment_status: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)

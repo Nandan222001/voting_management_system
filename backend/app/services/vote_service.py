@@ -22,6 +22,7 @@ from app.models.vote import Vote
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.candidate_repository import CandidateRepository
 from app.repositories.election_repository import ElectionRepository
+from app.repositories.payment_repository import PaymentRepository
 from app.repositories.vote_repository import VoteRepository
 from app.schemas.vote import ElectionResultResponse, VoteResultItem
 
@@ -115,6 +116,28 @@ class VoteService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This election is not available for your district.",
+            )
+
+        if member.membership_plan_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Please select a Membership Plan first: "
+                    "Profile -> Edit Profile -> Select Membership Plan."
+                ),
+            )
+
+        effective_tenant_id = tenant_id if tenant_id is not None else election.tenant_id
+        if not PaymentRepository(db).has_captured_payment_for_user(
+            effective_tenant_id,
+            user_id,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=(
+                    "Your selected Membership Plan payment is pending or not completed. "
+                    "Please complete the payment to proceed with voting."
+                ),
             )
 
         # 3. Candidate must belong to this election (and therefore same tenant).

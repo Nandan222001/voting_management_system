@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.payment import Payment, PaymentStatus
+from app.models.user import User
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.schemas.payment import PaymentCreate, PaymentUpdate, RevenueSummary
@@ -74,6 +75,43 @@ class PaymentService:
         payment_data["status"] = PaymentStatus.pending
         
         return repo.create(payment_data)
+
+    def get_my_membership_status(self, db: Session, current_user: User) -> dict:
+        """
+        Return whether the current user's selected membership plan is paid.
+        """
+        if current_user.membership_plan_id is None:
+            return {
+                "membership_plan_id": None,
+                "has_membership_plan": False,
+                "payment_required": True,
+                "payment_completed": False,
+                "latest_payment_status": None,
+            }
+
+        if current_user.tenant_id is None:
+            return {
+                "membership_plan_id": current_user.membership_plan_id,
+                "has_membership_plan": True,
+                "payment_required": True,
+                "payment_completed": False,
+                "latest_payment_status": None,
+            }
+
+        repo = PaymentRepository(db)
+        latest_payment = repo.get_latest_by_user(current_user.tenant_id, current_user.id)
+        payment_completed = repo.has_captured_payment_for_user(
+            current_user.tenant_id,
+            current_user.id,
+        )
+
+        return {
+            "membership_plan_id": current_user.membership_plan_id,
+            "has_membership_plan": True,
+            "payment_required": True,
+            "payment_completed": payment_completed,
+            "latest_payment_status": latest_payment.status.value if latest_payment else None,
+        }
 
     def capture_payment(
         self, db: Session, payment_id: int, data: PaymentUpdate
