@@ -16,7 +16,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
+import { nominationService } from '../services/nominationService';
+import { paymentService } from '../services/paymentService';
 import Header from '../components/common/Header';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = {
   primary: '#003d9b',
@@ -83,6 +86,7 @@ const CountdownTimer = ({ endDate }: { endDate: string }) => {
 
 const VotingScreen = ({ navigation, route }: any) => {
   const { election: routeElection } = route.params || {};
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const [selectedElection, setSelectedElection] = useState<any>(routeElection);
   const [elections, setElections] = useState<any[]>([]);
@@ -98,7 +102,9 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [existingVote, setExistingVote] = useState<any>(null);
+  const [myNomination, setMyNomination] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [withdrawingNomination, setWithdrawingNomination] = useState(false);
 
   useEffect(() => {
     // We allow setting to null to reset to the election list
@@ -167,11 +173,13 @@ const VotingScreen = ({ navigation, route }: any) => {
   const fetchElectionDetails = async (electionId: number) => {
     try {
       setLoading(true);
-      const [cands, voteResponse] = await Promise.all([
+      const [cands, voteResponse, nominationResponse] = await Promise.all([
         electionService.getCandidates(electionId),
-        electionService.getMyVote(electionId).catch(() => null)
+        electionService.getMyVote(electionId).catch(() => null),
+        nominationService.getMyForElection(electionId).catch(() => null),
       ]);
       setCandidates(cands);
+      setMyNomination(nominationResponse);
       
       // voteResponse is { has_voted: boolean, vote: any }
       if (voteResponse && voteResponse.has_voted) {
@@ -184,16 +192,104 @@ const VotingScreen = ({ navigation, route }: any) => {
     } catch (error) {
       console.error("Failed to load election data", error);
       Alert.alert("Error", "Failed to load election details.");
+      setMyNomination(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const getNominationStatusMeta = (status?: string) => {
+    switch ((status || '').toLowerCase()) {
+      case 'approved':
+        return {
+          label: 'Approved',
+          icon: 'check-circle' as const,
+          color: '#056e00',
+          bg: '#e5f8e1',
+          detail: 'Your nomination has been approved for this election.',
+        };
+      case 'rejected':
+        return {
+          label: 'Rejected',
+          icon: 'cancel' as const,
+          color: '#b91c1c',
+          bg: '#fee2e2',
+          detail: 'Your nomination was rejected during scrutiny.',
+        };
+      default:
+        return {
+          label: 'Pending Scrutiny',
+          icon: 'hourglass-empty' as const,
+          color: '#b45309',
+          bg: '#fef3c7',
+          detail: 'Your nomination is submitted and waiting for admin review.',
+        };
+    }
+  };
+
+  const handleWithdrawNomination = () => {
+    if (!myNomination?.id || !selectedElection) return;
+
+    Alert.alert(
+      'Withdraw Nomination',
+      'Do you want to withdraw your nomination for this election?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Withdraw',
+          style: 'destructive',
+          onPress: async () => {
+            setWithdrawingNomination(true);
+            try {
+              await nominationService.withdraw(myNomination.id);
+              setMyNomination(null);
+              Alert.alert('Withdrawn', 'Your nomination has been withdrawn.');
+              fetchElectionDetails(selectedElection.id);
+            } catch (error: any) {
+              Alert.alert(
+                'Withdrawal Failed',
+                error.response?.data?.detail || error.response?.data?.message || 'Could not withdraw nomination.',
+              );
+            } finally {
+              setWithdrawingNomination(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleCastVote = async () => {
     if (!selectedCandidateId || !selectedElection) return;
+
+    if (!user?.membership_plan_id) {
+      setShowConfirmModal(false);
+      Alert.alert(
+        'Membership Plan Required',
+        'Please select a Membership Plan first:\nProfile -> Edit Profile -> Select Membership Plan',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Edit Profile',
+            onPress: () => navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' }),
+          },
+        ],
+      );
+      return;
+    }
     
     setSubmitting(true);
     try {
+      const membershipStatus = await paymentService.getMyMembershipStatus();
+      if (!membershipStatus?.payment_completed) {
+        setShowConfirmModal(false);
+        Alert.alert(
+          'Payment Required',
+          'Your selected Membership Plan payment is pending or not completed. Please complete the payment to proceed with voting.',
+        );
+        return;
+      }
+
       await electionService.castVote(selectedElection.id, selectedCandidateId);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
@@ -220,6 +316,7 @@ const VotingScreen = ({ navigation, route }: any) => {
   const isElectionLive = selectedElection 
     ? new Date(selectedElection.start_date).getTime() <= new Date().getTime()
     : false;
+  const nominationStatusMeta = getNominationStatusMeta(myNomination?.status);
 
   if (loading) {
     return (
@@ -500,24 +597,86 @@ const VotingScreen = ({ navigation, route }: any) => {
               </View>
 
               {!isElectionLive && (
-                <TouchableOpacity 
-                  style={styles.nominationActionBtn}
-                  onPress={() => navigation.navigate('Nomination', { election: selectedElection })}
-                >
-                  <LinearGradient
-                    colors={['#4f46e5', '#3730a3']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.nominationActionGradient}
+                <>
+                  <TouchableOpacity 
+                    style={[styles.nominationActionBtn, !myNomination && styles.nominationActionBtnSolo]}
+                    onPress={() => {
+                      if (myNomination) {
+                        Alert.alert('Nomination Submitted', 'You have already submitted a nomination for this election.');
+                        return;
+                      }
+                      navigation.navigate('Nomination', { election: selectedElection });
+                    }}
                   >
-                    <MaterialIcons name="assignment-ind" size={22} color="#fff" />
-                    <View>
-                      <Text style={styles.nominationActionTitle}>Nominate Yourself</Text>
-                      <Text style={styles.nominationActionSub}>Apply to be a candidate in this session</Text>
+                    <LinearGradient
+                      colors={myNomination ? ['#64748b', '#475569'] : ['#4f46e5', '#3730a3']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.nominationActionGradient}
+                    >
+                      <MaterialIcons name="assignment-ind" size={22} color="#fff" />
+                      <View style={styles.nominationActionTextWrap}>
+                        <Text style={styles.nominationActionTitle}>
+                          {myNomination ? 'Nomination Submitted' : 'Nominate Yourself'}
+                        </Text>
+                        <Text style={styles.nominationActionSub}>
+                          {myNomination ? 'Track your application status below' : 'Apply to be a candidate in this session'}
+                        </Text>
+                      </View>
+                      <MaterialIcons name={myNomination ? 'done' : 'chevron-right'} size={20} color="rgba(255,255,255,0.5)" style={{ marginLeft: 'auto' }} />
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  {myNomination && (
+                    <View style={styles.nominationStatusCard}>
+                      <View style={styles.nominationStatusHeader}>
+                        <View style={[styles.nominationStatusIcon, { backgroundColor: nominationStatusMeta.bg }]}>
+                          <MaterialIcons name={nominationStatusMeta.icon} size={20} color={nominationStatusMeta.color} />
+                        </View>
+                        <View style={styles.nominationStatusContent}>
+                          <Text style={styles.nominationStatusEyebrow}>YOUR NOMINATION</Text>
+                          <Text style={styles.nominationStatusTitle}>{nominationStatusMeta.label}</Text>
+                        </View>
+                        <View style={[styles.nominationStatusBadge, { backgroundColor: nominationStatusMeta.bg }]}>
+                          <Text style={[styles.nominationStatusBadgeText, { color: nominationStatusMeta.color }]}>
+                            {String(myNomination.status || 'pending').toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.nominationStatusDetail}>{nominationStatusMeta.detail}</Text>
+                      <View style={styles.nominationStatusMetaRow}>
+                        <View style={styles.nominationStatusMetaItem}>
+                          <Text style={styles.nominationStatusMetaLabel}>Position</Text>
+                          <Text style={styles.nominationStatusMetaValue} numberOfLines={1}>
+                            {myNomination.position_name || 'Candidate'}
+                          </Text>
+                        </View>
+                        <View style={styles.nominationStatusMetaItem}>
+                          <Text style={styles.nominationStatusMetaLabel}>Submitted</Text>
+                          <Text style={styles.nominationStatusMetaValue}>
+                            {myNomination.created_at ? new Date(myNomination.created_at).toLocaleDateString() : '-'}
+                          </Text>
+                        </View>
+                      </View>
+                      {String(myNomination.status || '').toLowerCase() === 'pending' && (
+                        <TouchableOpacity
+                          style={styles.withdrawNominationBtn}
+                          onPress={handleWithdrawNomination}
+                          disabled={withdrawingNomination}
+                        >
+                          {withdrawingNomination ? (
+                            <ActivityIndicator size="small" color="#b91c1c" />
+                          ) : (
+                            <>
+                              <MaterialIcons name="delete-outline" size={18} color="#b91c1c" />
+                              <Text style={styles.withdrawNominationText}>Withdraw Nomination</Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.5)" style={{ marginLeft: 'auto' }} />
-                  </LinearGradient>
-                </TouchableOpacity>
+                  )}
+                </>
               )}
 
               <View style={styles.sectionHeaderRow}>
@@ -1323,17 +1482,23 @@ const styles = StyleSheet.create({
   nominationActionBtn: {
     borderRadius: 20,
     overflow: 'hidden',
-    marginBottom: 32,
+    marginBottom: 12,
     ...Platform.select({
       ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12 },
       android: { elevation: 6 }
     })
+  },
+  nominationActionBtnSolo: {
+    marginBottom: 32,
   },
   nominationActionGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
     gap: 16,
+  },
+  nominationActionTextWrap: {
+    flex: 1,
   },
   nominationActionTitle: {
     color: '#fff',
@@ -1346,6 +1511,101 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginTop: 2,
+  },
+  nominationStatusCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
+      android: { elevation: 2 },
+    }),
+  },
+  nominationStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  nominationStatusIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nominationStatusContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  nominationStatusEyebrow: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 0.8,
+  },
+  nominationStatusTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    marginTop: 2,
+  },
+  nominationStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  nominationStatusBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  nominationStatusDetail: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    lineHeight: 19,
+    marginTop: 12,
+  },
+  nominationStatusMetaRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 14,
+  },
+  nominationStatusMetaItem: {
+    flex: 1,
+    backgroundColor: COLORS.surfaceContainerLow,
+    borderRadius: 12,
+    padding: 12,
+  },
+  nominationStatusMetaLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    textTransform: 'uppercase',
+  },
+  nominationStatusMetaValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    marginTop: 4,
+  },
+  withdrawNominationBtn: {
+    marginTop: 14,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fff5f5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  withdrawNominationText: {
+    color: '#b91c1c',
+    fontSize: 13,
+    fontWeight: '800',
   },
 
   sectionHeaderRow: {

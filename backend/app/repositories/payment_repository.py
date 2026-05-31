@@ -64,3 +64,29 @@ class PaymentRepository(BaseRepository[Payment]):
             "failed_transactions": failed_count,
             "currency": "INR"
         }
+
+    def get_latest_by_user(self, tenant_id: int, user_id: int) -> Optional[Payment]:
+        """
+        Return the most recent payment made by a user within a tenant.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(Payment.tenant_id == tenant_id, Payment.user_id == user_id)
+            .order_by(Payment.created_at.desc())
+            .first()
+        )
+
+    def has_captured_payment_for_user(self, tenant_id: int, user_id: int) -> bool:
+        """
+        Check whether a user has at least one completed/captured payment.
+        """
+        return (
+            self.db.query(Payment.id)
+            .filter(
+                Payment.tenant_id == tenant_id,
+                Payment.user_id == user_id,
+                Payment.status == PaymentStatus.captured,
+            )
+            .first()
+            is not None
+        )

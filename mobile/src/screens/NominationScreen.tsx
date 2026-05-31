@@ -311,9 +311,9 @@ const NominationScreen = ({ navigation, route }: any) => {
     const asset = result.assets[0];
     setLoading(true);
     try {
-      const uploadedUrl = await mediaService.uploadNominationDocument(
+      const uploadedUrl = await mediaService.uploadFile(
         asset.uri,
-        asset.name || 'nomination-document',
+        asset.name || 'signature',
         asset.mimeType || 'application/octet-stream',
       );
       setFormData({
@@ -326,7 +326,7 @@ const NominationScreen = ({ navigation, route }: any) => {
     } catch (error: any) {
       Alert.alert(
         'Upload Failed',
-        error.response?.data?.detail || 'Could not upload document. Please upload an image or PDF.',
+        error.response?.data?.detail || 'Could not upload signature. Please upload an image or PDF.',
       );
     } finally {
       setLoading(false);
@@ -409,17 +409,12 @@ const NominationScreen = ({ navigation, route }: any) => {
         full_name: submissionData.full_name,
       });
       await candidateService.nominate(submissionData);
-      
-      Alert.alert("Success", "Your nomination has been submitted successfully and is pending scrutiny.", [
-        {
-          text: "OK",
-          onPress: () =>
-            navigation.replace("Voting", {
-              election,
-              nominationSubmitted: true,
-            }),
-        }
-      ]);
+
+      navigation.replace("Voting", {
+        election,
+        nominationSubmitted: true,
+      });
+      Alert.alert("Success", "Your nomination has been submitted successfully and is pending scrutiny.");
     } catch (error: any) {
       console.error('Nomination failed', error);
       const responseData = error.response?.data;
@@ -642,7 +637,7 @@ const NominationScreen = ({ navigation, route }: any) => {
               </View>
 
               <View style={styles.signatureUploadContainer}>
-                <Text style={styles.label}>Upload Image or PDF</Text>
+                <Text style={styles.label}>Upload Signature</Text>
                 <TouchableOpacity style={styles.signatureBox} onPress={pickNominationDocument}>
                   {formData.signature_url ? (
                     formData.nomination_document_type === 'application/pdf' ||
@@ -659,7 +654,7 @@ const NominationScreen = ({ navigation, route }: any) => {
                   ) : (
                     <>
                       <MaterialIcons name="upload-file" size={32} color={COLORS.textSecondary} />
-                      <Text style={styles.photoLabel}>Upload image or PDF</Text>
+                      <Text style={styles.photoLabel}>Upload Signature</Text>
                     </>
                   )}
                 </TouchableOpacity>

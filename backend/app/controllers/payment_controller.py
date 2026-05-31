@@ -9,6 +9,7 @@ from app.schemas.payment import (
     PaymentCreate,
     PaymentListResponse,
     PaymentResponse,
+    MembershipPaymentStatusResponse,
     RevenueSummary,
 )
 from app.schemas.tenant import TenantPaymentSettings
@@ -16,6 +17,27 @@ from app.services.payment_service import payment_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/payments", tags=["Revenue & Payments"])
+
+
+@router.get(
+    "/my-membership-status",
+    summary="Get current user's membership payment status",
+)
+def get_my_membership_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Return whether the current user has selected a membership plan and
+    completed payment for it.
+    """
+    payload = MembershipPaymentStatusResponse.model_validate(
+        payment_service.get_my_membership_status(db, current_user)
+    ).model_dump(mode="json")
+    return success_response(
+        data=payload,
+        message="Membership payment status retrieved successfully.",
+    )
 
 
 @router.post(
@@ -31,6 +53,7 @@ def create_payment(
     """
     Create a pending payment record.
     """
+    payload.user_id = current_user.id
     payment = payment_service.create_payment_record(
         db, 
         tenant_id=current_user.tenant_id, 
