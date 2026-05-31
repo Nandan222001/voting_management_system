@@ -111,65 +111,7 @@ export default function AuditLogsPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <MetricCard
-            title="Total Events"
-            icon={History}
-            tone="blue"
-            value={
-              <>
-                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(auditTotal)}</span>
-              </>
-            }
-          >
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Lifetime system logs</p>
-          </MetricCard>
-
-          <MetricCard
-            title="Critical Alerts"
-            icon={ShieldAlert}
-            tone="red"
-            value={
-              <>
-                <span className="text-4xl font-black text-red-600 tracking-tight">{numberFormat(stats.critical)}</span>
-              </>
-            }
-          >
-             <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Require Investigation</p>
-             </div>
-          </MetricCard>
-
-          <MetricCard
-            title="Active Tenants"
-            icon={Globe}
-            tone="indigo"
-            value={
-              <>
-                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.uniqueTenants)}</span>
-              </>
-            }
-          >
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reporting Node Nodes</p>
-          </MetricCard>
-
-          <MetricCard
-            title="Protocol Status"
-            icon={Activity}
-            tone="emerald"
-            value={
-              <>
-                <span className="text-4xl font-black text-emerald-600 tracking-tight">Active</span>
-              </>
-            }
-          >
-             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-emerald-600">
-                <CheckCircle2 className="h-3 w-3" />
-                <span>Encrypted & Signed</span>
-             </div>
-          </MetricCard>
-        </section>
+         
 
         <section className="flex flex-col gap-6 rounded-3xl bg-gray-50 border border-gray-200 p-6 md:flex-row md:items-center shadow-sm">
           <div className="flex flex-wrap gap-2">
