@@ -41,10 +41,10 @@ function numberFormat(value) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -88,7 +88,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
   return (
     <div className="relative group">
       {Icon && (
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors">
           <Icon size={16} strokeWidth={2.4} />
         </div>
       )}
@@ -99,7 +99,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
         placeholder={placeholder}
         disabled={disabled}
         required={required}
-        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner ${
+        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner ${
           hasError ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white'
         }`}
         {...props}
@@ -112,7 +112,7 @@ function Textarea({ value, onChange, placeholder, disabled, required, hasError, 
   return (
     <div className="relative group">
       {Icon && (
-        <div className="absolute left-4 top-4 text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+        <div className="absolute left-4 top-4 text-gray-400 group-focus-within:text-[#1a337e] transition-colors">
           <Icon size={16} strokeWidth={2.4} />
         </div>
       )}
@@ -123,7 +123,7 @@ function Textarea({ value, onChange, placeholder, disabled, required, hasError, 
         disabled={disabled}
         required={required}
         rows={rows}
-        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner resize-none ${
+        className={`block w-full ${Icon ? 'pl-11' : 'px-4'} py-3 border rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] disabled:bg-gray-50 disabled:text-gray-400 transition-all shadow-inner resize-none ${
           hasError ? 'border-red-400 bg-red-50' : 'border-gray-100 bg-white'
         }`}
         {...props}
@@ -210,14 +210,14 @@ export default function CandidateCommitteesPage() {
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <div className="h-1.5 w-8 rounded-full bg-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Organizational Units</span>
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Organizational Units</span>
             </div>
             <h2 className="text-4xl font-black tracking-tight text-gray-900">Functional Committees</h2>
           </div>
           <button
             onClick={openCreate}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
           >
             <Plus className="h-5 w-5" />
             Add Committee
@@ -237,7 +237,7 @@ export default function CandidateCommitteesPage() {
           </MetricCard>
 
           <MetricCard title="Candidate Base" value={numberFormat(stats.totalCandidates)} icon={Users} tone="indigo">
-             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Total unit members</p>
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Total unit members</p>
           </MetricCard>
         </section>
 
@@ -249,10 +249,10 @@ export default function CandidateCommitteesPage() {
               placeholder="Search by group name or description..."
               value={search}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-600/5 outline-none transition-all shadow-inner"
+              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
             />
             {search && (
-              <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600">
+              <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e]">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -288,7 +288,7 @@ export default function CandidateCommitteesPage() {
                     <tr key={c.id} className="group transition-all duration-200">
                       <td className="rounded-l-2xl bg-white border border-r-0 border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm transition-transform group-hover:scale-105">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-[#1a337e] border border-indigo-100 shadow-sm transition-transform group-hover:scale-105">
                              <Landmark size={20} strokeWidth={2.4} />
                           </div>
                           <div>
@@ -340,8 +340,8 @@ export default function CandidateCommitteesPage() {
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                 <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Basic Info</span>
+                 <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                 <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Basic Info</span>
               </div>
               <Field label="Committee Name" required>
                 <Input
@@ -376,7 +376,7 @@ export default function CandidateCommitteesPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="px-5 py-2 text-sm font-semibold text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
+              className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
             >
               {submitting ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

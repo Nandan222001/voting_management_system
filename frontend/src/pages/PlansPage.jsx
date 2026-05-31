@@ -25,7 +25,7 @@ export default function PlansPage() {
     <MainLayout title="Voter Membership Plans">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="text-3xl font-black tracking-tight text-[#1a365d] sm:text-4xl">
+          <h2 className="text-3xl font-black tracking-tight text-[#1a337e] sm:text-4xl">
             Choose Your Voting Power
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
@@ -51,18 +51,18 @@ export default function PlansPage() {
                   key={plan.id}
                   className={`relative flex flex-col rounded-3xl border p-8 shadow-sm transition-all duration-200 hover:shadow-xl ${
                     plan.is_highlighted
-                      ? 'border-[#003d9b] bg-white ring-2 ring-[#003d9b]/10'
+                      ? 'border-[#1a337e] bg-white ring-2 ring-[#1a337e]/10'
                       : 'border-slate-200 bg-white'
                   }`}
                 >
                   {plan.is_highlighted && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-[#003d9b] px-4 py-1 text-xs font-bold text-white uppercase tracking-widest">
+                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-[#1a337e] px-4 py-1 text-xs font-bold text-white uppercase tracking-widest">
                       Most Popular
                     </div>
                   )}
                   
                   <div className="mb-8 flex items-center gap-4">
-                    <div className={`rounded-2xl p-3 ${plan.is_highlighted ? 'bg-[#003d9b] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    <div className={`rounded-2xl p-3 ${plan.is_highlighted ? 'bg-[#1a337e] text-white' : 'bg-slate-100 text-slate-600'}`}>
                       <Icon size={24} />
                     </div>
                     <div>
@@ -91,7 +91,7 @@ export default function PlansPage() {
                     type="button"
                     className={`w-full rounded-2xl py-4 text-sm font-bold transition-all active:scale-95 ${
                       plan.is_highlighted
-                        ? 'bg-[#003d9b] text-white shadow-lg shadow-[#003d9b]/20 hover:brightness-110'
+                        ? 'bg-[#1a337e] text-white shadow-lg shadow-[#1a337e]/20 hover:brightness-110'
                         : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
                     }`}
                   >

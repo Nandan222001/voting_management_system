@@ -45,12 +45,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <Dialog.Title className="text-lg font-bold text-[rgb(16_102_177)]">
+                  <Dialog.Title className="text-lg font-bold text-[#1a337e]">
                     {title}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-[rgb(16_102_177)] hover:bg-[#e6edfb] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]/30"
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-[#1a337e] hover:bg-[#e6edfb] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a337e]/30"
                   >
                     <X className="w-4 h-4" />
                   </button>
