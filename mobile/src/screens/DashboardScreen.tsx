@@ -42,23 +42,10 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const [stats, setStats] = useState({ activeElections: 0, totalElections: 0, completedElections: 0 });
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [planName, setPlanName] = useState('Standard');
-
-  const fetchPlan = async () => {
-    try {
-      const plans = await tenantService.getPublicPlans();
-      const userPlan = plans.find((p: any) => p.id === user?.membership_plan_id);
-      if (userPlan) setPlanName(userPlan.name);
-    } catch (error) {
-      console.error('Failed to fetch plans', error);
-    }
-  };
+  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'Standard Member');
 
   const loadData = async () => {
     try {
-      if (user?.membership_plan_id) {
-        fetchPlan();
-      }
       let response;
       try {
         response = await electionService.getElections(false, 1, 100);
@@ -106,12 +93,6 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   useEffect(() => {
     loadData();
   }, []);
-
-  useEffect(() => {
-    if (user?.membership_plan_id) {
-      fetchPlan();
-    }
-  }, [user]);
 
   const onRefresh = async () => {
     setRefreshing(true);

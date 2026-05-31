@@ -217,7 +217,9 @@ const VotingScreen = ({ navigation, route }: any) => {
     }
   };
 
-  const selectedCandidate = candidates.find(c => c.id === selectedCandidateId);
+  const isElectionLive = selectedElection 
+    ? new Date(selectedElection.start_date).getTime() <= new Date().getTime()
+    : false;
 
   if (loading) {
     return (
@@ -460,16 +462,16 @@ const VotingScreen = ({ navigation, route }: any) => {
             >
               <View style={styles.heroContent}>
                 <View style={styles.heroBadge}>
-                    <MaterialIcons name="how-to-vote" size={12} color="#fff" />
-                    <Text style={styles.heroBadgeText}>LIVE SESSION</Text>
+                    <MaterialIcons name={isElectionLive ? "how-to-vote" : "event-upcoming"} size={12} color="#fff" />
+                    <Text style={styles.heroBadgeText}>{isElectionLive ? 'LIVE SESSION' : 'SCHEDULED'}</Text>
                 </View>
-                <Text style={styles.heroTitlePre}>Voting Session</Text>
+                <Text style={styles.heroTitlePre}>{isElectionLive ? 'Voting Session' : 'Upcoming Session'}</Text>
                 <Text style={styles.heroTitleMain} numberOfLines={2}>{selectedElection.title}</Text>
                 
                 <View style={styles.detailMetaGrid}>
                   <View style={styles.detailMetaCol}>
-                    <Text style={styles.detailMetaLabel}>CLOSES IN</Text>
-                    <CountdownTimer endDate={selectedElection.end_date} />
+                    <Text style={styles.detailMetaLabel}>{isElectionLive ? 'CLOSES IN' : 'STARTS IN'}</Text>
+                    <CountdownTimer endDate={isElectionLive ? selectedElection.end_date : selectedElection.start_date} />
                   </View>
                   <View style={styles.detailMetaDividerVertical} />
                   <View style={styles.detailMetaCol}>
@@ -496,6 +498,27 @@ const VotingScreen = ({ navigation, route }: any) => {
                   </>
                 )}
               </View>
+
+              {!isElectionLive && (
+                <TouchableOpacity 
+                  style={styles.nominationActionBtn}
+                  onPress={() => navigation.navigate('Nomination', { election: selectedElection })}
+                >
+                  <LinearGradient
+                    colors={['#4f46e5', '#3730a3']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.nominationActionGradient}
+                  >
+                    <MaterialIcons name="assignment-ind" size={22} color="#fff" />
+                    <View>
+                      <Text style={styles.nominationActionTitle}>Nominate Yourself</Text>
+                      <Text style={styles.nominationActionSub}>Apply to be a candidate in this session</Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={20} color="rgba(255,255,255,0.5)" style={{ marginLeft: 'auto' }} />
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
 
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionTitleLabel}>OFFICIAL CANDIDATES</Text>
@@ -1297,6 +1320,34 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     marginTop: 2,
   },
+  nominationActionBtn: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 32,
+    ...Platform.select({
+      ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12 },
+      android: { elevation: 6 }
+    })
+  },
+  nominationActionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    gap: 16,
+  },
+  nominationActionTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  nominationActionSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',

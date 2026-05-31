@@ -49,23 +49,13 @@ const DetailItem = ({ icon, label, value, isLast = false }: any) => (
 
 const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading } = useAuth();
-  const [planName, setPlanName] = useState('Standard');
+  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
 
   useEffect(() => {
-    if (user?.membership_plan_id) {
-       fetchPlan();
+    if (user?.membership_plan?.name) {
+      setPlanName(user.membership_plan.name);
     }
-  }, [user]);
-
-  const fetchPlan = async () => {
-    try {
-      const plans = await tenantService.getPublicPlans();
-      const userPlan = plans.find((p: any) => p.id === user?.membership_plan_id);
-      if (userPlan) setPlanName(userPlan.name);
-    } catch (error) {
-      console.error('Failed to fetch plans', error);
-    }
-  };
+  }, [user?.membership_plan]);
 
   const handleLogout = () => {
     const performLogout = async () => {

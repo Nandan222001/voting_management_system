@@ -9,7 +9,11 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 STATIC_ROOT = BACKEND_ROOT / "static"
 UPLOADS_ROOT = STATIC_ROOT / "uploads"
 ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg"}
+ALLOWED_DOCUMENT_TYPES = {*ALLOWED_IMAGE_TYPES, "application/pdf"}
 MAX_IMAGE_SIZE = 2 * 1024 * 1024
+MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
+PROJECT_ROOT = BACKEND_ROOT.parent
+MOBILE_ASSETS_IMAGES_ROOT = PROJECT_ROOT / "mobile" / "assets" / "images"
 
 
 import logging
@@ -88,3 +92,58 @@ def delete_uploaded_file(served_path: str | None) -> None:
     except ValueError:
         return
     target.unlink(missing_ok=True)
+
+
+async def save_uploaded_document_to_mobile_assets(
+    upload: UploadFile,
+    filename_prefix: str,
+) -> str:
+    """
+    Save an uploaded nomination document under mobile/assets/images.
+
+    Returns the backend-served path mounted at /mobile-assets/images/<file>.
+    """
+    content_type = getattr(upload, "content_type", "") or ""
+    if content_type not in ALLOWED_DOCUMENT_TYPES:
+        logger.error(f"Invalid document content type: {content_type}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PNG, JPEG, or PDF files are allowed.",
+        )
+
+    original_name = Path(upload.filename or "document").name
+    safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
+    timestamp = int(time.time() * 1000)
+
+    MOBILE_ASSETS_IMAGES_ROOT.mkdir(parents=True, exist_ok=True)
+    filename = f"{filename_prefix}_{timestamp}_{safe_name}"
+    dest_path = MOBILE_ASSETS_IMAGES_ROOT / filename
+
+    total = 0
+    try:
+        with dest_path.open("wb") as buffer:
+            while True:
+                chunk = await upload.read(1024 * 64)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_DOCUMENT_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Document exceeds 5 MB size limit.",
+                    )
+                buffer.write(chunk)
+
+        logger.info(f"Saved nomination document to {dest_path} (Size: {total} bytes)")
+    except Exception as e:
+        if dest_path.exists():
+            dest_path.unlink()
+        if isinstance(e, HTTPException):
+            raise e
+        logger.exception("Failed to save nomination document")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error saving document.",
+        )
+
+    return f"/mobile-assets/images/{filename}"

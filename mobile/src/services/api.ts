@@ -1,8 +1,17 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-const ENV_TENANT_UUID = process.env.EXPO_PUBLIC_TENANT_UUID;
+const EXPO_ENV = process.env as Record<string, string | undefined>;
+const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8001/api/v1';
+const API_URL =
+  Platform.OS === 'android'
+    ? RAW_API_URL.replace('http://localhost:', 'http://10.0.2.2:').replace(
+        'http://127.0.0.1:',
+        'http://10.0.2.2:',
+      )
+    : RAW_API_URL;
+const ENV_TENANT_UUID = EXPO_ENV.EXPO_PUBLIC_TENANT_UUID;
 
 // AsyncStorage key used to persist the selected tenant's UUID across sessions
 const TENANT_UUID_KEY = 'tenant_uuid';
@@ -46,6 +55,10 @@ api.interceptors.request.use(
     const tenantUUID = (await AsyncStorage.getItem(TENANT_UUID_KEY)) || ENV_TENANT_UUID;
     if (tenantUUID) {
       config.headers['X-Tenant-ID'] = tenantUUID;
+    }
+
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
 
     return config;

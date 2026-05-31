@@ -8,6 +8,7 @@ OTP verification, token refresh, and current-user profile retrieval.
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,7 @@ from app.schemas.auth import (
 from app.schemas.user import ChangePasswordRequest, UserResponse, UserSettingsUpdate
 from app.services.auth_service import auth_service
 from app.services.user_service import user_service
+from app.utils.response import success_response
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -43,7 +45,7 @@ def register(
     payload: RegisterRequest,
     header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
-) -> UserResponse:
+) -> JSONResponse:
     """
     Create a new internal member account.
 
@@ -55,7 +57,11 @@ def register(
       ``payload.tenant_id`` (if set) takes precedence.
     """
     user: User = auth_service.register(db, payload, tenant_id=header_tenant_id)
-    return UserResponse.model_validate(user)
+    return success_response(
+        data=UserResponse.model_validate(user).model_dump(mode="json"),
+        message="Registration successful. Please verify your email with the OTP.",
+        status_code=status.HTTP_201_CREATED
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -184,18 +190,20 @@ def refresh_token(
 
 @router.get(
     "/me",
-    response_model=UserResponse,
     summary="Retrieve the currently authenticated user's profile",
 )
 def get_me(
     current_user: User = Depends(get_current_user),
-) -> UserResponse:
+) -> JSONResponse:
     """
     Return the full profile of the authenticated user.
 
     Requires a valid Bearer token in the ``Authorization`` header.
     """
-    return UserResponse.model_validate(current_user)
+    return success_response(
+        data=UserResponse.model_validate(current_user).model_dump(mode="json"),
+        message="Profile retrieved."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -204,21 +212,23 @@ def get_me(
 
 @router.put(
     "/me",
-    response_model=UserResponse,
     summary="Update the currently authenticated user's settings",
 )
 def update_me(
     payload: UserSettingsUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> UserResponse:
+) -> JSONResponse:
     """
     Update self-service profile settings for the authenticated user.
 
     Email, role, status, tenant, and verification flags are not accepted here.
     """
     updated = user_service.update_own_settings(db, current_user.id, payload)
-    return UserResponse.model_validate(updated)
+    return success_response(
+        data=UserResponse.model_validate(updated).model_dump(mode="json"),
+        message="Profile updated successfully."
+    )
 
 
 # ---------------------------------------------------------------------------

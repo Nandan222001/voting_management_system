@@ -16,6 +16,7 @@ import {
   Dimensions,
   Image,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
@@ -138,6 +139,8 @@ const EditProfileScreen = ({ navigation }: any) => {
     date_of_birth: user?.date_of_birth || '',
     gender: user?.gender || '',
     parent_name: user?.parent_name || '',
+    voter_id: user?.voter_id || '',
+    designation: user?.designation || '',
 
     // Step 2
     house_number: user?.house_number || '',
@@ -188,12 +191,45 @@ const EditProfileScreen = ({ navigation }: any) => {
   const [modalType, setModalType] = useState<string | null>(null);
 
   useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user.full_name || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        date_of_birth: user.date_of_birth || '',
+        gender: user.gender || '',
+        parent_name: user.parent_name || '',
+        house_number: user.house_number || '',
+        street_address: user.street_address || '',
+        village: user.village || '',
+        landmark: user.landmark || '',
+        pincode: user.pincode || '',
+        state: user.state || '',
+        district: user.district || '',
+        taluka: user.taluka || '',
+        current_street_address: user.current_street_address || '',
+        current_city: user.current_city || '',
+        current_district: user.current_district || '',
+        current_state: user.current_state || '',
+        current_pincode: user.current_pincode || '',
+        tenant_id: user.tenant_id || null,
+        committee_id: user.committee_id || null,
+        state_id: user.state_id || null,
+        district_id: user.district_id || null,
+        taluka_id: user.taluka_id || null,
+        village_id: user.village_id || null,
+        membership_plan_id: user.membership_plan_id || null,
+      });
+
+      if (user.state) setSelectedStateName(user.state);
+      if (user.district) setSelectedDistrictName(user.district);
+      if (user.taluka) setSelectedTalukaName(user.taluka);
+      if (user.village) setSelectedVillageName(user.village);
+    }
+  }, [user]);
+
+  useEffect(() => {
     fetchInitialData();
-    // Initialize selected names if user has them
-    if (user?.state) setSelectedStateName(user.state);
-    if (user?.district) setSelectedDistrictName(user.district);
-    if (user?.taluka) setSelectedTalukaName(user.taluka);
-    if (user?.village) setSelectedVillageName(user.village);
   }, []);
 
   const fetchInitialData = async () => {
@@ -511,6 +547,28 @@ const EditProfileScreen = ({ navigation }: any) => {
                 placeholder="Enter name"
                 value={formData.parent_name}
                 onChangeText={(val: string) => handleChange('parent_name', val)}
+                errors={errors}
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              <InputField
+                name="voter_id"
+                icon="fingerprint"
+                label="Voter ID / Member ID"
+                placeholder="Enter Voter ID"
+                value={formData.voter_id}
+                onChangeText={(val: string) => handleChange('voter_id', val)}
+                errors={errors}
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              <InputField
+                name="designation"
+                icon="briefcase-outline"
+                label="Designation"
+                placeholder="Enter designation (e.g. Secretary)"
+                value={formData.designation}
+                onChangeText={(val: string) => handleChange('designation', val)}
                 errors={errors}
                 focusedField={focusedField}
                 setFocusedField={setFocusedField}

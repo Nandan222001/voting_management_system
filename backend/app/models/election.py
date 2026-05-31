@@ -119,6 +119,12 @@ class Election(Base):
         cascade="all, delete-orphan",
         lazy="select",
     )
+    nominations = relationship(
+        "Nomination",
+        back_populates="election",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
     votes = relationship(
         "Vote",
         back_populates="election",
