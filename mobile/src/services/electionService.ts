@@ -1,10 +1,14 @@
 import api from './api';
 
 export const electionService = {
-  getElections: async (isPublic: boolean = false) => {
-    const endpoint = isPublic ? '/elections/public' : '/elections/';
+  getElections: async (isPublic: boolean = false, page: number = 1, per_page: number = 20, status?: string) => {
+    let endpoint = isPublic ? '/elections/public' : `/elections/?page=${page}&per_page=${per_page}`;
+    if (status && !isPublic) {
+      endpoint += `&status=${status}`;
+    }
     const response = await api.get(endpoint);
-    return response.data.data;
+    // Return the full response body (envelope)
+    return response.data;
   },
 
   getPublicElections: async () => {

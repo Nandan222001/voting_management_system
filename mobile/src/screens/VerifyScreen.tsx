@@ -17,7 +17,10 @@ import { useAuth } from "../context/AuthContext";
 import Header from "../components/common/Header";
 
 const getInputStyle = () => {
-  return Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : {};
+  return Platform.OS === "web" ? ({ 
+    // @ts-ignore
+    outlineStyle: "none" 
+  } as any) : {};
 };
 
 const VerifyScreen = ({ navigation, route }: any) => {

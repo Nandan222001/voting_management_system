@@ -202,7 +202,10 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 10 },
-      web: { boxShadow: '0px 10px 20px rgba(0,0,0,0.2)' }
+      web: { 
+        // @ts-ignore
+        boxShadow: '0px 10px 20px rgba(0,0,0,0.2)' 
+      }
     })
   },
   headerTop: { flexDirection: 'row', alignItems: 'center', gap: 20 },
