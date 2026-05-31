@@ -19,7 +19,9 @@ from app.schemas.candidate import (
     CandidateResponse,
     CandidateUpdate,
 )
+from app.schemas.nomination import NominationCreate, NominationResponse
 from app.services.candidate_service import candidate_service
+from app.services.nomination_service import nomination_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/candidates", tags=["Candidates"])
@@ -66,7 +68,6 @@ def get_candidate(
 
 @router.post(
     "/nominate",
-    response_model=CandidateResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Apply for nomination (voters)",
 )
@@ -85,6 +86,7 @@ async def nominate_candidate(
     village: str | None = Form(None),
     pincode: str | None = Form(None),
     bio: str | None = Form(None),
+    position_name: str | None = Form(None),
     committee_id: int | None = Form(None),
     target_id: int | None = Form(None),
     election_id: int = Form(...),
@@ -92,23 +94,32 @@ async def nominate_candidate(
     signature: UploadFile | None = File(None),
     image_url: str | None = Form(None),
     signature_url: str | None = Form(None),
+    is_willing: bool = Form(True),
+    held_previously: bool = Form(False),
+    prev_position: str | None = Form(None),
+    prev_duration: str | None = Form(None),
+    is_disciplined: bool = Form(False),
+    discipline_details: str | None = Form(None),
+    has_complaints: bool = Form(False),
+    agreed_constitution: bool = Form(False),
+    accepted_results: bool = Form(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> CandidateResponse:
+) -> JSONResponse:
     """
     Voter application for candidacy.
     """
     from app.utils.uploads import save_uploaded_image
-    
+
     final_image_url = image_url
     if image:
         final_image_url = await save_uploaded_image(image, subdir="candidates", filename_prefix="cand")
-    
+
     final_sig_url = signature_url
     if signature:
         final_sig_url = await save_uploaded_image(signature, subdir="signatures", filename_prefix="sig")
 
-    payload = CandidateCreate(
+    payload = NominationCreate(
         full_name=full_name,
         email=email,
         phone=phone,
@@ -123,20 +134,33 @@ async def nominate_candidate(
         village=village,
         pincode=pincode,
         bio=bio,
+        position_name=position_name,
         committee_id=committee_id,
         target_id=target_id,
         election_id=election_id,
         image_url=final_image_url,
         signature_url=final_sig_url,
+        is_willing=is_willing,
+        held_previously=held_previously,
+        prev_position=prev_position,
+        prev_duration=prev_duration,
+        is_disciplined=is_disciplined,
+        discipline_details=discipline_details,
+        has_complaints=has_complaints,
+        agreed_constitution=agreed_constitution,
+        accepted_results=accepted_results,
     )
-
-    candidate = candidate_service.add_candidate(
-        db,
-        payload,
-        image_file=None, # Already handled above
-        tenant_id=current_user.tenant_id,
+    nomination = nomination_service.submit_nomination(
+        db=db,
+        data=payload,
+        user=current_user,
     )
-    return CandidateResponse.model_validate(candidate)
+    data = NominationResponse.model_validate(nomination).model_dump(mode="json")
+    return success_response(
+        data=data,
+        message="Nomination submitted successfully and is pending review.",
+        status_code=status.HTTP_201_CREATED,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +206,7 @@ def list_candidates(
     status_code=status.HTTP_201_CREATED,
     summary="Add a new candidate (admin-only)",
 )
-def add_candidate(
+async def add_candidate(
     full_name: str = Form(...),
     symbol: str | None = Form(None),
     image: UploadFile | None = File(None),
@@ -210,7 +234,7 @@ def add_candidate(
     # If tenant_id not provided by superadmin, use current user's tenant
     effective_tenant_id = tenant_id if current_user.role == "superadmin" else current_user.tenant_id
 
-    candidate = candidate_service.add_candidate(
+    candidate = await candidate_service.add_candidate(
         db,
         payload,
         image_file=image,
@@ -224,7 +248,7 @@ def add_candidate(
     response_model=CandidateResponse,
     summary="Update candidate profile (admin-only)",
 )
-def update_candidate(
+async def update_candidate(
     candidate_id: int,
     full_name: str | None = Form(None),
     symbol: str | None = Form(None),
@@ -251,7 +275,7 @@ def update_candidate(
         update_data['target_id'] = target_id
 
     body = CandidateUpdate(**update_data) if update_data else CandidateUpdate()
-    candidate = candidate_service.update_candidate(db, candidate_id, body, image_file=image)
+    candidate = await candidate_service.update_candidate(db, candidate_id, body, image_file=image)
     return CandidateResponse.model_validate(candidate)
 
 

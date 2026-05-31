@@ -23,6 +23,7 @@ import { candidateService } from '../services/candidateService';
 import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
 import Header from '../components/common/Header';
@@ -77,7 +78,7 @@ const InputField = ({
         <Ionicons name={icon} size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
-          placeholder={placeholder}
+          placeholder={placeholder || `Enter ${label}`}
           placeholderTextColor="#9ca3af"
           value={value}
           onChangeText={onChangeText}
@@ -137,14 +138,17 @@ const RadioGroup = ({ label, options, value, onChange }: any) => (
 );
 
 const CheckboxItem = ({ label, value, onChange, error }: any) => (
-  <TouchableOpacity style={styles.checkboxContainer} onPress={() => onChange(!value)} activeOpacity={0.8}>
-    <MaterialIcons 
-      name={value ? "check-box" : "check-box-outline-blank"} 
-      size={24} 
-      color={value ? COLORS.primary : COLORS.textSecondary} 
-    />
-    <Text style={styles.checkboxLabel}>{label}</Text>
-  </TouchableOpacity>
+  <View style={styles.checkboxGroup}>
+    <TouchableOpacity style={styles.checkboxContainer} onPress={() => onChange(!value)} activeOpacity={0.8}>
+      <MaterialIcons 
+        name={value ? "check-box" : "check-box-outline-blank"} 
+        size={24} 
+        color={value ? COLORS.primary : COLORS.textSecondary} 
+      />
+      <Text style={styles.checkboxLabel}>{label}</Text>
+    </TouchableOpacity>
+    {error && <Text style={styles.checkboxErrorText}>{error}</Text>}
+  </View>
 );
 
 const SectionHeader = ({ title, step, subtitle }: any) => (
@@ -160,6 +164,17 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
   </View>
 );
 
+const getTargetLabel = (target: any) => {
+  if (!target) return '';
+  const type = target.type?.toLowerCase();
+  if (type === 'country') return 'Working Committee';
+  if (type === 'state') return `${target.name} Pradesh Committee`;
+  if (type === 'district') return `${target.name} District`;
+  if (type === 'block') return `${target.name} Block Committee`;
+  if (type === 'booth') return `${target.name} Booth Committee`;
+  return target.name;
+};
+
 // --- MAIN COMPONENT ---
 
 const NominationScreen = ({ navigation, route }: any) => {
@@ -173,7 +188,7 @@ const NominationScreen = ({ navigation, route }: any) => {
   const [formData, setFormData] = useState({
     // Step 1: Basic
     election_name: election?.title || '',
-    position_id: null as number | null,
+    position_name: '',
     target_id: null as number | null,
     
     // Step 2: Personal
@@ -212,25 +227,26 @@ const NominationScreen = ({ navigation, route }: any) => {
     agree_rules: false,
     understand_rejection: false,
     signature_url: '',
+    nomination_document_name: '',
+    nomination_document_type: '',
   });
 
-  const [positions, setPositions] = useState<any[]>([]);
   const [targets, setTargets] = useState<any[]>([]);
-  const [selectedPositionName, setSelectedPositionName] = useState('');
   const [selectedTargetName, setSelectedTargetName] = useState('');
   const [modalType, setModalType] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const declarationComplete =
+    formData.agree_constitution &&
+    formData.accept_results &&
+    formData.info_correct &&
+    formData.fulfill_criteria &&
+    formData.agree_rules &&
+    formData.understand_rejection;
 
   useEffect(() => {
-    loadPositions();
     loadTargets();
   }, []);
-
-  const loadPositions = async () => {
-    try {
-      const data = await tenantService.getPublicCommittees();
-      setPositions(data);
-    } catch (e) { console.error(e); }
-  };
 
   const loadTargets = async () => {
     try {
@@ -238,6 +254,11 @@ const NominationScreen = ({ navigation, route }: any) => {
       setTargets(data);
     } catch (e) { console.error(e); }
   };
+
+  const filteredTargets = targets.filter(t => {
+    const label = getTargetLabel(t).toLowerCase();
+    return label.includes(searchQuery.toLowerCase());
+  });
 
   const pickImage = async (field: 'profile_photo_url' | 'signature_url') => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -262,7 +283,7 @@ const NominationScreen = ({ navigation, route }: any) => {
 
   const validateStep1 = () => {
     let newErrors: any = {};
-    if (!formData.position_id) newErrors.position_id = 'Please select a position';
+    if (!formData.position_name.trim()) newErrors.position_name = 'Position applying for is required.';
     if (!formData.target_id) newErrors.target_id = 'Please select constituency';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -270,15 +291,99 @@ const NominationScreen = ({ navigation, route }: any) => {
 
   const validateStep2 = () => {
     let newErrors: any = {};
-    if (!formData.full_name) newErrors.full_name = 'Required';
-    if (!formData.profile_photo_url) newErrors.profile_photo_url = 'Photo is required';
+    if (!formData.full_name.trim()) newErrors.full_name = 'Full name is required.';
+    if (!formData.profile_photo_url) newErrors.profile_photo_url = 'Profile photo is required.';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const pickNominationDocument = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ['image/*', 'application/pdf'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+
+    if (result.canceled || !result.assets?.[0]) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    setLoading(true);
+    try {
+      const uploadedUrl = await mediaService.uploadNominationDocument(
+        asset.uri,
+        asset.name || 'nomination-document',
+        asset.mimeType || 'application/octet-stream',
+      );
+      setFormData({
+        ...formData,
+        signature_url: uploadedUrl,
+        nomination_document_name: asset.name || 'Nomination document',
+        nomination_document_type: asset.mimeType || '',
+      });
+      setErrors({ ...errors, signature_url: '' });
+    } catch (error: any) {
+      Alert.alert(
+        'Upload Failed',
+        error.response?.data?.detail || 'Could not upload document. Please upload an image or PDF.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateStep3 = () => {
+    let newErrors: any = {};
+    if (!formData.kyc_type) newErrors.kyc_type = 'ID proof type is required.';
+    if (!formData.voter_id.trim()) newErrors.voter_id = 'ID number is required.';
+    if (!formData.state.trim()) newErrors.state = 'State is required.';
+    if (!formData.district.trim()) newErrors.district = 'District is required.';
+    if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required.';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep4 = () => {
+    let newErrors: any = {};
+    if (formData.held_previously && !formData.prev_position.trim()) {
+      newErrors.prev_position = 'Previous position is required.';
+    }
+    if (formData.held_previously && !formData.prev_duration.trim()) {
+      newErrors.prev_duration = 'Previous duration is required.';
+    }
+    if (formData.suspended_disciplined && !formData.discipline_details.trim()) {
+      newErrors.discipline_details = 'Discipline details are required.';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!formData.agree_constitution || !formData.accept_results || !formData.info_correct || !formData.signature_url) {
-      Alert.alert("Incomplete", "Please complete all mandatory declarations and upload signature.");
+    if (!election?.id) {
+      Alert.alert("Missing Election", "Please select an election before submitting a nomination.");
+      return;
+    }
+
+    if (!declarationComplete) {
+      setErrors({
+        agree_constitution: !formData.agree_constitution ? "Required." : "",
+        accept_results: !formData.accept_results ? "Required." : "",
+        info_correct: !formData.info_correct ? "Required." : "",
+        fulfill_criteria: !formData.fulfill_criteria ? "Required." : "",
+        agree_rules: !formData.agree_rules ? "Required." : "",
+        understand_rejection: !formData.understand_rejection ? "Required." : "",
+        declaration: "Please accept all declarations before submitting.",
+      });
+      Alert.alert("Incomplete", "Please accept all declarations before submitting.");
+      return;
+    }
+
+    if (!formData.signature_url) {
+      setErrors({
+        signature_url: "Signature is required.",
+      });
+      Alert.alert("Incomplete", "Please upload your signature before submitting.");
       return;
     }
     
@@ -287,6 +392,7 @@ const NominationScreen = ({ navigation, route }: any) => {
       const submissionData = {
         ...formData,
         election_id: election?.id,
+        status: 'pending',
         // Map UI field names to API field names
         voter_id_number: formData.voter_id,
         image_url: formData.profile_photo_url,
@@ -297,52 +403,98 @@ const NominationScreen = ({ navigation, route }: any) => {
         accepted_results: formData.accept_results,
       };
 
+      console.log('Submitting nomination', {
+        election_id: submissionData.election_id,
+        target_id: submissionData.target_id,
+        full_name: submissionData.full_name,
+      });
       await candidateService.nominate(submissionData);
       
-      Alert.alert("Success", "Your nomination has been submitted successfully for scrutiny.", [
-        { text: "OK", onPress: () => navigation.goBack() }
+      Alert.alert("Success", "Your nomination has been submitted successfully and is pending scrutiny.", [
+        {
+          text: "OK",
+          onPress: () =>
+            navigation.replace("Voting", {
+              election,
+              nominationSubmitted: true,
+            }),
+        }
       ]);
     } catch (error: any) {
       console.error('Nomination failed', error);
-      Alert.alert("Error", error.response?.data?.message || "Failed to submit nomination. Please try again.");
+      const responseData = error.response?.data;
+      if (error.response?.status === 401) {
+        Alert.alert("Session Expired", "Please log in again before submitting your nomination.");
+        return;
+      }
+      const message =
+        responseData?.message ||
+        responseData?.detail ||
+        error.message ||
+        "Failed to submit nomination. Please try again.";
+      Alert.alert("Error", Array.isArray(message) ? "Please check the nomination form fields." : message);
     } finally {
       setLoading(false);
     }
   };
 
   const renderModal = () => (
-    <Modal visible={!!modalType} animationType="slide" transparent>
+    <Modal 
+      visible={!!modalType} 
+      animationType="slide" 
+      transparent
+      onShow={() => setSearchQuery('')}
+    >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select {modalType === 'position' ? 'Position' : 'Constituency'}</Text>
-            <TouchableOpacity onPress={() => setModalType(null)}>
+            <Text style={styles.modalTitle}>Select Constituency / Committee</Text>
+            <TouchableOpacity onPress={() => { setModalType(null); setSearchQuery(''); }}>
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
+
+          <View style={styles.searchBarContainer}>
+            <Ionicons name="search" size={20} color={COLORS.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search committee..."
+              placeholderTextColor="#94a3b8"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus={true}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
           <FlatList
-            data={modalType === 'position' ? positions : targets}
+            data={filteredTargets}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.listItem}
                 onPress={() => {
-                  if (modalType === 'position') {
-                    setFormData({ ...formData, position_id: item.id });
-                    setSelectedPositionName(item.name);
-                  } else {
-                    setFormData({ ...formData, target_id: item.id });
-                    setSelectedTargetName(item.name);
-                  }
+                  setFormData({ ...formData, target_id: item.id });
+                  setSelectedTargetName(getTargetLabel(item));
                   setModalType(null);
+                  setSearchQuery('');
                 }}
               >
-                <Text style={styles.listItemText}>{item.name}</Text>
-                {(modalType === 'position' ? formData.position_id : formData.target_id) === item.id && (
+                <Text style={styles.listItemText}>{getTargetLabel(item)}</Text>
+                {formData.target_id === item.id && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
             )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No committees found matching "{searchQuery}"</Text>
+              </View>
+            }
           />
         </View>
       </View>
@@ -359,7 +511,14 @@ const NominationScreen = ({ navigation, route }: any) => {
             <View style={styles.formSection}>
               <SectionHeader title="Application Details" step={1} subtitle="Select the role you wish to contest for." />
               <InputField label="Election" value={formData.election_name} editable={false} icon="calendar-outline" />
-              <PickerField label="Position Applying For" value={selectedPositionName} icon="briefcase-outline" onPress={() => setModalType('position')} error={errors.position_id} />
+              <InputField 
+                label="Position Applying For" 
+                placeholder="e.g. President, Secretary"
+                value={formData.position_name} 
+                onChangeText={(t: string) => setFormData({...formData, position_name: t})}
+                icon="briefcase-outline" 
+                error={errors.position_name} 
+              />
               <PickerField label="Constituency / Committee" value={selectedTargetName} icon="map-outline" onPress={() => setModalType('target')} error={errors.target_id} />
               <TouchableOpacity style={styles.nextBtn} onPress={() => validateStep1() && setStep(2)}>
                  <Text style={styles.nextBtnText}>Continue</Text>
@@ -412,18 +571,19 @@ const NominationScreen = ({ navigation, route }: any) => {
                 value={formData.kyc_type}
                 onChange={(v: string) => setFormData({...formData, kyc_type: v})}
               />
-              <InputField label="ID Number" value={formData.voter_id} onChangeText={(t: string) => setFormData({...formData, voter_id: t})} icon="fingerprint" />
-              <InputField label="State" value={formData.state} editable={false} icon="map-outline" />
-              <InputField label="District" value={formData.district} editable={false} icon="location-outline" />
+              {errors.kyc_type && <Text style={styles.errorText}>{errors.kyc_type}</Text>}
+              <InputField label="ID Number" value={formData.voter_id} onChangeText={(t: string) => setFormData({...formData, voter_id: t})} icon="fingerprint" error={errors.voter_id} />
+              <InputField label="State" value={formData.state} editable={false} icon="map-outline" error={errors.state} />
+              <InputField label="District" value={formData.district} editable={false} icon="location-outline" error={errors.district} />
               <InputField label="Taluka / Block" value={formData.taluka} onChangeText={(t: string) => setFormData({...formData, taluka: t})} icon="location-outline" />
               <InputField label="Village / Area" value={formData.village} onChangeText={(t: string) => setFormData({...formData, village: t})} icon="home-outline" />
-              <InputField label="Pincode" value={formData.pincode} keyboardType="numeric" onChangeText={(t: string) => setFormData({...formData, pincode: t})} icon="pin-outline" />
+              <InputField label="Pincode" value={formData.pincode} keyboardType="numeric" onChangeText={(t: string) => setFormData({...formData, pincode: t})} icon="pin-outline" error={errors.pincode} />
 
               <View style={styles.row}>
                 <TouchableOpacity style={styles.backBtn} onPress={() => setStep(2)}>
                   <Text style={styles.backBtnText}>Back</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.nextBtnHalf} onPress={() => setStep(4)}>
+                <TouchableOpacity style={styles.nextBtnHalf} onPress={() => validateStep3() && setStep(4)}>
                   <Text style={styles.nextBtnText}>Continue</Text>
                 </TouchableOpacity>
               </View>
@@ -439,14 +599,14 @@ const NominationScreen = ({ navigation, route }: any) => {
               <RadioGroup label="Have you held this post previously?" options={[{label: 'Yes', value: true}, {label: 'No', value: false}]} value={formData.held_previously} onChange={(v: boolean) => setFormData({...formData, held_previously: v})} />
               {formData.held_previously && (
                 <View style={styles.subForm}>
-                  <InputField label="Previous Position" value={formData.prev_position} onChangeText={(t: string) => setFormData({...formData, prev_position: t})} icon="ribbon-outline" />
-                  <InputField label="Duration" value={formData.prev_duration} onChangeText={(t: string) => setFormData({...formData, prev_duration: t})} icon="time-outline" />
+                  <InputField label="Previous Position" value={formData.prev_position} onChangeText={(t: string) => setFormData({...formData, prev_position: t})} icon="ribbon-outline" error={errors.prev_position} />
+                  <InputField label="Duration" value={formData.prev_duration} onChangeText={(t: string) => setFormData({...formData, prev_duration: t})} icon="time-outline" error={errors.prev_duration} />
                 </View>
               )}
 
               <RadioGroup label="Ever been suspended or disciplined by organization?" options={[{label: 'Yes', value: true}, {label: 'No', value: false}]} value={formData.suspended_disciplined} onChange={(v: boolean) => setFormData({...formData, suspended_disciplined: v})} />
               {formData.suspended_disciplined && (
-                <InputField label="Details" value={formData.discipline_details} onChangeText={(t: string) => setFormData({...formData, discipline_details: t})} icon="alert-circle-outline" />
+                <InputField label="Details" value={formData.discipline_details} onChangeText={(t: string) => setFormData({...formData, discipline_details: t})} icon="alert-circle-outline" error={errors.discipline_details} />
               )}
 
               <RadioGroup label="Do you have any pending complaints or disputes?" options={[{label: 'Yes', value: true}, {label: 'No', value: false}]} value={formData.pending_complaints} onChange={(v: boolean) => setFormData({...formData, pending_complaints: v})} />
@@ -455,7 +615,7 @@ const NominationScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={styles.backBtn} onPress={() => setStep(3)}>
                   <Text style={styles.backBtnText}>Back</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.nextBtnHalf} onPress={() => setStep(5)}>
+                <TouchableOpacity style={styles.nextBtnHalf} onPress={() => validateStep4() && setStep(5)}>
                   <Text style={styles.nextBtnText}>Continue</Text>
                 </TouchableOpacity>
               </View>
@@ -469,29 +629,41 @@ const NominationScreen = ({ navigation, route }: any) => {
               <View style={styles.declarationBox}>
                  <Text style={styles.declarationText}>I, the undersigned, hereby declare that the information provided is true to the best of my knowledge.</Text>
                  
-                 <CheckboxItem label="Do you agree to party constitution and election rules?" value={formData.agree_constitution} onChange={(v: boolean) => setFormData({...formData, agree_constitution: v})} />
-                 <CheckboxItem label="Do you accept election result as per party rules?" value={formData.accept_results} onChange={(v: boolean) => setFormData({...formData, accept_results: v})} />
+                 <CheckboxItem label="Do you agree to party constitution and election rules?" value={formData.agree_constitution} onChange={(v: boolean) => setFormData({...formData, agree_constitution: v})} error={errors.agree_constitution} />
+                 <CheckboxItem label="Do you accept election result as per party rules?" value={formData.accept_results} onChange={(v: boolean) => setFormData({...formData, accept_results: v})} error={errors.accept_results} />
                  
                  <View style={styles.divider} />
                  
-                 <CheckboxItem label="All information submitted is correct" value={formData.info_correct} onChange={(v: boolean) => setFormData({...formData, info_correct: v})} />
-                 <CheckboxItem label="I fulfill eligibility criteria" value={formData.fulfill_criteria} onChange={(v: boolean) => setFormData({...formData, fulfill_criteria: v})} />
-                 <CheckboxItem label="I agree to election rules" value={formData.agree_rules} onChange={(v: boolean) => setFormData({...formData, agree_rules: v})} />
-                 <CheckboxItem label="I understand nomination can be rejected" value={formData.understand_rejection} onChange={(v: boolean) => setFormData({...formData, understand_rejection: v})} />
+                 <CheckboxItem label="All information submitted is correct" value={formData.info_correct} onChange={(v: boolean) => setFormData({...formData, info_correct: v})} error={errors.info_correct} />
+                 <CheckboxItem label="I fulfill eligibility criteria" value={formData.fulfill_criteria} onChange={(v: boolean) => setFormData({...formData, fulfill_criteria: v})} error={errors.fulfill_criteria} />
+                 <CheckboxItem label="I agree to election rules" value={formData.agree_rules} onChange={(v: boolean) => setFormData({...formData, agree_rules: v})} error={errors.agree_rules} />
+                 <CheckboxItem label="I understand nomination can be rejected" value={formData.understand_rejection} onChange={(v: boolean) => setFormData({...formData, understand_rejection: v})} error={errors.understand_rejection} />
+                 {errors.declaration && <Text style={styles.errorText}>{errors.declaration}</Text>}
               </View>
 
               <View style={styles.signatureUploadContainer}>
-                <Text style={styles.label}>Upload Signature</Text>
-                <TouchableOpacity style={styles.signatureBox} onPress={() => pickImage('signature_url')}>
+                <Text style={styles.label}>Upload Image or PDF</Text>
+                <TouchableOpacity style={styles.signatureBox} onPress={pickNominationDocument}>
                   {formData.signature_url ? (
-                    <Image source={{ uri: formData.signature_url }} style={styles.signaturePreview} resizeMode="contain" />
+                    formData.nomination_document_type === 'application/pdf' ||
+                    formData.signature_url.toLowerCase().endsWith('.pdf') ? (
+                      <View style={styles.documentPreview}>
+                        <MaterialIcons name="picture-as-pdf" size={34} color={COLORS.error} />
+                        <Text style={styles.documentName} numberOfLines={2}>
+                          {formData.nomination_document_name || 'PDF document uploaded'}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Image source={{ uri: mediaService.getFileUrl(formData.signature_url) }} style={styles.signaturePreview} resizeMode="contain" />
+                    )
                   ) : (
                     <>
-                      <MaterialIcons name="draw" size={32} color={COLORS.textSecondary} />
-                      <Text style={styles.photoLabel}>Add Signature</Text>
+                      <MaterialIcons name="upload-file" size={32} color={COLORS.textSecondary} />
+                      <Text style={styles.photoLabel}>Upload image or PDF</Text>
                     </>
                   )}
                 </TouchableOpacity>
+                {errors.signature_url && <Text style={styles.errorText}>{errors.signature_url}</Text>}
               </View>
 
               <View style={styles.row}>
@@ -527,36 +699,40 @@ const styles = StyleSheet.create({
 
   inputGroup: { marginBottom: 20 },
   label: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 8, marginLeft: 4 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, height: 56 },
-  inputWrapperFocused: { borderColor: COLORS.primary, borderWidth: 2 },
-  inputWrapperError: { borderColor: COLORS.error },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: 12, paddingHorizontal: 12, height: 56 },
+  inputWrapperFocused: { backgroundColor: COLORS.white, borderWidth: 2, borderColor: COLORS.primary },
+  inputWrapperError: { borderWidth: 1, borderColor: COLORS.error },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16, color: COLORS.text, height: '100%' },
+  input: { flex: 1, fontSize: 16, color: COLORS.text, height: '100%', ...Platform.select({ web: { outlineStyle: 'none' } }) },
   pickerText: { flex: 1, fontSize: 16, color: COLORS.text },
   errorText: { color: COLORS.error, fontSize: 12, marginTop: 4, marginLeft: 4 },
 
   photoUploadContainer: { alignItems: 'center', marginBottom: 24 },
-  photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   photoPreview: { width: '100%', height: '100%' },
   photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
 
   radioContainer: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  radioOption: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, backgroundColor: COLORS.white },
-  radioOptionSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryContainer },
+  radioOption: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 12, backgroundColor: '#f1f5f9' },
+  radioOptionSelected: { backgroundColor: COLORS.primaryContainer, borderWidth: 1, borderColor: COLORS.primary },
   radioText: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
   radioTextSelected: { color: COLORS.primary },
 
   subForm: { backgroundColor: '#f1f5f9', padding: 16, borderRadius: 12, marginBottom: 20 },
   
-  checkboxContainer: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginBottom: 16, paddingRight: 20 },
+  checkboxGroup: { marginBottom: 16 },
+  checkboxContainer: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', paddingRight: 20 },
   checkboxLabel: { fontSize: 13, color: COLORS.text, lineHeight: 20, fontWeight: '500' },
-  declarationBox: { backgroundColor: COLORS.white, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 24 },
+  checkboxErrorText: { color: COLORS.error, fontSize: 12, marginTop: 4, marginLeft: 36 },
+  declarationBox: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 24 },
   declarationText: { fontSize: 14, fontWeight: '700', color: COLORS.text, marginBottom: 20, lineHeight: 22 },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 20, opacity: 0.5 },
 
   signatureUploadContainer: { marginBottom: 30 },
   signatureBox: { height: 120, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.border, borderRadius: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   signaturePreview: { width: '100%', height: '100%' },
+  documentPreview: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  documentName: { fontSize: 13, color: COLORS.text, fontWeight: '700', marginTop: 8, textAlign: 'center' },
 
   row: { flexDirection: 'row', gap: 12, marginTop: 10 },
   nextBtn: { 
@@ -587,6 +763,32 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+    height: '100%',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
 });
 
 export default NominationScreen;

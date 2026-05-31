@@ -196,21 +196,27 @@ class AuthService:
         """
         repo = UserRepository(db)
         # Email is normalized to lowercase in get_by_email for case-insensitive lookup
+        print(f"DEBUG: Attempting login for email: {email}")
         user: Optional[User] = repo.get_by_email(email)
 
         if user is None or not verify_password(password, user.hashed_password):
+            print(f"DEBUG: Login failed for {email} - invalid credentials")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password.",
             )
 
+        print(f"DEBUG: User found: {user.id}, role: {user.role}")
+
         if user.status == UserStatus.blocked:
+            print(f"DEBUG: Login blocked for {email} - status: blocked")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Your account has been blocked. Contact an administrator.",
             )
 
         if user.status == UserStatus.pending:
+            print(f"DEBUG: Login blocked for {email} - status: pending")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account is awaiting admin approval.",
@@ -221,11 +227,13 @@ class AuthService:
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(user.tenant_id)
             if tenant is not None and tenant.status.value == "suspended":
+                print(f"DEBUG: Login blocked for {email} - tenant suspended")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Your organization's account has been suspended.",
                 )
 
+        print(f"DEBUG: Creating tokens for user {user.id}")
         token_payload = {
             "sub": str(user.id),
             "role": user.role.value,
@@ -237,19 +245,18 @@ class AuthService:
         # Refresh token is stored implicitly; the client must send it back.
         create_refresh_token(token_payload)
 
+        print(f"DEBUG: Tokens created. Validating user schema...")
+        try:
+            auth_user_info = AuthUserInfo.model_validate(user)
+            print(f"DEBUG: Schema validation successful for user {user.id}")
+        except Exception as e:
+            print(f"DEBUG: Schema validation FAILED for user {user.id}: {str(e)}")
+            raise e
+
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            user=AuthUserInfo(
-                id=user.id,
-                full_name=user.full_name,
-                email=user.email,
-                role=user.role.value,
-                is_verified=user.is_verified,
-                tenant_id=user.tenant_id,
-                district=user.district,
-                designation=user.designation,
-            ),
+            user=auth_user_info,
         )
 
     # ------------------------------------------------------------------
@@ -477,16 +484,7 @@ class AuthService:
         return TokenResponse(
             access_token=new_access_token,
             token_type="bearer",
-            user=AuthUserInfo(
-                id=user.id,
-                full_name=user.full_name,
-                email=user.email,
-                role=user.role.value,
-                is_verified=user.is_verified,
-                tenant_id=user.tenant_id,
-                district=user.district,
-                designation=user.designation,
-            ),
+            user=AuthUserInfo.model_validate(user),
         )
 
     # ------------------------------------------------------------------

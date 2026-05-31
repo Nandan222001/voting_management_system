@@ -34,6 +34,11 @@ class CandidateBase(BaseModel):
         default=None,
         examples=["Experienced candidate with 10 years of service."],
     )
+    position_name: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        examples=["President"],
+    )
     committee_id: Optional[int] = Field(
         default=None,
         examples=[1],
@@ -110,6 +115,7 @@ class CandidateUpdate(BaseModel):
     symbol: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = None
+    position_name: Optional[str] = Field(default=None, max_length=100)
     committee_id: Optional[int] = Field(default=None)
     target_id: Optional[int] = Field(default=None)
     email: Optional[str] = None
