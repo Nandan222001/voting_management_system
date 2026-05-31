@@ -18,9 +18,8 @@ import Header from "../components/common/Header";
 
 const getInputStyle = () => {
   return Platform.OS === "web" ? ({ 
-    // @ts-ignore
     outlineStyle: "none" 
-  } as any) : {};
+  }) : {};
 };
 
 const VerifyScreen = ({ navigation, route }: any) => {

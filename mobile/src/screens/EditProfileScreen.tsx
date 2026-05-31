@@ -26,9 +26,6 @@ import * as ImagePicker from 'expo-image-picker';
 
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
-
-// --- COLORS ---
 const COLORS = {
   primary: '#003d9b',
   primaryContainer: '#eff6ff',
@@ -126,6 +123,7 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
 
 const EditProfileScreen = ({ navigation }: any) => {
   const { user, updateProfile } = useAuth();
+  const { height } = useWindowDimensions();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -308,7 +306,7 @@ const EditProfileScreen = ({ navigation }: any) => {
       
       await updateProfile(updateData);
       Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.navigate('ProfileMain') }
       ]);
     } catch (error: any) {
       Alert.alert('Update Failed', error.response?.data?.detail || 'An error occurred');
@@ -436,6 +434,23 @@ const EditProfileScreen = ({ navigation }: any) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Premium Hero Header */}
+          <LinearGradient
+            colors={['#003d9b', '#4f46e5']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroHeader}
+          >
+            <View style={styles.heroContent}>
+               <View style={styles.heroBadge}>
+                  <MaterialIcons name="edit" size={12} color="#fff" />
+                  <Text style={styles.heroBadgeText}>SETTINGS</Text>
+               </View>
+               <Text style={styles.heroTitle}>Modify Profile</Text>
+               <Text style={styles.heroSub}>Update your personal, address, and membership details securely.</Text>
+            </View>
+          </LinearGradient>
+
           {/* Step 1: Personal Information */}
           {step === 1 && (
             <View style={styles.formSection}>
@@ -826,7 +841,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24, 
     borderTopRightRadius: 24, 
     padding: 24, 
-    maxHeight: height * 0.7,
+    maxHeight: '80%',
     ...Platform.select({
       web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
     })
@@ -835,6 +850,54 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
+
+  // Hero Header Styles
+  heroHeader: {
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 8 }
+    })
+  },
+  heroContent: {
+    gap: 8,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -1,
+  },
+  heroSub: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
 });
 
 export default EditProfileScreen;
