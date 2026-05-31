@@ -39,7 +39,7 @@ function DropdownItems({ actions, align, open, updatePosition, position }) {
         style={{ top: position.top, left: position.left }}
         className={`fixed z-[99999] w-48 rounded-xl border border-gray-200 bg-white p-1.5 shadow-2xl ring-1 ring-black/5 focus:outline-none ${
           align === 'right' ? 'origin-top-right' : 'origin-top-left'
-        } animate-in fade-in slide-in-from-top-2 duration-200`}
+        } animate-in fade-in slide-in-from-top-2 duration-200 transform-gpu`}
       >
         {actions.map((action) => {
           const Icon = action.icon;

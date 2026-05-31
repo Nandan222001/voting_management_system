@@ -72,6 +72,56 @@ const COMMITTEE_TYPES = [
 
 const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-US').format(Number(value || 0));
+}
+
+function compactNumber(value) {
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
+}
+
+function safeFormat(dateStr) {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black text-gray-900 tracking-tight">{value}</span>
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function ElectionDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -86,6 +136,7 @@ export default function ElectionDetailPage() {
   // CRUD State
   const [showModal, setShowModal] = useState(false)
   const [editCandidateTarget, setEditCandidateTarget] = useState(null)
+  const [viewCandidateTarget, setViewCandidateTarget] = useState(null)
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   
@@ -293,9 +344,18 @@ export default function ElectionDetailPage() {
            <div className="lg:col-span-8 space-y-8">
               {/* Stats Grid */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                 <MetricCard icon={Users} label="Total Candidates" value={candidates.length} tone="blue" />
-                 <MetricCard icon={Vote} label="Total Votes Cast" value={compactNumber(totalVotes)} tone="green" />
-                 <MetricCard icon={ShieldCheck} label="Winner Status" value={results?.winner_declared ? 'Declared' : 'Awaiting'} tone="orange" />
+                 <MetricCard title="Candidates" value={numberFormat(candidates.length)} icon={Users} tone="blue">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total authorized</p>
+                 </MetricCard>
+                 <MetricCard title="Total Votes" value={compactNumber(totalVotes)} icon={Vote} tone="emerald">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Cast in registry</p>
+                 </MetricCard>
+                 <MetricCard title="Winner Status" value={results?.winner_declared ? 'Declared' : 'Awaiting'} icon={ShieldCheck} tone="amber">
+                    <div className="flex items-center gap-2">
+                       <div className={`h-1.5 w-1.5 rounded-full ${results?.winner_declared ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Protocol check</span>
+                    </div>
+                 </MetricCard>
               </div>
 
               {/* Chart Section */}
@@ -358,6 +418,7 @@ export default function ElectionDetailPage() {
                           candidate={candidate}
                           result={rankedResults.find(r => r.candidate_id === candidate.id)}
                           canManage={isAdmin && currentElection?.status === 'draft'}
+                          onView={setViewCandidateTarget}
                           onEdit={openEdit}
                           onDelete={setDeleteCandidateTarget}
                         />
@@ -632,39 +693,128 @@ export default function ElectionDetailPage() {
         confirmLabel="Remove"
         variant="danger"
       />
+
+      {/* Candidate Detail Modal */}
+      <Modal isOpen={!!viewCandidateTarget} onClose={() => setViewCandidateTarget(null)} title="Candidate Details" size="2xl">
+        {viewCandidateTarget && (
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-8 pb-8 border-b border-gray-100">
+              <ImageAvatar
+                src={viewCandidateTarget.image_url}
+                name={viewCandidateTarget.full_name}
+                sizeClass="w-32 h-32"
+                imageClassName="rounded-[2.5rem] border-4 border-white shadow-2xl"
+                fallbackClassName="rounded-[2.5rem] border-4 border-white bg-indigo-50 text-[#1a337e] text-5xl font-black shadow-2xl flex items-center justify-center"
+              />
+              <div className="flex-1 min-w-0 pt-2">
+                 <div className="flex items-center gap-3 mb-2">
+                    <div className="h-1.5 w-6 rounded-full bg-[#1a337e]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Verified Candidate</span>
+                 </div>
+                 <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-2 truncate">{viewCandidateTarget.full_name}</h3>
+                 <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
+                       <ShieldCheck size={12} strokeWidth={3} />
+                       Active
+                    </span>
+                    {viewCandidateTarget.symbol && (
+                      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-100 flex items-center gap-1.5">
+                        <Trophy size={12} strokeWidth={3} />
+                        {viewCandidateTarget.symbol}
+                      </span>
+                    )}
+                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Location Details</p>
+                    <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 shadow-inner space-y-4">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <MapPinned size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned Area</p>
+                             <p className="text-sm font-black text-gray-900">{viewCandidateTarget.target?.name || 'Not set'}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <Users size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Committee Type</p>
+                             <p className="text-sm font-black text-gray-900 capitalize">{viewCandidateTarget.target?.type || 'General'}</p>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Voting Stats</p>
+                    <div className="bg-[#1a337e] rounded-3xl p-6 shadow-xl shadow-[#1a337e]/20 space-y-4 text-white">
+                       <div className="flex justify-between items-end">
+                          <div>
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Vote Share</p>
+                             <p className="text-3xl font-black tracking-tighter">{(rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.percentage || 0).toFixed(1)}%</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Total Votes</p>
+                             <p className="text-xl font-black">{numberFormat(rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.vote_count || 0)}</p>
+                          </div>
+                       </div>
+                       <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                          <div className="h-full bg-white rounded-full" style={{ width: `${rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.percentage || 0}%` }} />
+                       </div>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">About Candidate</p>
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm relative min-h-[200px]">
+                       <div className="absolute top-4 right-4 opacity-5">
+                          <MessageSquare size={80} />
+                       </div>
+                       <p className="text-sm font-medium text-gray-600 leading-relaxed relative z-10">
+                          {viewCandidateTarget.bio || 'Information about this candidate will be added soon. Check back later for details on their experience and goals.'}
+                       </p>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="flex justify-end pt-6 border-t border-gray-50">
+               <button
+                 onClick={() => setViewCandidateTarget(null)}
+                 className="px-10 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all active:scale-95 border border-gray-100"
+               >
+                 Close
+               </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </MainLayout>
   )
 }
 
-function MetricCard({ icon: Icon, label, value, tone }) {
-  const toneClasses = {
-    blue: 'bg-blue-50 text-[#1a337e]',
-    green: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-600',
-  }
-
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-      <div className={`rounded-xl p-3 ${toneClasses[tone] || toneClasses.blue}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.05em] text-[#64748b]">{label}</p>
-        <p className="text-2xl font-black text-slate-800">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }) {
+function CandidateProfileCard({ candidate, result, canManage, onView, onEdit, onDelete }) {
   const voteCount = result?.vote_count ?? 0
   const votePercentage = result?.percentage ?? 0
   const isWinner = result?.is_winner
 
   return (
-    <div className={`flex flex-col gap-6 rounded-2xl border p-4 transition-all hover:shadow-md md:flex-row md:items-center ${
-      isWinner ? 'border-amber-300 bg-amber-50/30' : 'border-[#e2e8f0] bg-white'
-    }`}>
+    <div 
+      onClick={() => onView(candidate)}
+      className={`flex flex-col gap-6 rounded-2xl border p-4 transition-all hover:shadow-md md:flex-row md:items-center cursor-pointer active:scale-[0.99] ${
+        isWinner ? 'border-amber-300 bg-amber-50/30' : 'border-[#e2e8f0] bg-white'
+      }`}
+    >
       <div className="relative">
         <ImageAvatar
           src={candidate.image_url}
@@ -726,13 +876,15 @@ function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }
            </div>
         </div>
         {canManage && (
-          <ActionDropdown
-            align="right"
-            actions={[
-              { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
-              { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
-            ]}
-          />
+          <div onClick={e => e.stopPropagation()}>
+            <ActionDropdown
+              align="right"
+              actions={[
+                { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
+                { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
+              ]}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -763,17 +915,4 @@ function InfoRow({ icon: Icon, label, value }) {
       </div>
     </div>
   )
-}
-
-function compactNumber(value) {
-  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
-}
-
-function safeFormat(dateStr) {
-  if (!dateStr) return '—'
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return dateStr
-  }
 }
