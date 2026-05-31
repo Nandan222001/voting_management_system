@@ -46,7 +46,7 @@ export default function Select({
       
       <Listbox value={value} onChange={handleChange} disabled={disabled}>
         <div className="relative group">
-          <ListboxButton className={`relative w-full cursor-default rounded-xl border bg-white py-2.5 pl-4 pr-10 text-left text-sm font-bold text-[#1066b1] transition-all hover:border-gray-300 focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#1A237E]/10 disabled:bg-gray-50 disabled:text-gray-400 ${
+          <ListboxButton className={`relative w-full cursor-default rounded-xl border bg-white py-2.5 pl-4 pr-10 text-left text-sm font-bold text-[#1a337e] transition-all hover:border-gray-300 focus:border-[#1a337e] focus:outline-none focus:ring-2 focus:ring-[#1a337e]/10 disabled:bg-gray-50 disabled:text-gray-400 ${
             hasError ? 'border-red-400 bg-red-50' : 'border-gray-200'
           }`}>
             <span className={`block truncate ${!selectedOption ? 'text-gray-400 font-normal' : ''}`}>
@@ -72,7 +72,7 @@ export default function Select({
                   key={idx}
                   className={({ active }) =>
                     `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
-                      active ? 'bg-blue-50 text-[#1A237E]' : 'text-gray-700'
+                      active ? 'bg-blue-50 text-[#1a337e]' : 'text-gray-700'
                     }`
                   }
                   value={option.value}
@@ -83,7 +83,7 @@ export default function Select({
                         {option.label}
                       </span>
                       {selected ? (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1A237E]">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1a337e]">
                           <Check className="h-4 w-4" aria-hidden="true" />
                         </span>
                       ) : null}

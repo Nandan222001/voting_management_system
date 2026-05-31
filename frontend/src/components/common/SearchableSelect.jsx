@@ -35,7 +35,7 @@ export default function SearchableSelect({
       )}
       <Combobox value={value} onChange={onChange} disabled={disabled}>
         <div className="relative group">
-          <div className={`relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-gray-200 transition-all focus-within:ring-2 focus-within:ring-[#1A237E]/10 focus-within:border-[#1A237E] hover:border-gray-300 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
+          <div className={`relative w-full cursor-default overflow-hidden rounded-xl bg-white text-left border border-gray-200 transition-all focus-within:ring-2 focus-within:ring-[#1a337e]/10 focus-within:border-[#1a337e] hover:border-gray-300 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
             <ComboboxInput
               className="w-full border-none py-2.5 pl-4 pr-10 text-sm leading-5 text-gray-900 font-bold bg-transparent focus:ring-0 outline-none placeholder-gray-400"
               displayValue={() => selectedOption?.name || ''}
@@ -44,7 +44,7 @@ export default function SearchableSelect({
             />
             <ComboboxButton className="absolute inset-y-0 right-0 flex items-center pr-3">
               <ChevronDown
-                className="h-4 w-4 text-gray-300 group-hover:text-gray-400 group-focus-within:text-[#1A237E] transition-colors"
+                className="h-4 w-4 text-gray-300 group-hover:text-gray-400 group-focus-within:text-[#1a337e] transition-colors"
                 aria-hidden="true"
               />
             </ComboboxButton>
@@ -70,7 +70,7 @@ export default function SearchableSelect({
                     key={option.id}
                     className={({ active }) =>
                       `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
-                        active ? 'bg-blue-50 text-[#1A237E]' : 'text-gray-700'
+                        active ? 'bg-blue-50 text-[#1a337e]' : 'text-gray-700'
                       }`
                     }
                     value={option.id}
@@ -86,7 +86,7 @@ export default function SearchableSelect({
                         </span>
                         {selected ? (
                           <span
-                            className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1A237E]"
+                            className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1a337e]"
                           >
                             <Check className="h-4 w-4" aria-hidden="true" />
                           </span>
@@ -99,14 +99,14 @@ export default function SearchableSelect({
 
               {onAddNew && query.trim() !== '' && (
                 <div 
-                  className="sticky bottom-0 p-2 mt-1 border-t border-gray-100 bg-gray-50 hover:bg-blue-50 cursor-pointer flex items-center gap-2 text-xs font-black text-[#1A237E] uppercase tracking-wider transition-colors"
+                  className="sticky bottom-0 p-2 mt-1 border-t border-gray-100 bg-gray-50 hover:bg-blue-50 cursor-pointer flex items-center gap-2 text-xs font-black text-[#1a337e] uppercase tracking-wider transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddNew(query);
                     setQuery('');
                   }}
                 >
-                  <Plus size={14} className="bg-[#1A237E] text-white rounded p-0.5" />
+                  <Plus size={14} className="bg-[#1a337e] text-white rounded p-0.5" />
                   Add New "{query}"
                 </div>
               )}

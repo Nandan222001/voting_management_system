@@ -16,7 +16,7 @@ import { fetchElectionResults } from '../store/slices/candidateSlice'
 import ImageAvatar from '../components/common/ImageAvatar'
 import Badge from '../components/common/Badge'
 
-const COLORS = ['rgb(16 102 177)', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
+const COLORS = ['#1a337e', '#1a337e', '#1a337e', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
 
 export default function ResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -142,7 +142,7 @@ export default function ResultsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                 <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <FaChartPie className="text-[rgb(16_102_177)]" />
+                  <FaChartPie className="text-[#1a337e]" />
                   Vote Distribution
                 </h3>
                 <div className="h-80">
@@ -171,7 +171,7 @@ export default function ResultsPage() {
 
               <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
                 <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <FaVoteYea className="text-[rgb(16_102_177)]" />
+                  <FaVoteYea className="text-[#1a337e]" />
                   Vote Counts
                 </h3>
                 <div className="h-80">

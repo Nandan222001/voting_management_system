@@ -19,10 +19,10 @@ function numberFormat(value) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -71,7 +71,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
         hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
       }`}
       {...props}
@@ -80,8 +80,8 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
 }
 
 const COMMITTEE_TYPES = [
-  { value: 'country', label: 'Working Committee - India', levels: [], icon: Globe, color: 'text-indigo-600 bg-indigo-50' },
-  { value: 'state', label: 'Pradesh Committee', levels: ['state'], icon: MapPin, color: 'text-blue-600 bg-blue-50' },
+  { value: 'country', label: 'Working Committee - India', levels: [], icon: Globe, color: 'text-[#1a337e] bg-indigo-50' },
+  { value: 'state', label: 'Pradesh Committee', levels: ['state'], icon: MapPin, color: 'text-[#1a337e] bg-blue-50' },
   { value: 'district', label: 'District Committee', levels: ['state', 'district'], icon: Layers, color: 'text-emerald-600 bg-emerald-50' },
   { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'], icon: Users, color: 'text-amber-600 bg-amber-50' },
   { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'], icon: Hash, color: 'text-rose-600 bg-rose-50' },
@@ -130,7 +130,7 @@ function CommitteeNode({ node, childrenMap, onEdit, onDelete, level = 0 }) {
                  {node.president && (
                    <>
                      <span className="text-gray-300">•</span>
-                     <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1">
+                     <span className="text-[9px] font-bold text-[#1a337e] uppercase tracking-widest flex items-center gap-1">
                        <UserCheck size={10} /> {node.president.full_name}
                      </span>
                    </>
@@ -143,7 +143,7 @@ function CommitteeNode({ node, childrenMap, onEdit, onDelete, level = 0 }) {
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
           <button 
             onClick={() => onEdit(node)}
-            className="flex h-9 w-9 items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all duration-300 shadow-sm shadow-blue-100"
+            className="flex h-9 w-9 items-center justify-center bg-blue-50 text-[#1a337e] hover:bg-[#1a337e] hover:text-white rounded-xl transition-all duration-300 shadow-sm shadow-blue-100"
             title="Edit"
             type="button"
           >
@@ -212,7 +212,7 @@ function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName })
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1A237E]/10 outline-none transition-all shadow-inner"
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/10 outline-none transition-all shadow-inner"
             placeholder={`e.g. ${type === 'state' ? 'Maharashtra' : 'New Area'}`}
             required
           />
@@ -220,7 +220,7 @@ function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName })
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
-          <button type="submit" disabled={loading} className="bg-[#1A237E] text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1A237E]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
+          <button type="submit" disabled={loading} className="bg-[#1a337e] text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
             {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Confirm Add'}
           </button>
         </div>
@@ -255,7 +255,7 @@ function EditCommitteeModal({ isOpen, onClose, target, onSave, loading, availabl
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-indigo-600/10 outline-none transition-all shadow-inner"
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/10 outline-none transition-all shadow-inner"
             required
           />
         </Field>
@@ -271,7 +271,7 @@ function EditCommitteeModal({ isOpen, onClose, target, onSave, loading, availabl
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
-          <button type="submit" disabled={loading} className="bg-indigo-600 text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-indigo-900/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
+          <button type="submit" disabled={loading} className="bg-[#1a337e] text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
             {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Update Registry'}
           </button>
         </div>
@@ -482,7 +482,7 @@ export default function TargetsPage() {
             value={
               <>
                 <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.total)}</span>
-                <span className="mb-1 flex items-center text-xs font-bold text-indigo-600">
+                <span className="mb-1 flex items-center text-xs font-bold text-[#1a337e]">
                   Committees
                 </span>
               </>
@@ -498,12 +498,12 @@ export default function TargetsPage() {
             value={
               <>
                 <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.states)}</span>
-                <span className="mb-1 text-xs font-bold text-indigo-600">States</span>
+                <span className="mb-1 text-xs font-bold text-[#1a337e]">States</span>
               </>
             }
           >
              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-600" style={{ width: `${Math.min(100, (statsData.states / 36) * 100)}%` }} />
+                <div className="h-full bg-[#1a337e]" style={{ width: `${Math.min(100, (statsData.states / 36) * 100)}%` }} />
              </div>
           </MetricCard>
 
@@ -542,18 +542,18 @@ export default function TargetsPage() {
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-gray-100 pb-8">
           <div className="relative w-full md:w-96 group">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 transition-colors" />
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" />
             <input
               type="text"
               placeholder="Search by name or type..."
               value={search}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-gray-100 border-0 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-indigo-600/20 transition-all"
+              className="w-full bg-gray-100 border-0 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/20 transition-all"
             />
           </div>
           <button
             onClick={openCreate}
-            className="w-full md:w-auto flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95 transition-all"
+            className="w-full md:w-auto flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95 transition-all"
           >
             <FaPlus className="h-4 w-4" /> Add Committee
           </button>
@@ -563,7 +563,7 @@ export default function TargetsPage() {
            <div className="lg:col-span-8 space-y-6">
               <div className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-3xl shadow-sm">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#1a337e] border border-indigo-100 shadow-inner">
                     <Globe className="h-7 w-7" />
                   </div>
                   <div>
@@ -572,7 +572,7 @@ export default function TargetsPage() {
                   </div>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-2xl font-black text-indigo-600 leading-none">{targets.length}</span>
+                  <span className="text-2xl font-black text-[#1a337e] leading-none">{targets.length}</span>
                   <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Nodes Active</span>
                 </div>
               </div>
@@ -607,7 +607,7 @@ export default function TargetsPage() {
            <div className="lg:col-span-4 space-y-8">
               <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
+                    <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
                     <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Hierarchy Legend</h3>
                  </div>
                  <div className="space-y-3">
@@ -631,7 +631,7 @@ export default function TargetsPage() {
                  </div>
               </div>
 
-              <div className="bg-indigo-600 text-white rounded-3xl p-8 shadow-xl shadow-indigo-900/20 relative overflow-hidden group">
+              <div className="bg-[#1a337e] text-white rounded-3xl p-8 shadow-xl shadow-[#1a337e]/20 relative overflow-hidden group">
                  <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
                     <TrendingUp size={160} />
                  </div>
@@ -643,7 +643,7 @@ export default function TargetsPage() {
                     <p className="text-sm text-indigo-100/70 mt-3 leading-relaxed font-medium">Your platform currently oversees <span className="text-white font-bold">{states.length} States</span> and <span className="text-white font-bold">{blocks.length} Blocks</span> across the national network.</p>
                     <button 
                       onClick={() => navigate('/audit-logs')}
-                      className="mt-8 w-full py-3 bg-white text-indigo-600 hover:bg-indigo-50 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/20 active:scale-95"
+                      className="mt-8 w-full py-3 bg-white text-[#1a337e] hover:bg-indigo-50 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[#1a337e]/20 active:scale-95"
                     >
                       Inspect Audit logs
                     </button>
@@ -660,8 +660,8 @@ export default function TargetsPage() {
             <div className="md:col-span-6 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                   <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Classification</span>
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Classification</span>
                 </div>
                 <div className="grid grid-cols-1 gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                   {COMMITTEE_TYPES.map(ct => (
@@ -674,8 +674,8 @@ export default function TargetsPage() {
                       }}
                       className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ${
                         committeeType === ct.value 
-                          ? 'bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-900/20 scale-[1.02]' 
-                          : 'text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'
+                          ? 'bg-[#1a337e] text-white font-bold shadow-lg shadow-[#1a337e]/20 scale-[1.02]' 
+                          : 'text-gray-500 hover:bg-indigo-50 hover:text-[#1a337e]'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -693,8 +693,8 @@ export default function TargetsPage() {
             <div className="md:col-span-6 p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
                <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                   <div className="w-1 h-4 bg-indigo-600 rounded-full" />
-                   <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Jurisdictional Deployment</span>
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Jurisdictional Deployment</span>
                 </div>
                
                 {committeeType === 'country' ? (
@@ -783,7 +783,7 @@ export default function TargetsPage() {
             <button
               type="submit"
               disabled={submitting || inlineSubmitting || (activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]])}
-              className="px-5 py-2 text-sm font-semibold text-white bg-[#1A237E] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
+              className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
             >
               {submitting ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

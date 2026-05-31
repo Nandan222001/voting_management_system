@@ -107,7 +107,7 @@ export default function DataTable({
               </tr>
             ) : (
               pageData?.map((row, rowIdx) => (
-                <tr key={row.id ?? rowIdx} className="hover:bg-[#1A237E]/[0.04] transition-colors group">
+                <tr key={row.id ?? rowIdx} className="hover:bg-[#1a337e]/[0.04] transition-colors group">
                   {columns.map((col) => {
                     const actionColumn = isActionColumn(col);
                     return (
