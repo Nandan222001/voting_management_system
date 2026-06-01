@@ -60,7 +60,7 @@ import ImageUpload from '../components/common/ImageUpload'
 import ImageAvatar from '../components/common/ImageAvatar'
 import SearchableSelect from '../components/common/SearchableSelect'
 
-const CHART_COLORS = ['#1A237E', '#3b82f6', '#2563eb', '#0891b2', '#059669', '#d97706', '#dc2626']
+const CHART_COLORS = ['#1a337e', '#1a337e', '#1a337e', '#0891b2', '#059669', '#d97706', '#dc2626']
 
 const COMMITTEE_TYPES = [
   { value: 'country', label: 'Working Committee - India', levels: [] },
@@ -71,6 +71,56 @@ const COMMITTEE_TYPES = [
 ]
 
 const emptyForm = { full_name: '', symbol: '', bio: '', image_url: '', image_file: null, committee_id: '', target_id: '' }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-US').format(Number(value || 0));
+}
+
+function compactNumber(value) {
+  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
+}
+
+function safeFormat(dateStr) {
+  if (!dateStr) return '—'
+  try {
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch {
+    return dateStr
+  }
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black text-gray-900 tracking-tight">{value}</span>
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function ElectionDetailPage() {
   const { id } = useParams()
@@ -86,6 +136,7 @@ export default function ElectionDetailPage() {
   // CRUD State
   const [showModal, setShowModal] = useState(false)
   const [editCandidateTarget, setEditCandidateTarget] = useState(null)
+  const [viewCandidateTarget, setViewCandidateTarget] = useState(null)
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   
@@ -254,7 +305,7 @@ export default function ElectionDetailPage() {
           <div className="flex items-center gap-5">
             <button
               onClick={() => navigate('/elections')}
-              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-gray-200 text-gray-400 hover:text-[#1A237E] hover:border-[#1A237E] transition-all shadow-sm group"
+              className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-gray-200 text-gray-400 hover:text-[#1a337e] hover:border-[#1a337e] transition-all shadow-sm group"
             >
               <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
             </button>
@@ -279,7 +330,7 @@ export default function ElectionDetailPage() {
              {isAdmin && currentElection?.status === 'draft' && (
                 <button
                   onClick={openCreate}
-                  className="flex items-center gap-2 rounded-xl bg-[#1A237E] px-6 py-3 text-sm font-bold text-white shadow-xl shadow-blue-900/20 hover:brightness-110 active:scale-95 transition-all"
+                  className="flex items-center gap-2 rounded-xl bg-[#1a337e] px-6 py-3 text-sm font-bold text-white shadow-xl shadow-[#1a337e]/20 hover:brightness-110 active:scale-95 transition-all"
                 >
                   <Plus className="h-5 w-5" />
                   Register Candidate
@@ -293,21 +344,30 @@ export default function ElectionDetailPage() {
            <div className="lg:col-span-8 space-y-8">
               {/* Stats Grid */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                 <MetricCard icon={Users} label="Total Candidates" value={candidates.length} tone="blue" />
-                 <MetricCard icon={Vote} label="Total Votes Cast" value={compactNumber(totalVotes)} tone="green" />
-                 <MetricCard icon={ShieldCheck} label="Winner Status" value={results?.winner_declared ? 'Declared' : 'Awaiting'} tone="orange" />
+                 <MetricCard title="Candidates" value={numberFormat(candidates.length)} icon={Users} tone="blue">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total authorized</p>
+                 </MetricCard>
+                 <MetricCard title="Total Votes" value={compactNumber(totalVotes)} icon={Vote} tone="emerald">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Cast in registry</p>
+                 </MetricCard>
+                 <MetricCard title="Winner Status" value={results?.winner_declared ? 'Declared' : 'Awaiting'} icon={ShieldCheck} tone="amber">
+                    <div className="flex items-center gap-2">
+                       <div className={`h-1.5 w-1.5 rounded-full ${results?.winner_declared ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Protocol check</span>
+                    </div>
+                 </MetricCard>
               </div>
 
               {/* Chart Section */}
               {(currentElection?.status === 'active' || currentElection?.status === 'closed') && chartData.length > 0 && (
                 <article className="rounded-3xl border border-[#e2e8f0] bg-white p-8 shadow-sm">
                    <div className="flex items-center justify-between mb-8">
-                      <h3 className="flex items-center gap-2 text-xl font-black text-[#1A237E]">
+                      <h3 className="flex items-center gap-2 text-xl font-black text-[#1a337e]">
                         <BarChart3 className="h-5 w-5" />
                         Vote Distribution
                       </h3>
                       <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                         <span className="flex items-center gap-1.5"><CircleDot className="h-3 w-3 text-blue-500 animate-pulse" /> Live Feed</span>
+                         <span className="flex items-center gap-1.5"><CircleDot className="h-3 w-3 text-[#1a337e] animate-pulse" /> Live Feed</span>
                       </div>
                    </div>
                    <div className="h-80">
@@ -334,7 +394,7 @@ export default function ElectionDetailPage() {
               {/* Candidates Registry */}
               <article className="rounded-3xl border border-[#e2e8f0] bg-white p-8 shadow-sm">
                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="flex items-center gap-2 text-xl font-black text-[#1A237E]">
+                    <h3 className="flex items-center gap-2 text-xl font-black text-[#1a337e]">
                       <UserCheck className="h-5 w-5" />
                       Candidate Registry
                     </h3>
@@ -358,6 +418,7 @@ export default function ElectionDetailPage() {
                           candidate={candidate}
                           result={rankedResults.find(r => r.candidate_id === candidate.id)}
                           canManage={isAdmin && currentElection?.status === 'draft'}
+                          onView={setViewCandidateTarget}
                           onEdit={openEdit}
                           onDelete={setDeleteCandidateTarget}
                         />
@@ -431,22 +492,22 @@ export default function ElectionDetailPage() {
             {/* Left Column: Profile & Info */}
             <div className="md:col-span-6 p-6 space-y-5 bg-gray-50/50">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
-                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Candidate Identity</p>
+                <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
+                <p className="text-xs font-black uppercase text-[#1a337e] tracking-widest">Candidate Identity</p>
               </div>
               
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
                   <div className="relative group">
-                    <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <UserCheck className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1a337e] transition-colors" />
                     <input
                       type="text"
                       value={form.full_name}
                       onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
                       required
                       placeholder="Enter legal name"
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1a337e] focus:ring-2 focus:ring-[#1a337e]/10 focus:border-[#1a337e] outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -454,13 +515,13 @@ export default function ElectionDetailPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Symbol / Initial</label>
                   <div className="relative group">
-                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <Trophy className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1a337e] transition-colors" />
                     <input
                       type="text"
                       value={form.symbol}
                       onChange={e => setForm(f => ({ ...f, symbol: e.target.value }))}
                       placeholder="e.g. Lotus, Hand, etc."
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1066b1] focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all"
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-bold text-[#1a337e] focus:ring-2 focus:ring-[#1a337e]/10 focus:border-[#1a337e] outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -480,13 +541,13 @@ export default function ElectionDetailPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Professional Bio</label>
                   <div className="relative group">
-                    <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-300 group-focus-within:text-[#1A237E] transition-colors" />
+                    <MessageSquare className="absolute left-3 top-3 w-4 h-4 text-gray-300 group-focus-within:text-[#1a337e] transition-colors" />
                     <textarea
                       value={form.bio}
                       onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
                       rows={3}
                       placeholder="Describe candidate's background..."
-                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E] outline-none transition-all resize-none"
+                      className="w-full border border-gray-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-[#1a337e]/10 focus:border-[#1a337e] outline-none transition-all resize-none"
                     />
                   </div>
                 </div>
@@ -496,8 +557,8 @@ export default function ElectionDetailPage() {
             {/* Right Column: Jurisdiction */}
             <div className="md:col-span-6 p-6 space-y-6 border-l border-gray-100 bg-white">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-6 bg-[#1A237E] rounded-full" />
-                <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">Jurisdictional Scope</p>
+                <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
+                <p className="text-xs font-black uppercase text-[#1a337e] tracking-widest">Jurisdictional Scope</p>
               </div>
               
               <div className="space-y-5">
@@ -514,8 +575,8 @@ export default function ElectionDetailPage() {
                         }}
                         className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
                           committeeType === ct.value 
-                            ? 'bg-[#1A237E] text-white font-bold shadow-md ring-1 ring-[#1A237E]' 
-                            : 'text-gray-500 hover:bg-white hover:text-[#1A237E]'
+                            ? 'bg-[#1a337e] text-white font-bold shadow-md ring-1 ring-[#1a337e]' 
+                            : 'text-gray-500 hover:bg-white hover:text-[#1a337e]'
                         }`}
                       >
                         <span className="text-[11px] uppercase tracking-wider">{ct.label}</span>
@@ -528,9 +589,9 @@ export default function ElectionDetailPage() {
                 <div className="space-y-4 pt-1 border-t border-gray-50 mt-2">
                   {committeeType === 'country' ? (
                     <div className="py-8 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100">
-                       <Globe className="text-[#1A237E] w-8 h-8 mx-auto animate-pulse" />
-                       <p className="text-xs font-black uppercase text-[#1A237E] tracking-widest">National Level (India)</p>
-                       <p className="text-[10px] text-blue-600/70 font-medium">Automatic jurisdiction assignment</p>
+                       <Globe className="text-[#1a337e] w-8 h-8 mx-auto animate-pulse" />
+                       <p className="text-xs font-black uppercase text-[#1a337e] tracking-widest">National Level (India)</p>
+                       <p className="text-[10px] text-[#1a337e]/70 font-medium">Automatic jurisdiction assignment</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -610,7 +671,7 @@ export default function ElectionDetailPage() {
             <button 
               type="submit" 
               disabled={actionLoading} 
-              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1A237E] rounded-xl hover:brightness-110 shadow-xl shadow-blue-900/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1a337e] rounded-xl hover:brightness-110 shadow-xl shadow-[#1a337e]/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {actionLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -632,46 +693,135 @@ export default function ElectionDetailPage() {
         confirmLabel="Remove"
         variant="danger"
       />
+
+      {/* Candidate Detail Modal */}
+      <Modal isOpen={!!viewCandidateTarget} onClose={() => setViewCandidateTarget(null)} title="Candidate Details" size="2xl">
+        {viewCandidateTarget && (
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-8 pb-8 border-b border-gray-100">
+              <ImageAvatar
+                src={viewCandidateTarget.image_url}
+                name={viewCandidateTarget.full_name}
+                sizeClass="w-32 h-32"
+                imageClassName="rounded-[2.5rem] border-4 border-white shadow-2xl"
+                fallbackClassName="rounded-[2.5rem] border-4 border-white bg-indigo-50 text-[#1a337e] text-5xl font-black shadow-2xl flex items-center justify-center"
+              />
+              <div className="flex-1 min-w-0 pt-2">
+                 <div className="flex items-center gap-3 mb-2">
+                    <div className="h-1.5 w-6 rounded-full bg-[#1a337e]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Verified Candidate</span>
+                 </div>
+                 <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-2 truncate">{viewCandidateTarget.full_name}</h3>
+                 <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
+                       <ShieldCheck size={12} strokeWidth={3} />
+                       Active
+                    </span>
+                    {viewCandidateTarget.symbol && (
+                      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-100 flex items-center gap-1.5">
+                        <Trophy size={12} strokeWidth={3} />
+                        {viewCandidateTarget.symbol}
+                      </span>
+                    )}
+                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Location Details</p>
+                    <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 shadow-inner space-y-4">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <MapPinned size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned Area</p>
+                             <p className="text-sm font-black text-gray-900">{viewCandidateTarget.target?.name || 'Not set'}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <Users size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Committee Type</p>
+                             <p className="text-sm font-black text-gray-900 capitalize">{viewCandidateTarget.target?.type || 'General'}</p>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Voting Stats</p>
+                    <div className="bg-[#1a337e] rounded-3xl p-6 shadow-xl shadow-[#1a337e]/20 space-y-4 text-white">
+                       <div className="flex justify-between items-end">
+                          <div>
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Vote Share</p>
+                             <p className="text-3xl font-black tracking-tighter">{(rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.percentage || 0).toFixed(1)}%</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Total Votes</p>
+                             <p className="text-xl font-black">{numberFormat(rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.vote_count || 0)}</p>
+                          </div>
+                       </div>
+                       <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                          <div className="h-full bg-white rounded-full" style={{ width: `${rankedResults.find(r => r.candidate_id === viewCandidateTarget.id)?.percentage || 0}%` }} />
+                       </div>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">About Candidate</p>
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm relative min-h-[200px]">
+                       <div className="absolute top-4 right-4 opacity-5">
+                          <MessageSquare size={80} />
+                       </div>
+                       <p className="text-sm font-medium text-gray-600 leading-relaxed relative z-10">
+                          {viewCandidateTarget.bio || 'Information about this candidate will be added soon. Check back later for details on their experience and goals.'}
+                       </p>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="flex justify-end pt-6 border-t border-gray-50">
+               <button
+                 onClick={() => setViewCandidateTarget(null)}
+                 className="px-10 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all active:scale-95 border border-gray-100"
+               >
+                 Close
+               </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </MainLayout>
   )
 }
 
-function MetricCard({ icon: Icon, label, value, tone }) {
-  const toneClasses = {
-    blue: 'bg-blue-50 text-[#1a365d]',
-    green: 'bg-emerald-50 text-emerald-600',
-    orange: 'bg-orange-50 text-orange-600',
-  }
-
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-[#e2e8f0] bg-white p-6 shadow-sm">
-      <div className={`rounded-xl p-3 ${toneClasses[tone] || toneClasses.blue}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.05em] text-[#64748b]">{label}</p>
-        <p className="text-2xl font-black text-slate-800">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }) {
+function CandidateProfileCard({ candidate, result, canManage, onView, onEdit, onDelete }) {
   const voteCount = result?.vote_count ?? 0
   const votePercentage = result?.percentage ?? 0
   const isWinner = result?.is_winner
 
   return (
-    <div className={`flex flex-col gap-6 rounded-2xl border p-4 transition-all hover:shadow-md md:flex-row md:items-center ${
-      isWinner ? 'border-amber-300 bg-amber-50/30' : 'border-[#e2e8f0] bg-white'
-    }`}>
+    <div 
+      onClick={() => onView(candidate)}
+      className={`flex flex-col gap-6 rounded-2xl border p-4 transition-all hover:shadow-md md:flex-row md:items-center cursor-pointer active:scale-[0.99] ${
+        isWinner ? 'border-amber-300 bg-amber-50/30' : 'border-[#e2e8f0] bg-white'
+      }`}
+    >
       <div className="relative">
         <ImageAvatar
           src={candidate.image_url}
           name={candidate.full_name}
           sizeClass="w-20 h-20"
           imageClassName="rounded-xl border border-[#e2e8f0] object-cover"
-          fallbackClassName="rounded-xl border border-[#e2e8f0] bg-slate-100 text-[#1A237E] text-xl font-black"
+          fallbackClassName="rounded-xl border border-[#e2e8f0] bg-slate-100 text-[#1a337e] text-xl font-black"
         />
         {isWinner && (
            <div className="absolute -top-2 -right-2 bg-amber-500 text-white p-1 rounded-full shadow-lg">
@@ -684,7 +834,7 @@ function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }
         <div className="mb-1 flex flex-wrap items-center gap-3">
           <h4 className="truncate text-lg font-black text-slate-800">{candidate.full_name}</h4>
           {candidate.committee?.name && (
-            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1A237E] border border-blue-100">
+            <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-[#1a337e] border border-blue-100">
               {candidate.committee.name}
             </span>
           )}
@@ -697,10 +847,10 @@ function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }
         <p className="line-clamp-2 text-sm text-[#64748b]">{candidate.bio || 'No biography has been provided.'}</p>
         <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-[0.05em] text-[#64748b]">
           <span className="inline-flex items-center gap-1">
-            <MapPinned className="h-3.5 w-3.5 text-blue-400" />
+            <MapPinned className="h-3.5 w-3.5 text-[#1a337e]" />
             {candidate.target?.name || 'No area assigned'}
           </span>
-          <span className="inline-flex items-center gap-1 text-[#1A237E]">
+          <span className="inline-flex items-center gap-1 text-[#1a337e]">
             <Vote className="h-3.5 w-3.5" />
             {compactNumber(voteCount)} votes
           </span>
@@ -720,19 +870,21 @@ function CandidateProfileCard({ candidate, result, canManage, onEdit, onDelete }
            </div>
            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
               <div
-                className="bg-[#1A237E] h-full transition-all duration-1000"
+                className="bg-[#1a337e] h-full transition-all duration-1000"
                 style={{ width: `${votePercentage}%` }}
               />
            </div>
         </div>
         {canManage && (
-          <ActionDropdown
-            align="right"
-            actions={[
-              { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
-              { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
-            ]}
-          />
+          <div onClick={e => e.stopPropagation()}>
+            <ActionDropdown
+              align="right"
+              actions={[
+                { key: 'edit', label: 'Edit', icon: Edit3, onClick: () => onEdit(candidate) },
+                { key: 'delete', label: 'Delete', icon: Trash2, danger: true, onClick: () => onDelete(candidate) },
+              ]}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -754,7 +906,7 @@ function InfoPanel({ title, badge, children }) {
 function InfoRow({ icon: Icon, label, value }) {
   return (
     <div className="flex gap-4">
-      <div className="flex h-[48px] min-w-[48px] items-center justify-center rounded-xl bg-slate-50 text-[#1A237E] border border-gray-100 shadow-sm">
+      <div className="flex h-[48px] min-w-[48px] items-center justify-center rounded-xl bg-slate-50 text-[#1a337e] border border-gray-100 shadow-sm">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
@@ -763,17 +915,4 @@ function InfoRow({ icon: Icon, label, value }) {
       </div>
     </div>
   )
-}
-
-function compactNumber(value) {
-  return Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(Number(value || 0))
-}
-
-function safeFormat(dateStr) {
-  if (!dateStr) return '—'
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return dateStr
-  }
 }

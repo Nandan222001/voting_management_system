@@ -19,6 +19,7 @@ import TargetsPage from './pages/TargetsPage'
 import RevenuePage from './pages/RevenuePage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ElectionDetailPage from './pages/ElectionDetailPage'
+import NominationsPage from './pages/NominationsPage'
 import SettingsPage from './pages/SettingsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -33,7 +34,7 @@ function PrivateRoute({ children, roles = [] }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[rgb(16_102_177)] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-[#1a337e] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-gray-500 font-medium">Loading...</p>
         </div>
       </div>
@@ -59,7 +60,7 @@ function RootRedirect() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[rgb(16_102_177)] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-[#1a337e] border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-gray-500 font-medium">Loading...</p>
         </div>
       </div>
@@ -79,13 +80,15 @@ function RootRedirect() {
 
 export default function App() {
   const dispatch = useDispatch()
+  const { isAuthenticated, loading } = useSelector((state) => state.auth)
   const token = localStorage.getItem('token')
 
   useEffect(() => {
-    if (token) {
+    // Only fetch user if we have a token but aren't authenticated yet
+    if (token && !isAuthenticated) {
       dispatch(getMe())
     }
-  }, [dispatch, token])
+  }, [dispatch, token, isAuthenticated])
 
   return (
     <>
@@ -117,6 +120,7 @@ export default function App() {
         <Route path="/elections" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><ElectionsPage /></PrivateRoute>} />
         <Route path="/elections/:id" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><ElectionDetailPage /></PrivateRoute>} />
         <Route path="/candidates" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><CandidatesPage /></PrivateRoute>} />
+        <Route path="/nominations" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><NominationsPage /></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute roles={['admin', 'superadmin']}><UsersPage /></PrivateRoute>} />
         <Route path="/results" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />
         <Route path="/results/:id" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />

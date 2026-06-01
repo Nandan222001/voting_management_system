@@ -29,7 +29,8 @@ export const getMe = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/auth/me')
-      return response.data.user || response.data
+      // The API returns { success: true, data: { ...user } }
+      return response.data.data || response.data.user || response.data
     } catch (error) {
       localStorage.removeItem('token')
       return rejectWithValue(
@@ -44,7 +45,8 @@ export const updateMe = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await authService.updateMe(data)
-      return response.data.user || response.data
+      // The API returns { success: true, data: { ...user } }
+      return response.data.data || response.data.user || response.data
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.response?.data?.detail || 'Failed to update settings.'
@@ -98,11 +100,13 @@ export const logoutUser = createAsyncThunk(
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
+const token = localStorage.getItem('token')
+
 const initialState = {
   user: null,
-  token: localStorage.getItem('token') || null,
+  token: token || null,
   isAuthenticated: false,
-  loading: false,
+  loading: !!token,
   error: null,
 }
 

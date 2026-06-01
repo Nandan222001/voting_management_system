@@ -34,7 +34,7 @@ export default function RegisterPage() {
   };
 
   const inputClass = (field) =>
-    `w-full pl-10 pr-4 py-3 text-sm rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+    `w-full pl-10 pr-4 py-3 text-sm rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent ${
       touched[field] && errors[field]
         ? 'border-red-400 bg-red-50'
         : 'border-gray-300 bg-white'
@@ -46,10 +46,10 @@ export default function RegisterPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[rgb(16_102_177)] text-lg" />
-          <span className="font-bold text-[rgb(16_102_177)] text-base">SecureVote</span>
+          <FaShieldAlt className="text-[#1a337e] text-lg" />
+          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
         </div>
-        <div className="w-9 h-9 rounded-full bg-[rgb(16_102_177)] flex items-center justify-center">
+        <div className="w-9 h-9 rounded-full bg-[#1a337e] flex items-center justify-center">
           <span className="text-white text-sm font-bold">CV</span>
         </div>
       </nav>
@@ -59,13 +59,13 @@ export default function RegisterPage() {
 
         {/* Heading */}
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-[rgb(16_102_177)]">Voter Registration</h1>
+          <h1 className="text-2xl font-bold text-[#1a337e]">Voter Registration</h1>
           <p className="text-sm text-gray-500 mt-1">Step 1 of 2: Create your secure identity profile.</p>
         </div>
 
         {/* Progress bar */}
         <div className="w-full h-1.5 bg-gray-200 rounded-full mb-6">
-          <div className="h-full w-1/2 bg-[rgb(16_102_177)] rounded-full" />
+          <div className="h-full w-1/2 bg-[#1a337e] rounded-full" />
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -161,7 +161,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-[rgb(16_102_177)] hover:bg-[rgb(12_85_148)] text-white font-semibold rounded-xl transition-colors text-sm shadow-sm mt-2"
+            className="w-full py-3 bg-[#1a337e] hover:bg-[rgb(12_85_148)] text-white font-semibold rounded-xl transition-colors text-sm shadow-sm mt-2"
           >
             Create Account
           </button>
@@ -169,7 +169,7 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-gray-600 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-[rgb(16_102_177)] font-semibold hover:underline">
+          <Link to="/login" className="text-[#1a337e] font-semibold hover:underline">
             Login
           </Link>
         </p>

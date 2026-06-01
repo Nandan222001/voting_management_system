@@ -87,18 +87,18 @@ class TargetService:
         target = self.get_target_by_id(db, target_id)
         repo = self.TargetRepository(db)
         
-        # Check for duplicate name (if name is being changed)
-        if data.name and data.name != target.name:
-            existing = db.query(Target).filter(Target.name == data.name).first()
+        # Check for duplicate name (excluding current target)
+        if data.name:
+            existing = db.query(Target).filter(Target.name == data.name, Target.id != target_id).first()
             if existing:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"A committee with the name '{data.name}' already exists.",
                 )
 
-        # Check for duplicate president_id
-        if data.president_id and data.president_id != target.president_id:
-            existing_p = db.query(Target).filter(Target.president_id == data.president_id).first()
+        # Check for duplicate president_id (excluding current target)
+        if data.president_id:
+            existing_p = db.query(Target).filter(Target.president_id == data.president_id, Target.id != target_id).first()
             if existing_p:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

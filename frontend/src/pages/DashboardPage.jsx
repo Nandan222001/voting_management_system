@@ -60,10 +60,10 @@ function timeAgo(dateString) {
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   const toneMap = {
-    blue: { icon: 'text-blue-600 bg-blue-50 border-blue-100', text: 'text-blue-600' },
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
     amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
     emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
-    indigo: { icon: 'text-indigo-600 bg-indigo-50 border-indigo-100', text: 'text-indigo-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
     red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
   };
 
@@ -111,15 +111,15 @@ export default function DashboardPage() {
   }, [auditLogs]);
 
   const chartData = useMemo(() => [
-    { name: 'Active', value: electionStats.active || 0, color: '#2563eb' },
+    { name: 'Active', value: electionStats.active || 0, color: '#1a337e' },
     { name: 'Draft', value: electionStats.draft || 0, color: '#9333ea' },
     { name: 'Closed', value: electionStats.closed || 0, color: '#059669' },
     { name: 'Cancelled', value: electionStats.cancelled || 0, color: '#dc2626' },
   ], [electionStats]);
 
-  const totalVoters = userStats.total_voters || userStats.total_users || 0;
-  const activeVoters = userStats.active_count || userStats.active_voters || 0;
-  const pendingUsers = userStats.pending_count || userStats.pending_users || 0;
+  const totalVoters = userStats.total_voters || 0;
+  const activeVoters = userStats.active_voters || 0;
+  const pendingUsers = userStats.pending_users || 0;
   
   const turnoutRate = totalVoters ? Math.round((activeVoters / totalVoters) * 100) : 0;
 
@@ -139,14 +139,14 @@ export default function DashboardPage() {
         <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <div className="h-1.5 w-8 rounded-full bg-indigo-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Operations Overview</span>
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Operations Overview</span>
             </div>
             <h2 className="text-4xl font-black tracking-tight text-gray-900">Dashboard</h2>
           </div>
           <button
             onClick={() => navigate('/elections')}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-700 shadow-xl shadow-indigo-900/20 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
           >
             <Plus className="h-5 w-5" />
             Add Election
@@ -163,8 +163,8 @@ export default function DashboardPage() {
           
           <MetricCard title="Active Elections" value={numberFormat(electionStats.active)} icon={Vote} tone="indigo">
              <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Live now</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1a337e] animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Live now</span>
              </div>
           </MetricCard>
 
@@ -185,7 +185,7 @@ export default function DashboardPage() {
             <div className="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
               <div className="flex items-center justify-between border-b border-gray-50 p-8">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-inner">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#1a337e] border border-indigo-100 shadow-inner">
                     <Vote className="h-7 w-7" />
                   </div>
                   <div>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                 </div>
                 <button
                   onClick={() => navigate('/elections')}
-                  className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors"
+                  className="group flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#1a337e] hover:text-[#1a337e] transition-colors"
                 >
                   View All
                   <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -205,7 +205,7 @@ export default function DashboardPage() {
               <div className="divide-y divide-gray-50">
                 {elections.length === 0 ? (
                   <div className="py-20 text-center">
-                    <Vote className="mx-auto mb-6 h-16 w-16 opacity-10 text-indigo-900" />
+                    <Vote className="mx-auto mb-6 h-16 w-16 opacity-10 text-[#1a337e]" />
                     <p className="text-sm font-black uppercase tracking-widest text-gray-300">No elections found</p>
                   </div>
                 ) : (
@@ -217,12 +217,12 @@ export default function DashboardPage() {
                     >
                       <div className="flex min-w-0 items-center gap-6">
                         <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border shadow-sm transition-transform group-hover:scale-110 ${
-                          election.status === 'active' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-gray-50 text-gray-400 border-gray-100'
+                          election.status === 'active' ? 'bg-indigo-50 text-[#1a337e] border-indigo-100' : 'bg-gray-50 text-gray-400 border-gray-100'
                         }`}>
                           <Vote className="h-7 w-7" strokeWidth={2.4} />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="truncate text-lg font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">{election.title}</h4>
+                          <h4 className="truncate text-lg font-black text-gray-900 tracking-tight group-hover:text-[#1a337e] transition-colors">{election.title}</h4>
                           <div className="mt-2 flex items-center gap-4">
                             <Badge status={election.status} />
                             <span className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
@@ -288,7 +288,7 @@ export default function DashboardPage() {
           <aside className="space-y-8 lg:col-span-4">
             <div className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
                <div className="absolute -right-4 -bottom-4 opacity-5 transform group-hover:scale-110 transition-transform duration-700">
-                  <Activity size={180} className="text-indigo-900" />
+                  <Activity size={180} className="text-[#1a337e]" />
                </div>
                <div className="relative z-10">
                  <h3 className="text-xl font-black tracking-tight text-gray-900">Voter Pulse</h3>
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                     <div className="relative flex items-center justify-center">
                        <svg className="w-32 h-32 transform -rotate-90">
                           <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-gray-100" />
-                          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={364.4} strokeDashoffset={364.4 * (1 - turnoutRate/100)} className="text-indigo-600 transition-all duration-1000" strokeLinecap="round" />
+                          <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={364.4} strokeDashoffset={364.4 * (1 - turnoutRate/100)} className="text-[#1a337e] transition-all duration-1000" strokeLinecap="round" />
                        </svg>
                        <span className="absolute text-2xl font-black text-gray-900">{turnoutRate}%</span>
                     </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
                       <div className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
                         log.action?.includes('delete') ? 'bg-red-50 text-red-600 border-red-100' :
                         log.action?.includes('create') ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                        'bg-blue-50 text-blue-600 border-blue-100'
+                        'bg-blue-50 text-[#1a337e] border-blue-100'
                       }`}>
                          <Clock className="h-4 w-4" />
                       </div>
@@ -353,7 +353,7 @@ export default function DashboardPage() {
               <div className="border-t border-gray-50 bg-white p-4 text-center">
                 <button
                   onClick={() => navigate('/audit-logs')}
-                  className="text-xs font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-800 transition-colors"
+                  className="text-xs font-black uppercase tracking-widest text-[#1a337e] hover:text-[#1a337e] transition-colors"
                 >
                   View More
                 </button>
