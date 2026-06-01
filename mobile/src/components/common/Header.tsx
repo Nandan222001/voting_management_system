@@ -52,7 +52,7 @@ const Header = ({ showBack, onBack, title }: HeaderProps) => {
               <MaterialIcons name="menu" size={24} color="#003d9b" />
             </TouchableOpacity>
           )}
-          <Text style={styles.brandText}>{title || 'Election Operations'}</Text>
+          <Text style={styles.brandText}>{title || 'CivicVote'}</Text>
         </View>
         
         <View style={styles.rightSection}>

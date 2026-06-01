@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { MaterialIcons } from '@expo/vector-icons';
+import { tenantService } from '../services/tenantService';
 import Header from '../components/common/Header';
 
 const COLORS = {
@@ -48,6 +49,13 @@ const DetailItem = ({ icon, label, value, isLast = false }: any) => (
 
 const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading } = useAuth();
+  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
+
+  useEffect(() => {
+    if (user?.membership_plan?.name) {
+      setPlanName(user.membership_plan.name);
+    }
+  }, [user?.membership_plan]);
 
   const handleLogout = () => {
     const performLogout = async () => {
@@ -110,11 +118,12 @@ const ProfileScreen = ({ navigation }: any) => {
               <Text style={styles.userName}>{user?.full_name || "Member"}</Text>
               <View style={styles.badgeRow}>
                 <View style={styles.memberBadge}>
-                   <MaterialIcons name="shield" size={14} color={COLORS.primary} />
-                   <Text style={styles.memberBadgeText}>{user?.is_verified ? 'VERIFIED MEMBER' : 'UNVERIFIED'}</Text>
+                   <MaterialIcons name="verified" size={14} color={COLORS.secondary} />
+                   <Text style={[styles.memberBadgeText, { color: COLORS.secondary }]}>{user?.is_verified ? 'VERIFIED' : 'PENDING'}</Text>
                 </View>
-                <View style={styles.idBadge}>
-                   <Text style={styles.idBadgeText}>ID: {user?.voter_id || `FED-${(user?.id || 0).toString().padStart(4, '0')}-X`}</Text>
+                <View style={[styles.memberBadge, { backgroundColor: COLORS.primary + '10' }]}>
+                   <MaterialIcons name="stars" size={14} color={COLORS.primary} />
+                   <Text style={styles.memberBadgeText}>{planName.toUpperCase()}</Text>
                 </View>
               </View>
             </View>
@@ -130,6 +139,28 @@ const ProfileScreen = ({ navigation }: any) => {
 
         {/* Settings Grid */}
         <View style={styles.settingsGrid}>
+          {/* Membership Plan */}
+          <View style={styles.settingCard}>
+            <LinearGradient
+              colors={['#003d9b', '#4f46e5']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.premiumPlanHeader}
+            >
+               <View style={styles.planHeaderInfo}>
+                  <Text style={styles.planHeaderLabel}>CURRENT PLAN</Text>
+                  <Text style={styles.planHeaderName}>{planName}</Text>
+               </View>
+               <View style={styles.planHeaderBadge}>
+                  <MaterialIcons name="workspace-premium" size={24} color="#fff" />
+               </View>
+            </LinearGradient>
+            <View style={styles.planBody}>
+               <DetailItem icon="event-available" label="Status" value="Active" />
+               <DetailItem icon="update" label="Renewal Date" value="12 Dec 2026" isLast={true} />
+            </View>
+          </View>
+
           {/* Personal Info */}
           <View style={styles.settingCard}>
             <View style={styles.cardHeader}>
@@ -283,6 +314,43 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.error, marginTop: 8 },
   logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.error },
   footerMeta: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant, opacity: 0.6, marginTop: 16, letterSpacing: 0.5 },
+
+  // Premium Plan Styles
+  premiumPlanHeader: {
+    margin: -20,
+    marginBottom: 0,
+    padding: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planHeaderInfo: {
+    gap: 4,
+  },
+  planHeaderLabel: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  planHeaderName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  planHeaderBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  planBody: {
+    paddingTop: 12,
+  },
 });
 
 export default ProfileScreen;

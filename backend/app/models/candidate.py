@@ -57,6 +57,7 @@ class Candidate(Base):
 
     # Candidate details
     full_name = Column(String(150), nullable=False)
+    position_name = Column(String(100), nullable=True)  # Free-text position
     email = Column(String(150), nullable=True)
     phone = Column(String(20), nullable=True)
     date_of_birth = Column(String(50), nullable=True)

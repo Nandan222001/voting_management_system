@@ -16,6 +16,7 @@ import {
   Dimensions,
   Image,
   Switch,
+  useWindowDimensions,
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
@@ -26,9 +27,6 @@ import * as ImagePicker from 'expo-image-picker';
 
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
-
-// --- COLORS ---
 const COLORS = {
   primary: '#003d9b',
   primaryContainer: '#eff6ff',
@@ -126,6 +124,7 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
 
 const EditProfileScreen = ({ navigation }: any) => {
   const { user, updateProfile } = useAuth();
+  const { height } = useWindowDimensions();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -140,6 +139,8 @@ const EditProfileScreen = ({ navigation }: any) => {
     date_of_birth: user?.date_of_birth || '',
     gender: user?.gender || '',
     parent_name: user?.parent_name || '',
+    voter_id: user?.voter_id || '',
+    designation: user?.designation || '',
 
     // Step 2
     house_number: user?.house_number || '',
@@ -190,12 +191,45 @@ const EditProfileScreen = ({ navigation }: any) => {
   const [modalType, setModalType] = useState<string | null>(null);
 
   useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user.full_name || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        date_of_birth: user.date_of_birth || '',
+        gender: user.gender || '',
+        parent_name: user.parent_name || '',
+        house_number: user.house_number || '',
+        street_address: user.street_address || '',
+        village: user.village || '',
+        landmark: user.landmark || '',
+        pincode: user.pincode || '',
+        state: user.state || '',
+        district: user.district || '',
+        taluka: user.taluka || '',
+        current_street_address: user.current_street_address || '',
+        current_city: user.current_city || '',
+        current_district: user.current_district || '',
+        current_state: user.current_state || '',
+        current_pincode: user.current_pincode || '',
+        tenant_id: user.tenant_id || null,
+        committee_id: user.committee_id || null,
+        state_id: user.state_id || null,
+        district_id: user.district_id || null,
+        taluka_id: user.taluka_id || null,
+        village_id: user.village_id || null,
+        membership_plan_id: user.membership_plan_id || null,
+      });
+
+      if (user.state) setSelectedStateName(user.state);
+      if (user.district) setSelectedDistrictName(user.district);
+      if (user.taluka) setSelectedTalukaName(user.taluka);
+      if (user.village) setSelectedVillageName(user.village);
+    }
+  }, [user]);
+
+  useEffect(() => {
     fetchInitialData();
-    // Initialize selected names if user has them
-    if (user?.state) setSelectedStateName(user.state);
-    if (user?.district) setSelectedDistrictName(user.district);
-    if (user?.taluka) setSelectedTalukaName(user.taluka);
-    if (user?.village) setSelectedVillageName(user.village);
   }, []);
 
   const fetchInitialData = async () => {
@@ -308,7 +342,7 @@ const EditProfileScreen = ({ navigation }: any) => {
       
       await updateProfile(updateData);
       Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.navigate('ProfileMain') }
       ]);
     } catch (error: any) {
       Alert.alert('Update Failed', error.response?.data?.detail || 'An error occurred');
@@ -436,6 +470,23 @@ const EditProfileScreen = ({ navigation }: any) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Premium Hero Header */}
+          <LinearGradient
+            colors={['#003d9b', '#4f46e5']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroHeader}
+          >
+            <View style={styles.heroContent}>
+               <View style={styles.heroBadge}>
+                  <MaterialIcons name="edit" size={12} color="#fff" />
+                  <Text style={styles.heroBadgeText}>SETTINGS</Text>
+               </View>
+               <Text style={styles.heroTitle}>Modify Profile</Text>
+               <Text style={styles.heroSub}>Update your personal, address, and membership details securely.</Text>
+            </View>
+          </LinearGradient>
+
           {/* Step 1: Personal Information */}
           {step === 1 && (
             <View style={styles.formSection}>
@@ -496,6 +547,28 @@ const EditProfileScreen = ({ navigation }: any) => {
                 placeholder="Enter name"
                 value={formData.parent_name}
                 onChangeText={(val: string) => handleChange('parent_name', val)}
+                errors={errors}
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              <InputField
+                name="voter_id"
+                icon="fingerprint"
+                label="Voter ID / Member ID"
+                placeholder="Enter Voter ID"
+                value={formData.voter_id}
+                onChangeText={(val: string) => handleChange('voter_id', val)}
+                errors={errors}
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+              />
+              <InputField
+                name="designation"
+                icon="briefcase-outline"
+                label="Designation"
+                placeholder="Enter designation (e.g. Secretary)"
+                value={formData.designation}
+                onChangeText={(val: string) => handleChange('designation', val)}
                 errors={errors}
                 focusedField={focusedField}
                 setFocusedField={setFocusedField}
@@ -826,7 +899,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24, 
     borderTopRightRadius: 24, 
     padding: 24, 
-    maxHeight: height * 0.7,
+    maxHeight: '80%',
     ...Platform.select({
       web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
     })
@@ -835,6 +908,54 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
+
+  // Hero Header Styles
+  heroHeader: {
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 8 }
+    })
+  },
+  heroContent: {
+    gap: 8,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -1,
+  },
+  heroSub: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
 });
 
 export default EditProfileScreen;

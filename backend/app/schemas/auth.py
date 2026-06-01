@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from app.schemas.plan import PlanResponse
 
 
 # ---------------------------------------------------------------------------
@@ -89,16 +90,53 @@ class ResetPasswordRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 class AuthUserInfo(BaseModel):
-    """Minimal user information embedded in the token response."""
+    """User information embedded in the token response for profile sync."""
 
     id: int
     full_name: str
     email: EmailStr
+    phone: Optional[str] = None
     role: str
+    status: str = "active"
     is_verified: bool
     tenant_id: Optional[int] = None
+    
+    # Profile Details
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    parent_name: Optional[str] = None
+    voter_id: Optional[str] = None
     designation: Optional[str] = None
+    
+    # KYC Details
+    kyc_type: Optional[str] = None
+    kyc_front_url: Optional[str] = None
+    kyc_back_url: Optional[str] = None
+
+    # Address Information (Permanent)
+    house_number: Optional[str] = None
+    street_address: Optional[str] = None
+    village: Optional[str] = None
+    landmark: Optional[str] = None
+    pincode: Optional[str] = None
+    city: Optional[str] = None
+    taluka: Optional[str] = None
     district: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = "India"
+
+    # Current Address
+    current_street_address: Optional[str] = None
+    current_city: Optional[str] = None
+    current_district: Optional[str] = None
+    current_state: Optional[str] = None
+    current_pincode: Optional[str] = None
+
+    # Mapping
+    target_id: Optional[int] = None
+    committee_id: Optional[int] = None
+    membership_plan_id: Optional[int] = None
+    membership_plan: Optional[PlanResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 
