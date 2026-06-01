@@ -199,6 +199,13 @@ const RegisterScreen = ({ navigation }: any) => {
   // Modals
   const [modalType, setModalType] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (modalType) {
+      setModalSearchQuery('');
+    }
+  }, [modalType]);
 
   useEffect(() => {
     fetchInitialData();
@@ -347,7 +354,7 @@ const RegisterScreen = ({ navigation }: any) => {
       newErrors.kyc_type = 'Please select identity proof';
     }
     if (!formData.kyc_front_url || formData.kyc_front_url === 'mock_front.jpg') {
-      newErrors.kyc_front_url = 'Photo of identity proof is required';
+      newErrors.kyc_front_url = 'Please upload identity proof document';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -385,7 +392,7 @@ const RegisterScreen = ({ navigation }: any) => {
       Alert.alert(
         'Success',
         'Registration successful! Please sign in with your credentials.',
-        [{ text: 'Sign In', onPress: () => navigation.navigate('Login') }]
+        [{ text: 'Sign In', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }]
       );
     } catch (error: any) {
       Alert.alert('Registration Failed', error.response?.data?.detail || 'An error occurred');
@@ -429,6 +436,7 @@ const RegisterScreen = ({ navigation }: any) => {
       onSelect = (item) => {
         handleChange('committee_id', item.id);
         setSelectedCommitteeName(item.name);
+        setModalSearchQuery('');
       };
     } else if (modalType === 'plan') {
       title = "Select Membership Plan";
@@ -470,23 +478,53 @@ const RegisterScreen = ({ navigation }: any) => {
       };
     }
 
+    const searchableData =
+      modalType === 'committee' && modalSearchQuery.trim()
+        ? data.filter((item) =>
+            String(item.name || '').toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
+          )
+        : data;
+
     return (
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={() => setModalType(null)}>
+            <TouchableOpacity onPress={() => {
+              setModalSearchQuery('');
+              setModalType(null);
+            }}>
               <MaterialIcons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
+          {modalType === 'committee' && (
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                value={modalSearchQuery}
+                onChangeText={setModalSearchQuery}
+                placeholder="Search committee"
+                placeholderTextColor="#9ca3af"
+                style={styles.searchInput}
+              />
+            </View>
+          )}
           <FlatList
-            data={data}
+            data={searchableData}
             keyExtractor={(item) => (item.id || item.name).toString()}
+            ListEmptyComponent={
+              modalType === 'committee' ? (
+                <View style={styles.emptySearchState}>
+                  <Text style={styles.emptyText}>No committee found.</Text>
+                </View>
+              ) : null
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.listItem}
                 onPress={() => {
                   onSelect(item);
+                  setModalSearchQuery('');
                   setModalType(null);
                 }}
               >
@@ -628,7 +666,11 @@ const RegisterScreen = ({ navigation }: any) => {
               
               <Text style={styles.label}>Upload Documents</Text>
               <TouchableOpacity 
-                style={[styles.uploadBox, formData.kyc_front_url ? styles.uploadBoxSuccess : null]} 
+                style={[
+                  styles.uploadBox,
+                  formData.kyc_front_url ? styles.uploadBoxSuccess : null,
+                  errors.kyc_front_url ? styles.uploadBoxError : null,
+                ]} 
                 onPress={() => pickAndUploadImage('kyc_front_url')}
                 disabled={!!uploading}
               >
@@ -648,6 +690,7 @@ const RegisterScreen = ({ navigation }: any) => {
                   </>
                 )}
               </TouchableOpacity>
+              {errors.kyc_front_url && <Text style={styles.errorText}>{errors.kyc_front_url}</Text>}
 
               <TouchableOpacity 
                 style={[styles.uploadBox, formData.kyc_back_url ? styles.uploadBoxSuccess : null]} 
@@ -820,57 +863,21 @@ const RegisterScreen = ({ navigation }: any) => {
           {step === 4 && (
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
-                <SectionHeader title="Organization Mapping" step={4} subtitle="Map yourself to an organization or committee." />
+                <SectionHeader title="Committee Management" step={4} subtitle="Select the committee you belong to." />
                 <TouchableOpacity onPress={() => setStep(5)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
 
               <PickerField
-                label="State"
-                icon="map-outline"
-                value={selectedStateName}
-                onPress={() => setModalType('state')}
-              />
-
-              <PickerField
-                label="District"
-                icon="locate-outline"
-                value={selectedDistrictName}
-                onPress={() => {
-                  if (!formData.state_id) Alert.alert("Select State First");
-                  else setModalType('district');
-                }}
-              />
-
-              <PickerField
-                label="Taluka / Block"
-                icon="trail-sign-outline"
-                value={selectedTalukaName}
-                onPress={() => {
-                  if (!formData.district_id) Alert.alert("Select District First");
-                  else setModalType('taluka');
-                }}
-              />
-
-              <PickerField
-                label="Village / City"
-                icon="business-outline"
-                value={selectedVillageName}
-                onPress={() => {
-                  if (!formData.taluka_id) Alert.alert("Select Taluka First");
-                  else setModalType('village');
-                }}
-              />
-
-              <PickerField
-                label="Committee"
+                label="Committee Management"
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => {
                   if (!formData.tenant_id) Alert.alert("Select Organization First");
                   else setModalType('committee');
                 }}
+                error={errors.committee_id}
               />
               
               <View style={styles.infoBox}>
@@ -930,7 +937,6 @@ const RegisterScreen = ({ navigation }: any) => {
                 <Text style={styles.backBtnText}>Back</Text>
               </TouchableOpacity>
             )}
-            
             {step < 5 ? (
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
                 <Text style={styles.nextBtnText}>Continue</Text>
@@ -1004,6 +1010,7 @@ const styles = StyleSheet.create({
   
   uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 16, backgroundColor: COLORS.primaryContainer },
   uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  uploadBoxError: { borderColor: COLORS.error, backgroundColor: '#fef2f2' },
   uploadTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginTop: 12 },
   uploadSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
   
@@ -1053,6 +1060,10 @@ const styles = StyleSheet.create({
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
+  searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: COLORS.bg },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  emptySearchState: { paddingVertical: 24, alignItems: 'center' },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
 });

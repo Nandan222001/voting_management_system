@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Dimensions, ActivityIndicator, Platform, TouchableOpacity, Image, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions, ActivityIndicator, Platform, TouchableOpacity, Image, Alert, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from '../components/common/Header';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { tenantService } from '../services/tenantService';
-
-const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#003d9b',
@@ -21,6 +19,7 @@ const COLORS = {
 };
 
 const AnalyticsScreen = () => {
+  const { width } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [committees, setCommittees] = useState<any[]>([]);
@@ -106,26 +105,43 @@ const AnalyticsScreen = () => {
 
   const PersonItem = ({ title, person, isWinner = false }: any) => {
     if (!person) return null;
+    const isPresident = title.toLowerCase().includes('president');
+
     return (
-      <View style={styles.leadershipMember}>
-         <View style={styles.memberAvatarContainer}>
-            {person.image ? (
-              <Image source={{ uri: person.image }} style={styles.memberImg} />
-            ) : (
-              <View style={[styles.initialsAvatarSmall, isWinner && { backgroundColor: COLORS.secondary + '15' }]}>
-                 <Text style={[styles.initialsTextSmall, isWinner && { color: COLORS.secondary }]}>
-                    {person.full_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
-                 </Text>
-              </View>
-            )}
-            <View style={[styles.verifiedBadgeSmall, isWinner && { backgroundColor: COLORS.secondary }]}>
-               <MaterialIcons name={isWinner ? "emoji-events" : "verified"} size={10} color="#fff" />
+      <View style={styles.modernPersonRow}>
+         <View style={styles.personAvatarCol}>
+            <View style={[
+              styles.modernAvatarContainer, 
+              isWinner && { borderColor: '#10b981' },
+              isPresident && !isWinner && { borderColor: '#4338ca' }
+            ]}>
+               <Image 
+                 source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(person.full_name)}&background=${isWinner ? '10b981' : (isPresident ? '4338ca' : '003d9b')}&color=fff&bold=true` }} 
+                 style={styles.modernPersonImg} 
+               />
+               <View style={[
+                 styles.verifiedBadgeSmall, 
+                 isWinner && { backgroundColor: '#10b981' },
+                 isPresident && !isWinner && { backgroundColor: '#4338ca' }
+               ]}>
+                  <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "verified")} size={10} color="#fff" />
+               </View>
             </View>
          </View>
-         <View style={styles.memberInfo}>
-            <Text style={styles.memberLabel}>{title}</Text>
-            <Text style={styles.memberName}>{person.full_name}</Text>
-            <Text style={styles.memberEmail}>{person.email}</Text>
+         <View style={styles.personInfoCol}>
+            <View style={styles.roleRow}>
+               <Text style={[
+                 styles.personRoleLabel,
+                 isWinner && { color: '#10b981' },
+                 isPresident && !isWinner && { color: '#4338ca' }
+               ]}>{title.toUpperCase()}</Text>
+               {isWinner && <View style={styles.winnerPill}><Text style={styles.winnerPillText}>WINNER</Text></View>}
+            </View>
+            <Text style={styles.modernPersonName}>{person.full_name}</Text>
+            <View style={styles.personMetaRow}>
+               <MaterialIcons name="alternate-email" size={12} color={COLORS.onSurfaceVariant} style={{ opacity: 0.5 }} />
+               <Text style={styles.personMetaText}>{person.email || 'Authorized Ledger'}</Text>
+            </View>
          </View>
       </View>
     );
@@ -135,25 +151,6 @@ const AnalyticsScreen = () => {
     <View style={styles.container}>
       <Header title="People" />
       
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchWrapper}>
-           <MaterialIcons name="search" size={20} color={COLORS.onSurfaceVariant} style={styles.searchIcon} />
-           <TextInput
-              style={styles.searchInput}
-              placeholder="Search by committee or name..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor={COLORS.onSurfaceVariant + '80'}
-           />
-           {searchQuery.length > 0 && (
-             <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <MaterialIcons name="cancel" size={18} color={COLORS.onSurfaceVariant} />
-             </TouchableOpacity>
-           )}
-        </View>
-      </View>
-
       <ScrollView
         style={styles.content}
         contentContainerStyle={{ paddingBottom: 60 }}
@@ -162,10 +159,40 @@ const AnalyticsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
         }
       >
-        <View style={styles.screenHeader}>
-           <Text style={styles.screenTitle}>Leadership Network</Text>
-           <Text style={styles.screenSub}>Access authorized leadership data across active administrative regions.</Text>
-        </View>
+        {/* Premium Hero Header */}
+        <LinearGradient
+          colors={['#003d9b', '#4f46e5']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroHeader}
+        >
+          <View style={styles.heroContent}>
+             <View style={styles.heroBadge}>
+                <MaterialIcons name="people" size={12} color="#fff" />
+                <Text style={styles.heroBadgeText}>NETWORK</Text>
+             </View>
+             <Text style={styles.heroTitle}>Leadership Network</Text>
+             <Text style={styles.heroSub}>Access cryptographically verified records of administrative representatives.</Text>
+             
+             {/* Modern Integrated Search */}
+             <View style={styles.heroSearchWrapper}>
+                <MaterialIcons name="search" size={20} color="rgba(255,255,255,0.7)" style={{ marginRight: 8 }} />
+                <TextInput
+                  style={styles.heroSearchInput}
+                  placeholder="Search by name or region..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  underlineColorAndroid="transparent"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                     <MaterialIcons name="close" size={18} color="#fff" />
+                  </TouchableOpacity>
+                )}
+             </View>
+          </View>
+        </LinearGradient>
 
         <View style={styles.peopleList}>
            {paginatedCommittees.length === 0 ? (
@@ -270,7 +297,76 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: 32, fontWeight: '800', color: COLORS.primary, letterSpacing: -1 },
   screenSub: { fontSize: 14, color: COLORS.onSurfaceVariant, marginTop: 8, lineHeight: 22 },
 
-  // Search Bar Styles
+  // Hero Header Styles
+  heroHeader: {
+    paddingTop: 20,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    marginBottom: 24,
+    ...Platform.select({
+      ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 8 }
+    })
+  },
+  heroContent: {
+    gap: 8,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -1,
+  },
+  heroSub: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 12,
+  },
+  heroSearchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 16,
+    height: 54,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  heroSearchInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    ...Platform.select({
+      web: { 
+        outlineStyle: 'none' 
+      }
+    })
+  },
+
+  // Search Bar Styles (Old - keeping some for compatibility if needed, but hero is primary)
   searchContainer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   searchWrapper: { 
     flexDirection: 'row', 
@@ -285,7 +381,6 @@ const styles = StyleSheet.create({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
       android: { elevation: 2 },
       web: { 
-        // @ts-ignore
         boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)' 
       }
     })
@@ -298,7 +393,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     ...Platform.select({
       web: { 
-        // @ts-ignore
         outlineStyle: 'none' 
       }
     })
@@ -315,7 +409,6 @@ const styles = StyleSheet.create({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
       android: { elevation: 3 },
       web: { 
-        // @ts-ignore
         boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.04)' 
       }
     })
@@ -367,6 +460,90 @@ const styles = StyleSheet.create({
   memberEmail: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 1 },
 
   cardDivider: { height: 1, backgroundColor: COLORS.outlineVariant, opacity: 0.4 },
+
+  modernPersonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  personAvatarCol: {
+    width: 60,
+  },
+  modernAvatarContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: COLORS.primary + '20',
+    padding: 2,
+    position: 'relative',
+  },
+  modernPersonImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 24,
+    backgroundColor: COLORS.surfaceContainerLow,
+  },
+  winnerBadgeMini: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    backgroundColor: '#10b981',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  personInfoCol: {
+    flex: 1,
+    gap: 2,
+  },
+  personRoleLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.6,
+    letterSpacing: 1,
+  },
+  modernPersonName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  personMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  personMetaText: {
+    fontSize: 12,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.8,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  winnerPill: {
+    backgroundColor: '#10b98115',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#10b98130',
+  },
+  winnerPillText: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#10b981',
+    letterSpacing: 0.5,
+  },
 
   emptyState: { padding: 60, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyText: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '600', textAlign: 'center' },

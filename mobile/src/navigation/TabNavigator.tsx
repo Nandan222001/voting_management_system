@@ -117,7 +117,6 @@ const styles = StyleSheet.create({
         elevation: 20,
       },
       web: {
-        // @ts-ignore
         boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.05)',
       },
     }),

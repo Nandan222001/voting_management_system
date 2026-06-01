@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.user import UserRole, UserStatus
 from app.schemas.target import TargetResponse
+from app.schemas.plan import PlanResponse
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +110,14 @@ class UserSettingsUpdate(BaseModel):
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     parent_name: Optional[str] = None
+    voter_id: Optional[str] = None
+    designation: Optional[str] = None
     
+    # KYC
+    kyc_type: Optional[str] = None
+    kyc_front_url: Optional[str] = None
+    kyc_back_url: Optional[str] = None
+
     # Address
     house_number: Optional[str] = None
     street_address: Optional[str] = Field(default=None, max_length=300)
@@ -157,6 +165,7 @@ class UserResponse(UserBase):
     is_verified: bool
     tenant_id: Optional[int] = None
     target: Optional[TargetResponse] = None
+    membership_plan: Optional[PlanResponse] = None
     created_at: datetime
     updated_at: datetime
 

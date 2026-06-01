@@ -147,6 +147,12 @@ class User(Base):
     elections_created = relationship(
         "Election", back_populates="creator", lazy="select"
     )
+    nominations = relationship(
+        "Nomination",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
     tenant = relationship(
         "Tenant",
         back_populates="users",
@@ -157,6 +163,11 @@ class User(Base):
         "Target",
         back_populates="users",
         foreign_keys=[target_id],
+        lazy="select",
+    )
+    membership_plan = relationship(
+        "Plan",
+        foreign_keys=[membership_plan_id],
         lazy="select",
     )
 

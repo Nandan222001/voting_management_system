@@ -7,21 +7,51 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
-  voter_id?: string;
-  image?: string;
   role: string;
+  status: string;
   is_verified: boolean;
   tenant_id: number | null;
-  district: string | null;
-  designation: string | null;
+  
+  // Profile Details
   date_of_birth?: string;
   gender?: string;
   parent_name?: string;
+  voter_id?: string;
+  designation?: string;
+  
+  // KYC Details
   kyc_type?: string;
+  kyc_front_url?: string;
+  kyc_back_url?: string;
+
+  // Address Information (Permanent)
+  house_number?: string;
   street_address?: string;
-  city?: string;
-  state?: string;
+  village?: string;
+  landmark?: string;
   pincode?: string;
+  city?: string;
+  taluka?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+
+  // Current Address
+  current_street_address?: string;
+  current_city?: string;
+  current_district?: string;
+  current_state?: string;
+  current_pincode?: string;
+
+  // Mapping
+  target_id?: number | null;
+  committee_id?: number | null;
+  membership_plan_id?: number | null;
+  membership_plan?: {
+    id: number;
+    name: string;
+    [key: string]: any;
+  } | null;
 }
 
 interface AuthContextType {
@@ -84,8 +114,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateProfile = async (userData: any) => {
-    const updatedUser = await authService.updateProfile(userData);
-    setUser(updatedUser);
+    try {
+      const updatedUser = await authService.updateProfile(userData);
+      if (updatedUser) {
+        setUser(updatedUser);
+      } else {
+        // Fallback: reload from storage if service returned nothing but presumably updated it
+        const storedUser = await AsyncStorage.getItem('user');
+        if (storedUser) setUser(JSON.parse(storedUser));
+      }
+    } catch (e) {
+      console.error('Failed to update profile state', e);
+      throw e;
+    }
   };
 
   return (

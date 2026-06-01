@@ -23,17 +23,12 @@ from app.controllers.vote_controller import router as vote_router
 from app.controllers.payment_controller import router as payment_router
 from app.controllers.plan_controller import router as plan_router
 from app.controllers.media_controller import router as media_router
+from app.controllers.nomination_controller import router as nomination_router
 from app.middlewares.auth_middleware import verify_tenant_header
-from app.utils.uploads import STATIC_ROOT
+from app.utils.uploads import MOBILE_ASSETS_IMAGES_ROOT, STATIC_ROOT
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Import all models so SQLAlchemy registers them before create_all
-    import app.models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
-    yield
-
+# app.main.py
 
 app = FastAPI(
     title="Digital Voting System API",
@@ -44,7 +39,6 @@ app = FastAPI(
         "**Default Tenant Admin:** admin@voting.com / Admin@123"
     ),
     version="2.0.0",
-    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
@@ -54,8 +48,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:8081",
+        "http://127.0.0.1:8081",
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -73,6 +70,7 @@ app.include_router(tenant_router, prefix="/api/v1", dependencies=common_dependen
 app.include_router(user_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(election_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(candidate_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(nomination_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)
@@ -85,6 +83,12 @@ app.include_router(report_router, prefix="/api/v1", dependencies=common_dependen
 # the process working directory.
 STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_ROOT)), name="static")
+MOBILE_ASSETS_IMAGES_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/mobile-assets/images",
+    StaticFiles(directory=str(MOBILE_ASSETS_IMAGES_ROOT)),
+    name="mobile-assets-images",
+)
 
 
 # ---------------------------------------------------------------------------

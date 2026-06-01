@@ -16,25 +16,21 @@ export const candidateService = {
     
     // List of all keys to include from the multi-step form
     const keys = [
-      'election_id', 'committee_id', 'target_id', 'full_name', 'email', 'phone', 
+      'election_id', 'committee_id', 'target_id', 'position_name', 'full_name', 'email', 'phone', 
       'date_of_birth', 'gender', 'parent_name', 'kyc_type', 'voter_id_number', 
       'state', 'district', 'taluka', 'village', 'pincode', 'bio',
       'is_willing', 'held_previously', 'prev_position', 'prev_duration', 
       'is_disciplined', 'discipline_details', 'has_complaints', 
-      'agreed_constitution', 'accepted_results', 'image_url', 'signature_url'
+      'agreed_constitution', 'accepted_results', 'image_url', 'signature_url', 'status'
     ];
 
     keys.forEach(key => {
-      if (formData[key] !== undefined && formData[key] !== null) {
+      if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
         data.append(key, String(formData[key]));
       }
     });
 
-    const response = await api.post('/candidates/nominate', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await api.post('/candidates/nominate', data);
     return response.data.data;
   },
 };
