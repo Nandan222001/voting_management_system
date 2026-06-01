@@ -115,9 +115,11 @@ const userSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.loading = false
-        state.users = action.payload.users || action.payload.data || action.payload
-        state.total = action.payload.total || state.users.length
-        state.page = action.payload.page || 1
+        // Extract data and pagination info from the envelope
+        const payload = action.payload
+        state.users = payload.data || []
+        state.total = payload.pagination?.total || state.users.length
+        state.page = payload.pagination?.page || 1
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false
@@ -132,7 +134,7 @@ const userSlice = createSlice({
       })
       .addCase(approveUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload)
+        state.users = updateUserInList(state.users, action.payload.data || action.payload)
       })
       .addCase(approveUser.rejected, (state, action) => {
         state.actionLoading = false
@@ -147,7 +149,7 @@ const userSlice = createSlice({
       })
       .addCase(blockUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload)
+        state.users = updateUserInList(state.users, action.payload.data || action.payload)
       })
       .addCase(blockUser.rejected, (state, action) => {
         state.actionLoading = false
@@ -162,7 +164,7 @@ const userSlice = createSlice({
       })
       .addCase(unblockUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload)
+        state.users = updateUserInList(state.users, action.payload.data || action.payload)
       })
       .addCase(unblockUser.rejected, (state, action) => {
         state.actionLoading = false
@@ -194,7 +196,7 @@ const userSlice = createSlice({
       })
       .addCase(fetchUserStats.fulfilled, (state, action) => {
         state.loading = false
-        state.stats = action.payload
+        state.stats = action.payload.data || action.payload
       })
       .addCase(fetchUserStats.rejected, (state, action) => {
         state.loading = false

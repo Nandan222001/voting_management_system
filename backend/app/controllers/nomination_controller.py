@@ -34,9 +34,10 @@ def list_nominations(
     election_id: Optional[int] = Query(default=None),
     user_id: Optional[int] = Query(default=None),
     status_filter: Optional[NominationStatus] = Query(default=None, alias="status"),
+    search: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> NominationListResponse:
+) -> JSONResponse:
     skip = (page - 1) * per_page
     nominations, total = nomination_service.list_nominations(
         db=db,
@@ -46,12 +47,19 @@ def list_nominations(
         election_id=election_id,
         user_id=user_id,
         status_filter=status_filter,
+        search=search,
     )
-    return NominationListResponse(
+    
+    data = NominationListResponse(
         total=total,
         page=page,
         per_page=per_page,
         items=[NominationResponse.model_validate(item) for item in nominations],
+    )
+    
+    return success_response(
+        data=data.model_dump(mode="json"),
+        message="Nominations retrieved successfully."
     )
 
 
@@ -83,6 +91,18 @@ def list_my_nominations(
         per_page=per_page,
         items=[NominationResponse.model_validate(item) for item in nominations],
     )
+
+
+@router.get(
+    "/stats",
+    summary="Get nomination statistics",
+)
+def get_nomination_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> JSONResponse:
+    stats = nomination_service.get_stats(db, current_user)
+    return success_response(data=stats, message="Nomination statistics retrieved.")
 
 
 @router.get(
@@ -152,6 +172,25 @@ def reject_nomination(
         db=db,
         nomination_id=nomination_id,
         next_status=NominationStatus.rejected,
+        current_user=current_user,
+    )
+    return NominationResponse.model_validate(nomination)
+
+
+@router.post(
+    "/{nomination_id}/suspend",
+    response_model=NominationResponse,
+    summary="Suspend a nomination",
+)
+def suspend_nomination(
+    nomination_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> NominationResponse:
+    nomination = nomination_service.set_status(
+        db=db,
+        nomination_id=nomination_id,
+        next_status=NominationStatus.suspended,
         current_user=current_user,
     )
     return NominationResponse.model_validate(nomination)

@@ -9,6 +9,10 @@ const SIZE_CLASSES = {
   xl: 'max-w-xl',
   '2xl': 'max-w-2xl',
   '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
+  '6xl': 'max-w-6xl',
+  '7xl': 'max-w-7xl',
 };
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
@@ -26,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-[2px]" />
+          <div className="fixed inset-0 bg-black/50" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -41,16 +45,16 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full ${sizeClass} bg-white rounded-2xl border border-gray-100 shadow-2xl transform transition-all overflow-hidden`}
+                className={`w-full ${sizeClass} bg-white rounded-2xl border border-gray-100 shadow-xl transform-gpu transition-all overflow-hidden`}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <Dialog.Title className="text-lg font-bold text-[rgb(16_102_177)]">
+                  <Dialog.Title className="text-lg font-bold text-[#1a337e]">
                     {title}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-[rgb(16_102_177)] hover:bg-[#e6edfb] transition-colors focus:outline-none focus:ring-2 focus:ring-[rgb(16_102_177)]/30"
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-[#1a337e] hover:bg-[#e6edfb] transition-colors focus:outline-none focus:ring-2 focus:ring-[#1a337e]/30"
                   >
                     <X className="w-4 h-4" />
                   </button>

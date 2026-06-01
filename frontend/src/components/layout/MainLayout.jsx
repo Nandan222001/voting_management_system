@@ -31,7 +31,7 @@ const adminBottomNav = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
-function BottomNav({ links, activeClass = 'scale-110 bg-[#003d9b] text-white' }) {
+function BottomNav({ links, activeClass = 'scale-110 bg-[#1a337e] text-white' }) {
   return (
     <nav className="fixed bottom-0 left-0 z-50 flex h-16 w-full items-center justify-around border-t border-[#c3c6d6] bg-white px-4 shadow-lg md:hidden">
       {links.map(({ to, icon: Icon, label }) => (

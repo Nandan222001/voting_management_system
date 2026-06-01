@@ -130,6 +130,12 @@ class NominationUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+from app.schemas.user import UserResponse
+from app.schemas.election import ElectionResponse
+from app.schemas.candidate_committee import CandidateCommitteeResponse
+from app.schemas.target import TargetResponse
+
+
 class NominationResponse(NominationBase):
     id: int
     election_id: int
@@ -138,6 +144,12 @@ class NominationResponse(NominationBase):
     status: NominationStatus
     created_at: datetime
     updated_at: datetime
+
+    # Relations
+    election: Optional[ElectionResponse] = None
+    user: Optional[UserResponse] = None
+    committee: Optional[CandidateCommitteeResponse] = None
+    target: Optional[TargetResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 
