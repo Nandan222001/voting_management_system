@@ -119,6 +119,17 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
   </View>
 );
 
+const getTargetLabel = (target: any) => {
+  if (!target) return '';
+  const type = target.type?.toLowerCase();
+  if (type === 'country') return 'Working Committee';
+  if (type === 'state') return `${target.name} Pradesh Committee`;
+  if (type === 'district') return `${target.name} District`;
+  if (type === 'block') return `${target.name} Block Committee`;
+  if (type === 'booth') return `${target.name} Booth Committee`;
+  return target.name;
+};
+
 // --- MAIN COMPONENT ---
 
 const RegisterScreen = ({ navigation }: any) => {
@@ -167,6 +178,7 @@ const RegisterScreen = ({ navigation }: any) => {
     // Step 4
     tenant_id: null as number | null,
     committee_id: null as number | null,
+    target_id: null as number | null,
     state_id: null as number | null,
     district_id: null as number | null,
     taluka_id: null as number | null,
@@ -187,6 +199,7 @@ const RegisterScreen = ({ navigation }: any) => {
   const [districts, setDistricts] = useState<any[]>([]);
   const [talukas, setTalukas] = useState<any[]>([]);
   const [villages, setVillages] = useState<any[]>([]);
+  const [regTargets, setRegTargets] = useState<any[]>([]);
 
   const [selectedTenantName, setSelectedTenantName] = useState('');
   const [selectedCommitteeName, setSelectedCommitteeName] = useState('');
@@ -319,6 +332,10 @@ const RegisterScreen = ({ navigation }: any) => {
       setCommittees(commData);
       const planData = await tenantService.getPublicPlans();
       setPlans(planData);
+      
+      // Load targets for Step 4 (Constituency / Committee)
+      const targetData = await tenantService.getPublicTargets();
+      setRegTargets(targetData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
     }
@@ -385,7 +402,8 @@ const RegisterScreen = ({ navigation }: any) => {
       }
 
       // Resolve target_id (most granular selected)
-      const target_id = formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
+      // Step 4 explicit selection takes precedence over Step 3 geo-fields
+      const target_id = formData.target_id || formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
       (submissionData as any).target_id = target_id;
       
       await register(submissionData);
@@ -431,11 +449,11 @@ const RegisterScreen = ({ navigation }: any) => {
         setSelectedTenantName(item.name);
       };
     } else if (modalType === 'committee') {
-      title = "Select Committee";
-      data = committees;
+      title = "Select Constituency / Committee";
+      data = regTargets;
       onSelect = (item) => {
-        handleChange('committee_id', item.id);
-        setSelectedCommitteeName(item.name);
+        handleChange('target_id', item.id);
+        setSelectedCommitteeName(getTargetLabel(item));
         setModalSearchQuery('');
       };
     } else if (modalType === 'plan') {
@@ -481,7 +499,7 @@ const RegisterScreen = ({ navigation }: any) => {
     const searchableData =
       modalType === 'committee' && modalSearchQuery.trim()
         ? data.filter((item) =>
-            String(item.name || '').toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
+            getTargetLabel(item).toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
           )
         : data;
 
@@ -528,8 +546,10 @@ const RegisterScreen = ({ navigation }: any) => {
                   setModalType(null);
                 }}
               >
-                <Text style={styles.listItemText}>{item.name}</Text>
-                {(formData.gender === item.id || formData.kyc_type === item.id || formData.tenant_id === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id) && (
+                <Text style={styles.listItemText}>
+                  {modalType === 'committee' ? getTargetLabel(item) : item.name}
+                </Text>
+                {(formData.gender === item.id || formData.kyc_type === item.id || formData.tenant_id === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id || formData.target_id === item.id) && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
@@ -863,21 +883,21 @@ const RegisterScreen = ({ navigation }: any) => {
           {step === 4 && (
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
-                <SectionHeader title="Committee Management" step={4} subtitle="Select the committee you belong to." />
+                <SectionHeader title="Constituency Mapping" step={4} subtitle="Select the constituency or committee you belong to." />
                 <TouchableOpacity onPress={() => setStep(5)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
 
               <PickerField
-                label="Committee Management"
+                label="Constituency / Committee"
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => {
                   if (!formData.tenant_id) Alert.alert("Select Organization First");
                   else setModalType('committee');
                 }}
-                error={errors.committee_id}
+                error={errors.target_id}
               />
               
               <View style={styles.infoBox}>

@@ -431,21 +431,21 @@ export default function CandidatesPage() {
                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
                    <div className="flex items-center gap-3">
                       <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
-                      <h3 className="text-xl font-black tracking-tight text-gray-900">Personnel Registry</h3>
-                   </div>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                      <h3 className="text-xl font-black tracking-tight text-gray-900">Candidates</h3>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
                       Sync: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                   </span>
-                </div>
-                
-                <div className="space-y-4">
-                  {candidates.length === 0 ? (
-                    <div className="py-20 text-center">
+                      </span>
+                      </div>
+
+                      <div className="space-y-4">
+                      {candidates.length === 0 ? (
+                      <div className="py-20 text-center">
                        <Users className="h-16 w-16 mx-auto opacity-10 text-[#1a337e] mb-4" />
-                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">Registry Empty</p>
-                    </div>
-                  ) : (
-                    rows.map(candidate => (
+                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">No Candidates Found</p>
+                      </div>
+                      ) : (
+                      rows.map(candidate => (
                       <CandidateProfileCard
                         key={candidate.id}
                         candidate={candidate}
@@ -454,40 +454,40 @@ export default function CandidatesPage() {
                         onEdit={openEdit}
                         onDelete={setDeleteCandidateTarget}
                       />
-                    ))
-                  )}
-                </div>
-              </article>
-            </div>
+                      ))
+                      )}
+                      </div>
+                      </article>
+                      </div>
 
-            <aside className="space-y-8 lg:col-span-4">
-              <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
-                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Election Context</h3>
-                 </div>
-                 <div className="space-y-6">
-                    <InfoRow icon={CalendarDays} label="Active Node" value={selectedElection?.title || '—'} />
-                    <div className="flex items-center justify-between">
-                       <InfoRow icon={ShieldCheck} label="Operational Status" value={<Badge status={selectedElection?.status} />} />
-                    </div>
-                    <InfoRow icon={Users} label="Personnel Count" value={`${rows.length} Registered`} />
-                 </div>
-                 <button
-                    type="button"
-                    onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                    className="mt-8 w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-[#1a337e] bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
-                 >
-                    View Node Specs
-                 </button>
-              </section>
+                      <aside className="space-y-8 lg:col-span-4">
+                      <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
+                      <div className="flex items-center gap-3 mb-8">
+                      <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Election Details</h3>
+                      </div>
+                      <div className="space-y-6">
+                      <InfoRow icon={CalendarDays} label="Election" value={selectedElection?.title || '—'} />
+                      <div className="flex items-center justify-between">
+                       <InfoRow icon={ShieldCheck} label="Status" value={<Badge status={selectedElection?.status} />} />
+                      </div>
+                      <InfoRow icon={Users} label="Total Candidates" value={`${rows.length} Registered`} />
+                      </div>
+                      <button
+                      type="button"
+                      onClick={() => navigate(`/elections/${selectedElectionId}`)}
+                      className="mt-8 w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-[#1a337e] bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
+                      >
+                      View Details
+                      </button>
+                      </section>
 
-              <div className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30 relative overflow-hidden group">
-                 <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
-                    <TrendingUp size={160} />
-                 </div>
-                 <div className="relative z-10">
-                    <p className="text-xs font-bold uppercase tracking-widest mt-2 text-indigo-200">Aggregate Votes Cast</p>
+                      <div className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30 relative overflow-hidden group">
+                      <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
+                      <TrendingUp size={160} />
+                      </div>
+                      <div className="relative z-10">
+                      <p className="text-xs font-bold uppercase tracking-widest mt-2 text-indigo-200">Total Votes Cast</p>
                     <div className="mt-8 flex -space-x-3">
                       {rows.slice(0, 5).map(candidate => (
                         <ImageAvatar
@@ -515,7 +515,7 @@ export default function CandidatesPage() {
       <Modal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)} 
-        title={editCandidateTarget ? 'Modify Personnel' : 'Add Candidate'}
+        title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}
         size="3xl"
       >
         <form onSubmit={handleSubmit} className="space-y-0" autoComplete="off">

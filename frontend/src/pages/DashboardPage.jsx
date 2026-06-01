@@ -117,9 +117,9 @@ export default function DashboardPage() {
     { name: 'Cancelled', value: electionStats.cancelled || 0, color: '#dc2626' },
   ], [electionStats]);
 
-  const totalVoters = userStats.total_voters || userStats.total_users || 0;
-  const activeVoters = userStats.active_count || userStats.active_voters || 0;
-  const pendingUsers = userStats.pending_count || userStats.pending_users || 0;
+  const totalVoters = userStats.total_voters || 0;
+  const activeVoters = userStats.active_voters || 0;
+  const pendingUsers = userStats.pending_users || 0;
   
   const turnoutRate = totalVoters ? Math.round((activeVoters / totalVoters) * 100) : 0;
 

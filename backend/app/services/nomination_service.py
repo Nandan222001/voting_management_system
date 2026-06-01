@@ -80,6 +80,7 @@ class NominationService:
         election_id: int | None = None,
         user_id: int | None = None,
         status_filter: NominationStatus | None = None,
+        search: str | None = None,
     ) -> tuple[list[Nomination], int]:
         repo = NominationRepository(db)
         tenant_id = None if current_user.role == UserRole.superadmin else current_user.tenant_id
@@ -90,12 +91,14 @@ class NominationService:
             election_id=election_id,
             user_id=user_id,
             status_filter=status_filter,
+            search=search,
         )
         total = repo.count_filtered(
             tenant_id=tenant_id,
             election_id=election_id,
             user_id=user_id,
             status_filter=status_filter,
+            search=search,
         )
         return items, total
 
@@ -202,7 +205,76 @@ class NominationService:
             current_user,
             admin_only=True,
         )
-        return NominationRepository(db).update(nomination, {"status": next_status})
+        
+        old_status = nomination.status
+        updated = NominationRepository(db).update(nomination, {"status": next_status})
+        
+        # If transitioning to approved, create a candidate record
+        if next_status == NominationStatus.approved and old_status != NominationStatus.approved:
+            from app.models.candidate import Candidate
+            from app.repositories.candidate_repository import CandidateRepository
+            
+            candidate_repo = CandidateRepository(db)
+            
+            # Check if candidate already exists for this email in this election 
+            # (since Candidate doesn't have user_id, we use email + election_id as a proxy)
+            existing_candidate = db.query(Candidate).filter(
+                Candidate.election_id == nomination.election_id,
+                Candidate.email == nomination.email
+            ).first()
+            
+            if not existing_candidate:
+                candidate_data = {
+                    "election_id": nomination.election_id,
+                    "tenant_id": nomination.tenant_id,
+                    "committee_id": nomination.committee_id,
+                    "target_id": nomination.target_id,
+                    "full_name": nomination.full_name,
+                    "position_name": nomination.position_name,
+                    "email": nomination.email,
+                    "phone": nomination.phone,
+                    "date_of_birth": nomination.date_of_birth,
+                    "gender": nomination.gender,
+                    "parent_name": nomination.parent_name,
+                    "kyc_type": nomination.kyc_type,
+                    "voter_id_number": nomination.voter_id_number,
+                    "state": nomination.state,
+                    "district": nomination.district,
+                    "taluka": nomination.taluka,
+                    "village": nomination.village,
+                    "pincode": nomination.pincode,
+                    "image_url": nomination.image_url,
+                    "bio": nomination.bio,
+                    "is_willing": nomination.is_willing,
+                    "held_previously": nomination.held_previously,
+                    "prev_position": nomination.prev_position,
+                    "prev_duration": nomination.prev_duration,
+                    "is_disciplined": nomination.is_disciplined,
+                    "discipline_details": nomination.discipline_details,
+                    "has_complaints": nomination.has_complaints,
+                    "agreed_constitution": nomination.agreed_constitution,
+                    "accepted_results": nomination.accepted_results,
+                    "signature_url": nomination.signature_url,
+                }
+                candidate_repo.create(candidate_data)
+        
+        return updated
+
+    def get_stats(
+        self,
+        db: Session,
+        current_user: User,
+    ) -> dict:
+        repo = NominationRepository(db)
+        tenant_id = None if current_user.role == UserRole.superadmin else current_user.tenant_id
+        
+        return {
+            "total": repo.count_filtered(tenant_id=tenant_id),
+            "pending": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.pending),
+            "approved": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.approved),
+            "rejected": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.rejected),
+            "suspended": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.suspended),
+        }
 
     def delete_nomination(
         self,
