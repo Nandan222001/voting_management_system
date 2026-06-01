@@ -24,6 +24,7 @@ from app.controllers.payment_controller import router as payment_router
 from app.controllers.plan_controller import router as plan_router
 from app.controllers.media_controller import router as media_router
 from app.controllers.nomination_controller import router as nomination_router
+from app.controllers.announcement_controller import router as announcement_router
 from app.middlewares.auth_middleware import verify_tenant_header
 from app.utils.uploads import MOBILE_ASSETS_IMAGES_ROOT, STATIC_ROOT
 
@@ -42,22 +43,11 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# CORS — allow specific origins in development; restrict in production via env
+# CORS — allow all origins in development for mobile/web accessibility
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8081",
-        "http://127.0.0.1:8081",
-        "http://localhost:19000",
-        "http://localhost:19001",
-        "http://localhost:19002",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://192.168.1.8:8081",
-    ],
+    allow_origin_regex=".*",  # Highly permissive for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -75,6 +65,7 @@ app.include_router(user_router, prefix="/api/v1", dependencies=common_dependenci
 app.include_router(election_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(candidate_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(nomination_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(announcement_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)

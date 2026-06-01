@@ -20,6 +20,7 @@ import RevenuePage from './pages/RevenuePage'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ElectionDetailPage from './pages/ElectionDetailPage'
 import NominationsPage from './pages/NominationsPage'
+import AnnouncementsPage from './pages/AnnouncementsPage'
 import SettingsPage from './pages/SettingsPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="/elections/:id" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><ElectionDetailPage /></PrivateRoute>} />
         <Route path="/candidates" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><CandidatesPage /></PrivateRoute>} />
         <Route path="/nominations" element={<PrivateRoute roles={['admin', 'superadmin', 'moderator']}><NominationsPage /></PrivateRoute>} />
+        <Route path="/announcements" element={<PrivateRoute roles={['admin', 'superadmin']}><AnnouncementsPage /></PrivateRoute>} />
         <Route path="/users" element={<PrivateRoute roles={['admin', 'superadmin']}><UsersPage /></PrivateRoute>} />
         <Route path="/results" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />
         <Route path="/results/:id" element={<PrivateRoute><ResultsPage /></PrivateRoute>} />

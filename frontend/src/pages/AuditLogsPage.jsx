@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { AlertTriangle, CheckCircle2, Download, Filter, History, Search, ShieldCheck, X, Globe, Activity, Lock, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, Filter, History as HistoryIcon, Search, ShieldCheck, X, Globe, Activity, Lock, ShieldAlert } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { fetchAuditLogs } from '../store/slices/voteSlice'
@@ -157,7 +157,7 @@ export default function AuditLogsPage() {
           ) : filtered.length === 0 ? (
             <div className="px-6 py-32 text-center">
               <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-50 text-gray-200 border border-gray-100">
-                <History className="h-12 w-12" />
+                <HistoryIcon className="h-12 w-12" />
               </div>
               <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Protocol Silent</h3>
               <p className="mx-auto mt-2 max-w-xs text-sm font-bold text-gray-400 uppercase tracking-widest">No matching logs found in the current stream.</p>

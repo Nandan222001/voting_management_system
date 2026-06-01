@@ -82,6 +82,58 @@ async def save_uploaded_image(
     return "/" + "/".join(rel_parts)
 
 
+async def save_uploaded_file(
+    upload: UploadFile,
+    subdir: str,
+    filename_prefix: str,
+) -> str:
+    content_type = getattr(upload, "content_type", "") or ""
+    if content_type not in ALLOWED_DOCUMENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PNG, JPEG, or PDF files are allowed.",
+        )
+
+    original_name = Path(upload.filename or "file").name
+    safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", original_name)
+    timestamp = int(time.time() * 1000)
+    target_dir = UPLOADS_ROOT / subdir if subdir else UPLOADS_ROOT
+    target_dir.mkdir(parents=True, exist_ok=True)
+    filename = f"{filename_prefix}_{timestamp}_{safe_name}"
+    dest_path = target_dir / filename
+
+    total = 0
+    try:
+        with dest_path.open("wb") as buffer:
+            while True:
+                chunk = await upload.read(1024 * 64)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > MAX_DOCUMENT_SIZE:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="File exceeds 5 MB size limit.",
+                    )
+                buffer.write(chunk)
+    except Exception as e:
+        if dest_path.exists():
+            dest_path.unlink()
+        if isinstance(e, HTTPException):
+            raise e
+        logger.exception("Failed to save file")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal error saving file.",
+        )
+
+    rel_parts = ["static", "uploads"]
+    if subdir:
+        rel_parts.extend(subdir.split("/"))
+    rel_parts.append(filename)
+    return "/" + "/".join(rel_parts)
+
+
 def delete_uploaded_file(served_path: str | None) -> None:
     if not served_path or not served_path.startswith("/static/uploads/"):
         return

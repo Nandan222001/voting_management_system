@@ -29,16 +29,27 @@ def verify_tenant_header(
     db: Session = Depends(get_db),
 ) -> Optional[Tenant]:
     """
-    Validates that the provided X-Tenant-ID header matches a valid tenant UUID.
+    Validates that the provided X-Tenant-ID header matches a valid tenant ID or UUID.
     This acts as a 'Mobile API Key' for the platform.
     """
-    if not x_tenant_id:
+    if not x_tenant_id or x_tenant_id.lower() in ("null", "undefined", "none", ""):
         return None
+    
+    print(f"DEBUG: verify_tenant_header received X-Tenant-ID: {x_tenant_id}")
+    
+    # Try looking up by integer ID first if numeric
+    if x_tenant_id.isdigit():
+        tenant = db.query(Tenant).filter(Tenant.id == int(x_tenant_id)).first()
+        if tenant:
+            return tenant
+
+    # Fallback to UUID lookup
     tenant = db.query(Tenant).filter(Tenant.uuid == x_tenant_id).first()
     if not tenant:
+        print(f"DEBUG: verify_tenant_header - Tenant not found for: {x_tenant_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or missing Tenant ID in headers.",
+            detail=f"Invalid Tenant ID: {x_tenant_id}",
         )
     return tenant
 
@@ -244,6 +255,7 @@ def require_tenant_admin(current_user: User = Depends(get_current_user)) -> User
 
 def get_header_tenant_id(
     tenant: Optional[Tenant] = Depends(verify_tenant_header),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Optional[int]:
     """
     Return the integer ``tenant_id`` that corresponds to the ``X-Tenant-ID``
@@ -260,7 +272,11 @@ def get_header_tenant_id(
             header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
         ): ...
     """
-    return tenant.id if tenant else None
+    if tenant:
+        return tenant.id
+    if current_user:
+        return current_user.tenant_id
+    return None
 
 
 def get_tenant_context(

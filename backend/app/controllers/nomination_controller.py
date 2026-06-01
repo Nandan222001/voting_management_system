@@ -196,6 +196,27 @@ def suspend_nomination(
     return NominationResponse.model_validate(nomination)
 
 
+@router.post(
+    "/{nomination_id}/withdraw",
+    response_model=NominationResponse,
+    summary="Withdraw your own nomination",
+)
+def withdraw_nomination(
+    nomination_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Transition a nomination to 'withdrawn' status. 
+    Only the applicant can withdraw their own nomination.
+    """
+    updated = nomination_service.withdraw_nomination(db, nomination_id, current_user)
+    return success_response(
+        data=NominationResponse.model_validate(updated).model_dump(mode="json"),
+        message="Nomination withdrawn successfully."
+    )
+
+
 @router.delete(
     "/{nomination_id}",
     status_code=status.HTTP_200_OK,

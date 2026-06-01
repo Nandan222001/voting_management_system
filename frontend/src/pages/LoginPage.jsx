@@ -32,7 +32,12 @@ export default function LoginPage() {
       toast.error('Please fill in all fields');
       return;
     }
-    dispatch(loginUser({ email, password }));
+    const result = await dispatch(loginUser({ email, password }));
+    if (loginUser.rejected.match(result)) {
+      if (result.payload === 'Account email not verified') {
+        navigate('/otp', { state: { email } });
+      }
+    }
   };
 
   return (

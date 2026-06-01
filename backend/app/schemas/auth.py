@@ -45,6 +45,7 @@ class RegisterRequest(BaseModel):
 
     # Mapping
     tenant_id: Optional[int] = None
+    target_id: Optional[int] = None
     committee_id: Optional[int] = None
     membership_plan_id: Optional[int] = None
     designation: str = "voter"

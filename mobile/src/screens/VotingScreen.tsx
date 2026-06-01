@@ -216,6 +216,14 @@ const VotingScreen = ({ navigation, route }: any) => {
           bg: '#fee2e2',
           detail: 'Your nomination was rejected during scrutiny.',
         };
+      case 'withdrawn':
+        return {
+          label: 'Withdrawn',
+          icon: 'remove-circle-outline' as const,
+          color: '#64748b',
+          bg: '#f1f5f9',
+          detail: 'You have withdrawn your nomination for this election.',
+        };
       default:
         return {
           label: 'Pending Scrutiny',

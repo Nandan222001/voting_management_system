@@ -4,20 +4,21 @@ import {
   CreditCard,
   ArrowUpRight,
   ArrowDownRight,
-  History,
-  Key,
+  History as HistoryIcon,
+  Key as KeyIcon,
   Eye,
   EyeOff,
   CheckCircle2,
   AlertCircle,
-  Save,
+  Save as SaveIcon,
   DollarSign,
   Search,
   X,
   ShieldCheck,
   TrendingUp,
   Receipt,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
@@ -208,7 +209,7 @@ export default function RevenuePage() {
            <div className="lg:col-span-4 space-y-8">
               <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
                  <div className="absolute -right-4 -bottom-4 opacity-5 transform group-hover:scale-110 transition-transform duration-700">
-                    <Key size={160} className="text-[#1a337e]" />
+                    <KeyIcon size={160} className="text-[#1a337e]" />
                  </div>
                  <div className="relative z-10">
                     <div className="flex items-center justify-between mb-8">
@@ -430,7 +431,7 @@ export default function RevenuePage() {
              <div className="space-y-1.5">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Key ID</label>
                 <div className="relative group">
-                   <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" size={16} strokeWidth={2.4} />
+                   <KeyIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" size={16} strokeWidth={2.4} />
                    <input
                     type="text"
                     value={keyForm.razorpay_key_id}
@@ -480,7 +481,7 @@ export default function RevenuePage() {
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <Save size={14} strokeWidth={2.4} />
+                  <SaveIcon size={14} strokeWidth={2.4} />
                   Save Registry
                 </>
               )}

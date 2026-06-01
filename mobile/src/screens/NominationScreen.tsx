@@ -195,6 +195,7 @@ const NominationScreen = ({ navigation, route }: any) => {
     member_id: user?.id ? `MEM-${user.id.toString().padStart(5, '0')}` : 'N/A',
     full_name: user?.full_name || '',
     profile_photo_url: '',
+    cover_photo_url: '',
     phone: user?.phone || '',
     email: user?.email || '',
     date_of_birth: user?.date_of_birth || '',
@@ -260,11 +261,12 @@ const NominationScreen = ({ navigation, route }: any) => {
     return label.includes(searchQuery.toLowerCase());
   });
 
-  const pickImage = async (field: 'profile_photo_url' | 'signature_url') => {
+  const pickImage = async (field: 'profile_photo_url' | 'signature_url' | 'cover_photo_url') => {
+    const isCover = field === 'cover_photo_url';
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: isCover ? [16, 9] : [1, 1],
       quality: 0.5,
     });
 
@@ -396,6 +398,7 @@ const NominationScreen = ({ navigation, route }: any) => {
         // Map UI field names to API field names
         voter_id_number: formData.voter_id,
         image_url: formData.profile_photo_url,
+        cover_url: formData.cover_photo_url,
         is_willing: formData.willing_to_contest,
         is_disciplined: formData.suspended_disciplined,
         has_complaints: formData.pending_complaints,
@@ -537,6 +540,20 @@ const NominationScreen = ({ navigation, route }: any) => {
                   )}
                 </TouchableOpacity>
                 {errors.profile_photo_url && <Text style={styles.errorText}>{errors.profile_photo_url}</Text>}
+              </View>
+
+              <View style={styles.photoUploadContainer}>
+                <TouchableOpacity style={[styles.photoBox, styles.coverPhotoBox]} onPress={() => pickImage('cover_photo_url')}>
+                  {formData.cover_photo_url ? (
+                    <Image source={{ uri: formData.cover_photo_url }} style={styles.photoPreview} />
+                  ) : (
+                    <>
+                      <MaterialIcons name="landscape" size={32} color={COLORS.textSecondary} />
+                      <Text style={styles.photoLabel}>Cover Photo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {errors.cover_photo_url && <Text style={styles.errorText}>{errors.cover_photo_url}</Text>}
               </View>
 
               <InputField label="Member ID" value={formData.member_id} editable={false} icon="id-card-outline" />
@@ -704,6 +721,7 @@ const styles = StyleSheet.create({
 
   photoUploadContainer: { alignItems: 'center', marginBottom: 24 },
   photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  coverPhotoBox: { width: width - 80, height: 160, borderRadius: 16 },
   photoPreview: { width: '100%', height: '100%' },
   photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
 

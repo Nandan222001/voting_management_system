@@ -226,7 +226,7 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const fetchInitialData = async () => {
     try {
-      // 1. Fetch current tenant details based on UUID in header
+      // 1. Fetch current tenant details based on ID in header
       const tenant = await tenantService.getCurrentTenant();
       setCurrentTenant(tenant);
       
@@ -442,8 +442,8 @@ const RegisterScreen = ({ navigation }: any) => {
       title = "Select Organization";
       data = tenants;
       onSelect = async (item) => {
-        if (item.uuid) {
-          await tenantService.selectTenant(item.uuid);
+        if (item.id) {
+          await tenantService.selectTenant(String(item.id));
         }
         handleChange('tenant_id', item.id);
         setSelectedTenantName(item.name);
@@ -549,7 +549,16 @@ const RegisterScreen = ({ navigation }: any) => {
                 <Text style={styles.listItemText}>
                   {modalType === 'committee' ? getTargetLabel(item) : item.name}
                 </Text>
-                {(formData.gender === item.id || formData.kyc_type === item.id || formData.tenant_id === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id || formData.target_id === item.id) && (
+                {(formData.gender === item.id || 
+                  formData.kyc_type === item.id || 
+                  formData.tenant_id === item.id || 
+                  formData.committee_id === item.id || 
+                  formData.membership_plan_id === item.id || 
+                  formData.state_id === item.id || 
+                  formData.district_id === item.id || 
+                  formData.taluka_id === item.id || 
+                  formData.village_id === item.id || 
+                  formData.target_id === item.id) && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>

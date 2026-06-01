@@ -30,7 +30,7 @@ export default function RegisterPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setTouched({ fullName: true, dateOfBirth: true, voterId: true, email: true });
-    if (Object.keys(errors).length === 0) navigate('/otp');
+    if (Object.keys(errors).length === 0) navigate('/otp', { state: { email: form.email } });
   };
 
   const inputClass = (field) =>

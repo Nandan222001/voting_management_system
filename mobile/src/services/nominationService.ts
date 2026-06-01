@@ -13,7 +13,7 @@ export const nominationService = {
   },
 
   withdraw: async (nominationId: number) => {
-    const response = await api.delete(`/nominations/${nominationId}`);
+    const response = await api.post(`/nominations/${nominationId}/withdraw`);
     return response.data;
   },
 };

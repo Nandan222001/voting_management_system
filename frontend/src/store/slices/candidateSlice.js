@@ -109,8 +109,10 @@ const candidateSlice = createSlice({
       })
       .addCase(fetchCandidatesByElection.fulfilled, (state, action) => {
         state.loading = false
-        state.candidates = action.payload.candidates || action.payload.data || action.payload
-        state.total = action.payload.total || state.candidates.length
+        const payload = action.payload
+        const data = payload.data || payload
+        state.candidates = data.candidates || (Array.isArray(data) ? data : [])
+        state.total = payload.pagination?.total || data.total || state.candidates.length
       })
       .addCase(fetchCandidatesByElection.rejected, (state, action) => {
         state.loading = false
@@ -125,8 +127,10 @@ const candidateSlice = createSlice({
       })
       .addCase(fetchAllCandidates.fulfilled, (state, action) => {
         state.loading = false
-        state.candidates = action.payload.candidates || action.payload.data || action.payload
-        state.total = action.payload.total || state.candidates.length
+        const payload = action.payload
+        const data = payload.data || payload
+        state.candidates = data.candidates || (Array.isArray(data) ? data : [])
+        state.total = payload.pagination?.total || data.total || state.candidates.length
       })
       .addCase(fetchAllCandidates.rejected, (state, action) => {
         state.loading = false
@@ -141,7 +145,7 @@ const candidateSlice = createSlice({
       })
       .addCase(addCandidate.fulfilled, (state, action) => {
         state.actionLoading = false
-        const candidate = action.payload.candidate || action.payload
+        const candidate = action.payload.data || action.payload.candidate || action.payload
         state.candidates.push(candidate)
         state.total += 1
       })
@@ -158,7 +162,7 @@ const candidateSlice = createSlice({
       })
       .addCase(updateCandidate.fulfilled, (state, action) => {
         state.actionLoading = false
-        const updated = action.payload.candidate || action.payload
+        const updated = action.payload.data || action.payload.candidate || action.payload
         state.candidates = state.candidates.map((c) =>
           (c._id || c.id) === (updated._id || updated.id) ? { ...c, ...updated } : c
         )

@@ -78,11 +78,8 @@ const VerifyScreen = ({ navigation, route }: any) => {
     setLoading(true);
     try {
       await verifyOtp(email, otpCode);
-      Alert.alert(
-        "Verification Successful",
-        "Your email has been verified. Please sign in to continue.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
+      // On success, AuthContext updates 'token', and App.tsx automatically 
+      // switches to TabNavigator (Dashboard).
     } catch (error: any) {
       const message = error.response?.data?.detail || "Invalid OTP. Please try again.";
       Alert.alert("Verification Failed", message);

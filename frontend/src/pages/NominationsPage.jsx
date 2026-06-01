@@ -20,7 +20,7 @@ import {
   MoreVertical,
   ExternalLink,
   AlertTriangle,
-  History,
+  History as HistoryIcon,
   Briefcase,
   Flag,
   Edit2
@@ -91,6 +91,7 @@ const STATUS_FILTERS = [
   { value: 'approved', label: 'Approved' },
   { value: 'suspended', label: 'Suspended' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'withdrawn', label: 'Withdrawn' },
 ];
 
 const PER_PAGE = 10;
@@ -205,7 +206,7 @@ export default function NominationsPage() {
         </header>
 
         {/* Stats Section */}
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-5">
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-3 lg:grid-cols-6">
           <MetricCard 
             title="Total Nominations" 
             value={numberFormat(stats?.total ?? 0)} 
@@ -249,6 +250,15 @@ export default function NominationsPage() {
             tone="red"
           >
              <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Not eligible</p>
+          </MetricCard>
+
+          <MetricCard 
+            title="Withdrawn" 
+            value={numberFormat(stats?.withdrawn ?? 0)} 
+            icon={HistoryIcon} 
+            tone="blue"
+          >
+             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Voluntarily retracted</p>
           </MetricCard>
         </section>
 

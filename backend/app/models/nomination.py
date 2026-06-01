@@ -25,6 +25,7 @@ class NominationStatus(str, enum.Enum):
     approved = "approved"
     rejected = "rejected"
     suspended = "suspended"
+    withdrawn = "withdrawn"
 
 
 class Nomination(Base):

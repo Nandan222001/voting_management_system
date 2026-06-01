@@ -80,8 +80,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedUser = await AsyncStorage.getItem('user');
 
         if (storedToken && storedUser) {
+          const parsedUser = JSON.parse(storedUser);
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(parsedUser);
+          if (parsedUser?.tenant_id) {
+            await AsyncStorage.setItem('tenant_id', String(parsedUser.tenant_id));
+          }
         }
       } catch (e) {
         console.error('Failed to load auth data from storage', e);
@@ -110,7 +114,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const verifyOtp = async (email: string, otp: string) => {
-    await authService.verifyOtp(email, otp);
+    const result = await authService.verifyOtp(email, otp);
+    if (result.token) {
+      setToken(result.token);
+      if (result.user) {
+        setUser(result.user);
+      }
+    }
   };
 
   const updateProfile = async (userData: any) => {
