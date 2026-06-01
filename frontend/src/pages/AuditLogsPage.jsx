@@ -102,11 +102,11 @@ export default function AuditLogsPage() {
           <div>
             <div className="mb-2 flex items-center gap-2">
               <div className="h-1.5 w-8 rounded-full bg-red-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Audit Protocol Active</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Audit Logs Active</span>
             </div>
-            <h2 className="text-4xl font-black tracking-tight text-gray-900">Governance & Security</h2>
+            <h2 className="text-4xl font-black tracking-tight text-gray-900">Activity Logs</h2>
             <p className="mt-2 max-w-2xl text-sm font-medium text-gray-500 leading-relaxed">
-              Real-time monitoring of system-wide authorization events. Every action is cryptographically tied to a tenant node for total transparency.
+              Real-time tracking of all system actions. Every event is recorded to ensure full transparency and security.
             </p>
           </div>
         </section>
@@ -115,7 +115,7 @@ export default function AuditLogsPage() {
 
         <section className="flex flex-col gap-6 rounded-3xl bg-gray-50 border border-gray-200 p-6 md:flex-row md:items-center shadow-sm">
           <div className="flex flex-wrap gap-2">
-            <span className="flex items-center px-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Protocol:</span>
+            <span className="flex items-center px-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Action:</span>
             {['', 'delete', 'update', 'login', 'create'].map((value) => (
               <button
                 key={value || 'all'}

@@ -172,7 +172,7 @@ export default function UsersPage() {
         <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
           <MetricCard 
             title="Total Registry" 
-            value={numberFormat(stats?.total_users ?? stats?.total_voters ?? 0)} 
+            value={numberFormat(stats?.total_users ?? 0)} 
             icon={Users} 
             tone="indigo"
           >
@@ -181,18 +181,18 @@ export default function UsersPage() {
 
           <MetricCard 
             title="Active Voters" 
-            value={numberFormat(stats?.active_voters ?? stats?.active_count ?? 0)} 
+            value={numberFormat(stats?.active_voters ?? 0)} 
             icon={UserCheck} 
             tone="emerald"
           >
              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-500" style={{ width: `${stats?.total_users ? (stats.active_voters / stats.total_users) * 100 : 0}%` }} />
+                <div className="h-full bg-emerald-500" style={{ width: `${stats?.total_voters ? (stats.active_voters / stats.total_voters) * 100 : 0}%` }} />
              </div>
           </MetricCard>
 
           <MetricCard 
             title="Pending Review" 
-            value={numberFormat(stats?.pending_users ?? stats?.pending_count ?? 0)} 
+            value={numberFormat(stats?.pending_users ?? 0)} 
             icon={ShieldAlert} 
             tone="amber"
           >
@@ -394,7 +394,7 @@ export default function UsersPage() {
       </div>
 
       {/* User Details Modal */}
-      <Modal isOpen={!!viewUser} onClose={() => setViewUser(null)} title="Identity Intelligence" size="2xl">
+      <Modal isOpen={!!viewUser} onClose={() => setViewUser(null)} title="User Details" size="2xl">
         {viewUser && (
           <div className="space-y-8">
             <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
@@ -403,7 +403,7 @@ export default function UsersPage() {
                </div>
                <div className="min-w-0">
                   <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{viewUser.full_name}</h3>
-                  <p className="text-sm text-[#1a337e] font-black uppercase tracking-widest mt-1">{viewUser.role} Protocol</p>
+                  <p className="text-sm text-[#1a337e] font-black uppercase tracking-widest mt-1">{viewUser.role} Account</p>
                   <div className="flex items-center gap-2 mt-3">
                     <Badge status={viewUser.status} />
                     {viewUser.is_verified && (
@@ -418,7 +418,7 @@ export default function UsersPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-6">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Contact Channels</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Contact Info</p>
                   <div className="space-y-4">
                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
@@ -434,7 +434,7 @@ export default function UsersPage() {
                            <Phone size={18} />
                         </div>
                         <div>
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mobile Contact</p>
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Phone Number</p>
                            <p className="text-sm font-bold text-gray-700">{viewUser.phone || '—'}</p>
                         </div>
                      </div>
@@ -442,14 +442,14 @@ export default function UsersPage() {
                </div>
 
                <div className="space-y-6">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Deployment Details</p>
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Account Details</p>
                   <div className="space-y-4">
                      <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-100">
                            <MapPin size={18} />
                         </div>
                         <div>
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Jurisdictional Node</p>
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Location</p>
                            <p className="text-sm font-bold text-gray-700">{viewUser.target ? `${viewUser.target.name} (${viewUser.target.type})` : 'Unassigned'}</p>
                         </div>
                      </div>
@@ -458,7 +458,7 @@ export default function UsersPage() {
                            <Calendar size={18} />
                         </div>
                         <div>
-                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Registry Date</p>
+                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Joined Date</p>
                            <p className="text-sm font-bold text-gray-700">{viewUser.created_at ? new Date(viewUser.created_at).toLocaleString() : '—'}</p>
                         </div>
                      </div>
@@ -471,7 +471,7 @@ export default function UsersPage() {
                 onClick={() => setViewUser(null)} 
                 className="px-10 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors shadow-sm active:scale-95"
               >
-                Dismiss Protocol
+                Close
               </button>
             </div>
           </div>

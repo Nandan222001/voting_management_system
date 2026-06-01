@@ -22,6 +22,7 @@ const adminNavLinks = [
   { to: '/elections', icon: Vote, label: 'Elections', roles: ['admin', 'moderator', 'voter'] },
   { to: '/targets', icon: MapPinned, label: 'Committee Management', roles: ['admin'] },
   { to: '/candidates', icon: Users, label: 'Candidates', roles: ['admin', 'moderator', 'voter'] },
+  { to: '/nominations', icon: UserCog, label: 'Nominated Users', roles: ['admin', 'moderator'] },
   { to: '/users', icon: UserCog, label: 'Users', roles: ['admin'] },
   { to: '/results', icon: BarChart3, label: 'Results', roles: ['admin', 'moderator', 'voter'] },
   { to: '/revenue', icon: TrendingUp, label: 'Revenue', roles: ['admin'] },
