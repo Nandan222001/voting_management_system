@@ -11,7 +11,8 @@ export const loginUser = createAsyncThunk(
       // authService.login sends form-encoded { username, password } which
       // FastAPI's OAuth2PasswordRequestForm expects (username is email here).
       const response = await authService.login(email, password)
-      const { access_token, user } = response.data
+      // The API returns { success: true, data: { access_token, user, token_type }, message }
+      const { access_token, user } = response.data.data || response.data
       localStorage.setItem('token', access_token)
       return { token: access_token, user }
     } catch (error) {
@@ -73,9 +74,15 @@ export const verifyOTP = createAsyncThunk(
   'auth/verifyOTP',
   async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/verify-otp', { email, otp })
-      const { token, user } = response.data
-      localStorage.setItem('token', token)
+      const response = await api.post('/auth/verify-otp', { email, otp_code: otp })
+      // The API should ideally return { success: true, data: { access_token, user } }
+      const data = response.data.data || response.data
+      const token = data.access_token || data.token
+      const user = data.user
+      
+      if (token) {
+        localStorage.setItem('token', token)
+      }
       return { token, user }
     } catch (error) {
       return rejectWithValue(

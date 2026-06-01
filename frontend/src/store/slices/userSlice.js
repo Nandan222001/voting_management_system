@@ -117,9 +117,9 @@ const userSlice = createSlice({
         state.loading = false
         // Extract data and pagination info from the envelope
         const payload = action.payload
-        state.users = payload.data || []
-        state.total = payload.pagination?.total || state.users.length
-        state.page = payload.pagination?.page || 1
+        state.users = payload.data || payload.users || (Array.isArray(payload) ? payload : [])
+        state.total = payload.pagination?.total || payload.total || state.users.length
+        state.page = payload.pagination?.page || payload.page || 1
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false
@@ -134,7 +134,8 @@ const userSlice = createSlice({
       })
       .addCase(approveUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload.data || action.payload)
+        const updated = action.payload.data || action.payload
+        state.users = updateUserInList(state.users, updated)
       })
       .addCase(approveUser.rejected, (state, action) => {
         state.actionLoading = false
@@ -149,7 +150,8 @@ const userSlice = createSlice({
       })
       .addCase(blockUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload.data || action.payload)
+        const updated = action.payload.data || action.payload
+        state.users = updateUserInList(state.users, updated)
       })
       .addCase(blockUser.rejected, (state, action) => {
         state.actionLoading = false
@@ -164,7 +166,8 @@ const userSlice = createSlice({
       })
       .addCase(unblockUser.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.users = updateUserInList(state.users, action.payload.data || action.payload)
+        const updated = action.payload.data || action.payload
+        state.users = updateUserInList(state.users, updated)
       })
       .addCase(unblockUser.rejected, (state, action) => {
         state.actionLoading = false

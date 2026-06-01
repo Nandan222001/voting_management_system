@@ -274,7 +274,51 @@ class NominationService:
             "approved": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.approved),
             "rejected": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.rejected),
             "suspended": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.suspended),
+            "withdrawn": repo.count_filtered(tenant_id=tenant_id, status_filter=NominationStatus.withdrawn),
         }
+
+    def withdraw_nomination(
+        self,
+        db: Session,
+        nomination_id: int,
+        current_user: User,
+    ) -> Nomination:
+        """
+        Allows a user to withdraw their own nomination.
+        Transitions status from 'pending' or 'approved' to 'withdrawn'.
+        """
+        nomination = self.get_nomination(db, nomination_id, current_user)
+        
+        if nomination.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only withdraw your own nomination.",
+            )
+            
+        if nomination.status == NominationStatus.withdrawn:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Nomination is already withdrawn.",
+            )
+
+        if nomination.status not in (NominationStatus.pending, NominationStatus.approved):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot withdraw nomination with status '{nomination.status.value}'.",
+            )
+            
+        # If it was approved, we might need to handle the Candidate record
+        if nomination.status == NominationStatus.approved:
+            from app.models.candidate import Candidate
+            candidate = db.query(Candidate).filter(
+                Candidate.election_id == nomination.election_id,
+                Candidate.email == nomination.email
+            ).first()
+            if candidate:
+                db.delete(candidate)
+
+        updated = NominationRepository(db).update(nomination, {"status": NominationStatus.withdrawn})
+        return updated
 
     def delete_nomination(
         self,

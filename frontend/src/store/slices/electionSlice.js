@@ -144,9 +144,10 @@ const electionSlice = createSlice({
       })
       .addCase(fetchElections.fulfilled, (state, action) => {
         state.loading = false
-        state.elections = action.payload.elections || action.payload.data || action.payload
-        state.total = action.payload.total || state.elections.length
-        state.page = action.payload.page || 1
+        const payload = action.payload
+        state.elections = payload.data || payload.elections || payload
+        state.total = payload.pagination?.total || payload.total || state.elections.length
+        state.page = payload.pagination?.page || payload.page || 1
       })
       .addCase(fetchElections.rejected, (state, action) => {
         state.loading = false
@@ -161,7 +162,7 @@ const electionSlice = createSlice({
       })
       .addCase(fetchElectionById.fulfilled, (state, action) => {
         state.loading = false
-        state.currentElection = action.payload.election || action.payload
+        state.currentElection = action.payload.data || action.payload.election || action.payload
       })
       .addCase(fetchElectionById.rejected, (state, action) => {
         state.loading = false
@@ -176,7 +177,7 @@ const electionSlice = createSlice({
       })
       .addCase(createElection.fulfilled, (state, action) => {
         state.actionLoading = false
-        const election = action.payload.election || action.payload
+        const election = action.payload.data || action.payload.election || action.payload
         state.elections.unshift(election)
         state.total += 1
       })
@@ -193,10 +194,11 @@ const electionSlice = createSlice({
       })
       .addCase(updateElection.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.elections = updateElectionInList(state.elections, action.payload)
-        const updated = action.payload?.election || action.payload
+        const updated = action.payload.data || action.payload
+        state.elections = updateElectionInList(state.elections, updated)
+        const electionData = updated?.election || updated
         if (state.currentElection) {
-          state.currentElection = { ...state.currentElection, ...updated }
+          state.currentElection = { ...state.currentElection, ...electionData }
         }
       })
       .addCase(updateElection.rejected, (state, action) => {
@@ -229,10 +231,11 @@ const electionSlice = createSlice({
       })
       .addCase(activateElection.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.elections = updateElectionInList(state.elections, action.payload)
-        const updated = action.payload?.election || action.payload
+        const updated = action.payload.data || action.payload
+        state.elections = updateElectionInList(state.elections, updated)
+        const electionData = updated?.election || updated
         if (state.currentElection) {
-          state.currentElection = { ...state.currentElection, ...updated }
+          state.currentElection = { ...state.currentElection, ...electionData }
         }
       })
       .addCase(activateElection.rejected, (state, action) => {
@@ -247,10 +250,11 @@ const electionSlice = createSlice({
       })
       .addCase(closeElection.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.elections = updateElectionInList(state.elections, action.payload)
-        const updated = action.payload?.election || action.payload
+        const updated = action.payload.data || action.payload
+        state.elections = updateElectionInList(state.elections, updated)
+        const electionData = updated?.election || updated
         if (state.currentElection) {
-          state.currentElection = { ...state.currentElection, ...updated }
+          state.currentElection = { ...state.currentElection, ...electionData }
         }
       })
       .addCase(closeElection.rejected, (state, action) => {
@@ -261,7 +265,7 @@ const electionSlice = createSlice({
     // fetchElectionStats
     builder
       .addCase(fetchElectionStats.fulfilled, (state, action) => {
-        state.stats = action.payload
+        state.stats = action.payload.data || action.payload
       })
   },
 })

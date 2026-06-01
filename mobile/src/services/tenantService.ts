@@ -1,16 +1,16 @@
-import api, { setTenantUUID, getTenantUUID, clearTenantUUID } from './api';
+import api, { setTenantID, getTenantID, clearTenantID } from './api';
 
 export const tenantService = {
   // ─── Tenant selection ─────────────────────────────────────────────────────
   // Call this when the user picks a tenant during onboarding / registration.
-  // Persists the UUID so every subsequent request carries X-Tenant-ID.
+  // Persists the ID so every subsequent request carries X-Tenant-ID.
 
-  selectTenant: async (tenantUUID: string): Promise<void> => {
-    await setTenantUUID(tenantUUID);
+  selectTenant: async (tenantId: string): Promise<void> => {
+    await setTenantID(tenantId);
   },
 
-  getStoredTenantUUID: getTenantUUID,
-  clearStoredTenant: clearTenantUUID,
+  getStoredTenantID: getTenantID,
+  clearStoredTenant: clearTenantID,
 
   // ─── Public endpoints ─────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, UploadFile, File, status
 from fastapi.responses import JSONResponse
-from app.utils.uploads import save_uploaded_document_to_mobile_assets, save_uploaded_image
+from app.utils.uploads import save_uploaded_document_to_mobile_assets, save_uploaded_file, save_uploaded_image
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/media", tags=["Media / Uploads"])
@@ -31,3 +31,19 @@ async def upload_nomination_document(
         filename_prefix="nomination_doc",
     )
     return success_response(data={"url": url}, message="Nomination document uploaded successfully.")
+
+
+@router.post("/upload-announcement-image", summary="Upload announcement image")
+async def upload_announcement_image(
+    file: UploadFile = File(...),
+) -> JSONResponse:
+    url = await save_uploaded_image(file, subdir="announcements", filename_prefix="announcement")
+    return success_response(data={"url": url}, message="Announcement image uploaded successfully.")
+
+
+@router.post("/upload-announcement-attachment", summary="Upload announcement attachment")
+async def upload_announcement_attachment(
+    file: UploadFile = File(...),
+) -> JSONResponse:
+    url = await save_uploaded_file(file, subdir="announcements/attachments", filename_prefix="announcement_attachment")
+    return success_response(data={"url": url}, message="Announcement attachment uploaded successfully.")

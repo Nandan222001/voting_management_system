@@ -6,7 +6,7 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
-  History,
+  History as HistoryIcon,
   Lock,
   Plus,
   Search,
@@ -325,7 +325,7 @@ export default function DashboardPage() {
               <div className="sa-scrollbar flex-1 space-y-2 overflow-y-auto p-4 bg-gray-50/30 max-h-[480px]">
                 {logsArray.length === 0 ? (
                   <div className="py-12 text-center">
-                     <History className="mx-auto mb-4 h-12 w-12 opacity-10 text-gray-900" />
+                     <HistoryIcon className="mx-auto mb-4 h-12 w-12 opacity-10 text-gray-900" />
                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">No activity</p>
                   </div>
                 ) : (

@@ -64,9 +64,11 @@ const paymentSlice = createSlice({
       })
       .addCase(fetchPayments.fulfilled, (state, action) => {
         state.loading = false;
-        const { transactions, summary } = action.payload.data;
-        state.payments = transactions.items || [];
-        state.total = transactions.total || 0;
+        const payload = action.payload;
+        const data = payload.data || payload;
+        const { transactions, summary } = data;
+        state.payments = transactions?.items || transactions || [];
+        state.total = payload.pagination?.total || transactions?.total || state.payments.length;
         state.stats = summary || null;
       })
       .addCase(fetchPayments.rejected, (state, action) => {
@@ -75,7 +77,7 @@ const paymentSlice = createSlice({
       })
       // Fetch Settings
       .addCase(fetchPaymentSettings.fulfilled, (state, action) => {
-        state.settings = action.payload.data || { razorpay_key_id: '', razorpay_key_secret: '' };
+        state.settings = action.payload.data || action.payload || { razorpay_key_id: '', razorpay_key_secret: '' };
       });
   },
 });

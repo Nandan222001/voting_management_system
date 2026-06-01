@@ -116,11 +116,11 @@ const nominationSlice = createSlice({
       })
       .addCase(fetchNominations.fulfilled, (state, action) => {
         state.loading = false
-        // Handle NominationListResponse directly or wrapped
-        const data = action.payload?.items ? action.payload : action.payload?.data
-        state.nominations = data?.items || []
-        state.total = data?.total || 0
-        state.page = data?.page || 1
+        const payload = action.payload
+        const data = payload.data || payload
+        state.nominations = data.items || data.nominations || (Array.isArray(data) ? data : [])
+        state.total = payload.pagination?.total || data.total || state.nominations.length
+        state.page = payload.pagination?.page || data.page || 1
       })
       .addCase(fetchNominations.rejected, (state, action) => {
         state.loading = false
@@ -134,7 +134,7 @@ const nominationSlice = createSlice({
       })
       .addCase(fetchNominationStats.fulfilled, (state, action) => {
         state.loading = false
-        state.stats = action.payload
+        state.stats = action.payload.data || action.payload
       })
       .addCase(fetchNominationStats.rejected, (state, action) => {
         state.loading = false
@@ -148,7 +148,8 @@ const nominationSlice = createSlice({
       })
       .addCase(approveNomination.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.nominations = updateNominationInList(state.nominations, action.payload)
+        const updated = action.payload.data || action.payload
+        state.nominations = updateNominationInList(state.nominations, updated)
       })
       .addCase(approveNomination.rejected, (state, action) => {
         state.actionLoading = false
@@ -162,7 +163,8 @@ const nominationSlice = createSlice({
       })
       .addCase(rejectNomination.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.nominations = updateNominationInList(state.nominations, action.payload)
+        const updated = action.payload.data || action.payload
+        state.nominations = updateNominationInList(state.nominations, updated)
       })
       .addCase(rejectNomination.rejected, (state, action) => {
         state.actionLoading = false
@@ -176,7 +178,8 @@ const nominationSlice = createSlice({
       })
       .addCase(suspendNomination.fulfilled, (state, action) => {
         state.actionLoading = false
-        state.nominations = updateNominationInList(state.nominations, action.payload)
+        const updated = action.payload.data || action.payload
+        state.nominations = updateNominationInList(state.nominations, updated)
       })
       .addCase(suspendNomination.rejected, (state, action) => {
         state.actionLoading = false

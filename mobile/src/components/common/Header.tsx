@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { MaterialIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { authService } from '../../services/authService';
 
 interface HeaderProps {
   showBack?: boolean;
   onBack?: () => void;
   title?: string; // Optional custom title, defaults to SecureVote
+  transparent?: boolean;
 }
 
-const UserInitials = () => {
+const UserInitials = ({ transparent }: { transparent?: boolean }) => {
   const [initials, setInitials] = useState('??');
 
   useEffect(() => {
@@ -30,40 +32,54 @@ const UserInitials = () => {
   }, []);
 
   return (
-    <View style={styles.initialsContainer}>
-      <Text style={styles.initialsText}>{initials}</Text>
+    <View style={[styles.initialsContainer, transparent && { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+      <Text style={[styles.initialsText, transparent && { color: '#fff' }]}>{initials}</Text>
     </View>
   );
 };
 
-const Header = ({ showBack, onBack, title }: HeaderProps) => {
+const Header = ({ showBack, onBack, title, transparent }: HeaderProps) => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  const iconColor = transparent ? '#fff' : '#003d9b';
+  const secondaryIconColor = transparent ? '#fff' : '#434654';
+
+  const openNotifications = () => {
+    const routes = navigation.getState?.()?.routeNames || [];
+    if (routes.includes('Notifications')) {
+      navigation.navigate('Notifications');
+    }
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+    <View style={[
+      styles.container, 
+      { paddingTop: insets.top + 8 },
+      transparent && { backgroundColor: 'transparent', borderBottomWidth: 0, position: 'absolute', top: 0, left: 0, right: 0 }
+    ]}>
       <View style={styles.content}>
         <View style={styles.leftSection}>
           {showBack ? (
             <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <MaterialIcons name="arrow-back" size={24} color="#003d9b" />
+              <MaterialIcons name="arrow-back" size={24} color={iconColor} />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity style={styles.menuButton}>
-              <MaterialIcons name="menu" size={24} color="#003d9b" />
+              <MaterialIcons name="menu" size={24} color={iconColor} />
             </TouchableOpacity>
           )}
-          <Text style={styles.brandText}>{title || 'CivicVote'}</Text>
+          <Text style={[styles.brandText, transparent && { color: '#fff' }]}>{title || 'CivicVote'}</Text>
         </View>
         
         <View style={styles.rightSection}>
           <TouchableOpacity style={styles.iconButton}>
-            <MaterialIcons name="search" size={24} color="#434654" />
+            <MaterialIcons name="search" size={24} color={secondaryIconColor} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconButton, styles.notificationButton]}>
-            <MaterialIcons name="notifications-none" size={24} color="#434654" />
-            <View style={styles.notificationBadge} />
+          <TouchableOpacity style={[styles.iconButton, styles.notificationButton]} onPress={openNotifications}>
+            <MaterialIcons name="notifications-none" size={24} color={secondaryIconColor} />
+            <View style={[styles.notificationBadge, transparent && { borderColor: 'transparent' }]} />
           </TouchableOpacity>
-          <UserInitials />
+          <UserInitials transparent={transparent} />
         </View>
       </View>
     </View>
