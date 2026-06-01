@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const EXPO_ENV = process.env as Record<string, string | undefined>;
-const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8001/api/v1';
+const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 const API_URL =
   Platform.OS === 'android'
     ? RAW_API_URL.replace('http://localhost:', 'http://10.0.2.2:').replace(
