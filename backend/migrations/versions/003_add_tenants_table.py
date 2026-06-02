@@ -65,13 +65,13 @@ def upgrade() -> None:
             "created_at",
             sa.DateTime(),
             nullable=False,
-            server_default=sa.text("NOW()"),
+            server_default=sa.func.now(),
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(),
             nullable=False,
-            server_default=sa.text("NOW()"),
+            server_default=sa.func.now(),
         ),
         # Constraints
         sa.UniqueConstraint("slug", name="uq_tenants_slug"),
