@@ -46,15 +46,21 @@ def get_public_elections(
     db: Session = Depends(get_db),
 ) -> JSONResponse:
     """
-    Returns a list of active and upcoming elections for a tenant.
-    Does not require a JWT.  Scoped via ``tenant_id`` or ``X-Tenant-ID``.
+    Returns a list of active and upcoming elections.
+
+    If ``tenant_id`` or ``X-Tenant-ID`` is provided, results are scoped to that
+    tenant. If omitted, the system defaults to the only tenant if exactly one
+    exists, otherwise it returns active elections from all tenants (global view).
     """
     effective_tenant_id = tenant_id or header_tenant_id
+
+    # Fallback: if no tenant_id provided, try to default to the only tenant if
+    # there is only one active tenant in the system.
     if not effective_tenant_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tenant identification required (tenant_id query or X-Tenant-ID header).",
-        )
+        from app.models.tenant import Tenant, TenantStatus
+        tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.active).limit(2).all()
+        if len(tenants) == 1:
+            effective_tenant_id = tenants[0].id
 
     elections, total = election_service.get_all(
         db,
@@ -63,10 +69,12 @@ def get_public_elections(
         status_filter=ElectionStatus.active,
         tenant_id=effective_tenant_id,
     )
-    
-    data = [ElectionResponse.model_validate(e).model_dump(mode="json") for e in elections]
-    return success_response(data=data, message="Public elections retrieved.")
 
+    data = [ElectionResponse.model_validate(e).model_dump(mode="json") for e in elections]
+    return success_response(
+        data=data,
+        message="Public elections retrieved." if effective_tenant_id else "Global public elections retrieved."
+    )
 
 # ---------------------------------------------------------------------------
 # GET /stats/overview — declared before /{election_id} to avoid path conflict
