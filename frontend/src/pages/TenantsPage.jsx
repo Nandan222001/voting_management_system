@@ -150,6 +150,8 @@ const EMPTY_FORM = {
   admin_name: '',
   admin_email: '',
   admin_password: '',
+  razorpay_key_id: '',
+  razorpay_key_secret: '',
 };
 
 function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading }) {
@@ -173,6 +175,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         admin_name: '',
         admin_email: '',
         admin_password: '',
+        razorpay_key_id: editTenant.razorpay_key_id || '',
+        razorpay_key_secret: editTenant.razorpay_key_secret || '',
       });
       setSlugManual(true);
     } else {
@@ -232,6 +236,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
       payload.append('contact_phone', form.contact_phone.trim());
       payload.append('status', form.status);
       payload.append('logo', form.logo_file);
+      payload.append('razorpay_key_id', form.razorpay_key_id.trim());
+      payload.append('razorpay_key_secret', form.razorpay_key_secret.trim());
     } else {
       payload = {
         name: form.name.trim(),
@@ -239,6 +245,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         contact_email: form.contact_email.trim(),
         contact_phone: form.contact_phone.trim(),
         status: form.status,
+        razorpay_key_id: form.razorpay_key_id.trim(),
+        razorpay_key_secret: form.razorpay_key_secret.trim(),
       };
     }
 
@@ -338,6 +346,34 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   { value: 'suspended', label: 'Suspended (Locked)' },
                 ]}
               />
+
+              <div className="pt-4 space-y-4 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-amber-600 rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Payment Gateway (Razorpay)</span>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <Field label="Key ID">
+                    <Input
+                      name="razorpay_key_id"
+                      value={form.razorpay_key_id}
+                      onChange={set('razorpay_key_id')}
+                      placeholder="rzp_test_..."
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <Field label="Key Secret">
+                    <Input
+                      type="password"
+                      name="razorpay_key_secret"
+                      value={form.razorpay_key_secret}
+                      onChange={set('razorpay_key_secret')}
+                      placeholder="••••••••"
+                      autoComplete="off"
+                    />
+                  </Field>
+                </div>
+              </div>
 
               <Field label="Logo">
                 <ImageUpload

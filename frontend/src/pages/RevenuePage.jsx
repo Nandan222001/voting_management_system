@@ -366,7 +366,7 @@ export default function RevenuePage() {
                                 <tr key={p.id || idx} className="group transition-all duration-200">
                                    <td className="rounded-l-2xl bg-white border border-r-0 border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">
                                       <span className="font-mono text-[10px] font-black text-[#1a337e] bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
-                                         {p.id?.slice(-12) || 'REF_ID_NULL'}
+                                         {p.razorpay_order_id || String(p.id).padStart(5, '0')}
                                       </span>
                                    </td>
                                    <td className="bg-white border-y border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">

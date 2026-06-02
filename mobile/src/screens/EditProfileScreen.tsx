@@ -20,10 +20,12 @@ import {
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
+import { planService } from '../services/planService';
 import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';
 
@@ -276,8 +278,9 @@ const EditProfileScreen = ({ navigation }: any) => {
     try {
       const commData = await tenantService.getPublicCommittees();
       setCommittees(commData);
-      const planData = await tenantService.getPublicPlans();
-      setPlans(planData);
+      const planData = await planService.getPublicPlans();
+      const planItems = (planData?.items ?? planData) || [];
+      setPlans(planItems);
 
       // Find selected names
       if (user?.committee_id) {
@@ -285,7 +288,7 @@ const EditProfileScreen = ({ navigation }: any) => {
         if (comm) setSelectedCommitteeName(comm.name);
       }
       if (user?.membership_plan_id) {
-        const p = planData.find((p: any) => p.id === user.membership_plan_id);
+        const p = planItems.find((p: any) => p.id === user.membership_plan_id);
         if (p) setSelectedPlanName(p.name);
       }
     } catch (error) {
@@ -341,11 +344,10 @@ const EditProfileScreen = ({ navigation }: any) => {
       if (target_id) (updateData as any).target_id = target_id;
       
       await updateProfile(updateData);
-      Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('ProfileMain') }
-      ]);
+      showToast.success('Success', 'Profile updated successfully!');
+      navigation.navigate('ProfileMain');
     } catch (error: any) {
-      Alert.alert('Update Failed', error.response?.data?.detail || 'An error occurred');
+      showToast.error('Update Failed', error.response?.data?.detail || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -730,8 +732,10 @@ const EditProfileScreen = ({ navigation }: any) => {
                 icon="locate-outline"
                 value={selectedDistrictName}
                 onPress={() => {
-                  if (!formData.state_id) Alert.alert("Select State First");
-                  else setModalType('district');
+                  if (!formData.state_id) {
+                    if (Platform.OS === 'web') showToast.info("Selection Required", "Please select a State first");
+                    else Alert.alert("Select State First");
+                  } else setModalType('district');
                 }}
               />
 
@@ -740,8 +744,10 @@ const EditProfileScreen = ({ navigation }: any) => {
                 icon="trail-sign-outline"
                 value={selectedTalukaName}
                 onPress={() => {
-                  if (!formData.district_id) Alert.alert("Select District First");
-                  else setModalType('taluka');
+                  if (!formData.district_id) {
+                    if (Platform.OS === 'web') showToast.info("Selection Required", "Please select a District first");
+                    else Alert.alert("Select District First");
+                  } else setModalType('taluka');
                 }}
               />
 
@@ -750,8 +756,10 @@ const EditProfileScreen = ({ navigation }: any) => {
                 icon="business-outline"
                 value={selectedVillageName}
                 onPress={() => {
-                  if (!formData.taluka_id) Alert.alert("Select Taluka First");
-                  else setModalType('village');
+                  if (!formData.taluka_id) {
+                    if (Platform.OS === 'web') showToast.info("Selection Required", "Please select a Taluka first");
+                    else Alert.alert("Select Taluka First");
+                  } else setModalType('village');
                 }}
               />
 

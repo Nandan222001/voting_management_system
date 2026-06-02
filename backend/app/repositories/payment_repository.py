@@ -65,28 +65,61 @@ class PaymentRepository(BaseRepository[Payment]):
             "currency": "INR"
         }
 
-    def get_latest_by_user(self, tenant_id: int, user_id: int) -> Optional[Payment]:
+    def get_latest_by_user(
+        self,
+        tenant_id: int,
+        user_id: int,
+        plan_id: Optional[int] = None,
+    ) -> Optional[Payment]:
         """
         Return the most recent payment made by a user within a tenant.
         """
+        query = self.db.query(Payment).filter(
+            Payment.tenant_id == tenant_id,
+            Payment.user_id == user_id,
+        )
+        if plan_id is not None:
+            query = query.filter(Payment.membership_plan_id == plan_id)
         return (
-            self.db.query(Payment)
-            .filter(Payment.tenant_id == tenant_id, Payment.user_id == user_id)
+            query
             .order_by(Payment.created_at.desc())
             .first()
         )
 
-    def has_captured_payment_for_user(self, tenant_id: int, user_id: int) -> bool:
+    def has_captured_payment_for_user(self, tenant_id: int, user_id: int, plan_id: int) -> bool:
         """
-        Check whether a user has at least one completed/captured payment.
+        Check whether a user has at least one completed/captured payment 
+        for a specific membership plan.
         """
         return (
             self.db.query(Payment.id)
             .filter(
                 Payment.tenant_id == tenant_id,
                 Payment.user_id == user_id,
+                Payment.membership_plan_id == plan_id,
                 Payment.status == PaymentStatus.captured,
+                Payment.razorpay_payment_id.isnot(None),
+                Payment.razorpay_signature.isnot(None),
             )
             .first()
             is not None
+        )
+
+    def get_by_order_for_user(
+        self,
+        tenant_id: int,
+        user_id: int,
+        razorpay_order_id: str,
+    ) -> Optional[Payment]:
+        """
+        Return a tenant/user-scoped payment by Razorpay order id.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(
+                Payment.tenant_id == tenant_id,
+                Payment.user_id == user_id,
+                Payment.razorpay_order_id == razorpay_order_id,
+            )
+            .first()
         )

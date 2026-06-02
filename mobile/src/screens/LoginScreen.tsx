@@ -16,6 +16,7 @@ import {
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/common/Header";
+import { showToast } from "../utils/toast";
 
 const { width } = Dimensions.get('window');
 
@@ -33,32 +34,36 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(
-        "Incomplete Fields",
-        "Please enter your ID/email and password.",
-      );
+      showToast.error("Incomplete Fields", "Please enter your ID/email and password.");
       return;
     }
     setLoading(true);
     try {
       await login(email, password);
+      showToast.success("Success", "Welcome back to CivicVote!");
     } catch (error: any) {
       const message = error.response?.data?.detail || "Invalid credentials. Please check your email and password.";
       
       if (message === "Account email not verified") {
-        Alert.alert(
-          "Verification Required",
-          "Your email address is not verified. Would you like to verify it now?",
-          [
-            { text: "Cancel", style: "cancel" },
-            { 
-              text: "Verify Now", 
-              onPress: () => navigation.navigate("Verify", { email }) 
-            }
-          ]
-        );
+        if (Platform.OS === 'web') {
+           showToast.info("Verification Required", "Please check your inbox to verify your account.");
+           // Optional: Auto-navigate for convenience in web-simulation
+           navigation.navigate("Verify", { email });
+        } else {
+          Alert.alert(
+            "Verification Required",
+            "Your email address is not verified. Would you like to verify it now?",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Verify Now", 
+                onPress: () => navigation.navigate("Verify", { email }) 
+              }
+            ]
+          );
+        }
       } else {
-        Alert.alert("Sign In Failed", message);
+        showToast.error("Sign In Failed", message);
       }
     } finally {
       setLoading(false);

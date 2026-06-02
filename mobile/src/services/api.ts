@@ -37,7 +37,7 @@ export const setTenantID = async (tenantId: string | number | null | undefined) 
 };
 
 export const getTenantID = async () => {
-  return (await AsyncStorage.getItem(TENANT_ID_KEY)) || ENV_TENANT_ID || null;
+  return ENV_TENANT_ID || (await AsyncStorage.getItem(TENANT_ID_KEY)) || null;
 };
 
 export const clearTenantID = async () => {

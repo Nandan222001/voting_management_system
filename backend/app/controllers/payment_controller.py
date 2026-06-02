@@ -6,17 +6,76 @@ from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user, require_admin
 from app.models.user import User
 from app.schemas.payment import (
+    MembershipOrderCreate,
     PaymentCreate,
     PaymentListResponse,
     PaymentResponse,
+    PaymentStatusResponse,
+    PaymentUpdate,
+    PaymentVerifyResponse,
     MembershipPaymentStatusResponse,
     RevenueSummary,
+    RazorpayOrderResponse,
+    RazorpayPaymentVerify,
 )
 from app.schemas.tenant import TenantPaymentSettings
 from app.services.payment_service import payment_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/payments", tags=["Revenue & Payments"])
+
+
+@router.get(
+    "/status",
+    response_model=PaymentStatusResponse,
+    summary="Get current user's membership payment status",
+)
+def get_payment_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PaymentStatusResponse:
+    """
+    Return the latest payment status for the user's selected membership plan.
+    """
+    return PaymentStatusResponse(**payment_service.get_current_payment_status(db, current_user))
+
+
+@router.post(
+    "/create-order",
+    response_model=RazorpayOrderResponse,
+    summary="Create a membership payment Razorpay order",
+)
+def create_membership_payment_order(
+    payload: MembershipOrderCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> RazorpayOrderResponse:
+    """
+    Create a pending payment record and Razorpay order for the user's selected membership plan.
+    """
+    order_data = payment_service.create_membership_payment_order(
+        db,
+        current_user=current_user,
+        membership_plan_id=payload.membership_plan_id,
+    )
+    return RazorpayOrderResponse(**order_data)
+
+
+@router.post(
+    "/verify",
+    response_model=PaymentVerifyResponse,
+    summary="Verify a Razorpay membership payment",
+)
+def verify_membership_payment(
+    payload: RazorpayPaymentVerify,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PaymentVerifyResponse:
+    """
+    Verify Razorpay signature and mark the matching payment as captured.
+    """
+    result = payment_service.verify_membership_payment(db, current_user, payload)
+    return PaymentVerifyResponse(**result)
 
 
 @router.get(
@@ -31,35 +90,59 @@ def get_my_membership_status(
     Return whether the current user has selected a membership plan and
     completed payment for it.
     """
-    payload = MembershipPaymentStatusResponse.model_validate(
-        payment_service.get_my_membership_status(db, current_user)
-    ).model_dump(mode="json")
+    status_data = payment_service.get_my_membership_status(db, current_user)
     return success_response(
-        data=payload,
+        data=status_data,
         message="Membership payment status retrieved successfully.",
     )
 
 
 @router.post(
     "/create",
-    response_model=PaymentResponse,
-    summary="Initialize a new payment (Authenticated)",
+    response_model=RazorpayOrderResponse,
+    summary="Initialize a new Razorpay order",
 )
 def create_payment(
     payload: PaymentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+) -> RazorpayOrderResponse:
+    """
+    Create a pending payment record and generate Razorpay Order ID.
+    Uses organization-specific credentials.
+    """
+    order_data = payment_service.create_razorpay_order(
+        db, 
+        tenant_id=current_user.tenant_id, 
+        user_id=current_user.id,
+        amount=payload.amount,
+        description=payload.description
+    )
+    return RazorpayOrderResponse(**order_data)
+
+
+@router.post(
+    "/verify-record",
+    response_model=PaymentResponse,
+    summary="Verify and capture a payment signature",
+)
+def verify_payment_record(
+    payment_id: int,
+    payload: PaymentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PaymentResponse:
     """
-    Create a pending payment record.
+    Verifies the Razorpay signature and updates the record to 'captured'.
+    Ensures secure and valid transaction finalization.
     """
-    payload.user_id = current_user.id
-    payment = payment_service.create_payment_record(
+    updated = payment_service.update_payment_status(
         db, 
+        payment_id=payment_id, 
         tenant_id=current_user.tenant_id, 
         data=payload
     )
-    return PaymentResponse.model_validate(payment)
+    return PaymentResponse.model_validate(updated)
 
 
 @router.get(
