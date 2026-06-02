@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +35,92 @@ const COLORS = {
   onSecondaryContainer: '#067500',
   surfaceContainerLow: '#f3f4f6',
   surfaceContainerHighest: '#e1e2e4',
+};
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+declare const require: (moduleName: string) => any;
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions & {
+      handler: (response: RazorpayCheckoutResult) => void;
+      modal?: { ondismiss?: () => void };
+    }) => { open: () => void };
+  }
+}
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      if (!window.Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new window.Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
 };
 
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
@@ -128,7 +215,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       // Total items and pages will be calculated by the filtered list
     } catch (error) {
       console.error("Failed to load elections", error);
-      Alert.alert("Error", "Failed to load elections.");
+      showToast.error("Error", "Failed to load elections.");
     } finally {
       setLoading(false);
     }
@@ -191,7 +278,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       }
     } catch (error) {
       console.error("Failed to load election data", error);
-      Alert.alert("Error", "Failed to load election details.");
+      showToast.error("Error", "Failed to load election details.");
       setMyNomination(null);
     } finally {
       setLoading(false);
@@ -238,63 +325,119 @@ const VotingScreen = ({ navigation, route }: any) => {
   const handleWithdrawNomination = () => {
     if (!myNomination?.id || !selectedElection) return;
 
-    Alert.alert(
-      'Withdraw Nomination',
-      'Do you want to withdraw your nomination for this election?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Withdraw',
-          style: 'destructive',
-          onPress: async () => {
-            setWithdrawingNomination(true);
-            try {
-              await nominationService.withdraw(myNomination.id);
-              setMyNomination(null);
-              Alert.alert('Withdrawn', 'Your nomination has been withdrawn.');
-              fetchElectionDetails(selectedElection.id);
-            } catch (error: any) {
-              Alert.alert(
-                'Withdrawal Failed',
-                error.response?.data?.detail || error.response?.data?.message || 'Could not withdraw nomination.',
-              );
-            } finally {
-              setWithdrawingNomination(false);
-            }
+    const performWithdrawal = async () => {
+      setWithdrawingNomination(true);
+      try {
+        await nominationService.withdraw(myNomination.id);
+        showToast.success('Withdrawn', 'Your nomination has been withdrawn.');
+        await fetchElectionDetails(selectedElection.id);
+      } catch (error: any) {
+        showToast.error(
+          'Withdrawal Failed',
+          error.response?.data?.detail || error.response?.data?.message || 'Could not withdraw nomination.',
+        );
+      } finally {
+        setWithdrawingNomination(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Do you want to withdraw your nomination for this election?')) {
+        performWithdrawal();
+      }
+    } else {
+      Alert.alert(
+        'Withdraw Nomination',
+        'Do you want to withdraw your nomination for this election?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Withdraw',
+            style: 'destructive',
+            onPress: performWithdrawal,
           },
+        ],
+      );
+    }
+  };
+
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [membershipModalType, setMembershipModalType] = useState<'select' | 'pay'>('select');
+
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const handleRealPayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const status = await paymentService.getMyMembershipStatus();
+      const membershipPlanId = status?.membership_plan_id || user?.membership_plan_id;
+      if (!membershipPlanId) {
+        setMembershipModalType('select');
+        return;
+      }
+      const planName = status?.plan_details?.name || "Membership Plan";
+
+      const orderResponse = await paymentService.createMembershipOrder(membershipPlanId);
+
+      const options = {
+        description: `${planName} Activation`,
+        image: 'https://ui-avatars.com/api/?name=Voting+System&background=003d9b&color=fff',
+        currency: orderResponse.currency,
+        key: orderResponse.key_id,
+        amount: orderResponse.amount,
+        name: 'Digital Voting System',
+        order_id: orderResponse.order_id || orderResponse.razorpay_order_id,
+        prefill: {
+          email: user?.email || '',
+          contact: user?.phone || '',
+          name: user?.full_name || ''
         },
-      ],
-    );
+        theme: { color: COLORS.primary }
+      };
+
+      try {
+        const data = await openRazorpayCheckout(options);
+        await paymentService.verifyPayment({
+          razorpay_order_id: data.razorpay_order_id || orderResponse.razorpay_order_id,
+          razorpay_payment_id: data.razorpay_payment_id,
+          razorpay_signature: data.razorpay_signature,
+        });
+        
+        showToast.success("Success", "Payment completed successfully! You can now cast your vote.");
+        setShowMembershipModal(false);
+      } catch (error: any) {
+        // Razorpay error (e.g. payment cancelled)
+        if (error.code === 2) {
+          showToast.info("Payment Cancelled", "The payment process was dismissed.");
+        } else {
+          showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
+        }
+      }
+    } catch (error: any) {
+      showToast.error("System Error", error.response?.data?.detail || "Could not initialize payment gateway.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleCastVote = async () => {
     if (!selectedCandidateId || !selectedElection) return;
-
-    if (!user?.membership_plan_id) {
-      setShowConfirmModal(false);
-      Alert.alert(
-        'Membership Plan Required',
-        'Please select a Membership Plan first:\nProfile -> Edit Profile -> Select Membership Plan',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Edit Profile',
-            onPress: () => navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' }),
-          },
-        ],
-      );
-      return;
-    }
     
     setSubmitting(true);
     try {
-      const membershipStatus = await paymentService.getMyMembershipStatus();
-      if (!membershipStatus?.payment_completed) {
+      const eligibility = await paymentService.checkVotingEligibility();
+      if (!eligibility.membership_selected) {
+        setSubmitting(false);
         setShowConfirmModal(false);
-        Alert.alert(
-          'Payment Required',
-          'Your selected Membership Plan payment is pending or not completed. Please complete the payment to proceed with voting.',
-        );
+        setMembershipModalType('select');
+        setShowMembershipModal(true);
+        return;
+      }
+      if (!eligibility.payment_completed) {
+        setSubmitting(false);
+        setShowConfirmModal(false);
+        setMembershipModalType('pay');
+        setShowMembershipModal(true);
         return;
       }
 
@@ -303,7 +446,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       setShowSuccessModal(true);
       fetchElectionDetails(selectedElection.id); // Refresh vote status
     } catch (error: any) {
-      Alert.alert("Voting Failed", error.response?.data?.detail || "An error occurred.");
+      showToast.error("Voting Failed", error.response?.data?.message || error.response?.data?.detail || "An error occurred.");
     } finally {
       setSubmitting(false);
     }
@@ -666,7 +809,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                           </Text>
                         </View>
                       </View>
-                      {String(myNomination.status || '').toLowerCase() === 'pending' && (
+                      {['pending', 'approved'].includes(String(myNomination.status || '').toLowerCase()) && (
                         <TouchableOpacity
                           style={styles.withdrawNominationBtn}
                           onPress={handleWithdrawNomination}
@@ -840,6 +983,63 @@ const VotingScreen = ({ navigation, route }: any) => {
             >
               <Text style={styles.returnBtnText}>Return</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Membership / Payment Modal */}
+      <Modal transparent visible={showMembershipModal} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.membershipBox}>
+            <View style={[styles.membershipIconCircle, { backgroundColor: membershipModalType === 'select' ? '#dae2ff' : '#fff3e0' }]}>
+               <MaterialIcons 
+                name={membershipModalType === 'select' ? "card-membership" : "payment"} 
+                size={40} 
+                color={membershipModalType === 'select' ? COLORS.primary : '#e65100'} 
+               />
+            </View>
+            
+            <Text style={styles.membershipTitle}>
+              {membershipModalType === 'select' ? 'Membership Plan Required' : 'Payment Required'}
+            </Text>
+            
+            <Text style={styles.membershipSub}>
+              {membershipModalType === 'select' 
+                ? 'To participate in voting, please select a Membership Plan first.\n\nProfile -> Edit Profile -> Select Membership Plan'
+                : 'Your Membership Plan payment is pending or incomplete. Please complete the payment to proceed with voting.'
+              }
+            </Text>
+
+            <View style={styles.membershipActions}>
+              <TouchableOpacity 
+                style={[styles.membershipMainBtn, { backgroundColor: membershipModalType === 'select' ? COLORS.primary : '#e65100' }]}
+                onPress={() => {
+                  if (membershipModalType === 'select') {
+                    setShowMembershipModal(false);
+                    navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' });
+                  } else {
+                    handleRealPayment();
+                  }
+                }}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.membershipMainBtnText}>
+                    {membershipModalType === 'select' ? 'Go to Profile' : 'Complete Payment'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.membershipCancelBtn}
+                onPress={() => !isProcessingPayment && setShowMembershipModal(false)}
+                disabled={isProcessingPayment}
+              >
+                <Text style={styles.membershipCancelText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2143,6 +2343,230 @@ const styles = StyleSheet.create({
   successSub: { fontSize: 14, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   returnBtn: { backgroundColor: COLORS.surfaceContainerHighest, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, width: '100%', alignItems: 'center' },
   returnBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
+  
+  // Membership Modal Styles
+  membershipBox: { 
+    backgroundColor: '#fff', 
+    width: '100%', 
+    borderRadius: 28, 
+    padding: 24, 
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 10 }
+    })
+  },
+  membershipIconCircle: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 20 
+  },
+  membershipTitle: { 
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: COLORS.onSurface, 
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  membershipSub: { 
+    fontSize: 15, 
+    color: COLORS.onSurfaceVariant, 
+    textAlign: 'center', 
+    lineHeight: 22, 
+    marginBottom: 28,
+    opacity: 0.8
+  },
+  membershipActions: { 
+    width: '100%', 
+    gap: 12 
+  },
+  membershipMainBtn: { 
+    paddingVertical: 16, 
+    borderRadius: 16, 
+    width: '100%', 
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 4 }
+    })
+  },
+  membershipMainBtnText: { 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: '#fff',
+    letterSpacing: 0.5
+  },
+  membershipCancelBtn: { 
+    paddingVertical: 14, 
+    width: '100%', 
+    alignItems: 'center' 
+  },
+  membershipCancelText: { 
+    fontSize: 14, 
+    fontWeight: '700', 
+    color: COLORS.onSurfaceVariant 
+  },
+
+  // Premium Nomination Detail Styles
+  nominationDeepDetailContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 },
+    }),
+  },
+  nominationStatusHero: {
+    padding: 24,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  statusIconLarge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  nominationStatusHeroLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 1.5,
+    opacity: 0.6,
+  },
+  nominationStatusHeroTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  nominationStatusHeroSub: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  nominationTimeline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#f8fafc',
+  },
+  timelineItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  timelineNode: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#94a3b8',
+  },
+  timelineConnector: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#e2e8f0',
+    marginHorizontal: 8,
+    marginTop: -18,
+  },
+  timelineConnectorActive: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.secondary,
+    marginHorizontal: 8,
+    marginTop: -18,
+  },
+  timelineText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+  },
+  nominationInfoGrid: {
+    padding: 20,
+    gap: 20,
+  },
+  infoGridSection: {
+    gap: 12,
+  },
+  infoGridSectionTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: COLORS.primary,
+    letterSpacing: 1,
+    opacity: 0.5,
+  },
+  infoGridRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  infoGridItem: {
+    flex: 1,
+  },
+  infoGridLabel: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.6,
+    marginBottom: 2,
+  },
+  infoGridValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  premiumWithdrawBtn: {
+    margin: 20,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#b91c1c',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    ...Platform.select({
+      ios: { shadowColor: '#b91c1c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  premiumWithdrawBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  nominationFooterNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingBottom: 20,
+    opacity: 0.5,
+  },
+  nominationFooterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.onSurfaceVariant,
+  },
 });
 
 export default VotingScreen;

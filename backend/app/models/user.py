@@ -168,7 +168,7 @@ class User(Base):
     membership_plan = relationship(
         "Plan",
         foreign_keys=[membership_plan_id],
-        lazy="select",
+        lazy="joined",
     )
 
     def __repr__(self) -> str:  # pragma: no cover

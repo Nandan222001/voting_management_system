@@ -35,8 +35,51 @@ class PaymentUpdate(BaseModel):
     """Payload for updating an existing payment (e.g. after capture)."""
 
     status: Optional[PaymentStatus] = None
+    razorpay_order_id: Optional[str] = None
     razorpay_payment_id: Optional[str] = None
     razorpay_signature: Optional[str] = None
+
+
+class RazorpayOrderResponse(BaseModel):
+    """Details needed by the frontend to open Razorpay Checkout."""
+
+    payment_id: int
+    razorpay_order_id: str
+    order_id: str
+    amount: int  # in paise
+    currency: str
+    key_id: str
+
+
+class MembershipOrderCreate(BaseModel):
+    """Payload for creating a membership-plan payment order."""
+
+    membership_plan_id: int = Field(..., gt=0)
+
+
+class RazorpayPaymentVerify(BaseModel):
+    """Razorpay checkout payload verified by the backend."""
+
+    razorpay_order_id: str = Field(..., min_length=1)
+    razorpay_payment_id: str = Field(..., min_length=1)
+    razorpay_signature: str = Field(..., min_length=1)
+
+
+class PaymentVerifyResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class PaymentStatusResponse(BaseModel):
+    status: Optional[str] = None
+    payment_completed: bool
+
+
+class VotingEligibilityResponse(BaseModel):
+    can_vote: bool
+    membership_selected: bool
+    payment_completed: bool
+    message: str
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +94,9 @@ class PaymentResponse(PaymentBase):
     status: PaymentStatus
     razorpay_order_id: Optional[str] = None
     razorpay_payment_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
     user_id: Optional[int] = None
+    membership_plan_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

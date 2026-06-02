@@ -6,6 +6,7 @@ import { View, ActivityIndicator } from 'react-native';
 import TabNavigator from './src/navigation/TabNavigator';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import Toast from 'react-native-toast-message';
 
 function AppContent() {
   const { user, token, isLoading, logout } = useAuth();
@@ -19,14 +20,17 @@ function AppContent() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      {token ? (
-        <TabNavigator />
-      ) : (
-        <AuthNavigator />
-      )}
-    </NavigationContainer>
+    <>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        {token ? (
+          <TabNavigator />
+        ) : (
+          <AuthNavigator />
+        )}
+      </NavigationContainer>
+      <Toast />
+    </>
   );
 }
 

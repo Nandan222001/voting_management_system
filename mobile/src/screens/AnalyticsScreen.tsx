@@ -130,10 +130,10 @@ const AnalyticsScreen = () => {
                {isWinner && <View style={styles.winnerPill}><Text style={styles.winnerPillText}>WINNER</Text></View>}
             </View>
             <Text style={styles.modernPersonName}>{person.full_name}</Text>
-            <div style={styles.personMetaRow}>
+            <View style={styles.personMetaRow}>
                <MaterialIcons name="alternate-email" size={12} color={COLORS.onSurfaceVariant} style={{ opacity: 0.5 }} />
                <Text style={styles.personMetaText}>{person.email || 'Authorized Ledger'}</Text>
-            </div>
+            </View>
          </View>
          <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
       </TouchableOpacity>

@@ -27,7 +27,7 @@ export const electionService = {
   },
 
   castVote: async (electionId: number, candidateId: number) => {
-    const response = await api.post('/votes/cast', {
+    const response = await api.post('/voting/submit', {
       election_id: electionId,
       candidate_id: candidateId,
     });

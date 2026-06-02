@@ -585,8 +585,8 @@ const NominationScreen = ({ navigation, route }: any) => {
               />
               {errors.kyc_type && <Text style={styles.errorText}>{errors.kyc_type}</Text>}
               <InputField label="ID Number" value={formData.voter_id} onChangeText={(t: string) => setFormData({...formData, voter_id: t})} icon="fingerprint" error={errors.voter_id} />
-              <InputField label="State" value={formData.state} editable={false} icon="map-outline" error={errors.state} />
-              <InputField label="District" value={formData.district} editable={false} icon="location-outline" error={errors.district} />
+              <InputField label="State" value={formData.state} onChangeText={(t: string) => setFormData({...formData, state: t})} icon="map-outline" error={errors.state} />
+              <InputField label="District" value={formData.district} onChangeText={(t: string) => setFormData({...formData, district: t})} icon="location-outline" error={errors.district} />
               <InputField label="Taluka / Block" value={formData.taluka} onChangeText={(t: string) => setFormData({...formData, taluka: t})} icon="location-outline" />
               <InputField label="Village / Area" value={formData.village} onChangeText={(t: string) => setFormData({...formData, village: t})} icon="home-outline" />
               <InputField label="Pincode" value={formData.pincode} keyboardType="numeric" onChangeText={(t: string) => setFormData({...formData, pincode: t})} icon="pin-outline" error={errors.pincode} />

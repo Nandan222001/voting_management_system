@@ -19,7 +19,7 @@ from app.controllers.report_controller import router as report_router
 from app.controllers.target_controller import router as target_router
 from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
-from app.controllers.vote_controller import router as vote_router
+from app.controllers.vote_controller import router as vote_router, voting_router
 from app.controllers.payment_controller import router as payment_router
 from app.controllers.plan_controller import router as plan_router
 from app.controllers.media_controller import router as media_router
@@ -69,6 +69,7 @@ app.include_router(announcement_router, prefix="/api/v1", dependencies=common_de
 app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(voting_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(payment_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(plan_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(media_router, prefix="/api/v1", dependencies=common_dependencies)

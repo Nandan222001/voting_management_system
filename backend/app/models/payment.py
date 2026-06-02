@@ -66,6 +66,14 @@ class Payment(Base):
         index=True,
     )
 
+    # Link to specific membership plan
+    membership_plan_id = Column(
+        Integer,
+        ForeignKey("plans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Timestamps
     created_at = Column(
         DateTime,

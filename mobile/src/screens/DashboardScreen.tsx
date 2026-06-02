@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { electionService } from '../services/electionService';
 import { tenantService } from '../services/tenantService';
 import { Announcement, announcementService } from '../services/announcementService';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -92,6 +93,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
       });
     } catch (error) {
       console.error('Failed to load dashboard data', error);
+      showToast.error('Load Error', 'Could not refresh dashboard data.');
     } finally {
       setLatestAnnouncement(await latestPromise);
       setLoading(false);

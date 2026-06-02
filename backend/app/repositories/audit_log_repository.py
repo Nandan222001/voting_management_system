@@ -35,6 +35,7 @@ class AuditLogRepository(BaseRepository[AuditLog]):
         entity_id: Optional[int] = None,
         details: Optional[Any] = None,
         ip_address: Optional[str] = None,
+        tenant_id: Optional[int] = None,
     ) -> AuditLog:
         """
         Create and persist a new audit log entry.
@@ -58,6 +59,7 @@ class AuditLogRepository(BaseRepository[AuditLog]):
 
         log_entry = AuditLog(
             user_id=user_id,
+            tenant_id=tenant_id,
             action=action,
             entity_type=entity_type,
             entity_id=entity_id,

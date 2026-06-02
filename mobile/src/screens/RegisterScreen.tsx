@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';
 
@@ -286,7 +287,11 @@ const RegisterScreen = ({ navigation }: any) => {
   const pickAndUploadImage = async (field: 'kyc_front_url' | 'kyc_back_url') => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
+      if (Platform.OS === 'web') {
+        showToast.info("Permission Required", "Please allow access to your photos to upload KYC documents.");
+      } else {
+        Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
+      }
       return;
     }
 
@@ -407,13 +412,10 @@ const RegisterScreen = ({ navigation }: any) => {
       (submissionData as any).target_id = target_id;
       
       await register(submissionData);
-      Alert.alert(
-        'Success',
-        'Registration successful! Please sign in with your credentials.',
-        [{ text: 'Sign In', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }]
-      );
+      showToast.success('Registration Successful', 'Please sign in with your credentials.');
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.response?.data?.detail || 'An error occurred');
+      showToast.error('Registration Failed', error.response?.data?.detail || 'An error occurred');
     } finally {
       setLoading(false);
     }
