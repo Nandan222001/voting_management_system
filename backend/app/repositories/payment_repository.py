@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.payment import Payment, PaymentStatus
 from app.repositories.base import BaseRepository
@@ -22,15 +22,27 @@ class PaymentRepository(BaseRepository[Payment]):
         status: Optional[PaymentStatus] = None
     ) -> Tuple[List[Payment], int]:
         """
-        Fetch a paginated list of payments for a tenant.
+        Fetch a paginated list of payments for a tenant with user and plan details.
         """
+        # Load relationships to avoid N+1 during Pydantic validation
+        from app.models.user import User
+        from app.models.plan import Plan
+
         query = self.db.query(Payment).filter(Payment.tenant_id == tenant_id)
         
         if status:
             query = query.filter(Payment.status == status)
             
         total = query.count()
-        items = query.order_by(Payment.created_at.desc()).offset(skip).limit(limit).all()
+        
+        items = (
+            query
+            .options(joinedload(Payment.user), joinedload(Payment.membership_plan))
+            .order_by(Payment.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         
         return items, total
 

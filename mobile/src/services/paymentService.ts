@@ -51,4 +51,13 @@ export const paymentService = {
     const response = await api.get('/payments/status');
     return response.data;
   },
+
+  recordPaymentFailure: async (payload: {
+    membership_plan_id: number;
+    error_message: string;
+    razorpay_order_id?: string;
+  }) => {
+    const response = await api.post('/payments/failure', payload);
+    return response.data;
+  },
 };

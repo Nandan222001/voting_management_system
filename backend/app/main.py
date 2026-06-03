@@ -25,6 +25,7 @@ from app.controllers.plan_controller import router as plan_router
 from app.controllers.media_controller import router as media_router
 from app.controllers.nomination_controller import router as nomination_router
 from app.controllers.announcement_controller import router as announcement_router
+from app.controllers.notification_controller import router as notification_router
 from app.middlewares.auth_middleware import verify_tenant_header
 from app.utils.uploads import MOBILE_ASSETS_IMAGES_ROOT, STATIC_ROOT
 
@@ -66,6 +67,7 @@ app.include_router(election_router, prefix="/api/v1", dependencies=common_depend
 app.include_router(candidate_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(nomination_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(announcement_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(notification_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
 app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)

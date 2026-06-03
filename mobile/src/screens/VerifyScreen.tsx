@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 14, color: "#334155", fontWeight: "500" },
   resendText: {
     fontSize: 15,
-    color: "rgb(16 102 177)",
+    color: "#003d9b",
     fontWeight: "500",
     marginBottom: 24,
   },
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   graphicOverlayText: { color: "#fff", fontSize: 12, fontWeight: "500" },
   primaryButton: {
-    backgroundColor: "rgb(16 102 177)",
+    backgroundColor: "#003d9b",
     width: "100%",
     height: 52,
     borderRadius: 8,

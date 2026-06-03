@@ -92,6 +92,7 @@ class Payment(Base):
     # Relationships
     tenant = relationship("Tenant", lazy="select")
     user = relationship("User", lazy="select")
+    membership_plan = relationship("Plan", lazy="select")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Payment id={self.id} amount={self.amount} status={self.status}>"

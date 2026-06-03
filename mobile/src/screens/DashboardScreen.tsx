@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   announcementImage: { width: '100%', height: 160, backgroundColor: COLORS.surfaceContainerLow },
   announcementFallback: { height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary + '10' },
   announcementContent: { padding: 16 },
-  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 25 },
   announcementDate: { fontSize: 11, fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
   announcementFeatured: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primary + '12', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   announcementFeaturedText: { fontSize: 9, fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },

@@ -78,9 +78,12 @@ export default function AuditLogsPage() {
   const totalPages = Math.ceil((auditTotal || 0) / perPage)
   
   const filtered = useMemo(() => {
-    if (!search) return logsArray
+    // Filter out payment logs locally for safety
+    const logs = logsArray.filter(l => !/payment/i.test(l.action || ''));
+    
+    if (!search) return logs;
     const s = search.toLowerCase()
-    return logsArray.filter(l =>
+    return logs.filter(l =>
       (l.action || '').toLowerCase().includes(s) ||
       (l.entity_type || '').toLowerCase().includes(s) ||
       (l.user_name || '').toLowerCase().includes(s) ||

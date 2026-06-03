@@ -19,6 +19,11 @@ const paymentService = {
   getPaymentSettings: () => api.get('/payments/settings'),
 
   /**
+   * Download payment statement CSV.
+   */
+  downloadStatement: () => api.get('/payments/statement', { responseType: 'blob' }),
+
+  /**
    * Initiate a new payment/order.
    * @param {Object} data { amount, description, user_id }
    */
