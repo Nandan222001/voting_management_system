@@ -33,4 +33,14 @@ export const candidateService = {
     const response = await api.post('/candidates/nominate', data);
     return response.data.data;
   },
+
+  followCandidate: async (id: number) => {
+    const response = await api.post(`/candidates/${id}/follow`);
+    return response.data.data;
+  },
+
+  getFollowStatus: async (id: number) => {
+    const response = await api.get(`/candidates/${id}/follow-status`);
+    return response.data.data; // Expected { is_following: boolean }
+  },
 };

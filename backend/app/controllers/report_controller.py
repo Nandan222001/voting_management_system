@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user, require_admin
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.services.report_service import report_service
 from app.utils.response import success_response
 
@@ -67,13 +67,38 @@ def get_audit_logs(
     per_page: int = Query(50, ge=1, le=200),
     user_id: int | None = Query(None),
     action: str | None = Query(None),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> JSONResponse:
+    """
+    Returns a paginated list of system activity logs.
+    SuperAdmins see everything (except payment logs); Admins see only their tenant's logs.
+    """
     skip = (page - 1) * per_page
+    
+    # SuperAdmin sees all tenants, but we need to exclude payment logs from the general view
+    # as they are now in the Admin's revenue panel.
+    tenant_id = None if current_user.role == UserRole.superadmin else current_user.tenant_id
+    
+    exclude_actions = [
+        "PAYMENT ORDER CREATED",
+        "PAYMENT VERIFIED",
+        "PAYMENT FAILED",
+        "payment.order_created",
+        "payment.verified",
+        "payment.failed"
+    ]
+    
     logs, total = report_service.get_audit_logs(
-        db, skip=skip, limit=per_page, user_id=user_id, action=action
+        db, 
+        skip=skip, 
+        limit=per_page, 
+        user_id=user_id, 
+        action=action,
+        tenant_id=tenant_id,
+        exclude_actions=exclude_actions
     )
+    
     return success_response(
         data={
             "logs": [log.model_dump(mode="json") for log in logs],

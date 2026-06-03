@@ -18,6 +18,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
+import { planService } from '../services/planService';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
@@ -173,7 +174,7 @@ const CountdownTimer = ({ endDate }: { endDate: string }) => {
 
 const VotingScreen = ({ navigation, route }: any) => {
   const { election: routeElection } = route.params || {};
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { width } = useWindowDimensions();
   const [selectedElection, setSelectedElection] = useState<any>(routeElection);
   const [elections, setElections] = useState<any[]>([]);
@@ -192,6 +193,27 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [myNomination, setMyNomination] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [withdrawingNomination, setWithdrawingNomination] = useState(false);
+
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [fetchingPlans, setFetchingPlans] = useState(false);
+
+  const fetchPlans = async () => {
+    setFetchingPlans(true);
+    try {
+      const data = await planService.getPublicPlans();
+      const planItems = (data?.items ?? data) || [];
+      setPlans(planItems);
+      if (user?.membership_plan_id) {
+        setSelectedPlanId(user?.membership_plan_id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch plans:', error);
+      showToast.error("Error", "Failed to load membership plans.");
+    } finally {
+      setFetchingPlans(false);
+    }
+  };
 
   useEffect(() => {
     // We allow setting to null to reset to the election list
@@ -366,16 +388,35 @@ const VotingScreen = ({ navigation, route }: any) => {
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
+  const recordPaymentFailure = async (membershipPlanId: number, error: any) => {
+    try {
+      await paymentService.recordPaymentFailure({
+        membership_plan_id: membershipPlanId,
+        error_message: error.description || error.message || "Payment cancelled or failed",
+        razorpay_order_id: error.metadata?.order_id
+      });
+    } catch (err) {
+      console.error('Failed to record payment failure:', err);
+    }
+  };
+
   const handleRealPayment = async () => {
+    const membershipPlanId = selectedPlanId || user?.membership_plan_id;
+    if (!membershipPlanId) {
+      showToast.error("Plan Required", "Please select a membership plan first.");
+      return;
+    }
+
     setIsProcessingPayment(true);
     try {
-      const status = await paymentService.getMyMembershipStatus();
-      const membershipPlanId = status?.membership_plan_id || user?.membership_plan_id;
-      if (!membershipPlanId) {
-        setMembershipModalType('select');
-        return;
+      // If the selected plan is different from what's on the user record, update the profile first.
+      // This is required by the backend to create an order for that specific plan.
+      if (membershipPlanId !== user?.membership_plan_id) {
+        await updateProfile({ membership_plan_id: membershipPlanId });
       }
-      const planName = status?.plan_details?.name || "Membership Plan";
+
+      const targetPlan = plans.find(p => p.id === membershipPlanId);
+      const planName = targetPlan?.name || "Membership Plan";
 
       const orderResponse = await paymentService.createMembershipOrder(membershipPlanId);
 
@@ -406,6 +447,9 @@ const VotingScreen = ({ navigation, route }: any) => {
         showToast.success("Success", "Payment completed successfully! You can now cast your vote.");
         setShowMembershipModal(false);
       } catch (error: any) {
+        // Record failure to backend for audit trail
+        await recordPaymentFailure(membershipPlanId, error);
+
         // Razorpay error (e.g. payment cancelled)
         if (error.code === 2) {
           showToast.info("Payment Cancelled", "The payment process was dismissed.");
@@ -426,18 +470,13 @@ const VotingScreen = ({ navigation, route }: any) => {
     setSubmitting(true);
     try {
       const eligibility = await paymentService.checkVotingEligibility();
-      if (!eligibility.membership_selected) {
+      if (!eligibility.membership_selected || !eligibility.payment_completed) {
         setSubmitting(false);
         setShowConfirmModal(false);
-        setMembershipModalType('select');
+        // Show modal first, then fetch plans inside it
         setShowMembershipModal(true);
-        return;
-      }
-      if (!eligibility.payment_completed) {
-        setSubmitting(false);
-        setShowConfirmModal(false);
-        setMembershipModalType('pay');
-        setShowMembershipModal(true);
+        fetchPlans();
+        setMembershipModalType(eligibility.membership_selected ? 'pay' : 'select');
         return;
       }
 
@@ -464,9 +503,80 @@ const VotingScreen = ({ navigation, route }: any) => {
     }
   };
 
-  const isElectionLive = selectedElection 
-    ? new Date(selectedElection.start_date).getTime() <= new Date().getTime()
-    : false;
+  // --- Real-time Election Status Logic ---
+  const calculateElectionStatus = () => {
+    if (!selectedElection) return null;
+    
+    const now = new Date().getTime();
+    const start = new Date(selectedElection.start_date).getTime();
+    const end = new Date(selectedElection.end_date).getTime();
+    const dbStatus = selectedElection.status;
+
+    // 1. Cancelled State
+    if (dbStatus === 'cancelled') {
+      return {
+        label: 'CANCELLED',
+        icon: 'cancel' as const,
+        color: '#b91c1c',
+        bg: '#fee2e2',
+        timerLabel: 'SESSION VOID',
+        timerDate: null,
+        isVotingActive: false
+      };
+    }
+
+    // 2. Closed State
+    if (dbStatus === 'closed' || now >= end) {
+      return {
+        label: 'CLOSED',
+        icon: 'lock' as const,
+        color: '#475569',
+        bg: '#f1f5f9',
+        timerLabel: 'SESSION ENDED',
+        timerDate: null,
+        isVotingActive: false
+      };
+    }
+
+    // 3. Scheduled / Upcoming State
+    if (dbStatus === 'draft' || now < start) {
+      return {
+        label: 'SCHEDULED',
+        icon: 'event' as const,
+        color: '#4f46e5',
+        bg: '#eef2ff',
+        timerLabel: 'STARTS IN',
+        timerDate: selectedElection.start_date,
+        isVotingActive: false
+      };
+    }
+
+    // 4. Active State
+    if (dbStatus === 'active' && now >= start && now < end) {
+      return {
+        label: 'ACTIVE',
+        icon: 'sensors' as const,
+        color: COLORS.secondary,
+        bg: '#e5f8e1',
+        timerLabel: 'CLOSES IN',
+        timerDate: selectedElection.end_date,
+        isVotingActive: true
+      };
+    }
+
+    return null;
+  };
+
+  const statusConfig = calculateElectionStatus();
+  const isVotingActive = statusConfig?.isVotingActive || false;
+
+  const handleDisabledVotePress = () => {
+    if (statusConfig?.label === 'SCHEDULED') {
+      showToast.info("Not Started", "Voting has not started yet for this election.");
+    } else {
+      showToast.error("Voting Closed", "Voting is currently closed for this election.");
+    }
+  };
   const nominationStatusMeta = getNominationStatusMeta(myNomination?.status);
 
   if (loading) {
@@ -709,17 +819,27 @@ const VotingScreen = ({ navigation, route }: any) => {
               style={styles.detailHero}
             >
               <View style={styles.heroContent}>
-                <View style={styles.heroBadge}>
-                    <MaterialIcons name={isElectionLive ? "how-to-vote" : "event-upcoming"} size={12} color="#fff" />
-                    <Text style={styles.heroBadgeText}>{isElectionLive ? 'LIVE SESSION' : 'SCHEDULED'}</Text>
+                <View style={[styles.heroBadge, statusConfig && { backgroundColor: statusConfig.bg, borderColor: 'transparent' }]}>
+                    <MaterialIcons name={statusConfig?.icon || "event-upcoming"} size={12} color={statusConfig?.color || "#fff"} />
+                    <Text style={[styles.heroBadgeText, statusConfig && { color: statusConfig.color }]}>
+                      {statusConfig?.label || 'SCHEDULED'}
+                    </Text>
                 </View>
-                <Text style={styles.heroTitlePre}>{isElectionLive ? 'Voting Session' : 'Upcoming Session'}</Text>
+                <Text style={styles.heroTitlePre}>
+                  {statusConfig?.label === 'ACTIVE' ? 'Voting Session' : 'Election Session'}
+                </Text>
                 <Text style={styles.heroTitleMain} numberOfLines={2}>{selectedElection.title}</Text>
                 
                 <View style={styles.detailMetaGrid}>
                   <View style={styles.detailMetaCol}>
-                    <Text style={styles.detailMetaLabel}>{isElectionLive ? 'CLOSES IN' : 'STARTS IN'}</Text>
-                    <CountdownTimer endDate={isElectionLive ? selectedElection.end_date : selectedElection.start_date} />
+                    <Text style={styles.detailMetaLabel}>{statusConfig?.timerLabel || 'CLOSES IN'}</Text>
+                    {statusConfig?.timerDate ? (
+                      <CountdownTimer endDate={statusConfig.timerDate} />
+                    ) : (
+                      <View style={styles.premiumTimerContainer}>
+                         <Text style={[styles.timerValueText, { fontSize: 24, color: 'rgba(255,255,255,0.4)' }]}>-- : -- : --</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.detailMetaDividerVertical} />
                   <View style={styles.detailMetaCol}>
@@ -747,7 +867,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                 )}
               </View>
 
-              {!isElectionLive && (
+              {statusConfig?.label === 'SCHEDULED' && (
                 <>
                   <TouchableOpacity 
                     style={[styles.nominationActionBtn, !myNomination && styles.nominationActionBtnSolo]}
@@ -852,12 +972,19 @@ const VotingScreen = ({ navigation, route }: any) => {
                     return (
                       <TouchableOpacity 
                         key={candidate.id}
-                        activeOpacity={existingVote ? 1 : 0.7}
-                        onPress={() => !existingVote && setSelectedCandidateId(candidate.id)}
+                        activeOpacity={existingVote || !isVotingActive ? 1 : 0.7}
+                        onPress={() => {
+                          if (!isVotingActive && !hasVoted) {
+                            handleDisabledVotePress();
+                            return;
+                          }
+                          if (!existingVote) setSelectedCandidateId(candidate.id);
+                        }}
                         style={[
                           styles.candRowCard,
                           isSelected && styles.candRowCardSelected,
-                          hasVoted && styles.candRowCardVoted
+                          hasVoted && styles.candRowCardVoted,
+                          !isVotingActive && !hasVoted && { opacity: 0.7, borderColor: COLORS.outlineVariant }
                         ]}
                       >
                         <View style={styles.candRowContent}>
@@ -887,8 +1014,16 @@ const VotingScreen = ({ navigation, route }: any) => {
 
                           <View style={styles.candRowRight}>
                             {!existingVote ? (
-                              <View style={[styles.rowVoteBtn, isSelected && styles.rowVoteBtnActive]}>
-                                <Text style={[styles.rowVoteBtnText, isSelected && styles.rowVoteBtnTextActive]}>
+                              <View style={[
+                                styles.rowVoteBtn, 
+                                isSelected && styles.rowVoteBtnActive,
+                                !isVotingActive && { backgroundColor: COLORS.surfaceContainerLow }
+                              ]}>
+                                <Text style={[
+                                  styles.rowVoteBtnText, 
+                                  isSelected && styles.rowVoteBtnTextActive,
+                                  !isVotingActive && { color: COLORS.onSurfaceVariant, opacity: 0.5 }
+                                ]}>
                                   {isSelected ? 'SELECTED' : 'VOTE'}
                                 </Text>
                                 {isSelected && <MaterialIcons name="check-circle" size={16} color="#fff" />}
@@ -937,15 +1072,22 @@ const VotingScreen = ({ navigation, route }: any) => {
             style={styles.floatingBarFade}
           />
           <TouchableOpacity 
-            onPress={handleCastVote}
-            disabled={!selectedCandidateId || submitting}
+            onPress={() => {
+              if (!isVotingActive) {
+                handleDisabledVotePress();
+                return;
+              }
+              handleCastVote();
+            }}
+            disabled={submitting}
             style={[
               styles.actionCastBtn,
-              (!selectedCandidateId || submitting) && styles.actionCastBtnDisabled
+              ((!selectedCandidateId || submitting) && isVotingActive) && styles.actionCastBtnDisabled,
+              !isVotingActive && { opacity: 0.8 }
             ]}
           >
             <LinearGradient
-              colors={selectedCandidateId ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6']}
+              colors={!isVotingActive ? ['#94a3b8', '#64748b'] : (selectedCandidateId ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6'])}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionCastGradient}
@@ -954,8 +1096,10 @@ const VotingScreen = ({ navigation, route }: any) => {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <MaterialIcons name="verified" size={22} color="#fff" />
-                  <Text style={styles.actionCastBtnText}>Cast Secure Vote</Text>
+                  <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={22} color="#fff" />
+                  <Text style={styles.actionCastBtnText}>
+                    {isVotingActive ? 'Cast Secure Vote' : 'Voting Unavailable'}
+                  </Text>
                 </>
               )}
             </LinearGradient>
@@ -991,43 +1135,83 @@ const VotingScreen = ({ navigation, route }: any) => {
       <Modal transparent visible={showMembershipModal} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.membershipBox}>
-            <View style={[styles.membershipIconCircle, { backgroundColor: membershipModalType === 'select' ? '#dae2ff' : '#fff3e0' }]}>
+            <View style={[styles.membershipIconCircle, { backgroundColor: COLORS.primary + '10' }]}>
                <MaterialIcons 
-                name={membershipModalType === 'select' ? "card-membership" : "payment"} 
+                name="card-membership" 
                 size={40} 
-                color={membershipModalType === 'select' ? COLORS.primary : '#e65100'} 
+                color={COLORS.primary} 
                />
             </View>
             
             <Text style={styles.membershipTitle}>
-              {membershipModalType === 'select' ? 'Membership Plan Required' : 'Payment Required'}
+              Membership Plan Required
             </Text>
             
             <Text style={styles.membershipSub}>
-              {membershipModalType === 'select' 
-                ? 'To participate in voting, please select a Membership Plan first.\n\nProfile -> Edit Profile -> Select Membership Plan'
-                : 'Your Membership Plan payment is pending or incomplete. Please complete the payment to proceed with voting.'
-              }
+              To participate in voting, please select a Membership Plan and complete the payment.
             </Text>
+
+            <View style={{ width: '100%', minHeight: 150, maxHeight: 350, marginBottom: 20 }}>
+              {fetchingPlans ? (
+                <View style={styles.modalLoaderContainer}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={styles.loadingPlansText}>Fetching available plans...</Text>
+                </View>
+              ) : (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {plans.length > 0 ? (
+                    plans.map((plan) => (
+                      <TouchableOpacity
+                        key={plan.id}
+                        activeOpacity={0.8}
+                        style={[
+                          styles.planSelectCard,
+                          selectedPlanId === plan.id && styles.planSelectCardActive
+                        ]}
+                        onPress={() => setSelectedPlanId(plan.id)}
+                      >
+                        <View style={styles.planSelectInfo}>
+                          <Text style={[styles.planSelectName, selectedPlanId === plan.id && styles.planSelectTextActive]}>
+                            {plan.name}
+                          </Text>
+                          <Text style={[styles.planSelectPrice, selectedPlanId === plan.id && styles.planSelectTextActive, { opacity: 0.8 }]}>
+                            ₹{plan.price} / {plan.period || 'one-time'}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.selectionCheckCircle,
+                          selectedPlanId === plan.id && styles.selectionCheckCircleActive
+                        ]}>
+                          {selectedPlanId === plan.id && (
+                            <MaterialIcons name="check" size={16} color={COLORS.primary} />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptyPlansContainer}>
+                       <Text style={styles.emptyPlansText}>No membership plans found.</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
+            </View>
 
             <View style={styles.membershipActions}>
               <TouchableOpacity 
-                style={[styles.membershipMainBtn, { backgroundColor: membershipModalType === 'select' ? COLORS.primary : '#e65100' }]}
-                onPress={() => {
-                  if (membershipModalType === 'select') {
-                    setShowMembershipModal(false);
-                    navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' });
-                  } else {
-                    handleRealPayment();
-                  }
-                }}
-                disabled={isProcessingPayment}
+                style={[
+                  styles.membershipMainBtn, 
+                  { backgroundColor: COLORS.primary },
+                  (!selectedPlanId || isProcessingPayment) && styles.membershipMainBtnDisabled
+                ]}
+                onPress={() => handleRealPayment()}
+                disabled={isProcessingPayment || !selectedPlanId}
               >
                 {isProcessingPayment ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <Text style={styles.membershipMainBtnText}>
-                    {membershipModalType === 'select' ? 'Go to Profile' : 'Complete Payment'}
+                    Pay & Activate
                   </Text>
                 )}
               </TouchableOpacity>
@@ -2408,6 +2592,84 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     fontWeight: '700', 
     color: COLORS.onSurfaceVariant 
+  },
+
+  planSelectCard: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceContainerLow,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  planSelectCardActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primaryContainer,
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 8 }
+    })
+  },
+  planSelectInfo: {
+    flex: 1,
+  },
+  planSelectName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    letterSpacing: -0.2,
+  },
+  planSelectPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    marginTop: 4,
+  },
+  planSelectTextActive: {
+    color: '#fff',
+  },
+  selectionCheckCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  selectionCheckCircleActive: {
+    backgroundColor: '#fff',
+    borderColor: '#fff',
+  },
+  modalLoaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingPlansText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  emptyPlansContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyPlansText: {
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  membershipMainBtnDisabled: {
+    backgroundColor: COLORS.outlineVariant,
+    opacity: 0.5,
   },
 
   // Premium Nomination Detail Styles

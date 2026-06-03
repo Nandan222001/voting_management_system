@@ -107,7 +107,9 @@ export default function DashboardPage() {
   const userStats = userStatsRaw?.data || userStatsRaw || {};
 
   const logsArray = useMemo(() => {
-    return Array.isArray(auditLogs) ? auditLogs : auditLogs?.data || [];
+    const rawLogs = Array.isArray(auditLogs) ? auditLogs : auditLogs?.data || [];
+    // Filter out payment logs for dashboard view
+    return rawLogs.filter(l => !/payment/i.test(l.action || ''));
   }, [auditLogs]);
 
   const chartData = useMemo(() => [

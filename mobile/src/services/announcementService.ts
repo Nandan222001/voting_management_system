@@ -23,7 +23,7 @@ export const absoluteUrl = (url?: string | null) => {
   return `${apiOrigin()}${url.startsWith('/') ? url : `/${url}`}`;
 };
 
-const normalize = (item: Announcement): Announcement => ({
+export const normalize = (item: Announcement): Announcement => ({
   ...item,
   image_urls: (item.image_urls || []).map((url) => absoluteUrl(url) || url),
   attachment_urls: (item.attachment_urls || []).map((url) => absoluteUrl(url) || url),

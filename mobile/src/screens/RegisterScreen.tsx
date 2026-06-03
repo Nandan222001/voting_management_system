@@ -27,11 +27,10 @@ import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
-// --- COLORS ---
 const COLORS = {
-  primary: 'rgb(16 102 177)',
+  primary: '#003d9b',
   primaryContainer: '#eff6ff',
   text: '#0f172a',
   textSecondary: '#64748b',
@@ -210,7 +209,6 @@ const RegisterScreen = ({ navigation }: any) => {
   const [selectedTalukaName, setSelectedTalukaName] = useState('');
   const [selectedVillageName, setSelectedVillageName] = useState('');
 
-  // Modals
   const [modalType, setModalType] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
@@ -359,15 +357,41 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const validateStep1 = () => {
     let newErrors: Record<string, string> = {};
-    if (!formData.full_name) newErrors.full_name = 'Required';
-    if (!formData.phone) newErrors.phone = 'Required';
-    if (!formData.email) newErrors.email = 'Required';
-    if (!formData.date_of_birth) newErrors.date_of_birth = 'Required';
-    if (!formData.gender) newErrors.gender = 'Required';
-    if (!formData.password) newErrors.password = 'Required';
+    
+    // Full Name
+    if (!formData.full_name?.trim()) newErrors.full_name = 'Full Name is required';
+    
+    // Mobile Number: Exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'Mobile Number is required';
+    } else if (!phoneRegex.test(formData.phone.trim())) {
+      newErrors.phone = 'Enter a valid 10-digit mobile number';
+    }
+
+    // Email: Regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email Address is required';
+    } else if (!emailRegex.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (!formData.date_of_birth?.trim()) newErrors.date_of_birth = 'Date of Birth is required';
+    if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.password) newErrors.password = 'Password is required';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      // Show the first error in a toast
+      const firstError = Object.values(newErrors)[0];
+      showToast.error('Validation Error', firstError);
+      return false;
+    }
+    
+    return true;
   };
 
   const validateStep2 = () => {

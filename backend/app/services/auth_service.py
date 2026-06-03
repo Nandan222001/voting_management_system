@@ -224,19 +224,8 @@ class AuthService:
                 detail="Your account has been blocked. Contact an administrator.",
             )
 
-        if not user.is_verified:
-            print(f"DEBUG: Login blocked for {email} - not verified")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Account email not verified",
-            )
+        # Removed is_verified and pending checks to allow frontend to evaluate status.
 
-        if user.status == UserStatus.pending:
-            print(f"DEBUG: Login blocked for {email} - status: pending")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account is awaiting admin approval.",
-            )
 
         # Tenant Validation: If X-Tenant-ID was provided (mobile), ensure user belongs to it.
         # Superadmins are exempt as they are global.

@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Receipt,
   ArrowRight,
-  Lock
+  Lock,
+  Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
@@ -35,7 +36,7 @@ function numberFormat(value) {
     style: 'currency',
     currency: 'INR',
     maximumFractionDigits: 2
-  }).format(Number(value || 0) / 100);
+  }).format(Number(value || 0));
 }
 
 function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
@@ -96,7 +97,7 @@ const FIXED_PLANS = [
 
 export default function RevenuePage() {
   const dispatch = useDispatch();
-  const { payments, stats, loading, settings } = useSelector((state) => state.payments);
+  const { payments, total, stats, loading, settings } = useSelector((state) => state.payments);
 
   const [keyForm, setKeyForm] = useState({ razorpay_key_id: '', razorpay_key_secret: '' });
   const [showSecret, setShowSecret] = useState(false);
@@ -104,10 +105,11 @@ export default function RevenuePage() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [downloading, setDownloading] = useState(false);
   const perPage = 10;
 
   useEffect(() => {
-    dispatch(fetchPayments({ page, per_page: perPage }));
+    dispatch(fetchPayments({ page, page_size: perPage }));
     dispatch(fetchPaymentSettings());
   }, [dispatch, page]);
 
@@ -139,18 +141,38 @@ export default function RevenuePage() {
     }
   };
 
+  const handleDownloadStatement = async () => {
+    setDownloading(true);
+    try {
+      const response = await paymentService.downloadStatement();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `payment_statement_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Statement downloaded successfully');
+    } catch (err) {
+      toast.error('Failed to download statement');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const filteredPayments = useMemo(() => {
     const logs = Array.isArray(payments) ? payments : payments?.data || [];
     if (!search) return logs;
     const s = search.toLowerCase();
     return logs.filter(p => 
-      (p.id || '').toLowerCase().includes(s) || 
-      (p.status || '').toLowerCase().includes(s) ||
-      (p.method || '').toLowerCase().includes(s)
+      (p.user_name || '').toLowerCase().includes(s) || 
+      (p.plan_name || '').toLowerCase().includes(s) || 
+      (p.razorpay_order_id || '').toLowerCase().includes(s) || 
+      (p.status || '').toLowerCase().includes(s)
     );
   }, [payments, search]);
 
-  const totalPages = Math.ceil((stats?.total_count || payments?.length || 0) / perPage);
+  const totalPages = Math.ceil((total || 0) / perPage);
 
   return (
     <MainLayout title="Revenue Stream">
@@ -164,6 +186,18 @@ export default function RevenuePage() {
             <h2 className="text-4xl font-black tracking-tight text-gray-900">Revenue Registry</h2>
             <p className="mt-2 text-sm font-medium text-gray-500 max-w-2xl">Monitor membership subscriptions, gateway health, and transactional audit trails.</p>
           </div>
+          <button
+            onClick={handleDownloadStatement}
+            disabled={downloading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-gray-200 px-6 py-3 text-xs font-black uppercase tracking-widest text-gray-700 transition-all hover:bg-gray-50 shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            {downloading ? (
+              <span className="w-4 h-4 border-2 border-[#1a337e] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download size={14} />
+            )}
+            Download Statement
+          </button>
         </header>
 
         {/* Metrics Section */}
@@ -181,25 +215,25 @@ export default function RevenuePage() {
           </MetricCard>
 
           <MetricCard 
-            title="Successful Access" 
-            value={numberFormat(stats?.successful_revenue ?? (stats?.successful_payments || 0) * 10000)} // Mocking if real revenue per status isn't available
-            icon={CheckCircle2} 
-            tone="emerald"
-          >
-             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
-               {stats?.successful_payments || 0} Successful Transactions
-             </p>
-          </MetricCard>
-
-          <MetricCard 
             title="Registry Friction" 
-            value={stats?.failed_payments || 0} 
+            value={stats?.failed_transactions || 0} 
             icon={AlertCircle} 
             tone="red"
           >
              <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Failed or pending attempts</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Failed attempts recorded</p>
+             </div>
+          </MetricCard>
+
+          <MetricCard 
+            title="Pending Volume" 
+            value={numberFormat(stats?.pending_amount || 0)} 
+            icon={HistoryIcon} 
+            tone="amber"
+          >
+             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-amber-600">
+                <span>Awaiting verification</span>
              </div>
           </MetricCard>
         </section>
@@ -254,7 +288,7 @@ export default function RevenuePage() {
                  </div>
               </section>
 
-              <section className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30">
+              {/* <section className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30">
                  <h3 className="text-xl font-black tracking-tight mb-2">Platform Health</h3>
                  <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-6">Gateway Synchronization</p>
                  <div className="space-y-4">
@@ -269,11 +303,11 @@ export default function RevenuePage() {
                  <p className="mt-6 text-[10px] font-bold text-[#1a337e] leading-relaxed uppercase tracking-wider">
                     All payment routes are currently responding within optimal latency parameters.
                  </p>
-              </section>
+              </section> */}
            </div>
 
            {/* Plans and History */}
-           <div className="lg:col-span-8 space-y-8">
+           <div className="lg:col-span-12 space-y-8">
               <section className="space-y-4">
                  <div className="flex items-center gap-3">
                     <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
@@ -319,90 +353,91 @@ export default function RevenuePage() {
               </section>
 
               <section className="space-y-6">
-                 <div className="flex flex-col gap-6 rounded-[2rem] border border-gray-100 bg-gray-50/50 p-6 md:flex-row md:items-center shadow-sm">
-                    <div className="flex items-center gap-3 mr-4">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                        <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
-                       <h3 className="text-xl font-black tracking-tight text-gray-900 whitespace-nowrap">Audit Trail</h3>
+                       <h3 className="text-xl font-black tracking-tight text-gray-900">Payment Logs</h3>
                     </div>
-                    <div className="relative flex-1 group">
-                       <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" />
-                       <input
-                        type="text"
-                        placeholder="Search by transaction ID or status..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-4 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
+                    <div className="relative w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                       <input 
+                         type="text" 
+                         placeholder="Search logs..." 
+                         value={search}
+                         onChange={(e) => setSearch(e.target.value)}
+                         className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all"
                        />
-                       {search && (
-                        <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e]">
-                          <X className="h-4 w-4" />
-                        </button>
-                       )}
                     </div>
                  </div>
 
-                 <div className="overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
-                   {loading && filteredPayments.length === 0 ? (
-                    <div className="py-20 flex justify-center"><LoadingSpinner /></div>
-                   ) : filteredPayments.length === 0 ? (
-                    <div className="px-6 py-24 text-center">
-                       <Receipt className="h-16 w-16 mx-auto opacity-10 text-[#1a337e] mb-4" />
-                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">No transactions recorded</p>
-                    </div>
-                   ) : (
-                    <div className="w-full overflow-x-auto">
-                       <table className="w-full min-w-[800px] border-separate border-spacing-y-2 px-6 pb-6">
-                          <thead>
-                             <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
-                                <th className="px-6 py-5 text-left">Reference ID</th>
-                                <th className="px-6 py-5 text-left">Amount</th>
-                                <th className="px-6 py-5 text-left">Status</th>
-                                <th className="px-6 py-5 text-left">Method</th>
-                                <th className="px-6 py-5 text-right">Timestamp</th>
-                             </tr>
-                          </thead>
-                          <tbody className="space-y-2">
-                             {filteredPayments.map((p, idx) => (
-                                <tr key={p.id || idx} className="group transition-all duration-200">
-                                   <td className="rounded-l-2xl bg-white border border-r-0 border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">
-                                      <span className="font-mono text-[10px] font-black text-[#1a337e] bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
-                                         {p.razorpay_order_id || String(p.id).padStart(5, '0')}
-                                      </span>
-                                   </td>
-                                   <td className="bg-white border-y border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">
-                                      <span className="text-sm font-black text-gray-900">{numberFormat(p.amount)}</span>
-                                   </td>
-                                   <td className="bg-white border-y border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">
-                                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
-                                         p.status === 'paid' || p.status === 'captured' 
-                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                                         : p.status === 'failed' 
-                                         ? 'bg-red-50 text-red-700 border-red-100'
-                                         : 'bg-amber-50 text-amber-700 border-amber-100'
-                                      }`}>
-                                         {p.status}
-                                      </span>
-                                   </td>
-                                   <td className="bg-white border-y border-gray-100 px-6 py-4 group-hover:bg-gray-50 transition-colors">
-                                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{p.method || 'Unknown'}</span>
-                                   </td>
-                                   <td className="rounded-r-2xl bg-white border border-l-0 border-gray-100 px-6 py-4 text-right group-hover:bg-gray-50 transition-colors">
-                                      <span className="text-xs font-bold text-gray-400 tabular-nums">
-                                         {p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                                      </span>
-                                   </td>
+                 <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
+                    {loading ? (
+                       <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+                    ) : filteredPayments.length === 0 ? (
+                       <div className="py-20 text-center">
+                          <Receipt className="mx-auto h-12 w-12 text-gray-200 mb-4" />
+                          <p className="text-gray-900 font-black uppercase tracking-tight">No Records Found</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Transactions will appear here once processed.</p>
+                       </div>
+                    ) : (
+                       <div className="w-full overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                             <thead>
+                                <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100">
+                                   <th className="px-6 py-5">User & Plan</th>
+                                   <th className="px-6 py-5">Amount</th>
+                                   <th className="px-6 py-5">Status</th>
+                                   <th className="px-6 py-5">Order Reference</th>
+                                   <th className="px-6 py-5 text-right">Date</th>
                                 </tr>
-                             ))}
-                          </tbody>
-                       </table>
-                    </div>
-                   )}
-                   
-                   {totalPages > 1 && (
-                     <div className="p-6 bg-gray-50/50 border-t border-gray-100">
-                        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-                     </div>
-                   )}
+                             </thead>
+                             <tbody>
+                                {filteredPayments.map((p) => (
+                                   <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors group">
+                                      <td className="px-6 py-5">
+                                         <div className="flex flex-col">
+                                            <span className="text-sm font-black text-gray-900 tracking-tight">{p.user_name || 'System User'}</span>
+                                            <span className="text-[10px] font-bold text-[#1a337e] uppercase tracking-widest">{p.plan_name || 'Membership'}</span>
+                                         </div>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className="text-sm font-black text-gray-900">₹{p.amount}</span>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest border ${
+                                            p.status === 'captured' 
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                                            : p.status === 'failed' 
+                                            ? 'bg-red-50 text-red-600 border-red-100' 
+                                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                                         }`}>
+                                            {p.status}
+                                         </span>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className="font-mono text-[10px] text-gray-400 group-hover:text-gray-600 transition-colors">
+                                            {p.razorpay_order_id || 'N/A'}
+                                         </span>
+                                      </td>
+                                      <td className="px-6 py-5 text-right">
+                                         <div className="flex flex-col items-end">
+                                            <span className="text-xs font-black text-gray-900">{new Date(p.created_at).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                               {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                         </div>
+                                      </td>
+                                   </tr>
+                                ))}
+                             </tbody>
+                          </table>
+                       </div>
+                    )}
+                    {totalPages > 1 && (
+                       <div className="border-t border-gray-50 p-4 bg-gray-50/30">
+                          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                       </div>
+                    )}
                  </div>
               </section>
            </div>

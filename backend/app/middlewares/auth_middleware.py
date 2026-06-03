@@ -248,6 +248,24 @@ def require_tenant_admin(current_user: User = Depends(get_current_user)) -> User
     return current_user
 
 
+def require_tenant_admin_only(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Assert that the caller is strictly a tenant-level admin.
+    Excludes superadmins and voters.
+    """
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Strict Tenant Admin privileges required",
+        )
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin must be associated with a tenant",
+        )
+    return current_user
+
+
 # ---------------------------------------------------------------------------
 # Tenant context helper
 # ---------------------------------------------------------------------------
