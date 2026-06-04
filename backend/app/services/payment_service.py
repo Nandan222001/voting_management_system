@@ -9,7 +9,7 @@ from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.tenant_repository import TenantRepository
-from app.schemas.payment import PaymentUpdate, RevenueSummary, RazorpayPaymentVerify
+from app.schemas.payment import PaymentUpdate, RevenueSummary, RazorpayPaymentVerify, PaymentFailure
 from app.schemas.tenant import TenantPaymentSettings
 
 
@@ -484,6 +484,58 @@ class PaymentService:
                     )
 
         return repo.update(payment, data.model_dump(exclude_unset=True))
+
+    def record_payment_failure(
+        self,
+        db: Session,
+        current_user: User,
+        payload: PaymentFailure,
+    ) -> bool:
+        """
+        Mark a pending payment as failed and log the reason.
+        """
+        repo = PaymentRepository(db)
+        
+        # If we have an order id, try to find the specific payment record
+        payment = None
+        if payload.razorpay_order_id:
+            payment = repo.get_by_order_for_user(
+                current_user.tenant_id,
+                current_user.id,
+                payload.razorpay_order_id
+            )
+        
+        # Fallback to latest pending for this plan if order_id was missing or not found
+        if not payment:
+            payment = repo.get_latest_by_user(
+                current_user.tenant_id,
+                current_user.id,
+                payload.membership_plan_id
+            )
+
+        if payment and payment.status == PaymentStatus.pending:
+            repo.update(payment, {
+                "status": PaymentStatus.failed,
+                "description": f"{payment.description or ''} | Error: {payload.error_message}"[:255]
+            })
+            
+            try:
+                AuditLogRepository(db).log_action(
+                    user_id=current_user.id,
+                    tenant_id=current_user.tenant_id,
+                    action="payment.failed",
+                    entity_type="payment",
+                    entity_id=payment.id,
+                    details={
+                        "error": payload.error_message,
+                        "razorpay_order_id": payload.razorpay_order_id,
+                        "membership_plan_id": payload.membership_plan_id,
+                    },
+                )
+            except Exception:
+                pass
+            
+        return True
 
 
 # ---------------------------------------------------------------------------

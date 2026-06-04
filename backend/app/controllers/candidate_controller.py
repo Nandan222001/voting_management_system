@@ -163,6 +163,41 @@ async def nominate_candidate(
     )
 
 
+@router.get(
+    "/{candidate_id}/follow-status",
+    summary="Get follow status for current user",
+)
+def get_candidate_follow_status(
+    candidate_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Check if the current authenticated user follows this candidate.
+    """
+    is_following = candidate_service.get_follow_status(db, candidate_id, current_user.id)
+    return success_response(data={"is_following": is_following})
+
+
+@router.post(
+    "/{candidate_id}/follow",
+    summary="Toggle follow status for a candidate",
+)
+def follow_candidate(
+    candidate_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Follow or unfollow a candidate (toggle logic).
+    """
+    is_following = candidate_service.follow_candidate(db, candidate_id, current_user.id)
+    return success_response(
+        data={"is_following": is_following},
+        message="Follow status updated successfully."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Admin Operations (Candidate Management)
 # ---------------------------------------------------------------------------

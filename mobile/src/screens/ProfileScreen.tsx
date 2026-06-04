@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
+  Modal,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +64,7 @@ const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
 const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading } = useAuth();
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     if (user?.membership_plan?.name) {
@@ -70,30 +72,18 @@ const ProfileScreen = ({ navigation }: any) => {
     }
   }, [user?.membership_plan]);
 
-  const handleLogout = () => {
-    const performLogout = async () => {
-      try {
-        await logout();
-        showToast.success('Signed Out', 'You have been successfully logged out.');
-      } catch (error) {
-        console.error('Logout error:', error);
-        showToast.error('Error', 'Failed to sign out. Please try again.');
-      }
-    };
+  const handleLogoutPress = () => {
+    setIsLogoutModalVisible(true);
+  };
 
-    if (Platform.OS === 'web') {
-      if (confirm('Are you sure you want to sign out of your account?')) {
-        performLogout();
-      }
-    } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ]);
+  const confirmLogout = async () => {
+    setIsLogoutModalVisible(false);
+    try {
+      await logout();
+      showToast.success('Signed Out', 'You have been successfully logged out.');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast.error('Error', 'Failed to sign out. Please try again.');
     }
   };
 
@@ -113,7 +103,7 @@ const ProfileScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Cinematic Header */}
+        {/* ... Cinematic Header ... */}
         <View style={styles.heroContainer}>
           <LinearGradient
             colors={[COLORS.primary, '#1e40af']}
@@ -161,7 +151,7 @@ const ProfileScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.bodyWrapper}>
-          {/* Premium Membership Card */}
+          {/* ... Premium Membership Card ... */}
           <View style={styles.membershipCard}>
             <LinearGradient
               colors={['#ffffff', '#f8fafc']}
@@ -232,7 +222,7 @@ const ProfileScreen = ({ navigation }: any) => {
           {/* Logout Action */}
           <TouchableOpacity 
             style={styles.logoutButton} 
-            onPress={handleLogout}
+            onPress={handleLogoutPress}
             activeOpacity={0.7}
           >
             <LinearGradient
@@ -240,7 +230,7 @@ const ProfileScreen = ({ navigation }: any) => {
               style={styles.logoutGradient}
             >
               <MaterialIcons name="logout" size={20} color={COLORS.error} />
-              <Text style={styles.logoutButtonText}>Sign Out of Session</Text>
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
             </LinearGradient>
           </TouchableOpacity>
 
@@ -251,6 +241,40 @@ const ProfileScreen = ({ navigation }: any) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Custom Logout Modal */}
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalPopup}>
+            <View style={styles.modalIconBg}>
+              <MaterialIcons name="logout" size={28} color={COLORS.error} />
+            </View>
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmBtn} 
+                onPress={confirmLogout}
+              >
+                <Text style={styles.confirmBtnText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -600,6 +624,80 @@ const styles = StyleSheet.create({
     color: COLORS.onSurfaceVariant,
     opacity: 0.3,
     letterSpacing: 1,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalPopup: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 32,
+    padding: 32,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 16 },
+      android: { elevation: 24 },
+    })
+  },
+  modalIconBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: COLORS.error + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+    fontWeight: '500',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fee2e2',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.error,
   },
 });
 

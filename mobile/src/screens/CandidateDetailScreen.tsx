@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Dimensions,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/common/Header';
+import { candidateService } from '../services/candidateService';
+import { showToast } from '../utils/toast';
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +50,10 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('biography');
   
+  // Follow State
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+
   // Real data passed from navigation
   const candidate = route.params?.candidate || {};
 
@@ -58,6 +65,35 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   const portraitUrl = candidate.image_url || DEFAULT_IMAGES.portrait;
   const coverUrl = candidate.cover_url || DEFAULT_IMAGES.cover;
   const bioText = candidate.bio || "Candidate has not provided a specific mission statement.";
+
+  useEffect(() => {
+    if (candidate.id) {
+      checkFollowStatus();
+    }
+  }, [candidate.id]);
+
+  const checkFollowStatus = async () => {
+    try {
+      const status = await candidateService.getFollowStatus(candidate.id);
+      setIsFollowing(status.is_following);
+    } catch (error) {
+      console.error('Failed to check follow status:', error);
+    }
+  };
+
+  const toggleFollow = async () => {
+    const previousState = isFollowing;
+    setIsFollowing(!previousState); // Optimistic update
+    
+    try {
+      const result = await candidateService.followCandidate(candidate.id);
+      // Backend returns { is_following: boolean }
+      setIsFollowing(result.is_following);
+    } catch (error) {
+      setIsFollowing(previousState); // Revert on failure
+      showToast.error('Action Failed', 'Could not update follow status.');
+    }
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -143,56 +179,67 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <Header 
-        title="Candidate Details" 
-        transparent 
-        showBack 
-        onBack={() => navigation.goBack()} 
-      />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <Image source={{ uri: coverUrl }} style={styles.coverImage} />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.8)']}
-            style={styles.heroOverlay}
-          />
-          
-          <View style={styles.heroContent}>
-            <View style={styles.portraitWrapper}>
-              <Image source={{ uri: portraitUrl }} style={styles.heroPortrait} />
-            </View>
-            
-            <View style={styles.heroInfo}>
-              <View style={styles.badgeRow}>
-                <View style={styles.statusBadge}><Text style={styles.statusBadgeText}>VERIFIED CANDIDATE</Text></View>
-                {candidate.held_previously && <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}><Text style={styles.statusBadgeText}>INCUMBENT</Text></View>}
-              </View>
-              <Text style={styles.heroName}>{fullName}</Text>
-              <Text style={styles.heroRole}>{role}</Text>
-              
-              <View style={styles.metaRow}>
-                <View style={styles.metaItem}>
-                  <MaterialIcons name="location-on" size={16} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.metaText}>{constituency}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <MaterialIcons name="groups" size={16} color="rgba(255,255,255,0.7)" />
-                  <Text style={styles.metaText}>{candidate.committee?.name || "Independent"}</Text>
-                </View>
-              </View>
-            </View>
+      
+      {/* 1. Static Cover Header Area */}
+      <View style={styles.coverWrapper}>
+        <Image source={{ uri: coverUrl }} style={styles.coverImage} />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.4)', 'transparent']}
+          style={styles.coverOverlay}
+        />
+        <Header 
+          title="Candidate Details" 
+          transparent 
+          showBack 
+          onBack={() => navigation.goBack()} 
+        />
+      </View>
 
-            <View style={styles.actionBlock}>
-              <TouchableOpacity style={styles.followBtn}>
-                <MaterialIcons name="person-add" size={20} color="#fff" />
-                <Text style={styles.followBtnText}>FOLLOW CANDIDATE</Text>
-              </TouchableOpacity>
-              <View style={styles.socialRow}>
-                <TouchableOpacity style={styles.socialCircle}><MaterialIcons name="share" size={20} color="#fff" /></TouchableOpacity>
-                <TouchableOpacity style={styles.socialCircle}><MaterialIcons name="public" size={20} color="#fff" /></TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        {/* 2. Overlapping Profile Section */}
+        <View style={styles.profileHeader}>
+          <View style={styles.portraitWrapper}>
+            <Image 
+              source={{ uri: portraitUrl }} 
+              style={styles.heroPortrait} 
+              resizeMode="cover"
+            />
+          </View>
+          
+          <View style={styles.profileInfo}>
+            <View style={styles.badgeRow}>
+              <View style={styles.statusBadge}><Text style={styles.statusBadgeText}>VERIFIED CANDIDATE</Text></View>
+              {candidate.held_previously && <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}><Text style={styles.statusBadgeText}>INCUMBENT</Text></View>}
+            </View>
+            <Text style={styles.profileName}>{fullName}</Text>
+            <Text style={styles.profileRole}>{role}</Text>
+            
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <MaterialIcons name="location-on" size={16} color={COLORS.onSurfaceVariant} />
+                <Text style={styles.metaText}>{constituency}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <MaterialIcons name="groups" size={16} color={COLORS.onSurfaceVariant} />
+                <Text style={styles.metaText}>{candidate.committee?.name || "Independent"}</Text>
               </View>
             </View>
+          </View>
+
+          <View style={styles.actionBlock}>
+            <TouchableOpacity 
+              style={[styles.followBtn, isFollowing && styles.followingBtnActive]}
+              onPress={toggleFollow}
+            >
+              <MaterialIcons 
+                name={isFollowing ? "person-remove" : "person-add"} 
+                size={20} 
+                color={isFollowing ? COLORS.primary : "#fff"} 
+              />
+              <Text style={[styles.followBtnText, isFollowing && styles.followingBtnTextActive]}>
+                {isFollowing ? 'UNFOLLOW' : 'FOLLOW CANDIDATE'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -234,9 +281,6 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
               <Text style={styles.metricLabel}>Verification Status</Text>
               <Text style={[styles.metricValue, { color: COLORS.secondary }]}>Verified</Text>
             </View>
-            <TouchableOpacity style={styles.outlineBtn}>
-              <Text style={styles.outlineBtnText}>VIEW FULL ANALYTICS</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Declarations */}
@@ -271,38 +315,38 @@ const CheckItem = ({ label, checked }: any) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   
-  heroSection: { height: 500, width: '100%', position: 'relative' },
-  coverImage: { width: '100%', height: '100%', position: 'absolute' },
-  heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '70%' },
+  coverWrapper: { height: 180, width: '100%', position: 'relative' },
+  coverImage: { width: '100%', height: '100%' },
+  coverOverlay: { ...StyleSheet.absoluteFillObject },
   
-  heroContent: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, alignItems: 'center' },
-  portraitWrapper: { width: 140, height: 140, borderRadius: 16, borderWidth: 4, borderColor: '#fff', overflow: 'hidden', backgroundColor: COLORS.surfaceContainerLow, marginBottom: 16 },
+  profileHeader: { alignItems: 'center', paddingBottom: 10, marginTop: -80, zIndex: 10, elevation: 5 },
+  portraitWrapper: { width: 130, height: 130, borderRadius: 20, borderWidth: 5, borderColor: '#fff', overflow: 'hidden', backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
   heroPortrait: { width: '100%', height: '100%' },
   
-  heroInfo: { alignItems: 'center', marginBottom: 20 },
-  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  statusBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  heroName: { fontSize: 32, fontWeight: '900', color: '#fff', textAlign: 'center' },
-  heroRole: { fontSize: 16, color: 'rgba(255,255,255,0.9)', textAlign: 'center', marginTop: 4 },
+  profileInfo: { alignItems: 'center', marginTop: 16, marginBottom: 20, paddingHorizontal: 20 },
+  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statusBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  profileName: { fontSize: 28, fontWeight: '900', color: COLORS.onSurface, textAlign: 'center' },
+  profileRole: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   
-  metaRow: { flexDirection: 'row', gap: 16, marginTop: 12 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600' },
+  metaRow: { flexDirection: 'row', gap: 16, marginTop: 14 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
   
-  actionBlock: { width: '100%', alignItems: 'center', gap: 12, marginTop: 10 },
-  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 8, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  followBtnText: { color: '#fff', fontWeight: '900', fontSize: 13 },
-  socialRow: { flexDirection: 'row', gap: 12 },
-  socialCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  actionBlock: { width: '100%', alignItems: 'center', marginTop: 10 },
+  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary, shadowOpacity: 0.05 },
+  followBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
+  followingBtnTextActive: { color: COLORS.primary },
 
   contentPadding: { padding: 16, gap: 16 },
   
   tabBar: { backgroundColor: '#fff', borderRadius: 12, padding: 4, flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
   tabItem: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  activeTabItem: { backgroundColor: COLORS.secondaryContainer },
+  activeTabItem: { backgroundColor: COLORS.primary },
   tabText: { fontSize: 13, fontWeight: '700', color: COLORS.onSurfaceVariant },
-  activeTabText: { color: COLORS.primary },
+  activeTabText: { color: '#ffffff' },
 
   card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 24 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
@@ -334,9 +378,6 @@ const styles = StyleSheet.create({
   metricLabel: { fontSize: 14, fontWeight: '500', color: COLORS.onSurfaceVariant },
   metricValue: { fontSize: 14, fontWeight: '800', color: COLORS.onSurface },
   
-  outlineBtn: { width: '100%', marginTop: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary, alignItems: 'center' },
-  outlineBtnText: { color: COLORS.primary, fontWeight: '800', fontSize: 12 },
-
   securityBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: COLORS.secondary + '08', borderRadius: 12, marginTop: 10 },
   securityText: { flex: 1, fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: 16 },
 });

@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, Query, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
+import io
+import csv
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, require_admin
+from app.middlewares.auth_middleware import get_current_user, require_admin, require_tenant_admin_only
 from app.models.user import User
 from app.schemas.payment import (
     MembershipOrderCreate,
     PaymentCreate,
+    PaymentFailure,
     PaymentListResponse,
     PaymentResponse,
     PaymentStatusResponse,
@@ -98,15 +101,30 @@ def get_my_membership_status(
 
 
 @router.post(
+    "/failure",
+    summary="Record a payment failure from mobile application",
+)
+def record_payment_failure(
+    payload: PaymentFailure,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Update a pending payment record to 'failed' status with reason.
+    """
+    payment_service.record_payment_failure(db, current_user, payload)
+    return success_response(message="Payment failure recorded.")
+
+
+@router.get(
     "/create",
-    response_model=RazorpayOrderResponse,
     summary="Initialize a new Razorpay order",
 )
 def create_payment(
     payload: PaymentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> RazorpayOrderResponse:
+):
     """
     Create a pending payment record and generate Razorpay Order ID.
     Uses organization-specific credentials.
@@ -153,7 +171,7 @@ def get_revenue_overview(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_tenant_admin_only),
 ) -> JSONResponse:
     """
     Returns a summary of total revenue, counts, and a paginated list
@@ -178,6 +196,54 @@ def get_revenue_overview(
     )
 
 
+@router.get(
+    "/statement",
+    summary="Download payment statement (CSV) (Admin only)",
+)
+def download_payment_statement(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_tenant_admin_only),
+):
+    """
+    Export all payment transactions for the current tenant as a CSV file.
+    """
+    # Fetch all records for the tenant
+    items, _, _ = payment_service.get_tenant_revenue(
+        db, 
+        tenant_id=current_user.tenant_id, 
+        page=1, 
+        page_size=1000 # Large enough for most tenants
+    )
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Transaction ID", "User Name", "Plan", "Amount", "Currency", 
+        "Status", "Razorpay Order ID", "Razorpay Payment ID", "Date"
+    ])
+    
+    for p in items:
+        resp = PaymentResponse.model_validate(p)
+        writer.writerow([
+            resp.id,
+            resp.user_name or "N/A",
+            resp.plan_name or "N/A",
+            resp.amount,
+            resp.currency,
+            resp.status.value,
+            resp.razorpay_order_id or "N/A",
+            resp.razorpay_payment_id or "N/A",
+            resp.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        io.BytesIO(output.getvalue().encode()),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=payment_statement_{current_user.tenant_id}.csv"}
+    )
+
+
 @router.put(
     "/settings",
     summary="Update payment gateway settings (Admin only)",
@@ -185,7 +251,7 @@ def get_revenue_overview(
 def update_payment_settings(
     payload: TenantPaymentSettings,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_tenant_admin_only),
 ) -> JSONResponse:
     """
     Update Razorpay Key ID and Key Secret for the organization.
@@ -200,7 +266,7 @@ def update_payment_settings(
 )
 def get_payment_settings(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_tenant_admin_only),
 ) -> JSONResponse:
     """
     Retrieve Razorpay Key ID and Key Secret for the organization.

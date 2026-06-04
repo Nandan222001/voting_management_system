@@ -25,10 +25,58 @@ from app.schemas.candidate import CandidateCreate, CandidateUpdate
 from app.utils.uploads import delete_uploaded_file, save_uploaded_image
 
 
+from sqlalchemy import text
+from app.models.candidate_follower import CandidateFollower
+
 class CandidateService:
     """
     Orchestrates candidate use-cases for the Digital Voting System.
     """
+
+    # ... (existing methods)
+
+    def get_follow_status(self, db: Session, candidate_id: int, user_id: int) -> bool:
+        """
+        Check if a user is following a candidate using MySQL JSON functions.
+        """
+        query = text("""
+            SELECT JSON_CONTAINS(follower_ids, CAST(:user_id AS JSON)) 
+            FROM candidate_followers 
+            WHERE candidate_id = :candidate_id
+        """)
+        result = db.execute(query, {"user_id": user_id, "candidate_id": candidate_id}).scalar()
+        return bool(result)
+
+    def follow_candidate(self, db: Session, candidate_id: int, user_id: int) -> bool:
+        """
+        Toggle follow status for a candidate using MySQL native JSON functions.
+        Returns the new follow status.
+        """
+        # 1. Ensure the candidate existence is validated (implicitly or explicitly)
+        self.get_by_id(db, candidate_id)
+
+        # 2. Ensure the row exists
+        db.execute(text("""
+            INSERT IGNORE INTO candidate_followers (candidate_id, follower_ids) 
+            VALUES (:candidate_id, '[]')
+        """), {"candidate_id": candidate_id})
+        
+        # 3. Perform the toggle logic atomically in MySQL
+        # If user ID exists in array, remove it. Otherwise, append it.
+        db.execute(text("""
+            UPDATE candidate_followers 
+            SET follower_ids = IF(
+                JSON_CONTAINS(follower_ids, CAST(:user_id AS JSON)),
+                JSON_REMOVE(follower_ids, JSON_UNQUOTE(JSON_SEARCH(follower_ids, 'one', :user_id))),
+                JSON_ARRAY_APPEND(follower_ids, '$', :user_id)
+            )
+            WHERE candidate_id = :candidate_id
+        """), {"user_id": user_id, "candidate_id": candidate_id})
+        
+        db.commit()
+
+        # 4. Return new status
+        return self.get_follow_status(db, candidate_id, user_id)
 
     # ------------------------------------------------------------------
     # Create

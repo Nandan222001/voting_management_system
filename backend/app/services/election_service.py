@@ -164,30 +164,49 @@ class ElectionService:
         db: Session,
         skip: int = 0,
         limit: int = 20,
-        status_filter: Optional[ElectionStatus] = None,
+        status_filter: Optional[str] = None,
+        search_filter: Optional[str] = None,
         tenant_id: Optional[int] = None,
         member_district: Optional[str] = None,
     ) -> tuple[list[Election], int]:
         """
-        Return a paginated list of elections, optionally filtered by status
-        and scoped to a tenant.
+        Return a paginated list of elections, optionally filtered by status,
+        search term, and scoped to a tenant.
 
         Args:
             db:            Active database session.
             skip:          Row offset.
             limit:         Maximum rows to return.
-            status_filter: When supplied, restrict to elections with this status.
+            status_filter: When supplied (e.g. 'active', 'draft'), restrict results.
+                           'all' or None returns everything.
+            search_filter: Optional search term for the election title (LIKE %term%).
             tenant_id:     When supplied, restrict to elections belonging to
                            this tenant.  Pass ``None`` (superadmin) to see all.
 
         Returns:
             A ``(elections, total)`` tuple.
         """
+        from sqlalchemy import text
+
+        # Base query
         query = db.query(Election)
+
+        # 1. Multi-tenancy Scoping
         if tenant_id is not None:
             query = query.filter(Election.tenant_id == tenant_id)
-        if status_filter is not None:
-            query = query.filter(Election.status == status_filter)
+
+        # 2. Strict Status Filtering (Raw SQL logic via text)
+        if status_filter:
+            # Query equivalent: WHERE status = :status
+            query = query.filter(text("status = :status")).params(status=status_filter)
+
+        # 3. Search Filtering (Node Title Search)
+        if search_filter:
+            # Query equivalent: WHERE title LIKE :search
+            search_param = f"%{search_filter}%"
+            query = query.filter(Election.title.ilike(search_param))
+
+        # 4. Member District Scoping
         if member_district is not None:
             query = query.filter(
                 or_(

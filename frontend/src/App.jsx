@@ -17,7 +17,6 @@ import AuditLogsPage from './pages/AuditLogsPage'
 import CandidateCommitteesPage from './pages/CandidateCommitteesPage'
 import TargetsPage from './pages/TargetsPage'
 import RevenuePage from './pages/RevenuePage'
-import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import ElectionDetailPage from './pages/ElectionDetailPage'
 import NominationsPage from './pages/NominationsPage'
 import AnnouncementsPage from './pages/AnnouncementsPage'
@@ -108,7 +107,7 @@ export default function App() {
           path="/dashboard" 
           element={
             <PrivateRoute>
-              <DashboardSwitch />
+              <DashboardPage />
             </PrivateRoute>
           } 
         />
@@ -130,7 +129,7 @@ export default function App() {
         {/* SuperAdmin Only */}
         <Route path="/tenants" element={<PrivateRoute roles={['superadmin']}><TenantsPage /></PrivateRoute>} />
         <Route path="/audit-logs" element={<PrivateRoute roles={['superadmin', 'admin']}><AuditLogsPage /></PrivateRoute>} />
-        <Route path="/revenue" element={<PrivateRoute roles={['admin', 'superadmin']}><RevenuePage /></PrivateRoute>} />
+        <Route path="/revenue" element={<PrivateRoute roles={['admin']}><RevenuePage /></PrivateRoute>} />
         <Route path="/targets" element={<PrivateRoute roles={['admin', 'superadmin']}><TargetsPage /></PrivateRoute>} />
 
         {/* 404 fallback */}
@@ -138,9 +137,4 @@ export default function App() {
       </Routes>
     </>
   )
-}
-
-function DashboardSwitch() {
-  const { user } = useSelector((state) => state.auth)
-  return user?.role === 'superadmin' ? <SuperAdminDashboard /> : <DashboardPage />
 }

@@ -114,13 +114,16 @@ def election_stats(
 
 @router.get(
     "/",
-    summary="List elections (authenticated, filterable by status)",
+    summary="List elections (authenticated, filterable by status and title)",
 )
 def list_elections(
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(default=20, ge=1, le=100, description="Items per page"),
-    status: Optional[ElectionStatus] = Query(
-        default=None, description="Filter by election status"
+    status: Optional[str] = Query(
+        default=None, description="Filter by election status (e.g., active, draft, closed, or 'all')"
+    ),
+    search: Optional[str] = Query(
+        default=None, description="Search by node title (case-insensitive)"
     ),
     tenant_id: Optional[int] = Query(
         default=None,
@@ -135,7 +138,8 @@ def list_elections(
     - **page**: 1-indexed page number.
     - **per_page**: Number of elections per page (max 100).
     - **status**: Optional status filter (``draft``, ``active``, ``closed``,
-      ``cancelled``).
+      ``cancelled``, or ``all``).
+    - **search**: Optional search term for the election title.
     - **tenant_id**: Superadmin may supply this to scope to a specific tenant;
       all other authenticated users are automatically scoped to their own tenant.
 
@@ -146,18 +150,23 @@ def list_elections(
         effective_tenant_id = tenant_id  # superadmin may or may not filter
     else:
         effective_tenant_id = current_user.tenant_id
+    
     member_district = (
         current_user.district
         if current_user.role == UserRole.voter
         else None
     )
 
+    # Resolve "all" status to None for the service layer
+    status_filter = None if not status or status.lower() == "all" else status.lower()
+
     skip = (page - 1) * per_page
     elections, total = election_service.get_all(
         db,
         skip=skip,
         limit=per_page,
-        status_filter=status,
+        status_filter=status_filter,
+        search_filter=search,
         tenant_id=effective_tenant_id,
         member_district=member_district,
     )
