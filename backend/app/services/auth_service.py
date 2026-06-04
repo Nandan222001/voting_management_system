@@ -170,7 +170,20 @@ class AuthService:
         db.refresh(user)
 
         # Send verification email
-        send_registration_otp_email(user.email, otp)
+        try:
+            send_registration_otp_email(user.email, otp)
+        except Exception as e:
+            # If email fails, we should still have the user record, 
+            # but maybe we should warn or handle it. 
+            # For registration, we'll log it and let it pass or raise?
+            # User might need a 'resend' feature if it fails here.
+            logger.error(f"Failed to send registration email: {str(e)}")
+            # We allow registration to complete but the user might be stuck without OTP.
+            # Best practice: raise error so they know it failed and can try again.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Registration successful but failed to send verification email: {str(e)}"
+            )
 
         return user
 
@@ -379,21 +392,36 @@ class AuthService:
             email: User's registered e-mail address.
 
         Returns:
-            Always returns True to avoid leaking whether an email exists.
+            True if OTP was sent.
+
+        Raises:
+            HTTPException 404: If the e-mail address is not registered.
         """
         repo = UserRepository(db)
         user: Optional[User] = repo.get_by_email(email)
 
-        if user:
-            otp = generate_otp()
-            otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
-            
-            user.otp_code = otp
-            user.otp_expires_at = otp_expires
-            db.commit()
-            
-            # Send the OTP via email
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account does not exist with this email address.",
+            )
+
+        otp = generate_otp()
+        otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+        
+        user.otp_code = otp
+        user.otp_expires_at = otp_expires
+        db.commit()
+        
+        # Send the OTP via email
+        try:
             send_otp_email(user.email, otp)
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to send password reset email: {str(e)}"
+            )
         
         return True
 

@@ -57,6 +57,14 @@ export const authService = {
     return user ? JSON.parse(user) : null;
   },
 
+  getProfile: async () => {
+    const response = await api.get('/auth/me');
+    const user = response.data.data || response.data;
+    await AsyncStorage.setItem('user', JSON.stringify(user));
+    await setTenantID(user?.tenant_id);
+    return user;
+  },
+
   updateProfile: async (userData: any) => {
     const response = await api.put('/auth/me', userData);
     const updatedUser = response.data.data;
