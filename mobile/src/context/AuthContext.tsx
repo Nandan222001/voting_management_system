@@ -58,11 +58,13 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   register: (userData: any) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   updateProfile: (userData: any) => Promise<void>;
+  setToken: (token: string | null) => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,8 +101,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
-    setToken(result.access_token);
-    setUser(result.user);
+    // We return the result but don't automatically set the state here
+    // to allow the Login screen to check the user's status first.
+    return result;
   };
 
   const logout = async () => {
@@ -150,6 +153,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         verifyOtp,
         updateProfile,
+        setToken,
+        setUser
       }}
     >
       {children}

@@ -26,7 +26,7 @@ const getInputStyle = () => {
 };
 
 const LoginScreen = ({ navigation }: { navigation: any }) => {
-  const { login } = useAuth();
+  const { login, setToken, setUser, logout } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,32 +39,33 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
     }
     setLoading(true);
     try {
-      await login(email, password);
-      showToast.success("Success", "Welcome back to CivicVote!");
-    } catch (error: any) {
-      const message = error.response?.data?.detail || "Invalid credentials. Please check your email and password.";
-      
-      if (message === "Account email not verified") {
-        if (Platform.OS === 'web') {
-           showToast.info("Verification Required", "Please check your inbox to verify your account.");
-           // Optional: Auto-navigate for convenience in web-simulation
-           navigation.navigate("Verify", { email });
-        } else {
-          Alert.alert(
-            "Verification Required",
-            "Your email address is not verified. Would you like to verify it now?",
-            [
-              { text: "Cancel", style: "cancel" },
-              { 
-                text: "Verify Now", 
-                onPress: () => navigation.navigate("Verify", { email }) 
-              }
-            ]
-          );
-        }
+      const result = await login(email, password);
+      const user = result.user;
+
+      // 1. Evaluate User Status (Active Check)
+      if (user.status === 'active') {
+        // 2. Success Behavior: Active users log in immediately and bypass OTP
+        setToken(result.access_token);
+        setUser(user);
+        showToast.success("Success", "Welcome back to CivicVote!");
+        // Navigation to Dashboard happens automatically in App.tsx due to token state
       } else {
-        showToast.error("Sign In Failed", message);
+        // 3. Validation & Error Handling: Prevent login for non-active users
+        await logout(); // Ensure any stored data is cleared
+        
+        let statusMessage = "Your account is not active. Please contact support.";
+        if (user.status === 'pending') {
+          statusMessage = "Your account is awaiting admin approval.";
+        } else if (user.status === 'blocked') {
+          statusMessage = "Your account has been blocked. Please contact support.";
+        }
+        
+        showToast.error("Access Denied", statusMessage);
       }
+    } catch (error: any) {
+      // 4. Standard Credential Validation Failures
+      const message = error.response?.data?.detail || "Invalid credentials. Please check your email and password.";
+      showToast.error("Sign In Failed", message);
     } finally {
       setLoading(false);
     }
@@ -81,7 +82,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.illustrationContainer}>
             <View style={styles.outerGlow}>
               <View style={styles.innerGlow}>
-                <FontAwesome5 name="shield-alt" size={48} color="rgb(16 102 177)" />
+                <FontAwesome5 name="shield-alt" size={48} color="#003d9b" />
               </View>
             </View>
           </View>
@@ -259,13 +260,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   forgotText: {
-    color: "rgb(16 102 177)",
+    color: "#003d9b",
     fontWeight: "700",
     fontSize: 12,
     marginBottom: 8,
   },
   primaryButton: {
-    backgroundColor: "rgb(16 102 177)",
+    backgroundColor: "#003d9b",
     height: 56,
     borderRadius: 10,
     justifyContent: "center",
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
   },
   registerText: {
     fontSize: 14,
-    color: "rgb(16 102 177)",
+    color: "#003d9b",
     fontWeight: '800',
   },
   trustBanner: {

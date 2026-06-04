@@ -123,6 +123,8 @@ class AuditLogRepository(BaseRepository[AuditLog]):
         limit: int = 50,
         user_id: Optional[int] = None,
         action: Optional[str] = None,
+        tenant_id: Optional[int] = None,
+        exclude_actions: Optional[list[str]] = None,
     ) -> tuple[list[AuditLog], int]:
         """
         Return a paginated, optionally-filtered list of audit log entries.
@@ -132,6 +134,8 @@ class AuditLogRepository(BaseRepository[AuditLog]):
             limit:   Maximum rows to return.
             user_id: When supplied, restrict to entries from that user.
             action:  When supplied, restrict to entries with that action.
+            tenant_id: When supplied, restrict to entries for that tenant.
+            exclude_actions: When supplied, exclude these actions from results.
 
         Returns:
             A ``(items, total)`` tuple.
@@ -142,6 +146,10 @@ class AuditLogRepository(BaseRepository[AuditLog]):
             query = query.filter(AuditLog.user_id == user_id)
         if action is not None:
             query = query.filter(AuditLog.action == action)
+        if tenant_id is not None:
+            query = query.filter(AuditLog.tenant_id == tenant_id)
+        if exclude_actions:
+            query = query.filter(AuditLog.action.notin_(exclude_actions))
 
         total: int = query.count()
         items: list[AuditLog] = (

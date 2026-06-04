@@ -65,6 +65,14 @@ class RazorpayPaymentVerify(BaseModel):
     razorpay_signature: str = Field(..., min_length=1)
 
 
+class PaymentFailure(BaseModel):
+    """Payload for recording a payment failure."""
+
+    membership_plan_id: int
+    error_message: str
+    razorpay_order_id: Optional[str] = None
+
+
 class PaymentVerifyResponse(BaseModel):
     success: bool
     message: str
@@ -99,6 +107,19 @@ class PaymentResponse(PaymentBase):
     membership_plan_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
+
+    # Rich data for UI
+    user_name: Optional[str] = Field(default=None, alias="user_name")
+    plan_name: Optional[str] = Field(default=None, alias="plan_name")
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        data = super().model_validate(obj, **kwargs)
+        if hasattr(obj, 'user') and obj.user:
+            data.user_name = obj.user.full_name
+        if hasattr(obj, 'membership_plan') and obj.membership_plan:
+            data.plan_name = obj.membership_plan.name
+        return data
 
 
 class RevenueSummary(BaseModel):
