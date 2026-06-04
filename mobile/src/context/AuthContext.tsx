@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../services/authService';
+import { onUnauthorized } from '../services/api';
 
 interface User {
   id: number;
@@ -75,6 +76,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Register global unauthorized handler
+    onUnauthorized(() => {
+      setToken(null);
+      setUser(null);
+    });
+
     // Load stored auth data on mount
     const loadStorageData = async () => {
       try {
@@ -85,8 +92,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const parsedUser = JSON.parse(storedUser);
           setToken(storedToken);
           setUser(parsedUser);
+          
           if (parsedUser?.tenant_id) {
             await AsyncStorage.setItem('tenant_id', String(parsedUser.tenant_id));
+          }
+
+          // Validate token by fetching fresh user data
+          try {
+            const freshUser = await authService.getProfile();
+            if (freshUser) {
+              setUser(freshUser);
+            }
+          } catch (error: any) {
+            console.error('Token validation failed', error);
+            // Interceptor handles status 401 and calls onUnauthorized
           }
         }
       } catch (e) {

@@ -88,6 +88,12 @@ api.interceptors.request.use(
 
 // ─── Response interceptor ────────────────────────────────────────────────────
 
+let unauthorizedCallback: (() => void) | null = null;
+
+export const onUnauthorized = (callback: () => void) => {
+  unauthorizedCallback = callback;
+};
+
 api.interceptors.response.use(
   (response) => {
     console.log(`[API Response] ${response.status} ${response.config.url}`);
@@ -103,6 +109,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
+      if (unauthorizedCallback) {
+        unauthorizedCallback();
+      }
     }
     return Promise.reject(error);
   },

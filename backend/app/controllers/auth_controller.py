@@ -140,11 +140,11 @@ def forgot_password(
 ) -> MessageResponse:
     """
     Send a password reset OTP to the user's registered email address.
-    Always returns a success message to prevent user enumeration.
+    Verifies email existence before sending.
     """
     auth_service.forgot_password(db, payload.email)
     return MessageResponse(
-        message="If an account exists for this email, a password reset OTP has been sent."
+        message="A password reset OTP has been sent to your email."
     )
 
 
