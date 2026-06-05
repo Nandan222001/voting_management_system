@@ -1,4 +1,10 @@
+import hashlib
+import hmac
+import json
+import secrets
+from datetime import datetime
 from typing import Optional, Tuple
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -9,8 +15,18 @@ from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.tenant_repository import TenantRepository
-from app.schemas.payment import PaymentUpdate, RevenueSummary, RazorpayPaymentVerify, PaymentFailure
+from app.schemas.payment import (
+    PaymentAnalytics,
+    PaymentUpdate,
+    RefundRequest,
+    RevenueSummary,
+    RazorpayPaymentVerify,
+    PaymentFailure,
+)
 from app.schemas.tenant import TenantPaymentSettings
+
+# 18% GST applied on top of plan price
+GST_RATE = 0.18
 
 
 class PaymentService:

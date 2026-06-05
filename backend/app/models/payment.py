@@ -58,6 +58,16 @@ class Payment(Base):
     razorpay_payment_id = Column(String(100), nullable=True, index=True)
     razorpay_signature = Column(String(255), nullable=True)
 
+    # GST / Tax
+    gst_rate = Column(Float, nullable=True, default=0.0)
+    gst_amount = Column(Float, nullable=True, default=0.0)
+
+    # Refund tracking
+    refund_id = Column(String(100), nullable=True, index=True)
+    refund_amount = Column(Float, nullable=True)
+    refunded_at = Column(DateTime, nullable=True)
+    refund_reason = Column(String(255), nullable=True)
+
     # Payer Info (Optional - could link to User if internal)
     user_id = Column(
         Integer,
