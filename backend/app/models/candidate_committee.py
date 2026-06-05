@@ -8,8 +8,10 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    select,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from app.config.database import Base
 
@@ -57,6 +59,19 @@ class CandidateCommittee(Base):
         cascade="all, delete-orphan",
         lazy="select",
     )
+
+    @hybrid_property
+    def candidate_count(self) -> int:
+        return len(self.candidates)
+
+    @candidate_count.expression
+    def candidate_count(cls):
+        from app.models.candidate import Candidate
+        return (
+            select(func.count(Candidate.id))
+            .where(Candidate.committee_id == cls.id)
+            .label("candidate_count")
+        )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<CandidateCommittee id={self.id} name={self.name!r} tenant_id={self.tenant_id}>"

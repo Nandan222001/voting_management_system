@@ -2,19 +2,26 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
+  Activity,
   AlertTriangle,
   BarChart3,
   BadgeCheck,
   Building2,
   CheckCircle2,
+  ChevronRight,
   CloudOff,
   Database,
+  FileText,
+  Globe,
   Info,
   LockKeyhole,
   LockOpen,
+  Layers,
   Network,
+  PlayCircle,
   TrendingUp,
   UserCheck,
+  Users,
   Vote,
 } from 'lucide-react';
 import {
@@ -31,49 +38,96 @@ function numberFormat(value) {
   return new Intl.NumberFormat('en-US').format(Number(value || 0));
 }
 
-function MetricCard({ title, value, children, icon: Icon, iconClass = 'text-[#1A237E]' }) {
+function timeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
   return (
-    <div className="rounded-lg border border-[#c4c6d0] bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#44464f]">{title}</span>
-        <Icon className={`h-6 w-6 ${iconClass}`} strokeWidth={2.4} />
+    <div className="group relative overflow-hidden rounded-2xl border border-[#c4c6d0] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
       </div>
-      <div className="flex min-h-[38px] items-end gap-2">{value}</div>
-      {children}
+      <div className="flex items-baseline gap-2">
+        {value}
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
     </div>
   );
 }
 
 function ActivityItem({ tone, icon: Icon, title, time, description, meta, pulse }) {
   const toneClasses = {
-    amber: 'bg-[#ffdcc2] text-[#683700]',
-    blue: 'bg-[#e8eaf6] text-[#1A237E]',
-    red: 'bg-[#ffdad6] text-[#ba1a1a]',
+    amber: 'bg-amber-50 text-amber-700 border-amber-100',
+    blue: 'bg-blue-50 text-[#1a337e] border-blue-100',
+    red: 'bg-red-50 text-red-700 border-red-100',
+  };
+
+  const pulseClasses = {
+    amber: 'bg-amber-500 sa-pulse-amber',
+    blue: 'bg-[#1a337e] sa-pulse-green',
+    red: 'bg-red-500',
   };
 
   return (
-    <div className="flex gap-4 rounded-lg border border-transparent p-3 transition hover:border-[#c4c6d0] hover:bg-[#f4f3f7]">
-      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${toneClasses[tone]}`}>
-        <Icon className="h-5 w-5" />
+    <div className="group relative flex gap-4 rounded-xl border border-transparent p-4 transition-all duration-300 hover:border-[#c4c6d0] hover:bg-white hover:shadow-sm">
+      <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border shadow-sm transition-transform group-hover:scale-110 ${toneClasses[tone]}`}>
+        <Icon className="h-6 w-6" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center justify-between gap-3">
-          <span className="truncate text-sm font-bold text-[#1b1b1f]">{title}</span>
-          <span className="shrink-0 text-[10px] text-[#44464f]">{time}</span>
+          <span className="truncate text-[13px] font-black uppercase tracking-wider text-[#1b1b1f]">
+            {title}
+          </span>
+          <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-[#44464f]">
+            {time}
+          </span>
         </div>
-        <p className="text-sm leading-5 text-[#44464f]">{description}</p>
+        <p className="text-sm leading-relaxed text-[#44464f] font-medium">
+          {description}
+        </p>
         {meta && (
-          <div className="mt-2 flex flex-wrap items-center gap-4">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             {meta.map(({ icon: MetaIcon, label }) => (
-              <div key={label} className="flex items-center gap-1 text-[10px] font-bold text-[#44464f]">
-                <MetaIcon className="h-3 w-3" />
+              <div key={label} className="flex items-center gap-1.5 rounded-md bg-gray-50 px-2 py-1 text-[10px] font-bold text-[#44464f] border border-gray-100">
+                <MetaIcon className="h-3.5 w-3.5 text-gray-400" />
                 {label}
               </div>
             ))}
           </div>
         )}
       </div>
-      {pulse && <span className={`mt-2 h-2 w-2 rounded-full ${pulse}`} />}
+      {pulse && (
+        <div className="absolute -left-1 top-6 flex h-3 w-3">
+          <span className={`relative inline-flex h-3 w-3 rounded-full ${pulseClasses[tone]}`}></span>
+        </div>
+      )}
     </div>
   );
 }
@@ -92,26 +146,49 @@ export default function SuperAdminDashboard() {
 
   const stats = useMemo(() => {
     const totalTenants = platformStats?.total_tenants ?? platformStats?.totalTenants ?? tenants.length;
-    const activeTenants = platformStats?.active_tenants ?? platformStats?.activeTenants ?? tenants.filter((tenant) => tenant.status === 'active').length;
-    const totalElections =
-      platformStats?.total_elections ??
-      platformStats?.totalElections ??
-      tenants.reduce((sum, tenant) => sum + Number(tenant.election_count || 0), 0);
-    const monthlyRevenue = platformStats?.monthly_revenue ?? platformStats?.monthlyRevenue ?? platformStats?.arr ?? 2400000;
+    const activeTenants = platformStats?.active_tenants ?? platformStats?.activeTenants ?? 0;
+    const draftTenants = platformStats?.draft_tenants ?? platformStats?.draftTenants ?? 0;
+    const suspendedTenants = platformStats?.suspended_tenants ?? platformStats?.suspendedTenants ?? 0;
+
+    const totalElections = platformStats?.total_elections ?? platformStats?.totalElections ?? 0;
+    const activeElections = platformStats?.active_elections ?? platformStats?.activeElections ?? 0;
+    const draftElections = platformStats?.draft_elections ?? platformStats?.draftElections ?? 0;
+    const closedElections = platformStats?.closed_elections ?? platformStats?.closedElections ?? 0;
+
+    const totalUsers = platformStats?.total_users ?? platformStats?.totalUsers ?? 0;
+    const pendingUsers = platformStats?.pending_users ?? platformStats?.pendingUsers ?? 0;
+
+    const totalVotes = platformStats?.total_votes ?? platformStats?.totalVotes ?? 0;
+    const totalCandidates = platformStats?.total_candidates ?? platformStats?.totalCandidates ?? 0;
+    const totalCommittees = platformStats?.total_committees ?? platformStats?.totalCommittees ?? 0;
+    const totalPoliticalCommittees = platformStats?.total_political_committees ?? platformStats?.totalPoliticalCommittees ?? 0;
+    const recentActivity = platformStats?.recent_activity ?? [];
+    const recentElections = platformStats?.recent_elections ?? [];
 
     return {
       totalTenants,
       activeTenants,
+      draftTenants,
+      suspendedTenants,
       totalElections,
-      liveElections: platformStats?.live_elections ?? platformStats?.liveElections ?? 42,
-      monthlyRevenue,
+      activeElections,
+      draftElections,
+      closedElections,
+      totalUsers,
+      pendingUsers,
+      totalVotes,
+      totalCandidates,
+      totalCommittees,
+      totalPoliticalCommittees,
+      recentActivity,
+      recentElections,
     };
   }, [platformStats, tenants]);
 
   const recentTenants = tenants.slice(0, 3);
 
   return (
-    <MainLayout title="Infrastructure Control">
+    <MainLayout title="Dashboard">
       <style>{`
         .sa-pulse-amber { animation: saPulseAmber 2s infinite; }
         .sa-pulse-green { animation: saPulseGreen 2s infinite; }
@@ -131,206 +208,212 @@ export default function SuperAdminDashboard() {
       `}</style>
 
       <div className="w-full">
-        {/* <section className="mb-6">
-          <div className="flex items-start gap-4 rounded-r-lg border-l-4 border-[#ba1a1a] bg-[#ba1a1a]/5 p-4 text-[#93000a] shadow-sm">
-            <div className="rounded-full bg-[#ba1a1a] p-2 text-white">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="mb-1 text-xs font-bold uppercase tracking-wider">Security Advisory: Latency Anomaly Detected</p>
-              <p className="text-sm leading-5">
-                Unusual API access patterns detected from IP 192.168.4.12 across 4 tenant nodes. Immediate audit recommended.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => navigate('/audit-logs')}
-              className="hidden rounded bg-[#ba1a1a] px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-white transition hover:bg-red-800 sm:block"
-            >
-              Investigate
-            </button>
-          </div>
-        </section> */}
-
-        <section className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+         
+        <section className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            title="Active Tenants"
+            title="Tenants Overview"
             icon={Building2}
+            tone="blue"
             value={
               <>
-                <span className="text-3xl font-black text-[#1b1b1f]">{numberFormat(stats.activeTenants)}</span>
-                <span className="mb-1 flex items-center text-xs font-bold text-[#056e00]">
-                  <TrendingUp className="h-3 w-3" /> +8%
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.totalTenants)}</span>
+                <span className="mb-1 flex items-center text-xs font-bold text-emerald-600">
+                  {stats.activeTenants} Active
                 </span>
               </>
             }
           >
-            <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-[#eeeef4]">
-              <div className="h-full w-[72%] bg-[#1A237E]" />
+            <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+              <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{stats.draftTenants} Draft</span>
+              <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{stats.suspendedTenants} Suspended</span>
             </div>
           </MetricCard>
 
           <MetricCard
             title="Total Elections"
             icon={Vote}
+            tone="indigo"
             value={
               <>
-                <span className="text-3xl font-black text-[#1b1b1f]">{numberFormat(stats.totalElections || 3892)}</span>
-                <span className="mb-1 text-xs font-bold text-[#44464f]">Live: {stats.liveElections}</span>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.totalElections)}</span>
+                <span className="mb-1 text-xs font-bold text-gray-400">Live: {stats.activeElections}</span>
               </>
             }
           >
-            <div className="mt-4 flex h-6 gap-1">
-              {['h-full bg-[#b2c5ff]', 'mt-auto h-2 bg-[#b2c5ff]', 'h-full bg-[#1A237E]', 'mt-auto h-3 bg-[#b2c5ff]', 'mt-auto h-4 bg-[#1A237E]', 'h-full bg-[#1A237E]'].map((className, index) => (
-                <div key={index} className={`w-full rounded-sm ${className}`} />
-              ))}
+            <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-gray-100">
+              <div className="h-full bg-[#1a337e] transition-all" title={`Active: ${stats.activeElections}`} style={{ flexGrow: stats.activeElections || 1 }} />
+              <div className="h-full bg-[#1a337e] transition-all" title={`Draft: ${stats.draftElections}`} style={{ flexGrow: stats.draftElections || 1 }} />
+              <div className="h-full bg-gray-300 transition-all" title={`Closed: ${stats.closedElections}`} style={{ flexGrow: stats.closedElections || 1 }} />
             </div>
           </MetricCard>
 
           <MetricCard
-            title="ARR / Growth"
-            icon={Building2}
+            title="Total Users"
+            icon={Users}
+            tone="emerald"
             value={
               <>
-                <span className="text-3xl font-black text-[#1b1b1f]">${Number(stats.monthlyRevenue / 1000000).toFixed(1)}M</span>
-                <span className="mb-1 flex items-center text-xs font-bold text-[#056e00]">
-                  <BadgeCheck className="h-3 w-3" /> Secure
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.totalUsers)}</span>
+                <span className="mb-1 flex items-center text-xs font-bold text-emerald-600">
+                  <UserCheck className="h-3 w-3" /> {numberFormat(stats.totalUsers - stats.pendingUsers)}
                 </span>
               </>
             }
           >
-            <p className="mt-4 text-xs text-[#44464f]">Next billing cycle: 12 Oct</p>
+            <div className="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100/50 inline-block">
+              {stats.pendingUsers} Pending Verification
+            </div>
           </MetricCard>
 
           <MetricCard
-            title="System Health"
-            icon={CheckCircle2}
-            iconClass="text-[#056e00]"
+            title="Political Committees"
+            icon={Layers}
+            tone="amber"
             value={
               <>
-                <span className="text-3xl font-black text-[#1b1b1f]">99.98%</span>
-                <span className="mb-1 text-xs font-bold text-[#44464f]">Latency: 42ms</span>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.totalPoliticalCommittees)}</span>
+                <span className="mb-1 flex items-center text-xs font-bold text-gray-400">
+                   Committees
+                </span>
               </>
             }
           >
-            <div className="mt-4 flex items-center justify-between gap-1">
-              <div className="h-2 flex-1 rounded-full bg-[#056e00]" />
-              <div className="h-2 flex-1 rounded-full bg-[#056e00]" />
-              <div className="h-2 flex-1 rounded-full bg-[#056e00]" />
-              <div className="h-2 flex-1 rounded-full bg-[#056e00]/30" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                <span className="text-gray-500">Candidates</span>
+                <span className="text-amber-600">{numberFormat(stats.totalCandidates)}</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                <div className="h-full bg-amber-500 transition-all" style={{ width: '65%' }} />
+              </div>
             </div>
           </MetricCard>
         </section>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <section className="flex h-[500px] flex-col overflow-hidden rounded-lg border border-[#c4c6d0] bg-white lg:col-span-2">
-            <div className="flex items-center justify-between border-b border-[#c4c6d0] bg-[#fbfcff] p-4">
-              <h2 className="text-lg font-semibold text-[#1b1b1f]">Live Election Activity</h2>
-              <div className="flex items-center gap-2">
-                <span className="sa-pulse-green h-2 w-2 rounded-full bg-[#056e00]" />
-                <span className="text-[10px] font-bold uppercase tracking-normal text-[#056e00]">Real-time Feed</span>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <section className="flex h-[640px] flex-col overflow-hidden rounded-3xl border border-[#c4c6d0] bg-white shadow-xl lg:col-span-2">
+            <div className="flex items-center justify-between border-b border-gray-100 bg-white p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-[#1a337e] border border-blue-100 shadow-inner">
+                   <Activity className="h-7 w-7" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight text-gray-900">Network Activity</h2>
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Live Election Stream</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 border border-emerald-100 shadow-sm">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 sa-pulse-green" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700">Cluster: Optimal</span>
               </div>
             </div>
-            <div className="sa-scrollbar flex-1 space-y-4 overflow-y-auto p-4">
-              {loading && tenants.length === 0 ? (
+            <div className="sa-scrollbar flex-1 space-y-2 overflow-y-auto p-6 bg-gray-50/30">
+              {loading && stats.recentElections.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
                   <LoadingSpinner />
                 </div>
+              ) : stats.recentElections.length === 0 ? (
+                <div className="flex h-full items-center justify-center flex-col gap-4 text-gray-400">
+                  <Vote className="h-16 w-16 opacity-10" />
+                  <p className="text-sm font-black uppercase tracking-widest opacity-30">Waiting for network events...</p>
+                </div>
               ) : (
-                (recentTenants.length ? recentTenants : [{ name: 'Florida-District-12' }, { name: 'Toronto-City-Council' }, { name: 'UK-Local-Borough' }]).map((tenant, index) => {
-                  const items = [
-                    {
-                      tone: 'amber',
-                      icon: UserCheck,
-                      title: `Tenant: ${tenant.name || 'Florida-District-12'}`,
-                      time: '2 mins ago',
-                      description: 'General Election Phase: Voter Verification Started. 12k records processing.',
-                      meta: [
-                        { icon: Database, label: '1.2 GB/s' },
-                        { icon: LockKeyhole, label: 'SHA-512' },
-                      ],
-                      pulse: 'sa-pulse-amber bg-[#683700]',
-                    },
-                    {
-                      tone: 'blue',
-                      icon: BarChart3,
-                      title: `Tenant: ${tenant.name || 'Toronto-City-Council'}`,
-                      time: '14 mins ago',
-                      description: 'Final results finalized and digitally signed by 4/4 authorities.',
-                      pulse: 'sa-pulse-green bg-[#056e00]',
-                    },
-                    {
-                      tone: 'red',
-                      icon: CloudOff,
-                      title: `Tenant: ${tenant.name || 'UK-Local-Borough'}`,
-                      time: '32 mins ago',
-                      description: 'Secondary database node experienced timeout. Automatic failover successful.',
-                    },
-                  ];
-                  return <ActivityItem key={`${tenant.name || index}-${index}`} {...items[index % items.length]} />;
+                stats.recentElections.map((election) => {
+                  const getStatusConfig = (status) => {
+                    switch (status?.toLowerCase()) {
+                      case 'active': return { tone: 'blue', icon: PlayCircle, pulse: 'sa-pulse-green' };
+                      case 'closed': return { tone: 'amber', icon: CheckCircle2, pulse: null };
+                      default: return { tone: 'amber', icon: FileText, pulse: 'sa-pulse-amber' };
+                    }
+                  };
+                  const { tone, icon, pulse } = getStatusConfig(election.status);
+                  
+                  return (
+                    <ActivityItem
+                      key={election.id}
+                      tone={tone}
+                      icon={icon}
+                      title={`${election.tenant_name}: ${election.title}`}
+                      time={timeAgo(election.created_at)}
+                      description={`Status: ${election.status.toUpperCase()}. Scheduled timeframe: ${new Date(election.start_date).toLocaleDateString()} to ${new Date(election.end_date).toLocaleDateString()}.`}
+                      meta={[
+                        { icon: Globe, label: election.status.toUpperCase() },
+                        { icon: Building2, label: election.tenant_name },
+                      ]}
+                      pulse={pulse ? `${pulse} ${tone === 'amber' ? 'bg-amber-500' : 'bg-emerald-500'}` : null}
+                    />
+                  );
                 })
               )}
             </div>
-            <div className="border-t border-[#c4c6d0] bg-[#eeeef4] p-3 text-center">
-              <button type="button" onClick={() => navigate('/elections?superadmin=true')} className="text-xs font-semibold uppercase tracking-[0.05em] text-[#1A237E] hover:underline">
-                View All Network Activity
+            <div className="border-t border-gray-100 bg-white p-4 text-center">
+              <button 
+                type="button" 
+                onClick={() => navigate('/elections?superadmin=true')} 
+                className="group inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#1a337e] transition hover:text-[#1a337e]"
+              >
+                Inspect Global Registry
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
           </section>
 
-          <aside className="flex flex-col gap-4">
-            {/* <section className="rounded-lg border border-[#c4c6d0] bg-white p-4">
-              <h2 className="mb-4 border-b border-[#c4c6d0] pb-2 text-xs font-semibold uppercase tracking-widest text-[#44464f]">Node Distribution</h2>
-              <div className="relative flex h-40 w-full items-center justify-center overflow-hidden rounded-lg bg-[#1b1b1f]/5">
-                <div
-                  className="absolute inset-0 opacity-10"
-                  style={{ backgroundImage: 'radial-gradient(circle, #1A237E 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-                />
-                <div className="relative z-10 text-center">
-                  <Network className="mx-auto h-12 w-12 text-[#1A237E] opacity-40" />
-                  <p className="mt-2 text-[10px] font-bold text-[#1b1b1f]">GLOBAL CLUSTER STATUS: OPTIMAL</p>
-                </div>
-                <div className="absolute top-1/2 h-1 w-[200%] -rotate-45 animate-spin bg-gradient-to-r from-transparent via-[#1A237E]/20 to-transparent" />
+          <aside className="flex flex-col gap-8">
+            <section className="flex flex-1 flex-col rounded-3xl border border-[#c4c6d0] bg-white shadow-xl overflow-hidden min-h-[400px]">
+              <div className="border-b border-gray-100 bg-white p-6">
+                <h2 className="text-xl font-black tracking-tight text-gray-900">Security Audit</h2>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400">System Authorization Logs</p>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {['US-East', 'EU-Central'].map((region) => (
-                  <div key={region} className="flex flex-col items-center rounded-lg bg-[#eeeef4] p-2">
-                    <span className="text-xs text-[#44464f]">{region}</span>
-                    <span className="text-sm font-black text-[#056e00]">Active</span>
-                  </div>
-                ))}
-              </div>
-            </section> */}
-
-            <section className="flex min-h-[300px] flex-1 flex-col rounded-lg border border-[#c4c6d0] bg-white">
-              <div className="border-b border-[#c4c6d0] p-4">
-                <h2 className="text-lg font-semibold text-[#1b1b1f]">Audit Logs</h2>
-              </div>
-              <div className="sa-scrollbar flex-1 overflow-y-auto">
-                <table className="w-full border-collapse text-left">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="border-b border-[#c4c6d0] text-[10px] uppercase text-[#44464f]">
-                      <th className="p-3 font-bold">Severity</th>
-                      <th className="p-3 font-bold">Action</th>
-                      <th className="p-3 text-right font-bold">Time</th>
+              <div className="sa-scrollbar flex-1 overflow-y-auto p-4 bg-gray-50/10">
+                <table className="w-full border-separate border-spacing-y-2 text-left">
+                  <thead className="sticky top-0 bg-white z-10">
+                    <tr className="text-[10px] uppercase tracking-widest text-gray-400">
+                      <th className="px-4 py-2 font-black">Ref</th>
+                      <th className="px-4 py-2 font-black">Protocol</th>
+                      <th className="px-4 py-2 text-right font-black">Sync</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#c4c6d0]/30">
-                    {[
-                      { icon: AlertTriangle, color: 'text-[#ba1a1a]', action: 'Root Access Attempt', time: '14:22:01' },
-                      { icon: Info, color: 'text-[#056e00]', action: 'Policy Update: CA-22', time: '14:18:55' },
-                      { icon: AlertTriangle, color: 'text-[#683700]', action: 'Resource Cap Alert', time: '14:05:12' },
-                      { icon: LockOpen, color: 'text-[#056e00]', action: 'Admin Login: j.smith', time: '13:42:10' },
-                      { icon: Info, color: 'text-[#056e00]', action: 'Backup Verification', time: '13:30:00' },
-                    ].map(({ icon: Icon, color, action, time }) => (
-                      <tr key={`${action}-${time}`} className="transition hover:bg-[#f4f3f7]">
-                        <td className="p-3">
-                          <Icon className={`h-4 w-4 ${color}`} />
-                        </td>
-                        <td className="p-3 text-xs font-medium">{action}</td>
-                        <td className="p-3 text-right text-[10px] text-[#44464f]">{time}</td>
+                  <tbody>
+                    {stats.recentActivity.length === 0 ? (
+                      <tr>
+                        <td colSpan="3" className="p-12 text-center text-[10px] font-black uppercase tracking-[0.2em] text-gray-300 animate-pulse">Syncing Encrypted Logs...</td>
                       </tr>
-                    ))}
+                    ) : (
+                      stats.recentActivity.map((log) => {
+                        const getIconAndColor = (action) => {
+                          if (action.includes('delete') || action.includes('fail') || action.includes('attempt')) 
+                            return { icon: AlertTriangle, color: 'text-red-600 bg-red-50 border-red-100' };
+                          if (action.includes('create') || action.includes('update')) 
+                            return { icon: Info, color: 'text-amber-600 bg-amber-50 border-amber-100' };
+                          if (action.includes('login')) 
+                            return { icon: LockOpen, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' };
+                          return { icon: Info, color: 'text-[#1a337e] bg-blue-50 border-blue-100' };
+                        };
+                        const { icon: LogIcon, color } = getIconAndColor(log.action);
+                        const logTime = new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                        
+                        return (
+                          <tr key={log.id} className="group transition-all duration-200">
+                            <td className="rounded-l-xl bg-white border border-r-0 border-gray-100 p-4 transition-colors group-hover:bg-gray-50">
+                              <div className={`flex h-10 w-10 items-center justify-center rounded-lg border shadow-sm ${color}`}>
+                                <LogIcon className="h-5 w-5" />
+                              </div>
+                            </td>
+                            <td className="bg-white border-y border-gray-100 p-4 transition-colors group-hover:bg-gray-50">
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-gray-900 truncate max-w-[120px]" title={log.action}>
+                                  {log.action.replace(/[._]/g, ' ')}
+                                </span>
+                                <span className="text-[9px] font-bold text-gray-400">{log.user_name}</span>
+                              </div>
+                            </td>
+                            <td className="rounded-r-xl bg-white border border-l-0 border-gray-100 p-4 text-right transition-colors group-hover:bg-gray-50">
+                              <span className="text-[10px] font-black tracking-tight text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{logTime}</span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -198,16 +198,74 @@ class TenantService:
         return repo.get_usage_stats(tenant_id)
 
     def get_platform_stats(self, db: Session) -> dict:
-        from app.models.election import Election
+        from app.models.election import Election, ElectionStatus
         from app.models.vote import Vote
+        from app.models.candidate import Candidate
+        from app.models.candidate_committee import CandidateCommittee
+        from app.models.audit_log import AuditLog
+        from app.models.target import Target
 
         total_tenants = db.query(Tenant).count()
         active_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.active).count()
         draft_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.draft).count()
         suspended_tenants = db.query(Tenant).filter(Tenant.status == TenantStatus.suspended).count()
+
         total_users = db.query(User).filter(User.tenant_id.isnot(None)).count()
+        pending_users = db.query(User).filter(User.status == UserStatus.pending).count()
+
         total_elections = db.query(Election).count()
+        active_elections = db.query(Election).filter(Election.status == ElectionStatus.active).count()
+        draft_elections = db.query(Election).filter(Election.status == ElectionStatus.draft).count()
+        closed_elections = db.query(Election).filter(Election.status == ElectionStatus.closed).count()
+
         total_votes = db.query(Vote).count()
+        total_candidates = db.query(Candidate).count()
+        total_committees = db.query(CandidateCommittee).count()
+        total_political_committees = db.query(Target).count()
+
+        # Recent activity (last 10 audit logs)
+        logs = (
+            db.query(AuditLog, User.full_name, Tenant.name)
+            .outerjoin(User, AuditLog.user_id == User.id)
+            .outerjoin(Tenant, AuditLog.tenant_id == Tenant.id)
+            .order_by(AuditLog.created_at.desc())
+            .limit(10)
+            .all()
+        )
+
+        recent_activity = []
+        for log, user_name, tenant_name in logs:
+            recent_activity.append({
+                "id": log.id,
+                "action": log.action,
+                "entity_type": log.entity_type,
+                "details": log.details,
+                "user_name": user_name or "System",
+                "tenant_name": tenant_name or "Platform",
+                "created_at": log.created_at.isoformat(),
+                "ip_address": log.ip_address
+            })
+
+        # Recent elections (last 10)
+        elections_logs = (
+            db.query(Election, Tenant.name)
+            .join(Tenant, Election.tenant_id == Tenant.id)
+            .order_by(Election.created_at.desc())
+            .limit(10)
+            .all()
+        )
+
+        recent_elections = []
+        for election, tenant_name in elections_logs:
+            recent_elections.append({
+                "id": election.id,
+                "title": election.title,
+                "status": election.status,
+                "tenant_name": tenant_name,
+                "created_at": election.created_at.isoformat(),
+                "start_date": election.start_date.isoformat(),
+                "end_date": election.end_date.isoformat(),
+            })
 
         return {
             "total_tenants": total_tenants,
@@ -215,8 +273,17 @@ class TenantService:
             "draft_tenants": draft_tenants,
             "suspended_tenants": suspended_tenants,
             "total_users": total_users,
+            "pending_users": pending_users,
             "total_elections": total_elections,
+            "active_elections": active_elections,
+            "draft_elections": draft_elections,
+            "closed_elections": closed_elections,
             "total_votes": total_votes,
+            "total_candidates": total_candidates,
+            "total_committees": total_committees,
+            "total_political_committees": total_political_committees,
+            "recent_activity": recent_activity,
+            "recent_elections": recent_elections,
         }
 
     def check_election_limit(self, db: Session, tenant_id: int) -> bool:

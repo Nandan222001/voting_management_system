@@ -10,12 +10,15 @@ class Settings(BaseSettings):
     # JWT / Security
     SECRET_KEY: str = "change-this-secret-key-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Application
     APP_NAME: str = "Digital Voting System"
     DEBUG: bool = True
+
+    # Razorpay (platform-level fallback; per-tenant keys stored in DB)
+    RAZORPAY_WEBHOOK_SECRET: str = ""
 
     # Email
     MAIL_SERVER: str = "smtp.gmail.com"

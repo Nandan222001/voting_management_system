@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,202 +8,285 @@ import {
   Image,
   Dimensions,
   Platform,
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Header from '../components/common/Header';
+import { candidateService } from '../services/candidateService';
+import { showToast } from '../utils/toast';
 
 const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#003d9b',
   primaryContainer: '#0052cc',
-  background: '#f8f9fb',
-  surface: '#ffffff',
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#434654',
-  outlineVariant: '#c3c6d6',
+  onPrimary: '#ffffff',
   secondary: '#056e00',
   secondaryContainer: '#8dfc75',
   onSecondaryContainer: '#067500',
-  surfaceContainer: '#edeef0',
+  tertiary: '#683700',
+  tertiaryFixed: '#ffdcc2',
+  background: '#f8f9fb',
+  surface: '#ffffff',
   surfaceContainerLow: '#f3f4f6',
   surfaceContainerHigh: '#e7e8ea',
+  onSurface: '#191c1e',
+  onSurfaceVariant: '#434654',
   outline: '#737685',
+  outlineVariant: '#c3c6d6',
+  error: '#ba1a1a',
   primaryFixed: '#dae2ff',
+};
+
+const DEFAULT_IMAGES = {
+  portrait: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&q=80&w=800',
+  cover: 'https://images.unsplash.com/photo-1540910419892-f0c97a214066?auto=format&fit=crop&q=80&w=1200'
 };
 
 const CandidateDetailScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('biography');
   
-  // Default data from template, could be overridden by route params
+  // Follow State
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followingLoading, setFollowingLoading] = useState(false);
+
+  // Real data passed from navigation
   const candidate = route.params?.candidate || {};
 
   const fullName = candidate.full_name || 'Unknown Candidate';
-  const role = candidate.committee?.name || 'Candidate';
-  const constituency = candidate.target?.name || 'Independent District';
-  const party = candidate.committee?.name || "Independent";
-  const portraitUrl = candidate.image_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(fullName) + '&background=0D8ABC&color=fff';
-  const coverUrl = candidate.image_url || 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?auto=format&fit=crop&q=80&w=1200';
-  const bioText = candidate.bio || "No biography available for this candidate.";
+  const role = candidate.position_name || candidate.committee?.name || 'CANDIDATE';
+  const constituency = candidate.target?.name || 'General Node';
+  
+  // Fallback logic for images
+  const portraitUrl = candidate.image_url || DEFAULT_IMAGES.portrait;
+  const coverUrl = candidate.cover_url || DEFAULT_IMAGES.cover;
+  const bioText = candidate.bio || "Candidate has not provided a specific mission statement.";
 
-  const BiographyTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.contentHeader}>
-        <MaterialIcons name="article" size={24} color={COLORS.primary} />
-        <Text style={styles.contentTitle}>Candidate Vision & Statement</Text>
-      </View>
-      {candidate.image_url ? (
-        <Text style={styles.quoteText}>"Committed to progress and democratic integrity."</Text>
-      ) : null}
-      <Text style={styles.bodyText}>{bioText}</Text>
-      <View style={styles.eduExpGrid}>
-        <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>STATUS</Text>
-          <Text style={styles.eduExpValue}>Official Nominee</Text>
-        </View>
-        <View style={styles.eduExpCard}>
-          <Text style={styles.eduExpLabel}>ID</Text>
-          <Text style={styles.eduExpValue}>CAND-{candidate.id || 'N/A'}</Text>
-        </View>
-      </View>
-    </View>
-  );
+  useEffect(() => {
+    if (candidate.id) {
+      checkFollowStatus();
+    }
+  }, [candidate.id]);
 
-  const ProposalsTab = () => (
-    <View style={styles.tabContent}>
-      <View style={styles.proposalCard}>
-        <MaterialIcons name="bolt" size={32} color={COLORS.primary} />
-        <Text style={styles.proposalTitle}>Key Initiative</Text>
-        <Text style={styles.proposalDesc}>Developing sustainable infrastructure and transparent governance protocols for the constituency.</Text>
-      </View>
-    </View>
-  );
+  const checkFollowStatus = async () => {
+    try {
+      const status = await candidateService.getFollowStatus(candidate.id);
+      setIsFollowing(status.is_following);
+    } catch (error) {
+      console.error('Failed to check follow status:', error);
+    }
+  };
 
-  const EndorsementsTab = () => (
-    <View style={styles.tabContent}>
-      <Text style={styles.bodyText}>Major organizations and leaders supporting this candidate.</Text>
-      <View style={styles.endorsementPreview}>
-        <View style={styles.endorsementAvatars}>
-          {[1, 2, 3].map(i => (
-            <View key={i} style={styles.endorsementRing}>
-               <Image 
-                source={{ uri: `https://ui-avatars.com/api/?name=Org${i}&background=random` }} 
-                style={styles.endorsementAvatar} 
-               />
+  const toggleFollow = async () => {
+    const previousState = isFollowing;
+    setIsFollowing(!previousState); // Optimistic update
+    
+    try {
+      const result = await candidateService.followCandidate(candidate.id);
+      // Backend returns { is_following: boolean }
+      setIsFollowing(result.is_following);
+    } catch (error) {
+      setIsFollowing(previousState); // Revert on failure
+      showToast.error('Action Failed', 'Could not update follow status.');
+    }
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'biography':
+        return (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="article" size={24} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Vision & Statement</Text>
             </View>
-          ))}
-          <View style={[styles.endorsementRing, styles.moreEndorsements]}>
-            <Text style={styles.moreText}>+24</Text>
+            <View style={styles.cardBody}>
+              <Text style={styles.quoteText}>
+                "{candidate.mission_statement || "Transforming our community with integrity and a shared commitment to innovation and democratic progress."}"
+              </Text>
+              <Text style={styles.bodyText}>{bioText}</Text>
+              
+              <View style={styles.infoGrid}>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoLabel}>DOB / AGE</Text>
+                  <Text style={styles.infoValue}>{candidate.date_of_birth || "N/A"}</Text>
+                </View>
+                <View style={styles.infoBox}>
+                  <Text style={styles.infoLabel}>GENDER</Text>
+                  <Text style={styles.infoValue}>{candidate.gender || "N/A"}</Text>
+                </View>
+              </View>
+
+              <View style={styles.registryBox}>
+                <Text style={styles.infoLabel}>GUARDIAN / PARENT</Text>
+                <Text style={styles.infoValue}>{candidate.parent_name || "N/A"}</Text>
+              </View>
+            </View>
           </View>
-        </View>
-        <Text style={styles.endorsementQuote}>
-          "Committed to technical rigor and public service." — Federation of Industries
-        </Text>
-      </View>
-    </View>
-  );
+        );
+      case 'eligibility':
+        return (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="fact_check" size={24} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Eligibility & Declarations</Text>
+            </View>
+            <View style={styles.checklist}>
+              <CheckItem label="Willing to Contest" checked={candidate.is_willing} />
+              <CheckItem label="Previously Held Post" checked={candidate.held_previously} />
+              {candidate.held_previously && (
+                <View style={styles.subDetail}>
+                  <Text style={styles.subDetailLabel}>Position: {candidate.prev_position} ({candidate.prev_duration})</Text>
+                </View>
+              )}
+              <CheckItem label="Organizational Discipline" checked={!candidate.is_disciplined} />
+              <CheckItem label="Dispute Free Status" checked={!candidate.has_complaints} />
+              <CheckItem label="Constitutional Agreement" checked={candidate.agreed_constitution} />
+              <CheckItem label="Results Acceptance" checked={candidate.accepted_results} />
+            </View>
+          </View>
+        );
+      case 'registry':
+        return (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="contact-mail" size={24} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Registry & Contact</Text>
+            </View>
+            <View style={styles.cardBody}>
+              <DetailRow label="Official Email" value={candidate.email} isEmail />
+              <DetailRow label="Registry Phone" value={candidate.phone} />
+              <DetailRow label="Voter ID" value={candidate.voter_id_number} />
+              
+              <View style={styles.divider} />
+              
+              <DetailRow label="State" value={candidate.state} />
+              <DetailRow label="District" value={candidate.district} />
+              <DetailRow label="Village / Area" value={candidate.village} />
+              <DetailRow label="Pincode" value={candidate.pincode} />
+            </View>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* Hero Section */}
-        <View style={styles.heroContainer}>
-          <Image source={{ uri: coverUrl }} style={styles.coverImage} />
-          <View style={styles.coverOverlay} />
+      <StatusBar barStyle="light-content" />
+      
+      {/* 1. Static Cover Header Area */}
+      <View style={styles.coverWrapper}>
+        <Image source={{ uri: coverUrl }} style={styles.coverImage} />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.4)', 'transparent']}
+          style={styles.coverOverlay}
+        />
+        <Header 
+          title="Candidate Details" 
+          transparent 
+          showBack 
+          onBack={() => navigation.goBack()} 
+        />
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+        {/* 2. Overlapping Profile Section */}
+        <View style={styles.profileHeader}>
+          <View style={styles.portraitWrapper}>
+            <Image 
+              source={{ uri: portraitUrl }} 
+              style={styles.heroPortrait} 
+              resizeMode="cover"
+            />
+          </View>
           
-          <TouchableOpacity 
-            style={[styles.backButton, { top: insets.top + 10 }]}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.profileInfo}>
+            <View style={styles.badgeRow}>
+              <View style={styles.statusBadge}><Text style={styles.statusBadgeText}>VERIFIED CANDIDATE</Text></View>
+              {candidate.held_previously && <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}><Text style={styles.statusBadgeText}>INCUMBENT</Text></View>}
+            </View>
+            <Text style={styles.profileName}>{fullName}</Text>
+            <Text style={styles.profileRole}>{role}</Text>
+            
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <MaterialIcons name="location-on" size={16} color={COLORS.onSurfaceVariant} />
+                <Text style={styles.metaText}>{constituency}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <MaterialIcons name="groups" size={16} color={COLORS.onSurfaceVariant} />
+                <Text style={styles.metaText}>{candidate.committee?.name || "Independent"}</Text>
+              </View>
+            </View>
+          </View>
 
-          <View style={styles.profileInfoContainer}>
-             <View style={styles.portraitWrapper}>
-                <Image source={{ uri: portraitUrl }} style={styles.portrait} />
-             </View>
-             
-             <View style={styles.mainMeta}>
-                <View style={styles.badgeRow}>
-                   <View style={styles.verifiedBadge}>
-                      <Text style={styles.badgeText}>VERIFIED CANDIDATE</Text>
-                   </View>
-                </View>
-                <Text style={styles.candidateName}>{fullName}</Text>
-                <Text style={styles.candidateRole}>{role}</Text>
-                
-                <View style={styles.locationPartyRow}>
-                   <View style={styles.metaItem}>
-                      <MaterialIcons name="location-on" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{constituency}</Text>
-                   </View>
-                   <View style={styles.metaItem}>
-                      <MaterialIcons name="groups" size={16} color="rgba(255,255,255,0.8)" />
-                      <Text style={styles.metaText}>{party}</Text>
-                   </View>
-                </View>
-             </View>
-
-             <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.followBtn}>
-                   <MaterialIcons name="person-add" size={20} color="#fff" />
-                   <Text style={styles.followBtnText}>FOLLOW</Text>
-                </TouchableOpacity>
-                <View style={styles.socialBtns}>
-                   <TouchableOpacity style={styles.iconBtn}><MaterialIcons name="share" size={20} color="#fff" /></TouchableOpacity>
-                   <TouchableOpacity style={styles.iconBtn}><MaterialIcons name="public" size={20} color="#fff" /></TouchableOpacity>
-                </View>
-             </View>
+          <View style={styles.actionBlock}>
+            <TouchableOpacity 
+              style={[styles.followBtn, isFollowing && styles.followingBtnActive]}
+              onPress={toggleFollow}
+            >
+              <MaterialIcons 
+                name={isFollowing ? "person-remove" : "person-add"} 
+                size={20} 
+                color={isFollowing ? COLORS.primary : "#fff"} 
+              />
+              <Text style={[styles.followBtnText, isFollowing && styles.followingBtnTextActive]}>
+                {isFollowing ? 'UNFOLLOW' : 'FOLLOW CANDIDATE'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.mainContent}>
-          {/* Tabbed Navigation */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'biography' && styles.activeTabButton]}
-              onPress={() => setActiveTab('biography')}
-            >
-              <Text style={[styles.tabText, activeTab === 'biography' && styles.activeTabText]}>Biography</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'proposals' && styles.activeTabButton]}
-              onPress={() => setActiveTab('proposals')}
-            >
-              <Text style={[styles.tabText, activeTab === 'proposals' && styles.activeTabText]}>Proposals</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tabButton, activeTab === 'endorsements' && styles.activeTabButton]}
-              onPress={() => setActiveTab('endorsements')}
-            >
-              <Text style={[styles.tabText, activeTab === 'endorsements' && styles.activeTabText]}>Endorsements</Text>
-            </TouchableOpacity>
+        <View style={styles.contentPadding}>
+          {/* Tab Navigation */}
+          <View style={styles.tabBar}>
+            {[
+              { id: 'biography', label: 'Biography' },
+              { id: 'eligibility', label: 'Eligibility' },
+              { id: 'registry', label: 'Registry' }
+            ].map((tab) => (
+              <TouchableOpacity
+                key={tab.id}
+                onPress={() => setActiveTab(tab.id)}
+                style={[styles.tabItem, activeTab === tab.id && styles.activeTabItem]}
+              >
+                <Text style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Active Tab Content */}
-          <View style={styles.contentCard}>
-            {activeTab === 'biography' && <BiographyTab />}
-            {activeTab === 'proposals' && <ProposalsTab />}
-            {activeTab === 'endorsements' && <EndorsementsTab />}
+          {/* Render Active Tab Content */}
+          {renderTabContent()}
+
+          {/* Campaign Metrics Card */}
+          <View style={styles.card}>
+            <Text style={styles.sectionLabel}>CAMPAIGN METRICS</Text>
+            <View style={styles.metricRow}>
+              <Text style={styles.metricLabel}>Secure Votes</Text>
+              <Text style={styles.metricValue}>{candidate.vote_count || 0}</Text>
+            </View>
+            <View style={styles.metricRow}>
+              <Text style={styles.metricLabel}>Registry ID</Text>
+              <Text style={styles.metricValue}>#{(candidate.id || 0).toString().padStart(3, '0')}</Text>
+            </View>
+            <View style={styles.metricRow}>
+              <Text style={styles.metricLabel}>Verification Status</Text>
+              <Text style={[styles.metricValue, { color: COLORS.secondary }]}>Verified</Text>
+            </View>
           </View>
 
-          {/* Campaign Metrics */}
-          <View style={styles.metaCard}>
-             <Text style={styles.cardLabel}>CAMPAIGN METRICS</Text>
-             <MetricRow label="Voter Approval" value="78.4%" color={COLORS.secondary} />
-             <MetricRow label="Fundraising Goal" value="85% Reached" />
-             <MetricRow label="Volunteers" value="12,400+" isLast />
-             <TouchableOpacity style={styles.fullAnalyticsBtn}>
-                <Text style={styles.fullAnalyticsText}>VIEW FULL ANALYTICS</Text>
-             </TouchableOpacity>
-          </View>
-
-          {/* Upcoming Events */}
-          <View style={styles.metaCard}>
-             <Text style={styles.cardLabel}>UPCOMING EVENTS</Text>
-             <EventRow month="OCT" day="12" title="Town Hall: Infrastructure" location="Manekshaw Centre, Delhi" />
-             <EventRow month="OCT" day="15" title="Tech-Summit Keynote" location="Pragati Maidan" isLast />
+          {/* Declarations */}
+          <View style={styles.securityBanner}>
+             <MaterialIcons name="verified-user" size={18} color={COLORS.secondary} />
+             <Text style={styles.securityText}>All candidate data is cryptographically signed and stored in the secure organizational vault.</Text>
           </View>
         </View>
       </ScrollView>
@@ -211,134 +294,92 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   );
 };
 
-const MetricRow = ({ label, value, color, isLast }: any) => (
-  <View style={[styles.metricRow, isLast && { borderBottomWidth: 0 }]}>
-    <Text style={styles.metricLabel}>{label}</Text>
-    <Text style={[styles.metricValue, color && { color }]}>{value}</Text>
+const DetailRow = ({ label, value, isEmail }: any) => (
+  <View style={styles.detailRow}>
+     <Text style={styles.detailLabel}>{label}</Text>
+     <Text style={[styles.detailValue, isEmail && { textTransform: 'lowercase' }]}>{value || 'N/A'}</Text>
   </View>
 );
 
-const EventRow = ({ month, day, title, location, isLast }: any) => (
-  <View style={[styles.eventRow, isLast && { marginBottom: 0 }]}>
-    <View style={styles.eventDateBlock}>
-      <Text style={styles.eventMonth}>{month}</Text>
-      <Text style={styles.eventDay}>{day}</Text>
-    </View>
-    <View>
-      <Text style={styles.eventTitle}>{title}</Text>
-      <Text style={styles.eventLocation}>{location}</Text>
-    </View>
+const CheckItem = ({ label, checked }: any) => (
+  <View style={styles.checkItem}>
+     <MaterialIcons 
+       name={checked ? "check-circle" : "cancel"} 
+       size={18} 
+       color={checked ? COLORS.secondary : COLORS.error} 
+     />
+     <Text style={styles.checkLabel}>{label}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  heroContainer: { height: 500, width: '100%' },
-  coverImage: { width: '100%', height: 400 },
-  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
-  backButton: { position: 'absolute', left: 20, zIndex: 10 },
   
-  profileInfoContainer: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  portraitWrapper: {
-    width: 140,
-    height: 140,
-    borderRadius: 12,
-    borderWidth: 4,
-    borderColor: '#fff',
-    overflow: 'hidden',
-    backgroundColor: COLORS.surfaceContainer,
-    marginBottom: 16,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10 },
-      android: { elevation: 8 }
-    })
-  },
-  portrait: { width: '100%', height: '100%' },
+  coverWrapper: { height: 180, width: '100%', position: 'relative' },
+  coverImage: { width: '100%', height: '100%' },
+  coverOverlay: { ...StyleSheet.absoluteFillObject },
   
-  mainMeta: { marginBottom: 20 },
-  badgeRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  verifiedBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  incumbentBadge: { backgroundColor: COLORS.primary, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-  badgeText: { color: '#fff', fontSize: 8, fontWeight: '800' },
-  candidateName: { fontSize: 28, fontWeight: '800', color: '#fff', letterSpacing: -0.5 },
-  candidateRole: { fontSize: 16, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  profileHeader: { alignItems: 'center', paddingBottom: 10, marginTop: -80, zIndex: 10, elevation: 5 },
+  portraitWrapper: { width: 130, height: 130, borderRadius: 20, borderWidth: 5, borderColor: '#fff', overflow: 'hidden', backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
+  heroPortrait: { width: '100%', height: '100%' },
   
-  locationPartyRow: { flexDirection: 'row', gap: 16, marginTop: 12 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500' },
+  profileInfo: { alignItems: 'center', marginTop: 16, marginBottom: 20, paddingHorizontal: 20 },
+  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  statusBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  profileName: { fontSize: 28, fontWeight: '900', color: COLORS.onSurface, textAlign: 'center' },
+  profileRole: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '700', textAlign: 'center', marginTop: 4 },
   
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  followBtn: { 
-    backgroundColor: COLORS.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8, 
-    paddingHorizontal: 24, 
-    paddingVertical: 12, 
-    borderRadius: 8 
-  },
-  followBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
-  socialBtns: { flexDirection: 'row', gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' },
+  metaRow: { flexDirection: 'row', gap: 16, marginTop: 14 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
+  
+  actionBlock: { width: '100%', alignItems: 'center', marginTop: 10 },
+  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+  followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary, shadowOpacity: 0.05 },
+  followBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
+  followingBtnTextActive: { color: COLORS.primary },
 
-  mainContent: { padding: 16, gap: 16 },
-  tabContainer: { 
-    backgroundColor: '#fff', 
-    padding: 4, 
-    borderRadius: 12, 
-    flexDirection: 'row', 
-    borderWidth: 1, 
-    borderColor: COLORS.outlineVariant 
-  },
-  tabButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
-  activeTabButton: { backgroundColor: COLORS.secondaryContainer },
+  contentPadding: { padding: 16, gap: 16 },
+  
+  tabBar: { backgroundColor: '#fff', borderRadius: 12, padding: 4, flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  tabItem: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  activeTabItem: { backgroundColor: COLORS.primary },
   tabText: { fontSize: 13, fontWeight: '700', color: COLORS.onSurfaceVariant },
-  activeTabText: { color: COLORS.primary },
+  activeTabText: { color: '#ffffff' },
 
-  contentCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  tabContent: { gap: 16 },
-  contentHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  contentTitle: { fontSize: 18, fontWeight: '700', color: COLORS.onSurface },
-  quoteText: { fontSize: 16, color: COLORS.onSurface, fontWeight: '600', fontStyle: 'italic', lineHeight: 24 },
-  bodyText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22 },
-  eduExpGrid: { gap: 12, paddingVertical: 8 },
-  eduExpCard: { backgroundColor: COLORS.surfaceContainerLow, padding: 16, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
-  eduExpLabel: { fontSize: 8, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
-  eduExpValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface, marginTop: 4 },
+  card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 24 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: COLORS.onSurface },
+  cardBody: { gap: 12 },
+  quoteText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface, lineHeight: 24, fontStyle: 'italic' },
+  bodyText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22, fontWeight: '500' },
+  
+  infoGrid: { flexDirection: 'row', gap: 12 },
+  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
+  infoLabel: { fontSize: 9, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
+  infoValue: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface, marginTop: 4 },
 
-  proposalCard: { backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: COLORS.outlineVariant, gap: 8 },
-  proposalTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  proposalDesc: { fontSize: 13, color: COLORS.onSurfaceVariant, lineHeight: 18 },
+  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: 12 },
 
-  endorsementPreview: { gap: 12 },
-  endorsementAvatars: { flexDirection: 'row' },
-  endorsementRing: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: '#fff', marginLeft: -8, overflow: 'hidden' },
-  endorsementAvatar: { width: '100%', height: '100%' },
-  moreEndorsements: { backgroundColor: COLORS.surfaceContainer, justifyContent: 'center', alignItems: 'center' },
-  moreText: { fontSize: 8, fontWeight: '800', color: COLORS.onSurface },
-  endorsementQuote: { fontSize: 12, color: COLORS.onSurfaceVariant, fontStyle: 'italic', marginTop: 4 },
+  checklist: { gap: 12 },
+  checkItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkLabel: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
+  subDetail: { marginLeft: 30, marginTop: -4 },
+  subDetailLabel: { fontSize: 11, color: COLORS.onSurfaceVariant, fontStyle: 'italic' },
 
-  metaCard: { backgroundColor: '#fff', borderRadius: 12, padding: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  cardLabel: { fontSize: 10, fontWeight: '800', color: COLORS.outline, letterSpacing: 1.5, marginBottom: 16 },
-  metricRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainer },
-  metricLabel: { fontSize: 14, color: COLORS.onSurfaceVariant },
-  metricValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
-  fullAnalyticsBtn: { marginTop: 16, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary, alignItems: 'center' },
-  fullAnalyticsText: { color: COLORS.primary, fontWeight: '700', fontSize: 12 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
+  detailLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6 },
+  detailValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
+  divider: { height: 12 },
 
-  eventRow: { flexDirection: 'row', gap: 16, marginBottom: 16 },
-  eventDateBlock: { width: 44, height: 44, borderRadius: 8, backgroundColor: COLORS.primaryFixed, justifyContent: 'center', alignItems: 'center' },
-  eventMonth: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
-  eventDay: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
-  eventTitle: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
-  eventLocation: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
+  sectionLabel: { fontSize: 10, fontWeight: '900', color: COLORS.outline, letterSpacing: 1.5, marginBottom: 16 },
+  metricRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
+  metricLabel: { fontSize: 14, fontWeight: '500', color: COLORS.onSurfaceVariant },
+  metricValue: { fontSize: 14, fontWeight: '800', color: COLORS.onSurface },
+  
+  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: COLORS.secondary + '08', borderRadius: 12, marginTop: 10 },
+  securityText: { flex: 1, fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: 16 },
 });
 
 export default CandidateDetailScreen;

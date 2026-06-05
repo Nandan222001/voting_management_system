@@ -24,8 +24,8 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=150), nullable=False),
     sa.Column('type', sa.Enum('state', 'district', 'zone', 'ward', 'other', name='target_type_enum'), nullable=False),
     sa.Column('parent_id', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
     sa.ForeignKeyConstraint(['parent_id'], ['targets.id'], ondelete='SET NULL'),
     sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')

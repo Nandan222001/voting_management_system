@@ -3,8 +3,8 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 const COLOR_MAP = {
   indigo: {
     bg: 'bg-[#e8eaf6]',
-    icon: 'bg-[#1A237E] text-white',
-    ring: 'ring-[#1A237E]/20',
+    icon: 'bg-[#1a337e] text-white',
+    ring: 'ring-[#1a337e]/20',
   },
   green: {
     bg: 'bg-green-50',
@@ -13,8 +13,8 @@ const COLOR_MAP = {
   },
   blue: {
     bg: 'bg-[#e8eaf6]',
-    icon: 'bg-[#1A237E] text-white',
-    ring: 'ring-[#1A237E]/20',
+    icon: 'bg-[#1a337e] text-white',
+    ring: 'ring-[#1a337e]/20',
   },
   orange: {
     bg: 'bg-orange-50',

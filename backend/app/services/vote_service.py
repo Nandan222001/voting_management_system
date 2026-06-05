@@ -23,6 +23,7 @@ from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.candidate_repository import CandidateRepository
 from app.repositories.election_repository import ElectionRepository
 from app.repositories.vote_repository import VoteRepository
+from app.services.payment_service import payment_service
 from app.schemas.vote import ElectionResultResponse, VoteResultItem
 
 
@@ -117,6 +118,24 @@ class VoteService:
                 detail="This election is not available for your district.",
             )
 
+        eligibility = payment_service.check_voting_eligibility(db, member)
+        if not eligibility["membership_selected"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Please select a Membership Plan first: "
+                    "Profile -> Edit Profile -> Select Membership Plan."
+                ),
+            )
+        if not eligibility["payment_completed"]:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=(
+                    "Your selected Membership Plan payment is pending or not completed. "
+                    "Please complete the payment to proceed with voting."
+                ),
+            )
+
         # 3. Candidate must belong to this election (and therefore same tenant).
         candidate = candidate_repo.get_by_id(candidate_id)
         if candidate is None or candidate.election_id != election_id:
@@ -170,6 +189,22 @@ class VoteService:
             pass
 
         return vote
+
+    # ------------------------------------------------------------------
+    # User's vote
+    # ------------------------------------------------------------------
+
+    def get_user_vote(
+        self,
+        db: Session,
+        user_id: int,
+        election_id: int,
+    ) -> Optional[Vote]:
+        """
+        Retrieve the vote record for a specific user in a specific election.
+        """
+        vote_repo = VoteRepository(db)
+        return vote_repo.get_user_vote_in_election(user_id, election_id)
 
     # ------------------------------------------------------------------
     # Election results

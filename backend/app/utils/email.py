@@ -30,15 +30,23 @@ def send_email(subject: str, recipient: str, body: str):
     msg.attach(MIMEText(body, 'html'))
 
     try:
-        with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT) as server:
+        logger.info(f"Connecting to SMTP server {settings.MAIL_SERVER}:{settings.MAIL_PORT}...")
+        with smtplib.SMTP(settings.MAIL_SERVER, settings.MAIL_PORT, timeout=15) as server:
             server.starttls()
+            logger.info(f"Logging in to SMTP as {settings.MAIL_USERNAME}...")
             server.login(settings.MAIL_USERNAME, settings.MAIL_PASSWORD)
+            logger.info(f"Sending email to {recipient}...")
             server.send_message(msg)
             logger.info(f"Email sent successfully to {recipient}")
+    except smtplib.SMTPAuthenticationError:
+        logger.error(f"SMTP Authentication failed for {settings.MAIL_USERNAME}. Please check App Password.")
+        raise Exception("Email authentication failed. Please contact administrator.")
+    except smtplib.SMTPConnectError:
+        logger.error(f"Could not connect to SMTP server {settings.MAIL_SERVER}.")
+        raise Exception("Failed to connect to email server. Please try again later.")
     except Exception as e:
-        logger.error(f"Failed to send email to {recipient}: {str(e)}")
-        # We don't raise here to prevent the whole request from failing if email fails
-        # but in a production app you might want more robust error handling.
+        logger.error(f"Unexpected error sending email to {recipient}: {str(e)}")
+        raise Exception(f"Failed to send verification email: {str(e)}")
 
 def send_otp_email(recipient: str, otp: str):
     """Convenience helper to send an OTP for password reset."""

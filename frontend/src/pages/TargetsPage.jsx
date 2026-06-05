@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { FaPlus, FaMapMarkerAlt, FaSearch, FaChevronRight, FaChevronDown, FaEdit, FaTrash } from 'react-icons/fa'
-import { Check, Building2, Globe, TrendingUp } from 'lucide-react'
+import { Check, Building2, Globe, TrendingUp, MapPin, Layers, Users, Shield, Hash, AlertTriangle, ChevronRight, UserCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
 import Modal from '../components/common/Modal'
@@ -10,120 +11,129 @@ import LoadingSpinner from '../components/common/LoadingSpinner'
 import SearchableSelect from '../components/common/SearchableSelect'
 import { fetchTargets, createTarget, updateTarget, deleteTarget } from '../store/slices/targetSlice'
 import { fetchPlatformStats, selectPlatformStats } from '../store/slices/tenantSlice'
+import { fetchUsers, selectUsers } from '../store/slices/userSlice'
+import OrganizationTree from '../components/common/OrganizationTree'
 
-const COMMITTEE_TYPES = [
-  { value: 'country', label: 'Working Committee - India', levels: [] },
-  { value: 'state', label: 'Pradesh Committee', levels: ['state'] },
-  { value: 'district', label: 'District Committee', levels: ['state', 'district'] },
-  { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'] },
-  { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'] },
-]
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-US').format(Number(value || 0));
+}
 
-// ─── Recursive Committee Node Component ───────────────────────────────────────
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
 
-function CommitteeNode({ node, allTargets, onEdit, onDelete, level = 0 }) {
-  const [isExpanded, setIsExpanded] = useState(level < 1) 
-  const children = allTargets.filter(t => t.parent_id === node.id)
-  const hasChildren = children.length > 0
-
-  const typeConfig = COMMITTEE_TYPES.find(ct => ct.value === node.type)
+  const style = toneMap[tone] || toneMap.blue;
 
   return (
-    <div className="select-none">
-      <div 
-        className={`flex items-center justify-between group py-3 px-4 rounded-xl transition-all border border-transparent hover:border-gray-200 hover:bg-white hover:shadow-sm ${level === 0 ? 'bg-blue-50/50' : ''}`}
-      >
-        <div className="flex items-center gap-3 flex-1">
-          {hasChildren ? (
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 rounded-md hover:bg-gray-100 text-gray-400 transition-colors"
-              type="button"
-            >
-              {isExpanded ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
-            </button>
-          ) : (
-            <div className="w-6 h-6 flex items-center justify-center">
-               <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2 min-w-0">
-             <span className="font-bold text-slate-800 truncate">{node.name}</span>
-             <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black bg-white text-gray-400 border border-gray-100 uppercase tracking-widest whitespace-nowrap">
-                {typeConfig ? typeConfig.label.split(' ')[0] : node.type}
-             </span>
-          </div>
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
         </div>
-
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-            onClick={() => onEdit(node)}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            title="Edit"
-            type="button"
-          >
-            <FaEdit size={14} />
-          </button>
-          <button 
-            onClick={() => onDelete(node)}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Delete"
-            type="button"
-          >
-            <FaTrash size={14} />
-          </button>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
         </div>
       </div>
-
-      {isExpanded && hasChildren && (
-        <div className="ml-6 mt-1 border-l-2 border-gray-100 pl-2 space-y-1">
-          {children.map(child => (
-            <CommitteeNode 
-              key={child.id} 
-              node={child} 
-              allTargets={allTargets} 
-              onEdit={onEdit} 
-              onDelete={onDelete} 
-              level={level + 1} 
-            />
-          ))}
-        </div>
-      )}
+      <div className="flex items-baseline gap-2">
+        {value}
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
     </div>
-  )
+  );
 }
+
+function Field({ label, required, children, hint, error }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-semibold text-gray-700">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+      {hint && !error && <p className="text-xs text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = 'text', disabled, required, hasError, ...props }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      required={required}
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
+        hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+      }`}
+      {...props}
+    />
+  );
+}
+
+const COMMITTEE_TYPES = [
+  { value: 'country', label: 'Working Committee - India', levels: [], icon: Globe, color: 'text-[#1a337e] bg-indigo-50' },
+  { value: 'state', label: 'Pradesh Committee', levels: ['state'], icon: MapPin, color: 'text-[#1a337e] bg-blue-50' },
+  { value: 'district', label: 'District Committee', levels: ['state', 'district'], icon: Layers, color: 'text-emerald-600 bg-emerald-50' },
+  { value: 'block', label: 'Block Committee', levels: ['state', 'district', 'block'], icon: Users, color: 'text-amber-600 bg-amber-50' },
+  { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'], icon: Hash, color: 'text-rose-600 bg-rose-50' },
+]
 
 // ─── Inline Creation Modal ─────────────────────────────────────────────────────
 
-function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName }) {
+function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName, availablePresidents }) {
   const [name, setName] = useState(initialName || '')
-  useEffect(() => { if (isOpen) setName(initialName || '') }, [isOpen, initialName])
+  const [presidentId, setPresidentId] = useState('')
+
+  useEffect(() => { 
+    if (isOpen) {
+      setName(initialName || '')
+      setPresidentId('')
+    }
+  }, [isOpen, initialName])
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (name.trim()) onSave(name.trim())
+    if (name.trim()) onSave({ name: name.trim(), president_id: presidentId ? parseInt(presidentId) : null })
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`} size="sm">
-      <form onSubmit={handleSubmit} className="space-y-4 p-1">
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{type} Name</label>
+    <Modal isOpen={isOpen} onClose={onClose} title={`Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`} size="md">
+      <form onSubmit={handleSubmit} className="space-y-6 p-1">
+        <Field label={`${type} Name`} required>
           <input
             autoFocus
             type="text"
             value={name}
             onChange={e => setName(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#1A237E]/20 outline-none"
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/10 outline-none transition-all shadow-inner"
             placeholder={`e.g. ${type === 'state' ? 'Maharashtra' : 'New Area'}`}
             required
           />
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-600">Cancel</button>
-          <button type="submit" disabled={loading} className="bg-[#1A237E] text-white px-6 py-2 rounded-lg text-xs font-bold hover:brightness-110 disabled:opacity-50">
-            {loading ? 'Adding...' : 'Add Entity'}
+        </Field>
+
+        <Field label="Committee President" hint="Exclusive leadership assignment.">
+          <SearchableSelect
+            placeholder="Select President..."
+            options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+            value={presidentId}
+            onChange={setPresidentId}
+          />
+        </Field>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
+          <button type="submit" disabled={loading} className="bg-[#1a337e] text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Confirm Add'}
           </button>
         </div>
       </form>
@@ -131,24 +141,78 @@ function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName })
   )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Edit Committee Modal ──────────────────────────────────────────────────────
+
+function EditCommitteeModal({ isOpen, onClose, target, onSave, loading, availablePresidents }) {
+  const [name, setName] = useState('')
+  const [presidentId, setPresidentId] = useState('')
+
+  useEffect(() => {
+    if (isOpen && target) {
+      setName(target.name)
+      setPresidentId(target.president_id || '')
+    }
+  }, [isOpen, target])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    onSave({ name: name.trim(), president_id: presidentId ? parseInt(presidentId) : null })
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Modify Committee Unit" size="md">
+      <form onSubmit={handleSubmit} className="space-y-6 p-1">
+        <Field label="Committee Name" required>
+           <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/10 outline-none transition-all shadow-inner"
+            required
+          />
+        </Field>
+
+        <Field label="Committee President" hint="Exclusive leadership assignment.">
+          <SearchableSelect
+            placeholder="Select President..."
+            options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+            value={presidentId}
+            onChange={setPresidentId}
+          />
+        </Field>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
+          <button type="submit" disabled={loading} className="bg-[#1a337e] text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2">
+            {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : 'Update Registry'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
 
 export default function TargetsPage() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const { targets, loading } = useSelector(s => s.targets)
+  const users = useSelector(selectUsers)
   const platformStats = useSelector(selectPlatformStats)
 
-  const [showModal, setShowModal] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [deleteTargetItem, setDeleteTargetItem] = useState(null)
   
   // Selection Flow State
   const [committeeType, setCommitteeType] = useState('state')
   const [selections, setSelections] = useState({
+    country: '',
     state: '',
     district: '',
     block: '',
-    booth: ''
+    booth: '',
+    president_id: ''
   })
   
   // Inline Creation State
@@ -161,53 +225,29 @@ export default function TargetsPage() {
   useEffect(() => {
     dispatch(fetchTargets())
     dispatch(fetchPlatformStats())
+    dispatch(fetchUsers({ limit: 1000 }))
   }, [dispatch])
 
   // Hierarchical Data Processing
-  const rootNodes = useMemo(() => targets.filter(t => !t.parent_id), [targets])
   const states = useMemo(() => targets.filter(t => t.type === 'state'), [targets])
   const districts = useMemo(() => targets.filter(t => t.type === 'district'), [targets])
   const blocks = useMemo(() => targets.filter(t => t.type === 'block'), [targets])
   const country = useMemo(() => targets.find(t => t.type === 'country'), [targets])
 
   function resetFlow() {
-    setSelections({ state: '', district: '', block: '', booth: '' })
+    setSelections({ country: '', state: '', district: '', block: '', booth: '', president_id: '' })
   }
 
   function openCreate() {
-    setEditTarget(null)
     setCommitteeType('state')
+    setEditTarget(null)
     resetFlow()
-    setShowModal(true)
+    setShowAddModal(true)
   }
 
   function openEdit(t) {
     setEditTarget(t)
-    setCommitteeType(t.type)
-    
-    // Reverse hierarchy fill
-    const newSels = { state: '', district: '', block: '', booth: '' }
-    if (t.type === 'state') newSels.state = t.id
-    if (t.type === 'district') {
-      newSels.district = t.id
-      newSels.state = t.parent_id
-    }
-    if (t.type === 'block') {
-      newSels.block = t.id
-      const dist = targets.find(i => i.id === t.parent_id)
-      newSels.district = t.parent_id
-      newSels.state = dist?.parent_id || ''
-    }
-    if (t.type === 'booth') {
-      newSels.booth = t.id
-      const block = targets.find(i => i.id === t.parent_id)
-      const dist = targets.find(i => i.id === block?.parent_id)
-      newSels.block = t.parent_id
-      newSels.district = block?.parent_id || ''
-      newSels.state = dist?.parent_id || ''
-    }
-    setSelections(newSels)
-    setShowModal(true)
+    setShowEditModal(true)
   }
 
   const handleLevelChange = (level, value) => {
@@ -220,10 +260,15 @@ export default function TargetsPage() {
     })
   }
 
-  const handleInlineSave = async (name) => {
+  const handleInlineSave = async ({ name, president_id }) => {
     setInlineSubmitting(true)
     try {
-      const res = await dispatch(createTarget({ name: name.trim(), type: inlineModal.type, parent_id: inlineModal.parentId })).unwrap()
+      const res = await dispatch(createTarget({ 
+        name: name.trim(), 
+        type: inlineModal.type, 
+        parent_id: inlineModal.parentId,
+        president_id
+      })).unwrap()
       toast.success('Entity added successfully')
       handleLevelChange(inlineModal.type, res.id)
       dispatch(fetchTargets())
@@ -235,15 +280,18 @@ export default function TargetsPage() {
     }
   }
 
-  async function handleSubmit(e) {
+  async function handleAddSubmit(e) {
     e.preventDefault()
     setSubmitting(true)
     
     let parentId = null
     let derivedName = ''
 
-    if (committeeType === 'state') {
-      parentId = country?.id
+    if (committeeType === 'country') {
+      parentId = null
+      derivedName = targets.find(t => String(t.id) === String(selections.country))?.name || 'Working Committee'
+    } else if (committeeType === 'state') {
+      parentId = selections.country || country?.id
       derivedName = states.find(s => String(s.id) === String(selections.state))?.name || 'New State'
     } else if (committeeType === 'district') {
       parentId = selections.state
@@ -259,26 +307,31 @@ export default function TargetsPage() {
     const finalData = { 
       name: derivedName, 
       type: committeeType,
-      parent_id: parentId ? parseInt(parentId) : null
-    }
-
-    if (committeeType === 'country') {
-      finalData.name = 'India'
-      finalData.parent_id = null
+      parent_id: parentId ? parseInt(parentId) : null,
+      president_id: selections.president_id ? parseInt(selections.president_id) : null
     }
 
     try {
-      if (editTarget) {
-        await dispatch(updateTarget({ id: editTarget.id, data: finalData })).unwrap()
-        toast.success('Committee updated')
-      } else {
-        await dispatch(createTarget(finalData)).unwrap()
-        toast.success('Committee created')
-      }
-      setShowModal(false)
+      await dispatch(createTarget(finalData)).unwrap()
+      toast.success('Committee created')
+      setShowAddModal(false)
       dispatch(fetchTargets())
     } catch (err) {
       toast.error(typeof err === 'string' ? err : err?.message || 'Action failed')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleUpdateSubmit = async (updatedData) => {
+    setSubmitting(true)
+    try {
+      await dispatch(updateTarget({ id: editTarget.id, data: updatedData })).unwrap()
+      toast.success('Committee updated')
+      setShowEditModal(false)
+      dispatch(fetchTargets())
+    } catch (err) {
+      toast.error(err?.message || 'Update failed')
     } finally {
       setSubmitting(false)
     }
@@ -302,117 +355,217 @@ export default function TargetsPage() {
 
   const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
 
-  const totalCount = platformStats?.total_tenants || 0;
-  const activeCount = platformStats?.active_tenants || 0;
-  const draftCount = platformStats?.draft_tenants || 0;
-  const suspendedCount = platformStats?.suspended_tenants || 0;
+  const availablePresidents = useMemo(() => {
+    // 1. Map all currently assigned president IDs from the registry
+    const assignedIds = targets
+      .map(t => t.president_id)
+      .filter(id => id !== null && id !== undefined)
+    
+    // 2. Filter the assigned list to exclude the current edit target's president
+    // This allows the current president to remain in the list while editing
+    const currentAssignedExcludeList = assignedIds.filter(id => 
+      !editTarget || id !== editTarget.president_id
+    )
+    
+    // 3. Return users who are not in the finalized exclude list
+    return users.filter(u => !currentAssignedExcludeList.includes(u.id))
+  }, [users, targets, editTarget])
+
+  const statsData = useMemo(() => ({
+    total: targets.length,
+    states: targets.filter(t => t.type === 'state').length,
+    districts: targets.filter(t => t.type === 'district').length,
+    blocks: targets.filter(t => t.type === 'block').length,
+    booths: targets.filter(t => t.type === 'booth').length,
+  }), [targets]);
 
   return (
     <MainLayout title="Committee Management">
-      <div className="w-full space-y-6">
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          {/* Total Tenants */}
-          <div className="relative overflow-hidden rounded-lg bg-[#1A237E] p-6 text-white shadow-lg">
-            <div className="relative z-10">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#dde1ff]/80">Total Tenants</p>
-              <h2 className="mt-1 text-3xl font-black">{totalCount.toLocaleString()}</h2>
-              <p className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-[#c1c6ff]">
-                <TrendingUp className="h-3 w-3" /> Combined reach
-              </p>
+      <div className="w-full space-y-8">
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Organizational Architecture</span>
             </div>
-            <Building2 className="absolute -bottom-4 -right-4 h-24 w-24 text-white/10" />
+            <h2 className="text-4xl font-black tracking-tight text-gray-900">Committee Registry</h2>
           </div>
-
-          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Active</p>
-            <h3 className="mt-1 text-3xl font-bold text-[#2e7d32]">{activeCount.toLocaleString()}</h3>
-          </div>
-
-          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Draft</p>
-            <h3 className="mt-1 text-3xl font-bold text-[#1A237E]">{draftCount.toLocaleString()}</h3>
-          </div>
-
-          <div className="rounded-lg border border-[#c4c6d0] bg-[#ebecf0] p-6">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#44474e]/70">Suspended</p>
-            <h3 className="mt-1 text-3xl font-bold text-[#d32f2f]">{suspendedCount.toLocaleString()}</h3>
-          </div>
-        </section>
-
-        <div className="flex items-center justify-end gap-4 border-b border-[#c4c6d0] pb-5">
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 rounded-lg bg-[#1A237E] px-5 py-3 text-sm font-bold text-white hover:brightness-110 shadow-lg active:scale-95 transition-all"
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:brightness-110 shadow-xl shadow-[#1a337e]/20 active:scale-95 transition-all"
           >
             <FaPlus className="h-4 w-4" /> Add Committee
           </button>
+        </header>
+
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
+          <MetricCard
+            title="Total Committees"
+            icon={Layers}
+            tone="blue"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.total)}</span>
+                <span className="mb-1 flex items-center text-xs font-bold text-[#1a337e]">
+                  Committees
+                </span>
+              </>
+            }
+          >
+             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Registered across all committees</p>
+          </MetricCard>
+
+          <MetricCard
+            title="Pradesh committees"
+            icon={MapPin}
+            tone="indigo"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.states)}</span>
+                <span className="mb-1 text-xs font-bold text-[#1a337e]">States</span>
+              </>
+            }
+          >
+             <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-[#1a337e]" style={{ width: `${Math.min(100, (statsData.states / 36) * 100)}%` }} />
+             </div>
+          </MetricCard>
+
+          <MetricCard
+            title="District committees"
+            icon={Layers}
+            tone="emerald"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.districts)}</span>
+                <span className="mb-1 text-xs font-bold text-emerald-600">District</span>
+              </>
+            }
+          >
+             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Verified jurisdictional bodies</p>
+          </MetricCard>
+
+          <MetricCard
+            title="Ground Reach"
+            icon={Users}
+            tone="amber"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(statsData.blocks + statsData.booths)}</span>
+                <span className="mb-1 text-xs font-bold text-amber-600">Local</span>
+              </>
+            }
+          >
+             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider">
+                <span className="text-amber-600">{statsData.blocks} Blocks</span>
+                <span className="text-gray-300">•</span>
+                <span className="text-amber-600">{statsData.booths} Booths</span>
+             </div>
+          </MetricCard>
+        </section>
+
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-gray-100 pb-8">
+          <div className="relative w-full md:w-96 group">
+            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" />
+            <input
+              type="text"
+              placeholder="Search by name or type..."
+              value={search}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-100 border-0 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/20 transition-all"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-           <div className="lg:col-span-8 space-y-4">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl">
-                 <div className="flex items-center gap-2 text-xs font-black uppercase text-[#1A237E] tracking-widest">
-                    <Globe size={14} /> Organization Tree
-                 </div>
-                 <span className="text-[10px] font-bold text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
-                    {targets.length} Nodes Registered
-                 </span>
+           <div className="lg:col-span-8 space-y-6">
+              <div className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-3xl shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#1a337e] border border-indigo-100 shadow-inner">
+                    <Globe className="h-7 w-7" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-gray-900">Organization Tree</h2>
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Jurisdictional Hierarchy</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-2xl font-black text-[#1a337e] leading-none">{targets.length}</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Nodes Active</span>
+                </div>
               </div>
 
-              {loading ? (
-                <div className="py-20 flex justify-center"><LoadingSpinner /></div>
-              ) : rootNodes.length === 0 ? (
-                <div className="py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-100">
-                   <Building2 className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                   <p className="text-gray-400 font-medium">No committee hierarchy defined.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                   {rootNodes.map(node => (
-                     <CommitteeNode 
-                        key={node.id} 
-                        node={node} 
-                        allTargets={targets} 
-                        onEdit={openEdit} 
-                        onDelete={setDeleteTargetItem} 
-                     />
-                   ))}
-                </div>
-              )}
+              <div className="p-6 bg-gray-50/30 rounded-3xl border border-gray-200 shadow-sm min-h-[500px]">
+                <OrganizationTree
+                  data={targets}
+                  onEdit={openEdit}
+                  onDelete={setDeleteTargetItem}
+                  loading={loading}
+                />
+              </div>
            </div>
 
-           <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                 <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 mb-4 border-b border-gray-50 pb-2">Hierarchy Legend</h3>
-                 <div className="space-y-4">
-                    {COMMITTEE_TYPES.map(ct => (
-                      <div key={ct.value} className="flex items-center justify-between">
-                         <span className="text-xs font-bold text-gray-500">{ct.label}</span>
-                         <span className="text-[10px] font-black bg-blue-50 text-blue-700 px-2 py-0.5 rounded uppercase tracking-tighter border border-blue-100">
-                            {targets.filter(t => t.type === ct.value).length}
-                         </span>
-                      </div>
-                    ))}
+           <div className="lg:col-span-4 space-y-8">
+              <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-sm">
+                 <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
+                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Hierarchy Legend</h3>
+                 </div>
+                 <div className="space-y-3">
+                    {COMMITTEE_TYPES.map(ct => {
+                      const count = targets.filter(t => t.type === ct.value).length
+                      const TypeIcon = ct.icon
+                      return (
+                        <div key={ct.value} className="flex items-center justify-between p-3 rounded-2xl bg-gray-50/50 border border-transparent hover:border-gray-100 transition-all">
+                           <div className="flex items-center gap-3">
+                              <div className={`p-2 rounded-xl ${ct.color}`}>
+                                <TypeIcon size={14} strokeWidth={2.4} />
+                              </div>
+                              <span className="text-xs font-black uppercase tracking-wider text-gray-500">{ct.label.split(' ')[0]}</span>
+                           </div>
+                           <span className="text-xs font-black text-gray-900 bg-white px-3 py-1 rounded-lg shadow-sm border border-gray-100">
+                              {count}
+                           </span>
+                        </div>
+                      )
+                    })}
                  </div>
               </div>
 
-              <div className="bg-[#1A237E] text-white rounded-2xl p-6 shadow-lg shadow-blue-900/10">
-                 <TrendingUpIcon className="mb-4 text-blue-200 w-8 h-8" />
-                 <h4 className="text-lg font-bold">Organizational Coverage</h4>
-                 <p className="text-xs text-blue-100/70 mt-1 leading-relaxed">Your structure covers {states.length} states and {blocks.length} blocks nationwide.</p>
-                 <button className="mt-6 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold transition-all">View Audit Trail</button>
+              <div className="bg-[#1a337e] text-white rounded-3xl p-8 shadow-xl shadow-[#1a337e]/20 relative overflow-hidden group">
+                 <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
+                    <TrendingUp size={160} />
+                 </div>
+                 <div className="relative z-10">
+                   <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
+                       <TrendingUp className="text-white w-7 h-7" />
+                   </div>
+
+                    <h4 className="text-xl font-black tracking-tight">Coverage Insight</h4>
+                    <p className="text-sm text-indigo-100/70 mt-3 leading-relaxed font-medium">Your platform currently oversees <span className="text-white font-bold">{states.length} States</span> and <span className="text-white font-bold">{blocks.length} Blocks</span> across the national network.</p>
+                    <button 
+                      onClick={() => navigate('/audit-logs')}
+                      className="mt-8 w-full py-3 bg-white text-[#1a337e] hover:bg-indigo-50 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-[#1a337e]/20 active:scale-95"
+                    >
+                      Inspect Audit logs
+                    </button>
+                 </div>
               </div>
            </div>
         </div>
       </div>
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Edit Committee' : 'Create New Committee'} size="xl">
-        <form onSubmit={handleSubmit} className="space-y-8 py-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Type</label>
-                <div className="grid grid-cols-1 gap-2 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setEditTarget(null); }} title="Add Committee" size="3xl">
+        <form onSubmit={handleAddSubmit} className="space-y-0" autoComplete="off">
+          <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+            {/* Left Column: Classification */}
+            <div className="md:col-span-6 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Classification</span>
+                </div>
+                <div className="grid grid-cols-1 gap-2 bg-white p-2 rounded-2xl border border-gray-100 shadow-sm">
                   {COMMITTEE_TYPES.map(ct => (
                     <button
                       key={ct.value}
@@ -421,105 +574,136 @@ export default function TargetsPage() {
                         setCommitteeType(ct.value)
                         resetFlow()
                       }}
-                      className={`flex items-center justify-between px-4 py-3 rounded-lg transition-all ${
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 ${
                         committeeType === ct.value 
-                          ? 'bg-[#1A237E] text-white font-bold shadow-md ring-1 ring-[#1A237E]' 
-                          : 'text-gray-500 hover:bg-white hover:text-[#1A237E]'
+                          ? 'bg-[#1a337e] text-white font-bold shadow-lg shadow-[#1a337e]/20 scale-[1.02]' 
+                          : 'text-gray-500 hover:bg-indigo-50 hover:text-[#1a337e]'
                       }`}
                     >
-                      <span className="text-xs uppercase tracking-wider">{ct.label}</span>
-                      {committeeType === ct.value ? <Check size={12} /> : <FaChevronRight size={10} className="opacity-30" />}
+                      <div className="flex items-center gap-3">
+                         <ct.icon size={14} strokeWidth={committeeType === ct.value ? 3 : 2} />
+                         <span className="text-[11px] uppercase tracking-wider">{ct.label.split(' ')[0]} Committee</span>
+                      </div>
+                      {committeeType === ct.value ? <Check size={14} strokeWidth={3} /> : <ChevronRight size={10} className="opacity-20" />}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-6 border-l border-gray-100 pl-8">
-               <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest border-b border-gray-50 pb-2">Location Hierarchy</p>
+            {/* Right Column: Deployment */}
+            <div className="md:col-span-6 p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
+               <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Jurisdictional Deployment</span>
+                </div>
                
-               {committeeType === 'country' ? (
-                 <div className="py-10 text-center space-y-4">
-                    <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto">
-                       <Check className="text-[#1A237E] w-8 h-8" />
-                    </div>
-                    <p className="text-sm font-bold text-gray-500">National level committee selected (India).</p>
-                 </div>
-               ) : (
-                 <div className="space-y-5">
-                   {activeConfig.levels.includes('state') && (
-                     <SearchableSelect
-                       label="Pradesh / State"
-                       placeholder="Select State..."
-                       options={targets.filter(t => t.type === 'state')}
-                       value={selections.state}
-                       onChange={(v) => handleLevelChange('state', v)}
-                       onAddNew={(name) => setInlineAdd({ open: true, type: 'state', parentId: country?.id, name })}
-                     />
-                   )}
+                {committeeType === 'country' ? (
+                  <div className="space-y-6 animate-in fade-in zoom-in-95">
+                    <Field label="National Node" required>
+                        <SearchableSelect
+                          placeholder="Select National Committee..."
+                          options={targets.filter(t => t.type === 'country')}
+                          value={selections.country}
+                          onChange={(v) => setSelections(s => ({ ...s, country: v }))}
+                          onAddNew={(name) => setInlineAdd({ open: true, type: 'country', parentId: null, name })}
+                        />
+                    </Field>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {activeConfig.levels.includes('state') && (
+                      <Field label="Pradesh / State" required>
+                          <SearchableSelect
+                            placeholder="Select State..."
+                            options={targets.filter(t => t.type === 'state')}
+                            value={selections.state}
+                            onChange={(v) => handleLevelChange('state', v)}
+                            onAddNew={(name) => setInlineAdd({ open: true, type: 'state', parentId: country?.id, name })}
+                          />
+                      </Field>
+                    )}
 
-                   {activeConfig.levels.includes('district') && selections.state && (
-                     <SearchableSelect
-                       label="District"
-                       placeholder="Select District..."
-                       options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
-                       value={selections.district}
-                       onChange={(v) => handleLevelChange('district', v)}
-                       onAddNew={(name) => setInlineAdd({ open: true, type: 'district', parentId: selections.state, name })}
-                     />
-                   )}
+                    {activeConfig.levels.includes('district') && selections.state && (
+                      <Field label="District Unit" required>
+                          <SearchableSelect
+                            placeholder="Select District..."
+                            options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
+                            value={selections.district}
+                            onChange={(v) => handleLevelChange('district', v)}
+                            onAddNew={(name) => setInlineAdd({ open: true, type: 'district', parentId: selections.state, name })}
+                          />
+                      </Field>
+                    )}
 
-                   {activeConfig.levels.includes('block') && selections.district && (
-                     <SearchableSelect
-                       label="Block"
-                       placeholder="Select Block..."
-                       options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
-                       value={selections.block}
-                       onChange={(v) => handleLevelChange('block', v)}
-                       onAddNew={(name) => setInlineAdd({ open: true, type: 'block', parentId: selections.district, name })}
-                     />
-                   )}
+                    {activeConfig.levels.includes('block') && selections.district && (
+                      <Field label="Block Unit" required>
+                          <SearchableSelect
+                            placeholder="Select Block..."
+                            options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
+                            value={selections.block}
+                            onChange={(v) => handleLevelChange('block', v)}
+                            onAddNew={(name) => setInlineAdd({ open: true, type: 'block', parentId: selections.district, name })}
+                          />
+                      </Field>
+                    )}
 
-                   {activeConfig.levels.includes('booth') && selections.block && (
-                     <SearchableSelect
-                       label="Booth"
-                       placeholder="Select Booth..."
-                       options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
-                       value={selections.booth}
-                       onChange={(v) => handleLevelChange('booth', v)}
-                       onAddNew={(name) => setInlineAdd({ open: true, type: 'booth', parentId: selections.block, name })}
-                     />
-                   )}
+                    {activeConfig.levels.includes('booth') && selections.block && (
+                      <Field label="Booth Unit" required>
+                          <SearchableSelect
+                            placeholder="Select Booth..."
+                            options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
+                            value={selections.booth}
+                            onChange={(v) => handleLevelChange('booth', v)}
+                            onAddNew={(name) => setInlineAdd({ open: true, type: 'booth', parentId: selections.block, name })}
+                          />
+                      </Field>
+                    )}
 
-                   {activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]] && (
-                      <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg border border-amber-100 text-amber-700 text-xs font-medium">
-                        <FaMapMarkerAlt className="shrink-0 w-4 h-4" />
-                        <span className="text-[10px] uppercase font-black tracking-widest leading-none mt-0.5">Please complete selection path.</span>
-                      </div>
-                   )}
-                 </div>
-               )}
+                    {activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]] && (
+                        <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 animate-pulse">
+                          <AlertTriangle className="shrink-0 w-4 h-4 mt-0.5" />
+                          <span className="text-[10px] uppercase font-black tracking-widest leading-relaxed">System requires a complete hierarchical path for confirmation.</span>
+                        </div>
+                    )}
+                  </div>
+                )}
+
+                {/* <div className="pt-4 mt-2 border-t border-gray-50">
+                  <Field label="Committee President 1S" hint="Assign leadership to this new unit.">
+                    <SearchableSelect
+                      placeholder="Select President..."
+                      options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+                      value={selections.president_id}
+                      onChange={(v) => setSelections(s => ({ ...s, president_id: v }))}
+                    />
+                  </Field>
+                </div> */}
+               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
-            <button 
-              type="button" 
-              onClick={() => setShowModal(false)} 
-              className="px-6 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-700 transition"
+          <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-100 rounded-b-3xl">
+            <button
+              type="button"
+              onClick={() => { setShowAddModal(false); setEditTarget(null); }}
+              className="px-10 py-2.5 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
             >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              disabled={submitting || inlineSubmitting || (activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]])} 
-              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1A237E] rounded-xl hover:bg-[#0d1245] shadow-lg shadow-[#1A237E]/20 transition-all active:scale-95 disabled:opacity-40"
-            >
-              {submitting ? 'Processing...' : editTarget ? 'Save Changes' : 'Confirm Committee'}
+              Close Protocol
             </button>
           </div>
         </form>
       </Modal>
+
+      <EditCommitteeModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditTarget(null); }}
+        target={editTarget}
+        onSave={handleUpdateSubmit}
+        loading={submitting}
+        availablePresidents={availablePresidents}
+      />
 
       <InlineAddModal
         isOpen={inlineModal.open}
@@ -529,6 +713,7 @@ export default function TargetsPage() {
         initialName={inlineModal.name}
         onSave={handleInlineSave}
         loading={inlineSubmitting}
+        availablePresidents={availablePresidents}
       />
 
       <ConfirmDialog
