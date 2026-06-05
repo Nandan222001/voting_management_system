@@ -15,10 +15,14 @@ import {
 } from "react-native";
 import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
+import { BASE_URL } from "../services/api";
 import Header from "../components/common/Header";
 import { showToast } from "../utils/toast";
 
 const { width } = Dimensions.get('window');
+
+// Construct logo URI
+const LOGO_URI = `${BASE_URL}/static/uploads/logo.png`;
 
 // Safe Web Input Helper
 const getInputStyle = () => {
@@ -79,13 +83,19 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroSection}>
-          <View style={styles.illustrationContainer}>
+          <Image 
+            source={{ uri: LOGO_URI }} 
+            style={styles.logoImage} 
+            resizeMode="contain"
+          />
+          
+          {/* <View style={styles.illustrationContainer}>
             <View style={styles.outerGlow}>
               <View style={styles.innerGlow}>
                 <FontAwesome5 name="shield-alt" size={48} color="#003d9b" />
               </View>
             </View>
-          </View>
+          </View> */}
           
           <Text style={styles.mainHeading}>Authorized Access</Text>
           <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active elections.</Text>
@@ -193,6 +203,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
     marginBottom: 32,
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
   },
   illustrationContainer: {
     marginBottom: 24,

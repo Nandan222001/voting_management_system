@@ -17,7 +17,6 @@ export const mediaService = {
     
     if (Platform.OS === 'web') {
       // On web, we need an actual File or Blob object.
-      // If uri is a local blob URL (from expo-image-picker), fetch it.
       const response = await fetch(uri);
       const blob = await response.blob();
       formData.append('file', blob, name);
@@ -31,7 +30,12 @@ export const mediaService = {
       formData.append('file', fileToUpload);
     }
 
-    const response = await api.post('/media/upload', formData);
+    const response = await api.post('/media/upload', formData, {
+      timeout: 60000, // 60 seconds for large files
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
 
     return response.data.data.url;
   },
@@ -57,7 +61,12 @@ export const mediaService = {
       } as any);
     }
 
-    const response = await api.post('/media/upload-nomination-document', formData);
+    const response = await api.post('/media/upload-nomination-document', formData, {
+      timeout: 60000,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data.url;
   },
 };

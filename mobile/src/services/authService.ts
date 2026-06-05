@@ -36,6 +36,14 @@ export const authService = {
     return response.data;
   },
 
+  createRegistrationOrder: async (tenantId: number, planId: number) => {
+    const response = await api.post('/auth/register/payment-order', {
+      tenant_id: tenantId,
+      membership_plan_id: planId
+    });
+    return response.data;
+  },
+
   verifyOtp: async (email: string, otp: string) => {
     const response = await api.post('/auth/verify-otp', { email, otp_code: otp });
     const data = response.data.data || response.data;

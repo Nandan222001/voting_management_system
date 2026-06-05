@@ -3,27 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const EXPO_ENV = process.env as Record<string, string | undefined>;
-const DEFAULT_API_URL = 'http://localhost:8000/api/v1';
-const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
+const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-// Intelligently resolve the API URL based on platform and environment
-let API_URL = RAW_API_URL;
+// Exported for components that need to construct asset URIs
+export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
 
-if (Platform.OS === 'android') {
-  // 10.0.2.2 is the special IP for host machine's localhost in Android Emulator
-  API_URL = RAW_API_URL.replace(/localhost|127\.0\.0\.1/, '10.0.2.2');
-} else if (Platform.OS === 'web') {
-  // If running in browser on localhost, but API is configured for a LAN IP (that might be stale),
-  // prefer localhost to avoid timeouts.
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    if (API_URL.includes('192.168.') || API_URL.includes('10.')) {
-      console.log(`[API] Web localhost detected. Overriding LAN IP ${API_URL} with localhost for reliability.`);
-      API_URL = API_URL.replace(/192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+/, 'localhost');
-    }
-  }
-}
+// Simplify API URL resolution as requested
+const API_URL = RAW_API_URL;
 
-console.log(`[API] Initializing with baseURL: ${API_URL} (Source: ${RAW_API_URL})`);
+console.log(`[API] Initializing with baseURL: ${API_URL}`);
 
 const ENV_TENANT_ID = EXPO_ENV.EXPO_PUBLIC_TENANT_ID;
 const TENANT_ID_KEY = 'tenant_id';
@@ -46,7 +34,7 @@ export const clearTenantID = async () => {
 
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
@@ -74,7 +62,8 @@ api.interceptors.request.use(
       params: config.params,
     });
 
-    if (config.data instanceof FormData) {
+    // If sending FormData and no Content-Type is manually set, let axios handle it
+    if (config.data instanceof FormData && !config.headers['Content-Type']) {
       delete config.headers['Content-Type'];
     }
 

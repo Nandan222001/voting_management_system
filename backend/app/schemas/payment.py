@@ -57,6 +57,13 @@ class MembershipOrderCreate(BaseModel):
     membership_plan_id: int = Field(..., gt=0)
 
 
+class RegistrationOrderCreate(BaseModel):
+    """Payload for creating a payment order during registration (before user exists)."""
+
+    membership_plan_id: int = Field(..., gt=0)
+    tenant_id: int = Field(..., gt=0)
+
+
 class RazorpayPaymentVerify(BaseModel):
     """Razorpay checkout payload verified by the backend."""
 

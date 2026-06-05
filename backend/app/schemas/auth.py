@@ -51,6 +51,11 @@ class RegisterRequest(BaseModel):
     designation: str = "voter"
     voter_id: Optional[str] = None
 
+    # Razorpay Payment (for paid registration)
+    razorpay_payment_id: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 

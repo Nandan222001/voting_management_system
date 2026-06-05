@@ -62,6 +62,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   register: (userData: any) => Promise<any>;
+  createRegistrationOrder: (tenantId: number, planId: number) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   updateProfile: (userData: any) => Promise<void>;
   setToken: (token: string | null) => void;
@@ -133,6 +134,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const register = async (userData: any) => {
     return await authService.register(userData);
+  };
+
+  const createRegistrationOrder = async (tenantId: number, planId: number) => {
+    return await authService.createRegistrationOrder(tenantId, planId);
   };
 
   const verifyOtp = async (email: string, otp: string) => {

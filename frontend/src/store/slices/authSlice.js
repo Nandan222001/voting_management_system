@@ -25,6 +25,20 @@ export const loginUser = createAsyncThunk(
 
 // registration disabled on frontend
 
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await authService.register(data)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data?.detail || 'Registration failed.'
+      )
+    }
+  }
+)
+
 export const getMe = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
