@@ -119,7 +119,7 @@ Usage:
 
 Examples:
     python test_api_login.py admin@example.com MyPassword123
-    python test_api_login.py superadmin@techElect.com Super@Admin123
+    python test_api_login.py superadmin@example.com <your_password>
     python test_api_login.py admin@example.com Password123 http://localhost:8000
 
 What this checks:
