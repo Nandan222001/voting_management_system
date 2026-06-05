@@ -14,9 +14,13 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.payment import Payment, PaymentStatus
+from app.models.plan import Plan
+from app.models.tenant import Tenant
 from app.models.user import User, UserRole, UserStatus
 from app.repositories.user_repository import UserRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.repositories.payment_repository import PaymentRepository
 from app.schemas.auth import AuthUserInfo, RegisterRequest, TokenResponse
 from app.utils.security import (
     create_access_token,
@@ -115,6 +119,41 @@ class AuthService:
                 detail="A user with this email address already exists.",
             )
 
+        # Secure Payment Verification for Paid Membership Plans
+        if register_data.membership_plan_id:
+            plan = db.query(Plan).filter(Plan.id == register_data.membership_plan_id).first()
+            if plan and plan.price > 0:
+                # Require payment details
+                if not (register_data.razorpay_order_id and register_data.razorpay_payment_id and register_data.razorpay_signature):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Payment details are required for this membership plan."
+                    )
+                
+                # Fetch tenant credentials for signature verification
+                tenant = db.query(Tenant).filter(Tenant.id == resolved_tenant_id).first()
+                if not tenant or not tenant.razorpay_key_secret:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Payment gateway not configured for this organization."
+                    )
+                
+                # Verify Razorpay Signature (Skip for simulation keys)
+                if tenant.razorpay_key_id != "rzp_test_dummy":
+                    import razorpay
+                    client = razorpay.Client(auth=(tenant.razorpay_key_id, tenant.razorpay_key_secret))
+                    try:
+                        client.utility.verify_payment_signature({
+                            'razorpay_order_id': register_data.razorpay_order_id,
+                            'razorpay_payment_id': register_data.razorpay_payment_id,
+                            'razorpay_signature': register_data.razorpay_signature
+                        })
+                    except Exception:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Payment signature verification failed. Please try again or contact support."
+                        )
+
         otp = generate_otp()
         otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
 
@@ -166,6 +205,20 @@ class AuthService:
             tenant_id=resolved_tenant_id,
         )
         db.add(user)
+        db.flush() # Get user.id
+
+        # Create or update payment record to 'captured' and link to user
+        if register_data.membership_plan_id and register_data.razorpay_order_id:
+            payment_repo = PaymentRepository(db)
+            payment = payment_repo.get_by_order_for_registration(resolved_tenant_id, register_data.razorpay_order_id)
+            if payment:
+                payment_repo.update(payment, {
+                    "user_id": user.id,
+                    "status": PaymentStatus.captured,
+                    "razorpay_payment_id": register_data.razorpay_payment_id,
+                    "razorpay_signature": register_data.razorpay_signature
+                })
+
         db.commit()
         db.refresh(user)
 

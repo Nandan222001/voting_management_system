@@ -117,6 +117,24 @@ class PaymentRepository(BaseRepository[Payment]):
             is not None
         )
 
+    def get_by_order_for_registration(
+        self,
+        tenant_id: int,
+        razorpay_order_id: str,
+    ) -> Optional[Payment]:
+        """
+        Return a tenant-scoped payment by Razorpay order id that doesn't have a user_id yet.
+        """
+        return (
+            self.db.query(Payment)
+            .filter(
+                Payment.tenant_id == tenant_id,
+                Payment.razorpay_order_id == razorpay_order_id,
+                Payment.user_id.is_(None)
+            )
+            .first()
+        )
+
     def get_by_order_for_user(
         self,
         tenant_id: int,

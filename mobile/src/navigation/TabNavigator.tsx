@@ -85,7 +85,9 @@ const TabNavigator = () => {
         tabBarInactiveTintColor: '#434654',
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
+        tabBarLabelPosition: 'below-icon',
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
         headerShown: false,
       })}
     >
@@ -148,6 +150,14 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  tabItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 5,
   },
   iconWrapper: {
     width: 40,

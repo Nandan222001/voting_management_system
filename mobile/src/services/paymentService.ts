@@ -16,6 +16,14 @@ export type RazorpayOrder = {
   key_id: string;
 };
 
+export const createRegistrationOrder = async (tenantId: number, planId: number): Promise<RazorpayOrder> => {
+  const response = await api.post('/auth/register/payment-order', {
+    tenant_id: tenantId,
+    membership_plan_id: planId
+  });
+  return response.data;
+};
+
 export const paymentService = {
   checkVotingEligibility: async (): Promise<VotingEligibility> => {
     const response = await api.get('/voting/check-eligibility');
@@ -33,6 +41,8 @@ export const paymentService = {
     });
     return response.data;
   },
+
+  createRegistrationOrder,
 
   verifyPayment: async (payload: {
     razorpay_order_id: string;

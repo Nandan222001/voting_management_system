@@ -231,6 +231,80 @@ class PaymentService:
             "key_id": tenant.razorpay_key_id,
         }
 
+    def create_registration_order(
+        self,
+        db: Session,
+        tenant_id: int,
+        membership_plan_id: int,
+    ) -> dict:
+        """
+        Create a Razorpay order for a new user registration (before user record exists).
+        """
+        plan = PlanRepository(db).get_by_id_and_tenant(membership_plan_id, tenant_id)
+        if not plan or not plan.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Membership Plan not found.",
+            )
+        if plan.price <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This Membership Plan does not require payment.",
+            )
+
+        tenant = TenantRepository(db).get_by_id(tenant_id)
+        if not tenant or not (tenant.razorpay_key_id and tenant.razorpay_key_secret):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Razorpay credentials not configured for this organization.",
+            )
+
+        amount_paise = int(round(plan.price * 100))
+        
+        # Simulation Bypass
+        if tenant.razorpay_key_id == "rzp_test_dummy":
+            import secrets
+            razorpay_order = {"id": f"order_sim_{secrets.token_hex(8)}"}
+        else:
+            import razorpay
+            client = razorpay.Client(auth=(tenant.razorpay_key_id, tenant.razorpay_key_secret))
+            try:
+                razorpay_order = client.order.create({
+                    "amount": amount_paise,
+                    "currency": plan.currency or "INR",
+                    "payment_capture": 1,
+                    "notes": {
+                        "tenant_id": str(tenant_id),
+                        "membership_plan_id": str(plan.id),
+                        "type": "registration_payment"
+                    },
+                })
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Razorpay order creation failed: {str(exc)}",
+                ) from exc
+
+        # Create local record without user_id
+        payment = PaymentRepository(db).create({
+            "tenant_id": tenant_id,
+            "membership_plan_id": plan.id,
+            "amount": plan.price,
+            "currency": plan.currency or "INR",
+            "description": f"Registration: {plan.name}",
+            "status": PaymentStatus.pending,
+            "razorpay_order_id": razorpay_order["id"],
+        })
+
+        return {
+            "payment_id": payment.id,
+            "razorpay_order_id": razorpay_order["id"],
+            "order_id": razorpay_order["id"],
+            "amount": amount_paise,
+            "currency": plan.currency or "INR",
+            "key_id": tenant.razorpay_key_id,
+        }
+
     def verify_membership_payment(
         self,
         db: Session,

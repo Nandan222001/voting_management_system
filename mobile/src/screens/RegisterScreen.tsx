@@ -23,7 +23,9 @@ import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import RazorpayCheckout from 'react-native-razorpay';
 import { showToast } from '../utils/toast';
+import { paymentService, createRegistrationOrder } from '../services/paymentService';
 
 import Header from '../components/common/Header';
 
@@ -130,11 +132,90 @@ const getTargetLabel = (target: any) => {
   return target.name;
 };
 
+// --- RAZORPAY HELPERS ---
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if ((window as any).Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      const Razorpay = (window as any).Razorpay;
+      if (!Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
+};
+
 // --- MAIN COMPONENT ---
 
 const RegisterScreen = ({ navigation }: any) => {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
+
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -417,29 +498,77 @@ const RegisterScreen = ({ navigation }: any) => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleRegister = async () => {
+  const handleCompleteRegistration = async (isSkippingPlan: boolean = false) => {
     setLoading(true);
     try {
-      // Prepare submission data
       const submissionData = { ...formData };
+      if (isSkippingPlan) submissionData.membership_plan_id = null;
+
       if (sameAsPermanent) {
         submissionData.current_street_address = formData.street_address;
-        submissionData.current_city = formData.village || ''; // fallback to village if city not explicit
+        submissionData.current_city = formData.village || '';
         submissionData.current_district = formData.district;
         submissionData.current_state = formData.state;
         submissionData.current_pincode = formData.pincode;
       }
 
-      // Resolve target_id (most granular selected)
-      // Step 4 explicit selection takes precedence over Step 3 geo-fields
       const target_id = formData.target_id || formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
       (submissionData as any).target_id = target_id;
       
+      // 1. Conditional Payment Logic
+      if (submissionData.membership_plan_id) {
+        const selectedPlan = plans.find(p => p.id === submissionData.membership_plan_id);
+        
+        if (selectedPlan && selectedPlan.price > 0) {
+          // A. Create Razorpay Order via backend (Public endpoint)
+          const order = await createRegistrationOrder(submissionData.tenant_id, submissionData.membership_plan_id);
+          
+          // B. Open Razorpay Checkout using the cross-platform helper
+          const options: RazorpayCheckoutOptions = {
+            description: `Registration: ${selectedPlan?.name}`,
+            image: currentTenant?.logo_url || '',
+            currency: order.currency,
+            key: order.key_id,
+            amount: order.amount,
+            name: currentTenant?.name || 'Digital Voting System',
+            order_id: order.razorpay_order_id,
+            prefill: {
+              email: submissionData.email,
+              contact: submissionData.phone,
+              name: submissionData.full_name
+            },
+            theme: { color: COLORS.primary }
+          };
+
+          try {
+            const success = await openRazorpayCheckout(options);
+            
+            // C. Add payment signatures to registration data
+            submissionData.razorpay_order_id = success.razorpay_order_id;
+            submissionData.razorpay_payment_id = success.razorpay_payment_id;
+            submissionData.razorpay_signature = success.razorpay_signature;
+            
+            showToast.info('Payment Verified', 'Finalizing your registration...');
+          } catch (paymentError: any) {
+             const errorDesc = paymentError?.description || 'Payment cancelled or failed';
+             Alert.alert('Payment Error', `${errorDesc}. You can skip for now or try again.`);
+             setLoading(false);
+             return; // Stop registration
+          }
+        }
+      }
+
+      // 2. Final Registration API Call (Now contains payment signatures if applicable)
       await register(submissionData);
-      showToast.success('Registration Successful', 'Please sign in with your credentials.');
+
+      // 3. Success Navigation
+      showToast.success('Registration Successful', 'Welcome! Please sign in with your credentials.');
       navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      
     } catch (error: any) {
-      showToast.error('Registration Failed', error.response?.data?.detail || 'An error occurred');
+      console.error('Full Registration Error:', error);
+      const detail = error.response?.data?.detail || error.message || 'An unexpected error occurred during registration.';
+      showToast.error('Registration Failed', detail);
     } finally {
       setLoading(false);
     }
@@ -949,7 +1078,7 @@ const RegisterScreen = ({ navigation }: any) => {
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
                 <SectionHeader title="Membership Plan" step={5} subtitle="Choose a plan that fits your needs." />
-                <TouchableOpacity onPress={handleRegister} style={styles.skipBtn}>
+                <TouchableOpacity onPress={() => handleCompleteRegistration(true)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
@@ -1000,7 +1129,7 @@ const RegisterScreen = ({ navigation }: any) => {
             ) : (
               <TouchableOpacity
                 style={[styles.nextBtn, loading && styles.btnDisabled]}
-                onPress={handleRegister}
+                onPress={() => handleCompleteRegistration(false)}
                 disabled={loading}
               >
                 {loading ? <ActivityIndicator color={COLORS.white} /> : (
