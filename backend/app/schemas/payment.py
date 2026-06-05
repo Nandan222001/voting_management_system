@@ -80,6 +80,13 @@ class PaymentFailure(BaseModel):
     razorpay_order_id: Optional[str] = None
 
 
+class RefundRequest(BaseModel):
+    """Payload for initiating a refund."""
+
+    reason: Optional[str] = Field(None, max_length=255)
+    amount: Optional[float] = Field(None, gt=0, description="Partial refund amount; omit for full refund")
+
+
 class PaymentVerifyResponse(BaseModel):
     success: bool
     message: str
@@ -115,6 +122,16 @@ class PaymentResponse(PaymentBase):
     created_at: datetime
     updated_at: datetime
 
+    # GST fields
+    gst_rate: Optional[float] = None
+    gst_amount: Optional[float] = None
+
+    # Refund fields
+    refund_id: Optional[str] = None
+    refund_amount: Optional[float] = None
+    refunded_at: Optional[datetime] = None
+    refund_reason: Optional[str] = None
+
     # Rich data for UI
     user_name: Optional[str] = Field(default=None, alias="user_name")
     plan_name: Optional[str] = Field(default=None, alias="plan_name")
@@ -136,6 +153,20 @@ class RevenueSummary(BaseModel):
     total_transactions: int = 0
     pending_amount: float = 0.0
     failed_transactions: int = 0
+    success_rate: float = 0.0
+    refunded_amount: float = 0.0
+    refund_count: int = 0
+    currency: str = "INR"
+
+
+class PaymentAnalytics(BaseModel):
+    """Enhanced analytics for payment dashboard."""
+
+    success_rate: float = 0.0
+    total_refunded: float = 0.0
+    refund_count: int = 0
+    revenue_by_plan: list = []
+    avg_transaction_value: float = 0.0
     currency: str = "INR"
 
 
