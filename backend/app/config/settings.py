@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "Digital Voting System"
     DEBUG: bool = True
 
+    # Razorpay (platform-level fallback; per-tenant keys stored in DB)
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+
     # Email
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_PORT: int = 587
