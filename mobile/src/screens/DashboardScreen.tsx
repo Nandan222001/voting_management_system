@@ -46,11 +46,20 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'Standard Member');
+  const [tenantName, setTenantName] = useState<string>('VOTE2026');
 
   const loadData = async () => {
     const latestPromise = announcementService.getLatest().catch((announcementError) => {
       console.error('Failed to load latest announcement', announcementError);
       return null;
+    });
+
+    const tenantPromise = tenantService.getCurrentTenant().then(data => {
+      if (data?.name) {
+        setTenantName(data.name.toUpperCase());
+      }
+    }).catch(err => {
+      console.error('Failed to load tenant info', err);
     });
 
     try {
@@ -95,7 +104,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
       console.error('Failed to load dashboard data', error);
       showToast.error('Load Error', 'Could not refresh dashboard data.');
     } finally {
-      setLatestAnnouncement(await latestPromise);
+      await Promise.all([latestPromise.then(setLatestAnnouncement), tenantPromise]);
       setLoading(false);
     }
   };
@@ -160,7 +169,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               </View>
               <Text style={styles.expiresText}>Expires: 12/2026</Text>
             </View>
-            <Text style={styles.voteText}>VOTE2026</Text>
+            <Text style={styles.voteText}>{tenantName}</Text>
           </View>
         </LinearGradient>
 
