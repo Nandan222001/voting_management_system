@@ -50,9 +50,9 @@ export default function MultiSearchableSelect({
       
       <div className="relative group">
         {/* Selected Tags Display */}
-        <div className={`min-h-[42px] flex flex-wrap gap-1.5 w-full p-1.5 rounded-xl border border-gray-200 bg-white transition-all focus-within:ring-2 focus-within:ring-[#1A237E]/10 focus-within:border-[#1A237E] hover:border-gray-300 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
+        <div className={`min-h-[42px] flex flex-wrap gap-1.5 w-full p-1.5 rounded-xl border border-gray-200 bg-white transition-all focus-within:ring-2 focus-within:ring-[#1a337e]/10 focus-within:border-[#1a337e] hover:border-gray-300 shadow-sm ${disabled ? 'bg-gray-50' : ''}`}>
           {selectedOptions.map(opt => (
-            <span key={opt.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-[#1A237E] text-xs font-bold border border-blue-100 animate-in zoom-in-95 duration-150">
+            <span key={opt.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-blue-50 text-[#1a337e] text-xs font-bold border border-blue-100 animate-in zoom-in-95 duration-150">
               {opt.name}
               <button 
                 type="button" 
@@ -81,14 +81,17 @@ export default function MultiSearchableSelect({
               </div>
               <Transition
                 as={Fragment}
-                leave="transition ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
+                enter="transition ease-out duration-200"
+                enterFrom="opacity-0 translate-y-1 scale-95"
+                enterTo="opacity-100 translate-y-0 scale-100"
+                leave="transition ease-in duration-150"
+                leaveFrom="opacity-100 translate-y-0 scale-100"
+                leaveTo="opacity-0 translate-y-1 scale-95"
                 afterLeave={() => setQuery('')}
               >
                 <ComboboxOptions 
                   anchor="bottom start" 
-                  className="z-[9999] mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1.5 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm [--anchor-gap:4px] animate-in fade-in slide-in-from-top-2 duration-200"
+                  className="z-[9999] mt-2 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1.5 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm [--anchor-gap:4px] transform-gpu"
                 >
                   {filteredOptions.length === 0 && query !== '' ? (
                     <div className="relative cursor-default select-none py-3 px-4 text-gray-400 font-medium italic text-center">
@@ -100,7 +103,7 @@ export default function MultiSearchableSelect({
                         key={option.id}
                         className={({ active }) =>
                           `relative cursor-default select-none py-2.5 pl-10 pr-4 transition-colors ${
-                            active ? 'bg-blue-50 text-[#1A237E]' : 'text-gray-700'
+                            active ? 'bg-blue-50 text-[#1a337e]' : 'text-gray-700'
                           }`
                         }
                         value={option.id}
@@ -111,14 +114,14 @@ export default function MultiSearchableSelect({
                             <>
                               <span
                                 className={`block truncate ${
-                                  isSelected ? 'font-black text-[#1A237E]' : 'font-bold'
+                                  isSelected ? 'font-black text-[#1a337e]' : 'font-bold'
                                 }`}
                               >
                                 {option.name}
                               </span>
                               {isSelected ? (
                                 <span
-                                  className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1A237E]"
+                                  className="absolute inset-y-0 left-0 flex items-center pl-3 text-[#1a337e]"
                                 >
                                   <Check className="h-4 w-4" aria-hidden="true" />
                                 </span>

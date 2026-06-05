@@ -101,8 +101,10 @@ const voteSlice = createSlice({
       })
       .addCase(fetchAuditLogs.fulfilled, (state, action) => {
         state.loading = false
-        state.auditLogs = action.payload.logs || action.payload.data || action.payload
-        state.totalAuditLogs = action.payload.total || state.auditLogs.length
+        // Extract from data object: { logs: [], total: 0, ... }
+        const data = action.payload.data || action.payload
+        state.auditLogs = data.logs || []
+        state.totalAuditLogs = data.total || state.auditLogs.length
       })
       .addCase(fetchAuditLogs.rejected, (state, action) => {
         state.loading = false

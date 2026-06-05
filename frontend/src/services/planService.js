@@ -7,6 +7,11 @@ const planService = {
   getPlans: (params = {}) => api.get('/plans', { params }),
 
   /**
+   * Fetch all active subscription plans for a specific tenant (Public).
+   */
+  getPublicPlans: (params = {}) => api.get('/plans/public', { params }),
+
+  /**
    * Create a new subscription plan (Admin only).
    */
   createPlan: (data) => api.post('/plans', data),

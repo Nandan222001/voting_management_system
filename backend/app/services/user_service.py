@@ -357,14 +357,13 @@ class UserService:
             tenant_id: When supplied, restrict counts to this tenant.
 
         Returns:
-            A dictionary with keys:
-            ``total_users``, ``total_voters``, ``total_admins``,
-            ``pending_count``, ``active_count``, ``blocked_count``.
+            A dictionary with comprehensive counts for users, roles, and statuses.
         """
         base_query = db.query(User)
         if tenant_id is not None:
             base_query = base_query.filter(User.tenant_id == tenant_id)
 
+        # Basic counts
         total_users: int = base_query.count()
         total_voters: int = (
             base_query.filter(User.role == UserRole.voter).count()
@@ -372,23 +371,38 @@ class UserService:
         total_admins: int = (
             base_query.filter(User.role == UserRole.admin).count()
         )
-        pending_count: int = (
+
+        # Status counts (across all roles)
+        pending_users: int = (
             base_query.filter(User.status == UserStatus.pending).count()
         )
-        active_count: int = (
+        active_users: int = (
             base_query.filter(User.status == UserStatus.active).count()
         )
-        blocked_count: int = (
+        blocked_users: int = (
             base_query.filter(User.status == UserStatus.blocked).count()
+        )
+
+        # Specific role+status combinations
+        active_voters: int = (
+            base_query.filter(
+                User.role == UserRole.voter, 
+                User.status == UserStatus.active
+            ).count()
         )
 
         return {
             "total_users": total_users,
             "total_voters": total_voters,
             "total_admins": total_admins,
-            "pending_count": pending_count,
-            "active_count": active_count,
-            "blocked_count": blocked_count,
+            "pending_users": pending_users,
+            "active_users": active_users,
+            "blocked_users": blocked_users,
+            "active_voters": active_voters,
+            # Maintain backward compatibility for keys previously used
+            "pending_count": pending_users,
+            "active_count": active_users,
+            "blocked_count": blocked_users,
         }
 
 

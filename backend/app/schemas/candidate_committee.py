@@ -56,6 +56,7 @@ class CandidateCommitteeResponse(CandidateCommitteeBase):
 
     id: int
     tenant_id: int
+    candidate_count: int = 0
     created_at: datetime
     updated_at: datetime
 

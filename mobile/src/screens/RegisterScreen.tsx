@@ -23,14 +23,16 @@ import { useAuth } from '../context/AuthContext';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import RazorpayCheckout from 'react-native-razorpay';
+import { showToast } from '../utils/toast';
+import { paymentService, createRegistrationOrder } from '../services/paymentService';
 
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
-// --- COLORS ---
 const COLORS = {
-  primary: 'rgb(16 102 177)',
+  primary: '#003d9b',
   primaryContainer: '#eff6ff',
   text: '#0f172a',
   textSecondary: '#64748b',
@@ -55,7 +57,7 @@ const InputField = ({
   rightIcon,
   focusedField,
   setFocusedField,
-  errors,
+  errors = {},
   onChangeText,
 }: any) => (
   <View style={styles.inputGroup}>
@@ -64,7 +66,7 @@ const InputField = ({
       style={[
         styles.inputWrapper,
         focusedField === name && styles.inputWrapperFocused,
-        errors[name] && styles.inputWrapperError,
+        name && errors[name] && styles.inputWrapperError,
       ]}>
       <Ionicons name={icon} size={18} color={COLORS.textSecondary} style={styles.inputIcon} />
       <TextInput
@@ -85,7 +87,7 @@ const InputField = ({
         </TouchableOpacity>
       )}
     </View>
-    {errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
+    {name && errors[name] && <Text style={styles.errorText}>{errors[name]}</Text>}
   </View>
 );
 
@@ -119,11 +121,101 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
   </View>
 );
 
+const getTargetLabel = (target: any) => {
+  if (!target) return '';
+  const type = target.type?.toLowerCase();
+  if (type === 'country') return 'Working Committee';
+  if (type === 'state') return `${target.name} Pradesh Committee`;
+  if (type === 'district') return `${target.name} District`;
+  if (type === 'block') return `${target.name} Block Committee`;
+  if (type === 'booth') return `${target.name} Booth Committee`;
+  return target.name;
+};
+
+// --- RAZORPAY HELPERS ---
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if ((window as any).Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      const Razorpay = (window as any).Razorpay;
+      if (!Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
+};
+
 // --- MAIN COMPONENT ---
 
 const RegisterScreen = ({ navigation }: any) => {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
+
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -167,6 +259,7 @@ const RegisterScreen = ({ navigation }: any) => {
     // Step 4
     tenant_id: null as number | null,
     committee_id: null as number | null,
+    target_id: null as number | null,
     state_id: null as number | null,
     district_id: null as number | null,
     taluka_id: null as number | null,
@@ -187,6 +280,7 @@ const RegisterScreen = ({ navigation }: any) => {
   const [districts, setDistricts] = useState<any[]>([]);
   const [talukas, setTalukas] = useState<any[]>([]);
   const [villages, setVillages] = useState<any[]>([]);
+  const [regTargets, setRegTargets] = useState<any[]>([]);
 
   const [selectedTenantName, setSelectedTenantName] = useState('');
   const [selectedCommitteeName, setSelectedCommitteeName] = useState('');
@@ -196,9 +290,15 @@ const RegisterScreen = ({ navigation }: any) => {
   const [selectedTalukaName, setSelectedTalukaName] = useState('');
   const [selectedVillageName, setSelectedVillageName] = useState('');
 
-  // Modals
   const [modalType, setModalType] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (modalType) {
+      setModalSearchQuery('');
+    }
+  }, [modalType]);
 
   useEffect(() => {
     fetchInitialData();
@@ -206,7 +306,7 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const fetchInitialData = async () => {
     try {
-      // 1. Fetch current tenant details based on UUID in header
+      // 1. Fetch current tenant details based on ID in header
       const tenant = await tenantService.getCurrentTenant();
       setCurrentTenant(tenant);
       
@@ -266,7 +366,11 @@ const RegisterScreen = ({ navigation }: any) => {
   const pickAndUploadImage = async (field: 'kyc_front_url' | 'kyc_back_url') => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
+      if (Platform.OS === 'web') {
+        showToast.info("Permission Required", "Please allow access to your photos to upload KYC documents.");
+      } else {
+        Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
+      }
       return;
     }
 
@@ -312,6 +416,10 @@ const RegisterScreen = ({ navigation }: any) => {
       setCommittees(commData);
       const planData = await tenantService.getPublicPlans();
       setPlans(planData);
+      
+      // Load targets for Step 4 (Constituency / Committee)
+      const targetData = await tenantService.getPublicTargets();
+      setRegTargets(targetData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
     }
@@ -330,23 +438,53 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const validateStep1 = () => {
     let newErrors: Record<string, string> = {};
-    if (!formData.full_name) newErrors.full_name = 'Required';
-    if (!formData.phone) newErrors.phone = 'Required';
-    if (!formData.email) newErrors.email = 'Required';
-    if (!formData.date_of_birth) newErrors.date_of_birth = 'Required';
-    if (!formData.gender) newErrors.gender = 'Required';
-    if (!formData.password) newErrors.password = 'Required';
+    
+    // Full Name
+    if (!formData.full_name?.trim()) newErrors.full_name = 'Full Name is required';
+    
+    // Mobile Number: Exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'Mobile Number is required';
+    } else if (!phoneRegex.test(formData.phone.trim())) {
+      newErrors.phone = 'Enter a valid 10-digit mobile number';
+    }
+
+    // Email: Regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email Address is required';
+    } else if (!emailRegex.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (!formData.date_of_birth?.trim()) newErrors.date_of_birth = 'Date of Birth is required';
+    if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.password) newErrors.password = 'Password is required';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      // Show the first error in a toast
+      const firstError = Object.values(newErrors)[0];
+      showToast.error('Validation Error', firstError);
+      return false;
+    }
+    
+    return true;
   };
 
   const validateStep2 = () => {
+    let newErrors: Record<string, string> = {};
     if (!formData.kyc_type) {
-      setErrors({ kyc_type: 'Please select identity proof' });
-      return false;
+      newErrors.kyc_type = 'Please select identity proof';
     }
-    return true;
+    if (!formData.kyc_front_url || formData.kyc_front_url === 'mock_front.jpg') {
+      newErrors.kyc_front_url = 'Please upload identity proof document';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
@@ -360,31 +498,77 @@ const RegisterScreen = ({ navigation }: any) => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleRegister = async () => {
+  const handleCompleteRegistration = async (isSkippingPlan: boolean = false) => {
     setLoading(true);
     try {
-      // Prepare submission data
       const submissionData = { ...formData };
+      if (isSkippingPlan) submissionData.membership_plan_id = null;
+
       if (sameAsPermanent) {
         submissionData.current_street_address = formData.street_address;
-        submissionData.current_city = formData.village || ''; // fallback to village if city not explicit
+        submissionData.current_city = formData.village || '';
         submissionData.current_district = formData.district;
         submissionData.current_state = formData.state;
         submissionData.current_pincode = formData.pincode;
       }
 
-      // Resolve target_id (most granular selected)
-      const target_id = formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
+      const target_id = formData.target_id || formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
       (submissionData as any).target_id = target_id;
       
+      // 1. Conditional Payment Logic
+      if (submissionData.membership_plan_id) {
+        const selectedPlan = plans.find(p => p.id === submissionData.membership_plan_id);
+        
+        if (selectedPlan && selectedPlan.price > 0) {
+          // A. Create Razorpay Order via backend (Public endpoint)
+          const order = await createRegistrationOrder(submissionData.tenant_id, submissionData.membership_plan_id);
+          
+          // B. Open Razorpay Checkout using the cross-platform helper
+          const options: RazorpayCheckoutOptions = {
+            description: `Registration: ${selectedPlan?.name}`,
+            image: currentTenant?.logo_url || '',
+            currency: order.currency,
+            key: order.key_id,
+            amount: order.amount,
+            name: currentTenant?.name || 'Digital Voting System',
+            order_id: order.razorpay_order_id,
+            prefill: {
+              email: submissionData.email,
+              contact: submissionData.phone,
+              name: submissionData.full_name
+            },
+            theme: { color: COLORS.primary }
+          };
+
+          try {
+            const success = await openRazorpayCheckout(options);
+            
+            // C. Add payment signatures to registration data
+            submissionData.razorpay_order_id = success.razorpay_order_id;
+            submissionData.razorpay_payment_id = success.razorpay_payment_id;
+            submissionData.razorpay_signature = success.razorpay_signature;
+            
+            showToast.info('Payment Verified', 'Finalizing your registration...');
+          } catch (paymentError: any) {
+             const errorDesc = paymentError?.description || 'Payment cancelled or failed';
+             Alert.alert('Payment Error', `${errorDesc}. You can skip for now or try again.`);
+             setLoading(false);
+             return; // Stop registration
+          }
+        }
+      }
+
+      // 2. Final Registration API Call (Now contains payment signatures if applicable)
       await register(submissionData);
-      Alert.alert(
-        'Success',
-        'Registration successful! Please verify your email with the OTP sent.',
-        [{ text: 'Verify', onPress: () => navigation.navigate('Verify', { email: formData.email }) }]
-      );
+
+      // 3. Success Navigation
+      showToast.success('Registration Successful', 'Welcome! Please sign in with your credentials.');
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.response?.data?.detail || 'An error occurred');
+      console.error('Full Registration Error:', error);
+      const detail = error.response?.data?.detail || error.message || 'An unexpected error occurred during registration.';
+      showToast.error('Registration Failed', detail);
     } finally {
       setLoading(false);
     }
@@ -413,18 +597,19 @@ const RegisterScreen = ({ navigation }: any) => {
       title = "Select Organization";
       data = tenants;
       onSelect = async (item) => {
-        if (item.uuid) {
-          await tenantService.selectTenant(item.uuid);
+        if (item.id) {
+          await tenantService.selectTenant(String(item.id));
         }
         handleChange('tenant_id', item.id);
         setSelectedTenantName(item.name);
       };
     } else if (modalType === 'committee') {
-      title = "Select Committee";
-      data = committees;
+      title = "Select Constituency / Committee";
+      data = regTargets;
       onSelect = (item) => {
-        handleChange('committee_id', item.id);
-        setSelectedCommitteeName(item.name);
+        handleChange('target_id', item.id);
+        setSelectedCommitteeName(getTargetLabel(item));
+        setModalSearchQuery('');
       };
     } else if (modalType === 'plan') {
       title = "Select Membership Plan";
@@ -466,28 +651,69 @@ const RegisterScreen = ({ navigation }: any) => {
       };
     }
 
+    const searchableData =
+      modalType === 'committee' && modalSearchQuery.trim()
+        ? data.filter((item) =>
+            getTargetLabel(item).toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
+          )
+        : data;
+
     return (
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={() => setModalType(null)}>
+            <TouchableOpacity onPress={() => {
+              setModalSearchQuery('');
+              setModalType(null);
+            }}>
               <MaterialIcons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
+          {modalType === 'committee' && (
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                value={modalSearchQuery}
+                onChangeText={setModalSearchQuery}
+                placeholder="Search committee"
+                placeholderTextColor="#9ca3af"
+                style={styles.searchInput}
+              />
+            </View>
+          )}
           <FlatList
-            data={data}
+            data={searchableData}
             keyExtractor={(item) => (item.id || item.name).toString()}
+            ListEmptyComponent={
+              modalType === 'committee' ? (
+                <View style={styles.emptySearchState}>
+                  <Text style={styles.emptyText}>No committee found.</Text>
+                </View>
+              ) : null
+            }
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.listItem}
                 onPress={() => {
                   onSelect(item);
+                  setModalSearchQuery('');
                   setModalType(null);
                 }}
               >
-                <Text style={styles.listItemText}>{item.name}</Text>
-                {(formData.gender === item.id || formData.kyc_type === item.id || formData.tenant_id === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id) && (
+                <Text style={styles.listItemText}>
+                  {modalType === 'committee' ? getTargetLabel(item) : item.name}
+                </Text>
+                {(formData.gender === item.id || 
+                  formData.kyc_type === item.id || 
+                  formData.tenant_id === item.id || 
+                  formData.committee_id === item.id || 
+                  formData.membership_plan_id === item.id || 
+                  formData.state_id === item.id || 
+                  formData.district_id === item.id || 
+                  formData.taluka_id === item.id || 
+                  formData.village_id === item.id || 
+                  formData.target_id === item.id) && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
@@ -624,7 +850,11 @@ const RegisterScreen = ({ navigation }: any) => {
               
               <Text style={styles.label}>Upload Documents</Text>
               <TouchableOpacity 
-                style={[styles.uploadBox, formData.kyc_front_url ? styles.uploadBoxSuccess : null]} 
+                style={[
+                  styles.uploadBox,
+                  formData.kyc_front_url ? styles.uploadBoxSuccess : null,
+                  errors.kyc_front_url ? styles.uploadBoxError : null,
+                ]} 
                 onPress={() => pickAndUploadImage('kyc_front_url')}
                 disabled={!!uploading}
               >
@@ -644,6 +874,7 @@ const RegisterScreen = ({ navigation }: any) => {
                   </>
                 )}
               </TouchableOpacity>
+              {errors.kyc_front_url && <Text style={styles.errorText}>{errors.kyc_front_url}</Text>}
 
               <TouchableOpacity 
                 style={[styles.uploadBox, formData.kyc_back_url ? styles.uploadBoxSuccess : null]} 
@@ -816,64 +1047,21 @@ const RegisterScreen = ({ navigation }: any) => {
           {step === 4 && (
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
-                <SectionHeader title="Organization Mapping" step={4} subtitle="Map yourself to an organization or committee." />
+                <SectionHeader title="Constituency Mapping" step={4} subtitle="Select the constituency or committee you belong to." />
                 <TouchableOpacity onPress={() => setStep(5)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
 
               <PickerField
-                label="Organization"
-                icon="business-outline"
-                value={selectedTenantName}
-                onPress={() => setModalType('tenant')}
-              />
-
-              <PickerField
-                label="State"
-                icon="map-outline"
-                value={selectedStateName}
-                onPress={() => setModalType('state')}
-              />
-
-              <PickerField
-                label="District"
-                icon="locate-outline"
-                value={selectedDistrictName}
-                onPress={() => {
-                  if (!formData.state_id) Alert.alert("Select State First");
-                  else setModalType('district');
-                }}
-              />
-
-              <PickerField
-                label="Taluka / Block"
-                icon="trail-sign-outline"
-                value={selectedTalukaName}
-                onPress={() => {
-                  if (!formData.district_id) Alert.alert("Select District First");
-                  else setModalType('taluka');
-                }}
-              />
-
-              <PickerField
-                label="Village / City"
-                icon="business-outline"
-                value={selectedVillageName}
-                onPress={() => {
-                  if (!formData.taluka_id) Alert.alert("Select Taluka First");
-                  else setModalType('village');
-                }}
-              />
-
-              <PickerField
-                label="Committee"
+                label="Constituency / Committee"
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => {
                   if (!formData.tenant_id) Alert.alert("Select Organization First");
                   else setModalType('committee');
                 }}
+                error={errors.target_id}
               />
               
               <View style={styles.infoBox}>
@@ -890,7 +1078,7 @@ const RegisterScreen = ({ navigation }: any) => {
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
                 <SectionHeader title="Membership Plan" step={5} subtitle="Choose a plan that fits your needs." />
-                <TouchableOpacity onPress={handleRegister} style={styles.skipBtn}>
+                <TouchableOpacity onPress={() => handleCompleteRegistration(true)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
@@ -933,7 +1121,6 @@ const RegisterScreen = ({ navigation }: any) => {
                 <Text style={styles.backBtnText}>Back</Text>
               </TouchableOpacity>
             )}
-            
             {step < 5 ? (
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
                 <Text style={styles.nextBtnText}>Continue</Text>
@@ -942,7 +1129,7 @@ const RegisterScreen = ({ navigation }: any) => {
             ) : (
               <TouchableOpacity
                 style={[styles.nextBtn, loading && styles.btnDisabled]}
-                onPress={handleRegister}
+                onPress={() => handleCompleteRegistration(false)}
                 disabled={loading}
               >
                 {loading ? <ActivityIndicator color={COLORS.white} /> : (
@@ -975,7 +1162,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
-  formSection: { padding: 24, backgroundColor: COLORS.white, margin: 16, borderRadius: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  formSection: { 
+    padding: 24, 
+    backgroundColor: COLORS.white, 
+    margin: 16, 
+    borderRadius: 16, 
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+      android: { elevation: 2 },
+      web: { boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)' }
+    })
+  },
   sectionHeaderContainer: { marginBottom: 24 },
   stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
   stepBadgeText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
@@ -997,6 +1194,7 @@ const styles = StyleSheet.create({
   
   uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 16, backgroundColor: COLORS.primaryContainer },
   uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  uploadBoxError: { borderColor: COLORS.error, backgroundColor: '#fef2f2' },
   uploadTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginTop: 12 },
   uploadSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
   
@@ -1034,9 +1232,22 @@ const styles = StyleSheet.create({
   loginText: { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
   
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: height * 0.7 },
+  modalContent: { 
+    backgroundColor: COLORS.white, 
+    borderTopLeftRadius: 24, 
+    borderTopRightRadius: 24, 
+    padding: 24, 
+    maxHeight: height * 0.7,
+    ...Platform.select({
+      web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
+    })
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
+  searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: COLORS.bg },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  emptySearchState: { paddingVertical: 24, alignItems: 'center' },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
 });

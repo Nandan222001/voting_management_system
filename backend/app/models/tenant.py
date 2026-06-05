@@ -114,6 +114,18 @@ class Tenant(Base):
         back_populates="tenant",
         lazy="select",
     )
+    nominations = relationship(
+        "Nomination",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+    announcements = relationship(
+        "Announcement",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
     targets = relationship(
         "Target",
         back_populates="tenant",

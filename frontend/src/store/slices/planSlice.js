@@ -72,8 +72,10 @@ const planSlice = createSlice({
       })
       .addCase(fetchPlans.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.data.items;
-        state.total = action.payload.data.total;
+        const payload = action.payload;
+        const data = payload.data || payload;
+        state.items = data.items || (Array.isArray(data) ? data : []);
+        state.total = payload.pagination?.total || data.total || state.items.length;
       })
       .addCase(fetchPlans.rejected, (state, action) => {
         state.loading = false;
@@ -85,7 +87,8 @@ const planSlice = createSlice({
       })
       .addCase(addPlan.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.items.push(action.payload.data);
+        const newData = action.payload.data || action.payload;
+        state.items.push(newData);
         state.total += 1;
       })
       .addCase(addPlan.rejected, (state, action) => {
@@ -98,9 +101,10 @@ const planSlice = createSlice({
       })
       .addCase(updatePlan.fulfilled, (state, action) => {
         state.actionLoading = false;
-        const index = state.items.findIndex((p) => p.id === action.payload.data.id);
+        const updatedData = action.payload.data || action.payload;
+        const index = state.items.findIndex((p) => p.id === updatedData.id);
         if (index !== -1) {
-          state.items[index] = action.payload.data;
+          state.items[index] = updatedData;
         }
       })
       .addCase(updatePlan.rejected, (state, action) => {

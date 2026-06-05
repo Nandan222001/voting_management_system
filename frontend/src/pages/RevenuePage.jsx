@@ -1,63 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  FaCreditCard,
-  FaArrowUp,
-  FaArrowDown,
-  FaHistory,
-  FaKey,
-  FaEye,
-  FaEyeSlash,
-  FaCheckCircle,
-  FaExclamationCircle,
-  FaSave,
-} from 'react-icons/fa';
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownRight,
+  History as HistoryIcon,
+  Key as KeyIcon,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+  Save as SaveIcon,
+  DollarSign,
+  Search,
+  X,
+  ShieldCheck,
+  TrendingUp,
+  Receipt,
+  ArrowRight,
+  Lock,
+  Download
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
-import StatsCard from '../components/common/StatsCard';
-import DataTable from '../components/common/DataTable';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
-import { fetchPayments, fetchPaymentSettings } from '../store/slices/paymentSlice';
+import Pagination from '../components/common/Pagination';
+import { fetchPayments, fetchPaymentSettings, fetchAnalytics, refundPayment } from '../store/slices/paymentSlice';
 import paymentService from '../services/paymentService';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2
+  }).format(Number(value || 0));
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black text-gray-900 tracking-tight">{value}</span>
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 
 export default function RevenuePage() {
   const dispatch = useDispatch();
-  const { payments, stats, loading, settings } = useSelector((state) => state.payments);
+  const { payments, total, stats, loading, settings, analytics, analyticsLoading, refundLoading } = useSelector((state) => state.payments);
 
   const [keyForm, setKeyForm] = useState({ razorpay_key_id: '', razorpay_key_secret: '' });
   const [showSecret, setShowSecret] = useState(false);
   const [keySaving, setKeySaving] = useState(false);
   const [showKeyModal, setShowKeyModal] = useState(false);
-
-  // Fixed plans as requested
-  const fixedPlans = [
-    {
-      id: 'active',
-      name: 'Active Member',
-      price: 200,
-      period: 'year',
-      description: 'Annual membership for active participation in jurisdictional elections.',
-      features: '1 Year Validity, Standard Voting Access, Result Notifications',
-      is_highlighted: true
-    },
-    {
-      id: 'life',
-      name: 'Life Member',
-      price: 5000,
-      period: 'one-time',
-      description: 'Lifetime membership with full access and elite status.',
-      features: 'Lifetime Validity, VIP Verified Badge, Priority Support, Unlimited Analytics',
-      is_highlighted: false
-    }
-  ];
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [downloading, setDownloading] = useState(false);
+  const [refundModal, setRefundModal] = useState({ open: false, payment: null });
+  const [refundReason, setRefundReason] = useState('');
+  const perPage = 10;
 
   useEffect(() => {
-    dispatch(fetchPayments());
+    dispatch(fetchPayments({ page, page_size: perPage }));
     dispatch(fetchPaymentSettings());
-  }, [dispatch]);
+    dispatch(fetchAnalytics());
+  }, [dispatch, page]);
 
-  // Sync settings to form when loaded
   useEffect(() => {
     if (settings) {
       setKeyForm({
@@ -77,7 +111,7 @@ export default function RevenuePage() {
     try {
       await paymentService.updatePaymentSettings(keyForm);
       toast.success('Razorpay configuration updated');
-      dispatch(fetchPaymentSettings()); // Refresh Redux
+      dispatch(fetchPaymentSettings());
       setShowKeyModal(false);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to update configuration');
@@ -86,231 +120,519 @@ export default function RevenuePage() {
     }
   };
 
-  const columns = [
-    { key: 'id', label: 'Transaction ID', render: (v) => <span className="font-mono text-xs text-gray-500">{v}</span> },
-    { key: 'amount', label: 'Amount', render: (v) => <span className="font-semibold text-gray-800">₹{(v / 100).toFixed(2)}</span> },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (v) => {
-        const map = {
-          paid: 'bg-green-100 text-green-700',
-          captured: 'bg-green-100 text-green-700',
-          failed: 'bg-red-100 text-red-700',
-          pending: 'bg-yellow-100 text-yellow-700',
-        };
-        return (
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${map[v] ?? 'bg-gray-100 text-gray-700'}`}>
-            {v}
-          </span>
-        );
-      },
-    },
-    { key: 'method', label: 'Method', render: (v) => v || '—' },
-    { key: 'created_at', label: 'Date', render: (v) => new Date(v).toLocaleDateString() },
-  ];
+  const handleDownloadStatement = async () => {
+    setDownloading(true);
+    try {
+      const response = await paymentService.downloadStatement();
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `payment_statement_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Statement downloaded successfully');
+    } catch (err) {
+      toast.error('Failed to download statement');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
-  if (loading && (!payments || payments.length === 0)) {
-    return (
-      <MainLayout title="Revenue">
-        <div className="flex items-center justify-center h-64">
-          <LoadingSpinner />
-        </div>
-      </MainLayout>
+  const handleRefund = async () => {
+    if (!refundModal.payment) return;
+    try {
+      await dispatch(refundPayment({
+        paymentId: refundModal.payment.id,
+        data: { reason: refundReason || 'Admin initiated refund' },
+      })).unwrap();
+      toast.success('Refund processed successfully');
+      setRefundModal({ open: false, payment: null });
+      setRefundReason('');
+      dispatch(fetchPayments({ page, page_size: perPage }));
+      dispatch(fetchAnalytics());
+    } catch (err) {
+      toast.error(err || 'Failed to process refund');
+    }
+  };
+
+  const filteredPayments = useMemo(() => {
+    const logs = Array.isArray(payments) ? payments : payments?.data || [];
+    if (!search) return logs;
+    const s = search.toLowerCase();
+    return logs.filter(p => 
+      (p.user_name || '').toLowerCase().includes(s) || 
+      (p.plan_name || '').toLowerCase().includes(s) || 
+      (p.razorpay_order_id || '').toLowerCase().includes(s) || 
+      (p.status || '').toLowerCase().includes(s)
     );
-  }
+  }, [payments, search]);
 
-  const safePayments = payments || [];
+  const totalPages = Math.ceil((total || 0) / perPage);
 
   return (
-    <MainLayout title="Revenue">
-      <div className="w-full space-y-6">
-        <div className="border-b border-[#c4c6d0] pb-5">
-          <p className="mt-1 text-sm text-[#44464f]">Track platform revenue, payment configuration, and transaction records.</p>
-        </div>
-        
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatsCard
-            title="Total Revenue"
-            value={`₹${((stats?.total_revenue || 0) / 100).toLocaleString()}`}
-            icon={FaCreditCard}
-            color="indigo"
-          />
-          <StatsCard
-            title="Successful"
-            value={stats?.successful_payments || 0}
-            icon={FaArrowUp}
-            color="green"
-          />
-          <StatsCard
-            title="Failed / Pending"
-            value={stats?.failed_payments || 0}
-            icon={FaArrowDown}
-            color="red"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Razorpay Configuration Summary */}
-          <div className="lg:col-span-1 overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#c4c6d0] bg-[#f4f3f7] px-6 py-5">
-              <div className="flex items-center gap-2">
-                <FaKey className="text-gray-400" />
-                <h3 className="font-bold text-[#1b1b1f]">Gateway Config</h3>
-              </div>
-              <button
-                onClick={() => setShowKeyModal(true)}
-                className="text-xs font-bold text-[#1A237E] hover:underline"
-              >
-                Configure
-              </button>
+    <MainLayout title="Revenue Stream">
+      <div className="w-full space-y-8 animate-in fade-in duration-500">
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Financial Operations</span>
             </div>
-            <div className="p-6 space-y-4">
-               <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Active Gateway</span>
-                  <div className="flex items-center gap-2">
-                     <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                     <span className="text-sm font-semibold text-gray-900">Razorpay Standard</span>
-                  </div>
-               </div>
-               <div className="flex flex-col gap-1 pt-2 border-t border-gray-50">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Configuration Details</span>
-                  <div className="mt-2 space-y-2">
-                    <div>
-                      <span className="text-[9px] font-bold text-gray-400 uppercase">Key ID</span>
-                      <p className="text-xs font-mono text-gray-600 truncate">{settings?.razorpay_key_id || 'Not configured'}</p>
-                    </div>
-                    <div>
-                      <span className="text-[9px] font-bold text-gray-400 uppercase">Key Secret</span>
-                      <p className="text-xs font-mono text-gray-600">
-                        {settings?.razorpay_key_secret ? '••••••••••••••••' : 'Not configured'}
-                      </p>
-                    </div>
-                  </div>
-               </div>
-               <p className="text-[11px] leading-relaxed text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-100">
-                  All voter payments are processed through this organization's Razorpay instance. Ensure your keys are from a <strong>Live</strong> account for real transactions.
-               </p>
-            </div>
+            <h2 className="text-4xl font-black tracking-tight text-gray-900">Revenue Registry</h2>
+            <p className="mt-2 text-sm font-medium text-gray-500 max-w-2xl">Monitor membership subscriptions, gateway health, and transactional audit trails.</p>
           </div>
-
-          {/* Voter Subscription Plans */}
-          <div className="lg:col-span-2 space-y-4">
-             <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-2">
-                  <FaCreditCard className="text-[#1A237E]" />
-                  <h3 className="font-bold text-[#1b1b1f]">Voter Subscription Plans</h3>
-                </div>
-                {/* Add Plan button removed as requested */}
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {fixedPlans.map((plan) => (
-                  <div key={plan.id} className="flex flex-col rounded-xl border border-[#c4c6d0] bg-white p-5 shadow-sm transition hover:shadow-md">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h4 className="text-sm font-bold text-gray-900">{plan.name}</h4>
-                        <p className="text-2xl font-black text-[#1A237E] mt-1">₹{plan.price}<span className="text-xs font-normal text-gray-500">/{plan.period}</span></p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-4 line-clamp-2">{plan.description}</p>
-                    <ul className="flex-1 space-y-2 mb-6">
-                      {(plan.features || '').split(',').map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-[11px] text-gray-600">
-                          <FaCheckCircle className="text-green-500 mt-0.5 shrink-0" />
-                          <span>{feature.trim()}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="flex items-center justify-between">
-                       <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-green-100 text-green-700`}>
-                         Active
-                       </span>
-                       {plan.is_highlighted && (
-                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-700">
-                           Most Popular
-                         </span>
-                       )}
-                    </div>
-                  </div>
-                ))}
-             </div>
-          </div>
-        </div>
-
-        {/* Transaction History */}
-        <div className="overflow-hidden rounded-lg border border-[#c4c6d0] bg-white shadow-sm">
-          <div className="flex items-center gap-2 border-b border-[#c4c6d0] bg-[#f4f3f7] px-6 py-5">
-            <FaHistory className="text-gray-400" />
-            <h3 className="font-bold text-[#1b1b1f]">Transaction History</h3>
-            {safePayments.length > 0 && (
-              <span className="ml-auto text-xs text-gray-400">{safePayments.length} records</span>
+          <button
+            onClick={handleDownloadStatement}
+            disabled={downloading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-gray-200 px-6 py-3 text-xs font-black uppercase tracking-widest text-gray-700 transition-all hover:bg-gray-50 shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            {downloading ? (
+              <span className="w-4 h-4 border-2 border-[#1a337e] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download size={14} />
             )}
+            Download Statement
+          </button>
+        </header>
+
+        {/* Metrics Section */}
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <MetricCard
+            title="Total Revenue"
+            value={numberFormat(stats?.total_revenue || 0)}
+            icon={DollarSign}
+            tone="indigo"
+          >
+             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-emerald-600">
+                <TrendingUp size={12} />
+                <span>Gross platform income</span>
+             </div>
+          </MetricCard>
+
+          <MetricCard
+            title="Registry Friction"
+            value={stats?.failed_transactions || 0}
+            icon={AlertCircle}
+            tone="red"
+          >
+             <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Failed attempts recorded</p>
+             </div>
+          </MetricCard>
+
+          <MetricCard
+            title="Pending Volume"
+            value={numberFormat(stats?.pending_amount || 0)}
+            icon={HistoryIcon}
+            tone="amber"
+          >
+             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-amber-600">
+                <span>Awaiting verification</span>
+             </div>
+          </MetricCard>
+        </section>
+
+        {/* Analytics Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
+            <h3 className="text-xl font-black tracking-tight text-gray-900">Payment Analytics</h3>
           </div>
-          <DataTable
-            columns={columns}
-            data={safePayments}
-            loading={loading}
-          />
+          {analyticsLoading ? (
+            <div className="flex justify-center py-8"><LoadingSpinner /></div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {/* Success Rate */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Success Rate</p>
+                <p className="text-3xl font-black text-emerald-600 tracking-tight mb-3">
+                  {analytics?.success_rate?.toFixed(1) || '0.0'}%
+                </p>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-700 rounded-full"
+                    style={{ width: `${Math.min(analytics?.success_rate || 0, 100)}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                  Captured vs total transactions
+                </p>
+              </div>
+
+              {/* Refunded Amount */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Total Refunded</p>
+                <p className="text-3xl font-black text-red-500 tracking-tight mb-1">
+                  {numberFormat(analytics?.total_refunded || 0)}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  {analytics?.refund_count || 0} refund{(analytics?.refund_count || 0) !== 1 ? 's' : ''} processed
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-red-400">
+                  <ArrowDownRight size={12} />
+                  <span>Refunded to customers</span>
+                </div>
+              </div>
+
+              {/* Avg Transaction Value */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Avg Transaction</p>
+                <p className="text-3xl font-black text-[#1a337e] tracking-tight mb-1">
+                  {numberFormat(analytics?.avg_transaction_value || 0)}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Per captured transaction
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#1a337e]">
+                  <ArrowUpRight size={12} />
+                  <span>Average order value</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+           {/* Gateway Config */}
+           <div className="lg:col-span-4 space-y-8">
+              <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 relative overflow-hidden group">
+                 <div className="absolute -right-4 -bottom-4 opacity-5 transform group-hover:scale-110 transition-transform duration-700">
+                    <KeyIcon size={160} className="text-[#1a337e]" />
+                 </div>
+                 <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="text-xl font-black tracking-tight text-gray-900">Gateway</h3>
+                       <button 
+                        onClick={() => setShowKeyModal(true)}
+                        className="text-[10px] font-black uppercase tracking-widest text-[#1a337e] hover:text-[#1a337e] transition-colors"
+                       >
+                         Configure
+                       </button>
+                    </div>
+                    
+                    <div className="space-y-6">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-[#1a337e] border border-indigo-100 shadow-sm">
+                             <ShieldCheck size={24} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Protocol</p>
+                             <p className="text-sm font-black text-gray-900">Razorpay Production</p>
+                          </div>
+                       </div>
+
+                       <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                          <div>
+                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Key ID</p>
+                             <p className="text-xs font-mono text-gray-600 truncate bg-white p-2 rounded-lg border border-gray-100 shadow-inner">
+                                {settings?.razorpay_key_id || 'NOT_CONFIGURED'}
+                             </p>
+                          </div>
+                          <div>
+                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                             <div className="flex items-center gap-2">
+                                <div className={`h-1.5 w-1.5 rounded-full ${settings?.razorpay_key_id ? 'bg-emerald-500 sa-pulse-green' : 'bg-red-500'}`} />
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${settings?.razorpay_key_id ? 'text-emerald-600' : 'text-red-600'}`}>
+                                   {settings?.razorpay_key_id ? 'Operational' : 'Input Required'}
+                                </span>
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </section>
+
+              {/* <section className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30">
+                 <h3 className="text-xl font-black tracking-tight mb-2">Platform Health</h3>
+                 <p className="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-6">Gateway Synchronization</p>
+                 <div className="space-y-4">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                       <span>Transaction Success</span>
+                       <span>98.2%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-[#1a337e] rounded-full overflow-hidden">
+                       <div className="h-full bg-white transition-all duration-1000" style={{ width: '98.2%' }} />
+                    </div>
+                 </div>
+                 <p className="mt-6 text-[10px] font-bold text-[#1a337e] leading-relaxed uppercase tracking-wider">
+                    All payment routes are currently responding within optimal latency parameters.
+                 </p>
+              </section> */}
+           </div>
+
+           {/* Plans and History */}
+           <div className="lg:col-span-12 space-y-8">
+              {/* Revenue by Plan */}
+              {analytics?.revenue_by_plan && analytics.revenue_by_plan.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
+                    <h3 className="text-xl font-black tracking-tight text-gray-900">Revenue by Plan</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {analytics.revenue_by_plan.map((plan, idx) => (
+                      <div key={idx} className="group relative flex flex-col rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl overflow-hidden">
+                        <div className="mb-6 flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">membership plan</p>
+                            <h4 className="text-xl font-black text-gray-900 tracking-tight">{plan.plan_name}</h4>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm bg-indigo-50 text-[#1a337e] border-indigo-100">
+                            <CreditCard size={24} strokeWidth={2.4} />
+                          </div>
+                        </div>
+                        <div className="mb-6">
+                          <span className="text-4xl font-black text-gray-900 tracking-tighter">{numberFormat(plan.total)}</span>
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2">total revenue</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 h-px bg-gray-50" />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Active Node</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="space-y-6">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
+                       <h3 className="text-xl font-black tracking-tight text-gray-900">Payment Logs</h3>
+                    </div>
+                    <div className="relative w-64">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                       <input 
+                         type="text" 
+                         placeholder="Search logs..." 
+                         value={search}
+                         onChange={(e) => setSearch(e.target.value)}
+                         className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all"
+                       />
+                    </div>
+                 </div>
+
+                 <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
+                    {loading ? (
+                       <div className="py-20 flex justify-center"><LoadingSpinner /></div>
+                    ) : filteredPayments.length === 0 ? (
+                       <div className="py-20 text-center">
+                          <Receipt className="mx-auto h-12 w-12 text-gray-200 mb-4" />
+                          <p className="text-gray-900 font-black uppercase tracking-tight">No Records Found</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Transactions will appear here once processed.</p>
+                       </div>
+                    ) : (
+                       <div className="w-full overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                             <thead>
+                                <tr className="bg-gray-50/50 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 border-b border-gray-100">
+                                   <th className="px-6 py-5">User & Plan</th>
+                                   <th className="px-6 py-5">Amount</th>
+                                   <th className="px-6 py-5">Status</th>
+                                   <th className="px-6 py-5">Order Reference</th>
+                                   <th className="px-6 py-5 text-right">Date</th>
+                                   <th className="px-6 py-5 text-right">Actions</th>
+                                </tr>
+                             </thead>
+                             <tbody>
+                                {filteredPayments.map((p) => (
+                                   <tr key={p.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors group">
+                                      <td className="px-6 py-5">
+                                         <div className="flex flex-col">
+                                            <span className="text-sm font-black text-gray-900 tracking-tight">{p.user_name || 'System User'}</span>
+                                            <span className="text-[10px] font-bold text-[#1a337e] uppercase tracking-widest">{p.plan_name || 'Membership'}</span>
+                                         </div>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className="text-sm font-black text-gray-900">₹{p.amount}</span>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest border ${
+                                            p.status === 'captured'
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            : p.status === 'failed'
+                                            ? 'bg-red-50 text-red-600 border-red-100'
+                                            : p.status === 'refunded'
+                                            ? 'bg-purple-50 text-purple-600 border-purple-100'
+                                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                                         }`}>
+                                            {p.status}
+                                         </span>
+                                      </td>
+                                      <td className="px-6 py-5">
+                                         <span className="font-mono text-[10px] text-gray-400 group-hover:text-gray-600 transition-colors">
+                                            {p.razorpay_order_id || 'N/A'}
+                                         </span>
+                                      </td>
+                                      <td className="px-6 py-5 text-right">
+                                         <div className="flex flex-col items-end">
+                                            <span className="text-xs font-black text-gray-900">{new Date(p.created_at).toLocaleDateString()}</span>
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                               {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                         </div>
+                                      </td>
+                                      <td className="px-6 py-5 text-right">
+                                         {p.status === 'captured' && (
+                                            <button
+                                              onClick={() => { setRefundModal({ open: true, payment: p }); setRefundReason(''); }}
+                                              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors"
+                                            >
+                                              <ArrowDownRight size={10} />
+                                              Refund
+                                            </button>
+                                         )}
+                                      </td>
+                                   </tr>
+                                ))}
+                             </tbody>
+                          </table>
+                       </div>
+                    )}
+                    {totalPages > 1 && (
+                       <div className="border-t border-gray-50 p-4 bg-gray-50/30">
+                          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                       </div>
+                    )}
+                 </div>
+              </section>
+           </div>
         </div>
       </div>
 
-      {/* Gateway Configuration Modal */}
+      {/* Refund Confirmation Modal */}
+      <Modal
+        isOpen={refundModal.open}
+        onClose={() => setRefundModal({ open: false, payment: null })}
+        title="Process Refund"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
+            <ArrowDownRight className="w-6 h-6 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+            <div>
+              <p className="text-sm font-black text-red-700 uppercase tracking-tight">Confirm Refund</p>
+              <p className="text-[10px] font-bold text-red-600/70 mt-1 uppercase tracking-wider leading-relaxed">
+                This will refund ₹{refundModal.payment?.amount} to the customer. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Reason (optional)</label>
+            <input
+              type="text"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              placeholder="Enter refund reason..."
+              className="w-full px-4 py-3 border border-gray-100 bg-gray-50 rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+            <button
+              type="button"
+              onClick={() => setRefundModal({ open: false, payment: null })}
+              className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRefund}
+              disabled={refundLoading}
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {refundLoading ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <ArrowDownRight size={14} strokeWidth={2.4} />
+                  Confirm Refund
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Configuration Modal */}
       <Modal
         isOpen={showKeyModal}
         onClose={() => setShowKeyModal(false)}
-        title="Razorpay Gateway Configuration"
+        title="Gateway Configuration"
+        size="md"
       >
-        <form onSubmit={handleSaveKeys} className="space-y-4 p-1">
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
-              Key ID
-            </label>
-            <input
-              type="text"
-              value={keyForm.razorpay_key_id}
-              onChange={e => setKeyForm(f => ({ ...f, razorpay_key_id: e.target.value }))}
-              placeholder="rzp_live_xxxxxxxxxxxx"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 font-mono text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
-            />
+        <form onSubmit={handleSaveKeys} className="space-y-6">
+          <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-4">
+             <ShieldCheck className="w-6 h-6 text-[#1a337e] shrink-0 mt-0.5" strokeWidth={2.4} />
+             <div>
+                <p className="text-sm font-black text-[#1a337e] uppercase tracking-tight">Security Protocol</p>
+                <p className="text-[10px] font-bold text-[#1a337e]/70 mt-1 uppercase tracking-wider leading-relaxed">
+                   API keys are encrypted at rest and only decrypted during transaction initialization.
+                </p>
+             </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1.5">
-              Key Secret
-            </label>
-            <div className="relative">
-              <input
-                type={showSecret ? 'text' : 'password'}
-                value={keyForm.razorpay_key_secret}
-                onChange={e => setKeyForm(f => ({ ...f, razorpay_key_secret: e.target.value }))}
-                placeholder="••••••••••••••••••••"
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 pr-10 font-mono text-sm focus:border-[#1A237E] focus:outline-none focus:ring-2 focus:ring-[#e8eaf6]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSecret(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showSecret ? <FaEyeSlash className="text-sm" /> : <FaEye className="text-sm" />}
-              </button>
-            </div>
+
+          <div className="space-y-4">
+             <div className="space-y-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Key ID</label>
+                <div className="relative group">
+                   <KeyIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" size={16} strokeWidth={2.4} />
+                   <input
+                    type="text"
+                    value={keyForm.razorpay_key_id}
+                    onChange={e => setKeyForm(f => ({ ...f, razorpay_key_id: e.target.value }))}
+                    placeholder="rzp_live_xxxxxxxxxxxx"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-100 bg-gray-50 rounded-2xl text-sm font-mono font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all shadow-inner"
+                   />
+                </div>
+             </div>
+
+             <div className="space-y-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Key Secret</label>
+                <div className="relative group">
+                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1a337e] transition-colors" size={16} strokeWidth={2.4} />
+                   <input
+                    type={showSecret ? 'text' : 'password'}
+                    value={keyForm.razorpay_key_secret}
+                    onChange={e => setKeyForm(f => ({ ...f, razorpay_key_secret: e.target.value }))}
+                    placeholder="••••••••••••••••••••"
+                    className="w-full pl-12 pr-12 py-3 border border-gray-100 bg-gray-50 rounded-2xl text-sm font-mono font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all shadow-inner"
+                   />
+                   <button
+                    type="button"
+                    onClick={() => setShowSecret(v => !v)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e] transition-colors"
+                   >
+                    {showSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                   </button>
+                </div>
+             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4">
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-50">
             <button
               type="button"
               onClick={() => setShowKeyModal(false)}
-              className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700"
+              className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={keySaving}
-              className="rounded-lg bg-[#1A237E] px-6 py-2 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-[#1a337e] rounded-xl hover:brightness-110 shadow-xl shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              <FaSave className="inline mr-2" />
-              {keySaving ? 'Updating...' : 'Update Configuration'}
+              {keySaving ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <SaveIcon size={14} strokeWidth={2.4} />
+                  Save Registry
+                </>
+              )}
             </button>
           </div>
         </form>

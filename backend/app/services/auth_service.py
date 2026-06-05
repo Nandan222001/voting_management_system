@@ -14,9 +14,13 @@ from typing import Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.models.payment import Payment, PaymentStatus
+from app.models.plan import Plan
+from app.models.tenant import Tenant
 from app.models.user import User, UserRole, UserStatus
 from app.repositories.user_repository import UserRepository
 from app.repositories.tenant_repository import TenantRepository
+from app.repositories.payment_repository import PaymentRepository
 from app.schemas.auth import AuthUserInfo, RegisterRequest, TokenResponse
 from app.utils.security import (
     create_access_token,
@@ -115,6 +119,41 @@ class AuthService:
                 detail="A user with this email address already exists.",
             )
 
+        # Secure Payment Verification for Paid Membership Plans
+        if register_data.membership_plan_id:
+            plan = db.query(Plan).filter(Plan.id == register_data.membership_plan_id).first()
+            if plan and plan.price > 0:
+                # Require payment details
+                if not (register_data.razorpay_order_id and register_data.razorpay_payment_id and register_data.razorpay_signature):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Payment details are required for this membership plan."
+                    )
+                
+                # Fetch tenant credentials for signature verification
+                tenant = db.query(Tenant).filter(Tenant.id == resolved_tenant_id).first()
+                if not tenant or not tenant.razorpay_key_secret:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Payment gateway not configured for this organization."
+                    )
+                
+                # Verify Razorpay Signature (Skip for simulation keys)
+                if tenant.razorpay_key_id != "rzp_test_dummy":
+                    import razorpay
+                    client = razorpay.Client(auth=(tenant.razorpay_key_id, tenant.razorpay_key_secret))
+                    try:
+                        client.utility.verify_payment_signature({
+                            'razorpay_order_id': register_data.razorpay_order_id,
+                            'razorpay_payment_id': register_data.razorpay_payment_id,
+                            'razorpay_signature': register_data.razorpay_signature
+                        })
+                    except Exception:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail="Payment signature verification failed. Please try again or contact support."
+                        )
+
         otp = generate_otp()
         otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
 
@@ -153,6 +192,7 @@ class AuthService:
             current_pincode=register_data.current_pincode,
 
             # Mapping
+            target_id=register_data.target_id,
             committee_id=register_data.committee_id,
             membership_plan_id=register_data.membership_plan_id,
 
@@ -165,11 +205,38 @@ class AuthService:
             tenant_id=resolved_tenant_id,
         )
         db.add(user)
+        db.flush() # Get user.id
+
+        # Create or update payment record to 'captured' and link to user
+        if register_data.membership_plan_id and register_data.razorpay_order_id:
+            payment_repo = PaymentRepository(db)
+            payment = payment_repo.get_by_order_for_registration(resolved_tenant_id, register_data.razorpay_order_id)
+            if payment:
+                payment_repo.update(payment, {
+                    "user_id": user.id,
+                    "status": PaymentStatus.captured,
+                    "razorpay_payment_id": register_data.razorpay_payment_id,
+                    "razorpay_signature": register_data.razorpay_signature
+                })
+
         db.commit()
         db.refresh(user)
 
         # Send verification email
-        send_registration_otp_email(user.email, otp)
+        try:
+            send_registration_otp_email(user.email, otp)
+        except Exception as e:
+            # If email fails, we should still have the user record, 
+            # but maybe we should warn or handle it. 
+            # For registration, we'll log it and let it pass or raise?
+            # User might need a 'resend' feature if it fails here.
+            logger.error(f"Failed to send registration email: {str(e)}")
+            # We allow registration to complete but the user might be stuck without OTP.
+            # Best practice: raise error so they know it failed and can try again.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Registration successful but failed to send verification email: {str(e)}"
+            )
 
         return user
 
@@ -177,14 +244,21 @@ class AuthService:
     # Login
     # ------------------------------------------------------------------
 
-    def login(self, db: Session, email: str, password: str) -> TokenResponse:
+    def login(
+        self, 
+        db: Session, 
+        email: str, 
+        password: str,
+        header_tenant_id: Optional[int] = None
+    ) -> TokenResponse:
         """
         Authenticate a user and issue JWT tokens.
 
         Args:
-            db:       Active database session.
-            email:    Submitted e-mail address.
-            password: Plain-text password.
+            db:               Active database session.
+            email:            Submitted e-mail address.
+            password:         Plain-text password.
+            header_tenant_id: Optional tenant ID from X-Tenant-ID header.
 
         Returns:
             A :class:`~app.schemas.auth.TokenResponse` containing the
@@ -192,40 +266,62 @@ class AuthService:
 
         Raises:
             HTTPException 401: If credentials are invalid or account is blocked.
-            HTTPException 403: If the account is pending admin approval.
+            HTTPException 403: If the account is pending admin approval,
+                               tenant is suspended, or tenant mismatch.
         """
         repo = UserRepository(db)
         # Email is normalized to lowercase in get_by_email for case-insensitive lookup
+        print(f"DEBUG: Attempting login for email: {email}")
         user: Optional[User] = repo.get_by_email(email)
 
         if user is None or not verify_password(password, user.hashed_password):
+            print(f"DEBUG: Login failed for {email} - invalid credentials")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password.",
             )
 
+        print(f"DEBUG: User found: {user.id}, role: {user.role}, tenant_id: {user.tenant_id}")
+
         if user.status == UserStatus.blocked:
+            print(f"DEBUG: Login blocked for {email} - status: blocked")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Your account has been blocked. Contact an administrator.",
             )
 
-        if user.status == UserStatus.pending:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account is awaiting admin approval.",
-            )
+        # Removed is_verified and pending checks to allow frontend to evaluate status.
 
-        # Check whether the user's tenant is suspended.
+
+        # Tenant Validation: If X-Tenant-ID was provided (mobile), ensure user belongs to it.
+        # Superadmins are exempt as they are global.
+        if header_tenant_id is not None and user.role != UserRole.superadmin:
+            if user.tenant_id != header_tenant_id:
+                print(f"DEBUG: Login blocked for {email} - tenant mismatch (User: {user.tenant_id}, Header: {header_tenant_id})")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have access to this organisation.",
+                )
+
+        # Check whether the user's tenant is active.
         if user.tenant_id is not None:
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(user.tenant_id)
-            if tenant is not None and tenant.status.value == "suspended":
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Your organization's account has been suspended.",
-                )
+            if tenant is not None:
+                if tenant.status.value == "suspended":
+                    print(f"DEBUG: Login blocked for {email} - tenant suspended")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Your organisation's account has been suspended.",
+                    )
+                if tenant.status.value in ("draft", "cancelled"):
+                    print(f"DEBUG: Login blocked for {email} - tenant status: {tenant.status.value}")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Your organisation's account is {tenant.status.value}.",
+                    )
 
+        print(f"DEBUG: Creating tokens for user {user.id}")
         token_payload = {
             "sub": str(user.id),
             "role": user.role.value,
@@ -234,29 +330,27 @@ class AuthService:
             "designation": user.designation,
         }
         access_token = create_access_token(token_payload)
-        # Refresh token is stored implicitly; the client must send it back.
-        create_refresh_token(token_payload)
+        refresh_token = create_refresh_token(token_payload)
+
+        print(f"DEBUG: Tokens created. Validating user schema...")
+        try:
+            auth_user_info = AuthUserInfo.model_validate(user)
+            print(f"DEBUG: Schema validation successful for user {user.id}")
+        except Exception as e:
+            print(f"DEBUG: Schema validation FAILED for user {user.id}: {str(e)}")
+            raise e
 
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
-            user=AuthUserInfo(
-                id=user.id,
-                full_name=user.full_name,
-                email=user.email,
-                role=user.role.value,
-                is_verified=user.is_verified,
-                tenant_id=user.tenant_id,
-                district=user.district,
-                designation=user.designation,
-            ),
+            user=auth_user_info,
         )
 
     # ------------------------------------------------------------------
     # OTP verification
     # ------------------------------------------------------------------
 
-    def verify_otp(self, db: Session, email: str, otp: str) -> bool:
+    def verify_otp(self, db: Session, email: str, otp: str) -> TokenResponse:
         """
         Verify an OTP code for the given e-mail address and mark the user
         as verified on success.
@@ -267,7 +361,7 @@ class AuthService:
             otp:   The OTP code submitted by the user.
 
         Returns:
-            ``True`` if verification succeeded.
+            A TokenResponse if verification succeeded.
 
         Raises:
             HTTPException 404: If no user exists for the supplied e-mail.
@@ -312,9 +406,31 @@ class AuthService:
         user.is_verified = True
         user.otp_code = None
         user.otp_expires_at = None
+        
+        # New: If the user is a voter, activate them automatically upon verification
+        # (Assuming registration sets them to pending)
+        if user.role == UserRole.voter:
+            user.status = UserStatus.active
+
         db.commit()
         db.refresh(user)
-        return True
+
+        # Issue tokens so the user is logged in immediately
+        token_payload = {
+            "sub": str(user.id),
+            "role": user.role.value,
+            "tenant_id": user.tenant_id,
+            "district": user.district,
+            "designation": user.designation,
+        }
+        access_token = create_access_token(token_payload)
+        refresh_token = create_refresh_token(token_payload)
+
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=AuthUserInfo.model_validate(user),
+        )
 
     # ------------------------------------------------------------------
     # Forgot Password
@@ -329,21 +445,36 @@ class AuthService:
             email: User's registered e-mail address.
 
         Returns:
-            Always returns True to avoid leaking whether an email exists.
+            True if OTP was sent.
+
+        Raises:
+            HTTPException 404: If the e-mail address is not registered.
         """
         repo = UserRepository(db)
         user: Optional[User] = repo.get_by_email(email)
 
-        if user:
-            otp = generate_otp()
-            otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
-            
-            user.otp_code = otp
-            user.otp_expires_at = otp_expires
-            db.commit()
-            
-            # Send the OTP via email
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account does not exist with this email address.",
+            )
+
+        otp = generate_otp()
+        otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+        
+        user.otp_code = otp
+        user.otp_expires_at = otp_expires
+        db.commit()
+        
+        # Send the OTP via email
+        try:
             send_otp_email(user.email, otp)
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to send password reset email: {str(e)}"
+            )
         
         return True
 
@@ -477,16 +608,7 @@ class AuthService:
         return TokenResponse(
             access_token=new_access_token,
             token_type="bearer",
-            user=AuthUserInfo(
-                id=user.id,
-                full_name=user.full_name,
-                email=user.email,
-                role=user.role.value,
-                is_verified=user.is_verified,
-                tenant_id=user.tenant_id,
-                district=user.district,
-                designation=user.designation,
-            ),
+            user=AuthUserInfo.model_validate(user),
         )
 
     # ------------------------------------------------------------------

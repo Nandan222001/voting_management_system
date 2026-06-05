@@ -5,11 +5,15 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
 
 import DashboardScreen from '../screens/DashboardScreen';
-import IdentityScreen from '../screens/IdentityScreen';
+import AnnouncementsListScreen from '../screens/AnnouncementsListScreen';
+import AnnouncementDetailScreen from '../screens/AnnouncementDetailScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 import VotingScreen from '../screens/VotingScreen';
 import CandidateDetailScreen from '../screens/CandidateDetailScreen';
+import NominationScreen from '../screens/NominationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import EditProfileScreen from '../screens/EditProfileScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -19,6 +23,35 @@ const VoteStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Voting" component={VotingScreen} />
     <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
+    <Stack.Screen name="Nomination" component={NominationScreen} />
+    <Stack.Screen name="Notifications" component={NotificationScreen} />
+    <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+  </Stack.Navigator>
+);
+
+const DashboardStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="DashboardHome" component={DashboardScreen} />
+    <Stack.Screen name="Notifications" component={NotificationScreen} />
+    <Stack.Screen name="AnnouncementsList" component={AnnouncementsListScreen} />
+    <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+  </Stack.Navigator>
+);
+
+const AnalyticsStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="AnalyticsMain" component={AnalyticsScreen} />
+    <Stack.Screen name="Notifications" component={NotificationScreen} />
+    <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+  </Stack.Navigator>
+);
+
+const ProfileStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+    <Stack.Screen name="Notifications" component={NotificationScreen} />
+    <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
   </Stack.Navigator>
 );
 
@@ -31,8 +64,6 @@ const TabNavigator = () => {
 
           if (route.name === 'Dashboard') {
             iconName = 'dashboard';
-          } else if (route.name === 'Identity') {
-            iconName = 'verified-user';
           } else if (route.name === 'Elections') {
             iconName = 'how-to-vote';
           } else if (route.name === 'Analytics') {
@@ -54,33 +85,39 @@ const TabNavigator = () => {
         tabBarInactiveTintColor: '#434654',
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
+        tabBarLabelPosition: 'below-icon',
         tabBarLabelStyle: styles.tabLabel,
+        tabBarItemStyle: styles.tabItem,
         headerShown: false,
       })}
     >
       <Tab.Screen 
         name="Dashboard" 
-        component={DashboardScreen} 
+        component={DashboardStack} 
         options={{ tabBarLabel: 'Home' }}
-      />
-      <Tab.Screen 
-        name="Identity" 
-        component={IdentityScreen} 
-        options={{ tabBarLabel: 'Identity' }}
       />
       <Tab.Screen 
         name="Elections" 
         component={VoteStack} 
         options={{ tabBarLabel: 'Vote' }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Force reset to the top of the stack and clear selected election
+            navigation.navigate('Elections', { 
+              screen: 'Voting', 
+              params: { election: null } 
+            });
+          },
+        })}
       />
       <Tab.Screen 
         name="Analytics" 
-        component={AnalyticsScreen} 
+        component={AnalyticsStack} 
         options={{ tabBarLabel: 'People' }}
       />
       <Tab.Screen 
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStack}
         options={{ tabBarLabel: 'Account' }}
       />
     </Tab.Navigator>
@@ -113,6 +150,14 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  tabItem: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 5,
   },
   iconWrapper: {
     width: 40,

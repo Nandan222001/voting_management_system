@@ -65,6 +65,23 @@ class Target(Base):
         index=True,
     )
 
+    # President (Unique per committee)
+    president_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        unique=True,
+    )
+
+    # Winner (The most recent winning candidate)
+    winner_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Timestamps
     created_at = Column(
         DateTime,
@@ -83,6 +100,8 @@ class Target(Base):
     # Relationships
     tenant = relationship("Tenant", back_populates="targets", lazy="select")
     parent = relationship("Target", remote_side=[id], backref="children", lazy="select")
+    president = relationship("User", foreign_keys=[president_id], backref="led_committees", lazy="select")
+    winner = relationship("User", foreign_keys=[winner_id], backref="won_committees", lazy="select")
     
     elections = relationship(
         "Election",
@@ -97,6 +116,7 @@ class Target(Base):
     users = relationship(
         "User",
         back_populates="target",
+        foreign_keys="[User.target_id]",
         lazy="select",
     )
 
