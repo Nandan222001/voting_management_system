@@ -233,7 +233,9 @@ const VotingScreen = ({ navigation, route }: any) => {
       setLoading(true);
       // Fetch all published elections (up to 100) to allow accurate frontend filtering/pagination
       const response = await electionService.getElections(false, 1, 100, 'active');
-      setElections(response.data || []);
+      // Handle both cases: direct array or standardized envelope with .data
+      const electionList = Array.isArray(response) ? response : (response?.data || []);
+      setElections(electionList);
       // Total items and pages will be calculated by the filtered list
     } catch (error) {
       console.error("Failed to load elections", error);

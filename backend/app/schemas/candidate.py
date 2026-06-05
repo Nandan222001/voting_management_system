@@ -195,3 +195,8 @@ class CandidateListResponse(BaseModel):
     items: List[CandidateResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FollowStatusResponse(BaseModel):
+    """Simple response schema for candidate follow status."""
+    is_following: bool

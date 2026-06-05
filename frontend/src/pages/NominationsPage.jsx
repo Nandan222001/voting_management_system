@@ -32,6 +32,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination';
 import Modal from '../components/common/Modal';
 import ActionDropdown from '../components/common/ActionDropdown';
+import { resolveMediaUrl } from '../utils/images';
 import { 
   fetchNominations, 
   fetchNominationStats,
@@ -334,7 +335,7 @@ export default function NominationsPage() {
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-blue-50 overflow-hidden flex items-center justify-center text-[#1a337e] font-black text-lg border border-blue-100 shadow-sm group-hover:scale-105 transition-transform">
                               {nominee.image_url ? (
-                                <img src={nominee.image_url} alt={nominee.full_name} className="w-full h-full object-cover" />
+                                <img src={resolveMediaUrl(nominee.image_url)} alt={nominee.full_name} className="w-full h-full object-cover" />
                               ) : (
                                 nominee.full_name?.[0]?.toUpperCase()
                               )}
@@ -437,7 +438,7 @@ export default function NominationsPage() {
                <div className="relative group">
                  <div className="w-24 h-24 rounded-[1.5rem] bg-indigo-50 flex items-center justify-center text-[#1a337e] text-3xl font-black border-2 border-indigo-100 shadow-inner overflow-hidden transition-transform group-hover:scale-105 duration-500">
                    {viewNominee.image_url ? (
-                     <img src={viewNominee.image_url} alt={viewNominee.full_name} className="w-full h-full object-cover" />
+                     <img src={resolveMediaUrl(viewNominee.image_url)} alt={viewNominee.full_name} className="w-full h-full object-cover" />
                    ) : (
                      viewNominee.full_name?.[0]?.toUpperCase()
                    )}
