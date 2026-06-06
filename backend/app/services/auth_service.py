@@ -8,11 +8,14 @@ Dependency Inversion: Depends on ``UserRepository`` (an abstraction) and the
 security utilities rather than on raw SQLAlchemy or Jose calls.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.models.payment import Payment, PaymentStatus
 from app.models.plan import Plan

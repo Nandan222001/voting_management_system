@@ -1,7 +1,6 @@
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from app.schemas.plan import PlanResponse
 
 
 # ---------------------------------------------------------------------------
@@ -142,7 +141,6 @@ class AuthUserInfo(BaseModel):
     target_id: Optional[int] = None
     committee_id: Optional[int] = None
     membership_plan_id: Optional[int] = None
-    membership_plan: Optional[PlanResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
 
