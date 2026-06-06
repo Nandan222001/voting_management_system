@@ -17,32 +17,59 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 1. Remove party from candidates
-    op.drop_column('candidates', 'party')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
 
-    # 2. Make tenant_id nullable in targets
-    op.alter_column('targets', 'tenant_id',
-               existing_type=mysql.INTEGER(display_width=11),
-               nullable=True)
+    # Remove party from candidates if it still exists
+    cand_cols = [c['name'] for c in inspector.get_columns('candidates')]
+    if 'party' in cand_cols:
+        op.drop_column('candidates', 'party')
 
-    # 3. Update TargetType enum/type
-    # Since it might be an Enum type in some DBs, we'll alter it to handle the new types.
-    # For MySQL, Enum is just a specialized string.
-    op.alter_column('targets', 'type',
-               existing_type=sa.Enum('state', 'district', 'zone', 'ward', 'other', name='target_type_enum'),
-               type_=sa.String(50),
-               existing_nullable=False)
+    # Make tenant_id nullable in targets
+    try:
+        op.alter_column(
+            'targets', 'tenant_id',
+            existing_type=mysql.INTEGER(display_width=11),
+            nullable=True,
+        )
+    except Exception:
+        pass
+
+    # Convert targets.type from Enum to String(50)
+    try:
+        op.alter_column(
+            'targets', 'type',
+            existing_type=sa.Enum('state', 'district', 'zone', 'ward', 'other', name='target_type_enum'),
+            type_=sa.String(50),
+            existing_nullable=False,
+        )
+    except Exception:
+        pass
 
 
 def downgrade() -> None:
-    # Reverse changes
-    op.alter_column('targets', 'type',
-               existing_type=sa.String(50),
-               type_=sa.Enum('state', 'district', 'zone', 'ward', 'other', name='target_type_enum'),
-               existing_nullable=False)
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
 
-    op.alter_column('targets', 'tenant_id',
-               existing_type=mysql.INTEGER(display_width=11),
-               nullable=False)
+    try:
+        op.alter_column(
+            'targets', 'type',
+            existing_type=sa.String(50),
+            type_=sa.Enum('state', 'district', 'zone', 'ward', 'other', name='target_type_enum'),
+            existing_nullable=False,
+        )
+    except Exception:
+        pass
 
-    op.add_column('candidates', sa.Column('party', sa.String(length=150), nullable=True))
+    try:
+        op.alter_column(
+            'targets', 'tenant_id',
+            existing_type=mysql.INTEGER(display_width=11),
+            nullable=False,
+        )
+    except Exception:
+        pass
+
+    cand_cols = [c['name'] for c in inspector.get_columns('candidates')]
+    if 'party' not in cand_cols:
+        op.add_column('candidates', sa.Column('party', sa.String(length=150), nullable=True))
