@@ -26,7 +26,7 @@ import MainLayout from '../components/layout/MainLayout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
 import Pagination from '../components/common/Pagination';
-import { fetchPayments, fetchPaymentSettings } from '../store/slices/paymentSlice';
+import { fetchPayments, fetchPaymentSettings, fetchAnalytics, refundPayment } from '../store/slices/paymentSlice';
 import paymentService from '../services/paymentService';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -70,34 +70,10 @@ function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
   );
 }
 
-// ─── Constant Data ──────────────────────────────────────────────────────────
-
-const FIXED_PLANS = [
-  {
-    id: 'active',
-    name: 'Active Member',
-    price: 200,
-    period: 'year',
-    description: 'Annual membership for active participation in jurisdictional elections.',
-    features: ['1 Year Validity', 'Standard Voting Access', 'Result Notifications'],
-    is_highlighted: true,
-    tone: 'indigo'
-  },
-  {
-    id: 'life',
-    name: 'Life Member',
-    price: 5000,
-    period: 'one-time',
-    description: 'Lifetime membership with full access and elite status.',
-    features: ['Lifetime Validity', 'VIP Verified Badge', 'Priority Support', 'Unlimited Analytics'],
-    is_highlighted: false,
-    tone: 'emerald'
-  }
-];
 
 export default function RevenuePage() {
   const dispatch = useDispatch();
-  const { payments, total, stats, loading, settings } = useSelector((state) => state.payments);
+  const { payments, total, stats, loading, settings, analytics, analyticsLoading, refundLoading } = useSelector((state) => state.payments);
 
   const [keyForm, setKeyForm] = useState({ razorpay_key_id: '', razorpay_key_secret: '' });
   const [showSecret, setShowSecret] = useState(false);
@@ -106,11 +82,14 @@ export default function RevenuePage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [downloading, setDownloading] = useState(false);
+  const [refundModal, setRefundModal] = useState({ open: false, payment: null });
+  const [refundReason, setRefundReason] = useState('');
   const perPage = 10;
 
   useEffect(() => {
     dispatch(fetchPayments({ page, page_size: perPage }));
     dispatch(fetchPaymentSettings());
+    dispatch(fetchAnalytics());
   }, [dispatch, page]);
 
   useEffect(() => {
@@ -160,6 +139,23 @@ export default function RevenuePage() {
     }
   };
 
+  const handleRefund = async () => {
+    if (!refundModal.payment) return;
+    try {
+      await dispatch(refundPayment({
+        paymentId: refundModal.payment.id,
+        data: { reason: refundReason || 'Admin initiated refund' },
+      })).unwrap();
+      toast.success('Refund processed successfully');
+      setRefundModal({ open: false, payment: null });
+      setRefundReason('');
+      dispatch(fetchPayments({ page, page_size: perPage }));
+      dispatch(fetchAnalytics());
+    } catch (err) {
+      toast.error(err || 'Failed to process refund');
+    }
+  };
+
   const filteredPayments = useMemo(() => {
     const logs = Array.isArray(payments) ? payments : payments?.data || [];
     if (!search) return logs;
@@ -202,10 +198,10 @@ export default function RevenuePage() {
 
         {/* Metrics Section */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <MetricCard 
-            title="Total Revenue" 
-            value={numberFormat(stats?.total_revenue || 0)} 
-            icon={DollarSign} 
+          <MetricCard
+            title="Total Revenue"
+            value={numberFormat(stats?.total_revenue || 0)}
+            icon={DollarSign}
             tone="indigo"
           >
              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-emerald-600">
@@ -214,10 +210,10 @@ export default function RevenuePage() {
              </div>
           </MetricCard>
 
-          <MetricCard 
-            title="Registry Friction" 
-            value={stats?.failed_transactions || 0} 
-            icon={AlertCircle} 
+          <MetricCard
+            title="Registry Friction"
+            value={stats?.failed_transactions || 0}
+            icon={AlertCircle}
             tone="red"
           >
              <div className="flex items-center gap-2">
@@ -226,16 +222,76 @@ export default function RevenuePage() {
              </div>
           </MetricCard>
 
-          <MetricCard 
-            title="Pending Volume" 
-            value={numberFormat(stats?.pending_amount || 0)} 
-            icon={HistoryIcon} 
+          <MetricCard
+            title="Pending Volume"
+            value={numberFormat(stats?.pending_amount || 0)}
+            icon={HistoryIcon}
             tone="amber"
           >
              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-amber-600">
                 <span>Awaiting verification</span>
              </div>
           </MetricCard>
+        </section>
+
+        {/* Analytics Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
+            <h3 className="text-xl font-black tracking-tight text-gray-900">Payment Analytics</h3>
+          </div>
+          {analyticsLoading ? (
+            <div className="flex justify-center py-8"><LoadingSpinner /></div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {/* Success Rate */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Success Rate</p>
+                <p className="text-3xl font-black text-emerald-600 tracking-tight mb-3">
+                  {analytics?.success_rate?.toFixed(1) || '0.0'}%
+                </p>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-700 rounded-full"
+                    style={{ width: `${Math.min(analytics?.success_rate || 0, 100)}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                  Captured vs total transactions
+                </p>
+              </div>
+
+              {/* Refunded Amount */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Total Refunded</p>
+                <p className="text-3xl font-black text-red-500 tracking-tight mb-1">
+                  {numberFormat(analytics?.total_refunded || 0)}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  {analytics?.refund_count || 0} refund{(analytics?.refund_count || 0) !== 1 ? 's' : ''} processed
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-red-400">
+                  <ArrowDownRight size={12} />
+                  <span>Refunded to customers</span>
+                </div>
+              </div>
+
+              {/* Avg Transaction Value */}
+              <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Avg Transaction</p>
+                <p className="text-3xl font-black text-[#1a337e] tracking-tight mb-1">
+                  {numberFormat(analytics?.avg_transaction_value || 0)}
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Per captured transaction
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-[#1a337e]">
+                  <ArrowUpRight size={12} />
+                  <span>Average order value</span>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -308,49 +364,38 @@ export default function RevenuePage() {
 
            {/* Plans and History */}
            <div className="lg:col-span-12 space-y-8">
-              <section className="space-y-4">
-                 <div className="flex items-center gap-3">
+              {/* Revenue by Plan */}
+              {analytics?.revenue_by_plan && analytics.revenue_by_plan.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3">
                     <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
-                    <h3 className="text-xl font-black tracking-tight text-gray-900">Voter Subscription Plans</h3>
-                 </div>
-                 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {FIXED_PLANS.map((plan) => (
-                      <div key={plan.id} className="group relative flex flex-col rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl overflow-hidden">
-                        {plan.is_highlighted && (
-                          <div className="absolute -right-8 top-6 bg-amber-400 text-white font-black text-[8px] uppercase tracking-widest py-1 w-32 text-center transform rotate-45 shadow-sm">
-                            Most Popular
-                          </div>
-                        )}
+                    <h3 className="text-xl font-black tracking-tight text-gray-900">Revenue by Plan</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {analytics.revenue_by_plan.map((plan, idx) => (
+                      <div key={idx} className="group relative flex flex-col rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl overflow-hidden">
                         <div className="mb-6 flex items-center justify-between">
-                           <div>
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{plan.period} tier</p>
-                              <h4 className="text-xl font-black text-gray-900 tracking-tight">{plan.name}</h4>
-                           </div>
-                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm ${plan.tone === 'indigo' ? 'bg-indigo-50 text-[#1a337e] border-indigo-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
-                              <CreditCard size={24} strokeWidth={2.4} />
-                           </div>
+                          <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">membership plan</p>
+                            <h4 className="text-xl font-black text-gray-900 tracking-tight">{plan.plan_name}</h4>
+                          </div>
+                          <div className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-sm bg-indigo-50 text-[#1a337e] border-indigo-100">
+                            <CreditCard size={24} strokeWidth={2.4} />
+                          </div>
                         </div>
                         <div className="mb-6">
-                           <span className="text-4xl font-black text-gray-900 tracking-tighter">₹{plan.price}</span>
-                           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">/ {plan.period}</span>
+                          <span className="text-4xl font-black text-gray-900 tracking-tighter">{numberFormat(plan.total)}</span>
+                          <span className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-2">total revenue</span>
                         </div>
-                        <ul className="flex-1 space-y-3 mb-8">
-                          {plan.features.map((feature, idx) => (
-                            <li key={idx} className="flex items-start gap-3 text-[10px] font-black uppercase tracking-wider text-gray-500">
-                              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" strokeWidth={3} />
-                              <span>{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
                         <div className="flex items-center gap-2">
-                           <span className="flex-1 h-px bg-gray-50" />
-                           <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Active Node</span>
+                          <span className="flex-1 h-px bg-gray-50" />
+                          <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">Active Node</span>
                         </div>
                       </div>
                     ))}
-                 </div>
-              </section>
+                  </div>
+                </section>
+              )}
 
               <section className="space-y-6">
                  <div className="flex items-center justify-between">
@@ -389,6 +434,7 @@ export default function RevenuePage() {
                                    <th className="px-6 py-5">Status</th>
                                    <th className="px-6 py-5">Order Reference</th>
                                    <th className="px-6 py-5 text-right">Date</th>
+                                   <th className="px-6 py-5 text-right">Actions</th>
                                 </tr>
                              </thead>
                              <tbody>
@@ -405,10 +451,12 @@ export default function RevenuePage() {
                                       </td>
                                       <td className="px-6 py-5">
                                          <span className={`inline-flex rounded-lg px-2 py-1 text-[9px] font-black uppercase tracking-widest border ${
-                                            p.status === 'captured' 
-                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                            : p.status === 'failed' 
-                                            ? 'bg-red-50 text-red-600 border-red-100' 
+                                            p.status === 'captured'
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            : p.status === 'failed'
+                                            ? 'bg-red-50 text-red-600 border-red-100'
+                                            : p.status === 'refunded'
+                                            ? 'bg-purple-50 text-purple-600 border-purple-100'
                                             : 'bg-amber-50 text-amber-600 border-amber-100'
                                          }`}>
                                             {p.status}
@@ -427,6 +475,17 @@ export default function RevenuePage() {
                                             </span>
                                          </div>
                                       </td>
+                                      <td className="px-6 py-5 text-right">
+                                         {p.status === 'captured' && (
+                                            <button
+                                              onClick={() => { setRefundModal({ open: true, payment: p }); setRefundReason(''); }}
+                                              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest bg-red-50 text-red-600 border border-red-100 hover:bg-red-100 transition-colors"
+                                            >
+                                              <ArrowDownRight size={10} />
+                                              Refund
+                                            </button>
+                                         )}
+                                      </td>
                                    </tr>
                                 ))}
                              </tbody>
@@ -443,6 +502,60 @@ export default function RevenuePage() {
            </div>
         </div>
       </div>
+
+      {/* Refund Confirmation Modal */}
+      <Modal
+        isOpen={refundModal.open}
+        onClose={() => setRefundModal({ open: false, payment: null })}
+        title="Process Refund"
+        size="md"
+      >
+        <div className="space-y-6">
+          <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-4">
+            <ArrowDownRight className="w-6 h-6 text-red-500 shrink-0 mt-0.5" strokeWidth={2.4} />
+            <div>
+              <p className="text-sm font-black text-red-700 uppercase tracking-tight">Confirm Refund</p>
+              <p className="text-[10px] font-bold text-red-600/70 mt-1 uppercase tracking-wider leading-relaxed">
+                This will refund ₹{refundModal.payment?.amount} to the customer. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Reason (optional)</label>
+            <input
+              type="text"
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              placeholder="Enter refund reason..."
+              className="w-full px-4 py-3 border border-gray-100 bg-gray-50 rounded-2xl text-sm font-bold text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-50">
+            <button
+              type="button"
+              onClick={() => setRefundModal({ open: false, payment: null })}
+              className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRefund}
+              disabled={refundLoading}
+              className="px-10 py-3 text-xs font-black uppercase tracking-widest text-white bg-red-500 rounded-xl hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {refundLoading ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <ArrowDownRight size={14} strokeWidth={2.4} />
+                  Confirm Refund
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Configuration Modal */}
       <Modal

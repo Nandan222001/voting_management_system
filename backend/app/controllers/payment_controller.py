@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 import io
@@ -17,6 +17,7 @@ from app.schemas.payment import (
     PaymentUpdate,
     PaymentVerifyResponse,
     MembershipPaymentStatusResponse,
+    RefundRequest,
     RevenueSummary,
     RazorpayOrderResponse,
     RazorpayPaymentVerify,
@@ -26,6 +27,9 @@ from app.services.payment_service import payment_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/payments", tags=["Revenue & Payments"])
+
+# Separate router for Razorpay webhook — must NOT have verify_tenant_header dependency
+webhook_router = APIRouter(prefix="/payments", tags=["Revenue & Payments"])
 
 
 @router.get(
@@ -275,4 +279,100 @@ def get_payment_settings(
     return success_response(
         data=settings,
         message="Payment gateway settings retrieved successfully."
+    )
+
+
+@webhook_router.post("/webhook", include_in_schema=False)
+async def razorpay_webhook(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> JSONResponse:
+    """
+    Razorpay webhook endpoint. No auth required — called by Razorpay servers.
+    Signature verification is handled inside the service using RAZORPAY_WEBHOOK_SECRET.
+    """
+    raw_body = await request.body()
+    signature = request.headers.get("X-Razorpay-Signature", "")
+    payment_service.handle_webhook(db, raw_body, signature)
+    return JSONResponse({"received": True})
+
+
+@router.post(
+    "/{payment_id}/refund",
+    summary="Refund a captured payment (Admin only)",
+)
+def refund_payment(
+    payment_id: int,
+    payload: RefundRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_tenant_admin_only),
+) -> JSONResponse:
+    """
+    Issue a full or partial refund for a captured payment.
+    """
+    updated = payment_service.refund_payment(db, current_user, payment_id, payload)
+    return success_response(
+        data=PaymentResponse.model_validate(updated).model_dump(mode="json"),
+        message="Refund processed successfully.",
+    )
+
+
+@router.get(
+    "/history",
+    summary="Get current user's payment history",
+)
+def get_payment_history(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Return a paginated list of the authenticated user's own payment records.
+    """
+    items, total = payment_service.get_user_payment_history(
+        db, current_user, page=page, page_size=page_size
+    )
+    return success_response(
+        data={
+            "total": total,
+            "items": [PaymentResponse.model_validate(i).model_dump(mode="json") for i in items],
+        },
+        message="Payment history retrieved successfully.",
+    )
+
+
+@router.get(
+    "/analytics",
+    summary="Enhanced payment analytics (Admin only)",
+)
+def get_payment_analytics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_tenant_admin_only),
+) -> JSONResponse:
+    """
+    Return enhanced analytics: success rate, refund stats, revenue by plan, avg transaction value.
+    """
+    analytics = payment_service.get_payment_analytics(db, current_user.tenant_id)
+    return success_response(
+        data=analytics.model_dump(),
+        message="Payment analytics retrieved successfully.",
+    )
+
+
+@router.post(
+    "/cleanup",
+    summary="Mark expired pending payments as failed (Admin only)",
+)
+def cleanup_expired_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_tenant_admin_only),
+) -> JSONResponse:
+    """
+    Mark stale pending payments (>24h anonymous, >48h user-linked) as failed.
+    """
+    count = payment_service.cleanup_expired_payments(db, current_user.tenant_id)
+    return success_response(
+        data={"updated_count": count},
+        message=f"Cleanup complete. {count} payment(s) marked as failed.",
     )
