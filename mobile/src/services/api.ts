@@ -3,15 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const EXPO_ENV = process.env as Record<string, string | undefined>;
-const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+let RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+// Auto-fix for Android Emulators if localhost is used
+if (Platform.OS === 'android' && RAW_API_URL.includes('localhost')) {
+  console.log('[API] Android Emulator detected, switching localhost to 10.0.2.2');
+  RAW_API_URL = RAW_API_URL.replace('localhost', '10.0.2.2');
+}
+
+console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
 // Exported for components that need to construct asset URIs
 export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
-
-// Simplify API URL resolution as requested
-const API_URL = RAW_API_URL;
-
-console.log(`[API] Initializing with baseURL: ${API_URL}`);
 
 const ENV_TENANT_ID = EXPO_ENV.EXPO_PUBLIC_TENANT_ID;
 const TENANT_ID_KEY = 'tenant_id';
@@ -33,7 +36,7 @@ export const clearTenantID = async () => {
 };
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: RAW_API_URL,
   timeout: 30000,
   headers: {
     'Accept': 'application/json',
