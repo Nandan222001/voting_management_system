@@ -16,13 +16,37 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 1. Add president_id column to targets
-    op.add_column('targets', sa.Column('president_id', sa.Integer(), nullable=True))
-    op.create_index(op.f('ix_targets_president_id'), 'targets', ['president_id'], unique=True)
-    op.create_foreign_key('fk_targets_president_id_users', 'targets', 'users', ['president_id'], ['id'], ondelete='SET NULL')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    cols = [c['name'] for c in inspector.get_columns('targets')]
+
+    if 'president_id' not in cols:
+        op.add_column('targets', sa.Column('president_id', sa.Integer(), nullable=True))
+        try:
+            op.create_index(op.f('ix_targets_president_id'), 'targets', ['president_id'], unique=True)
+        except Exception:
+            pass
+        try:
+            op.create_foreign_key(
+                'fk_targets_president_id_users', 'targets', 'users',
+                ['president_id'], ['id'], ondelete='SET NULL',
+            )
+        except Exception:
+            pass
 
 
 def downgrade() -> None:
-    op.drop_constraint('fk_targets_president_id_users', 'targets', type_='foreignkey')
-    op.drop_index(op.f('ix_targets_president_id'), table_name='targets')
-    op.drop_column('targets', 'president_id')
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    cols = [c['name'] for c in inspector.get_columns('targets')]
+
+    if 'president_id' in cols:
+        try:
+            op.drop_constraint('fk_targets_president_id_users', 'targets', type_='foreignkey')
+        except Exception:
+            pass
+        try:
+            op.drop_index(op.f('ix_targets_president_id'), table_name='targets')
+        except Exception:
+            pass
+        op.drop_column('targets', 'president_id')
