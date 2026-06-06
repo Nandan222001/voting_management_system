@@ -212,6 +212,7 @@ def create_election(
         payload,
         current_user.id,
         tenant_id=effective_tenant_id,
+        bypass_limit=(current_user.role in (UserRole.admin, UserRole.superadmin))
     )
     return ElectionResponse.model_validate(election)
 

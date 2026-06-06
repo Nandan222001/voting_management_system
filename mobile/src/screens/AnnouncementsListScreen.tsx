@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   featuredCard: { borderColor: COLORS.primary },
   cardImage: { width: '100%', height: 160, backgroundColor: COLORS.primaryFixed },
   imageFallback: { height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryFixed },
-  cardBody: { padding: 16 },
+  cardBody: { padding: 16, marginTop: 15 },
   cardMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   dateText: { color: COLORS.onSurfaceVariant, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
   featuredBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primaryFixed, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
