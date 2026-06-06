@@ -181,21 +181,27 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
       <StatusBar barStyle="light-content" />
       
       {/* 1. Static Cover Header Area */}
-      <View style={styles.coverWrapper}>
+      <View style={[styles.coverWrapper, { height: 50 + insets.top }]}>
         <Image source={{ uri: coverUrl }} style={styles.coverImage} />
         <LinearGradient
           colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.4)', 'transparent']}
           style={styles.coverOverlay}
         />
-        <Header 
-          title="Candidate Details" 
-          transparent 
-          showBack 
-          onBack={() => navigation.goBack()} 
-        />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
+      {/* Header moved outside and after coverWrapper for proper zIndex stacking */}
+      <Header 
+        title="Candidate Details" 
+        transparent 
+        showBack 
+        onBack={() => navigation.goBack()} 
+      />
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 60 }}
+        style={{ zIndex: 1, paddingTop: 130 }}
+      >
         {/* 2. Overlapping Profile Section */}
         <View style={styles.profileHeader}>
           <View style={styles.portraitWrapper}>
@@ -315,11 +321,11 @@ const CheckItem = ({ label, checked }: any) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   
-  coverWrapper: { height: 180, width: '100%', position: 'relative' },
+  coverWrapper: { height: 180, width: '100%', position: 'relative', zIndex: 20 },
   coverImage: { width: '100%', height: '100%' },
   coverOverlay: { ...StyleSheet.absoluteFillObject },
   
-  profileHeader: { alignItems: 'center', paddingBottom: 10, marginTop: -80, zIndex: 10, elevation: 5 },
+  profileHeader: { alignItems: 'center', paddingBottom: 10, marginTop: -65, zIndex: 10, elevation: 5 },
   portraitWrapper: { width: 130, height: 130, borderRadius: 20, borderWidth: 5, borderColor: '#fff', overflow: 'hidden', backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
   heroPortrait: { width: '100%', height: '100%' },
   

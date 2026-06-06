@@ -33,7 +33,7 @@ export const authService = {
 
   register: async (userData: any) => {
     const response = await api.post('/auth/register', userData);
-    return response.data;
+    return response.data.data || response.data;
   },
 
   createRegistrationOrder: async (tenantId: number, planId: number) => {
@@ -41,7 +41,7 @@ export const authService = {
       tenant_id: tenantId,
       membership_plan_id: planId
     });
-    return response.data;
+    return response.data.data || response.data;
   },
 
   verifyOtp: async (email: string, otp: string) => {
