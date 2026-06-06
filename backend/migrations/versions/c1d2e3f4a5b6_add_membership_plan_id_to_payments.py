@@ -35,15 +35,18 @@ def upgrade() -> None:
             ["membership_plan_id"],
             unique=False,
         )
-        if dialect != "sqlite":
-            op.create_foreign_key(
-                "fk_payments_membership_plan_id_plans",
-                "payments",
-                "plans",
-                ["membership_plan_id"],
-                ["id"],
-                ondelete="SET NULL",
-            )
+        if dialect != "sqlite" and "plans" in tables:
+            try:
+                op.create_foreign_key(
+                    "fk_payments_membership_plan_id_plans",
+                    "payments",
+                    "plans",
+                    ["membership_plan_id"],
+                    ["id"],
+                    ondelete="SET NULL",
+                )
+            except Exception:
+                pass
 
 
 def downgrade() -> None:
