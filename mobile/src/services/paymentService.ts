@@ -21,13 +21,13 @@ export const createRegistrationOrder = async (tenantId: number, planId: number):
     tenant_id: tenantId,
     membership_plan_id: planId
   });
-  return response.data;
+  return response.data.data || response.data;
 };
 
 export const paymentService = {
   checkVotingEligibility: async (): Promise<VotingEligibility> => {
     const response = await api.get('/voting/check-eligibility');
-    return response.data;
+    return response.data.data; // Standardized envelope
   },
 
   getMyMembershipStatus: async () => {
@@ -39,7 +39,7 @@ export const paymentService = {
     const response = await api.post('/payments/create-order', {
       membership_plan_id: membershipPlanId
     });
-    return response.data;
+    return response.data.data || response.data;
   },
 
   createRegistrationOrder,
@@ -54,12 +54,12 @@ export const paymentService = {
       razorpay_payment_id: payload.razorpay_payment_id,
       razorpay_signature: payload.razorpay_signature,
     });
-    return response.data;
+    return response.data.data || response.data;
   },
 
   getPaymentStatus: async () => {
     const response = await api.get('/payments/status');
-    return response.data;
+    return response.data.data || response.data;
   },
 
   recordPaymentFailure: async (payload: {
@@ -68,6 +68,6 @@ export const paymentService = {
     razorpay_order_id?: string;
   }) => {
     const response = await api.post('/payments/failure', payload);
-    return response.data;
+    return response.data.data || response.data;
   },
 };

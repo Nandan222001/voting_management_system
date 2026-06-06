@@ -19,6 +19,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
 import Pagination from '../components/common/Pagination';
 import announcementService from '../services/announcementService';
+import { resolveMediaUrl } from '../utils/images';
 import {
   deleteAnnouncement,
   fetchAnnouncements,
@@ -49,7 +50,8 @@ function dateLabel(value) {
 }
 
 function firstImage(item) {
-  return item?.image_urls?.[0] || null;
+  const url = item?.image_urls?.[0];
+  return resolveMediaUrl(url);
 }
 
 export default function AnnouncementsPage() {
@@ -312,7 +314,17 @@ export default function AnnouncementsPage() {
             <div className="prose max-w-none text-sm text-gray-700" dangerouslySetInnerHTML={{ __html: viewItem.content }} />
             {viewItem.attachment_urls?.length > 0 && (
               <div className="space-y-2">
-                {viewItem.attachment_urls.map((url) => <a key={url} href={url} target="_blank" rel="noreferrer" className="block rounded-lg bg-gray-50 p-3 text-sm font-bold text-[#1a337e]">{url.split('/').pop()}</a>)}
+                {viewItem.attachment_urls.map((url) => (
+                  <a
+                    key={url}
+                    href={resolveMediaUrl(url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block rounded-lg bg-gray-50 p-3 text-sm font-bold text-[#1a337e]"
+                  >
+                    {url.split('/').pop()}
+                  </a>
+                ))}
               </div>
             )}
           </div>

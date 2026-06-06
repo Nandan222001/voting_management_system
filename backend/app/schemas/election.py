@@ -20,7 +20,7 @@ class ElectionBase(BaseModel):
     nomination_end_date: Optional[datetime] = None
     start_date: datetime = Field(..., examples=["2025-09-01T08:00:00"])
     end_date: datetime = Field(..., examples=["2025-09-01T18:00:00"])
-    
+
     committee_level: Optional[str] = Field(default=None, examples=["district"])
     target_ids: Optional[List[int]] = Field(default=None, examples=[[1, 2, 3]])
 
@@ -37,6 +37,7 @@ class ElectionBase(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
 
 
 # ---------------------------------------------------------------------------
