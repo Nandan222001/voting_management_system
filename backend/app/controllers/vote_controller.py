@@ -64,7 +64,6 @@ def _assert_member_can_access_election(
 
 @router.post(
     "/cast",
-    response_model=VoteResponse,
     summary="Cast a vote (authenticated voter)",
 )
 def cast_vote(
@@ -72,7 +71,7 @@ def cast_vote(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> VoteResponse:
+) -> JSONResponse:
     """
     Cast a ballot in an active election.
 
@@ -92,23 +91,28 @@ def cast_vote(
         ip_address=ip,
         tenant_id=current_user.tenant_id,
     )
-    return VoteResponse.model_validate(vote)
+    return success_response(
+        data=VoteResponse.model_validate(vote).model_dump(mode="json"),
+        message="Vote cast successfully.",
+        status_code=status.HTTP_201_CREATED
+    )
 
 
 @voting_router.get(
     "/check-eligibility",
-    response_model=VotingEligibilityResponse,
     summary="Check current user's voting eligibility",
 )
 def check_voting_eligibility(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> VotingEligibilityResponse:
+) -> JSONResponse:
     """
     Check membership selection and verified payment before voting.
     """
-    return VotingEligibilityResponse(
-        **payment_service.check_voting_eligibility(db, current_user)
+    data = payment_service.check_voting_eligibility(db, current_user)
+    return success_response(
+        data=data,
+        message="Voting eligibility status retrieved."
     )
 
 
@@ -121,7 +125,7 @@ def submit_vote(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-):
+) -> JSONResponse:
     """
     Submit a vote only after the backend verifies membership and payment eligibility.
     """
@@ -151,11 +155,10 @@ def submit_vote(
         ip_address=ip,
         tenant_id=current_user.tenant_id,
     )
-    return {
-        "success": True,
-        "message": "Vote submitted successfully.",
-        "vote": VoteResponse.model_validate(vote).model_dump(mode="json"),
-    }
+    return success_response(
+        data={"vote": VoteResponse.model_validate(vote).model_dump(mode="json")},
+        message="Vote submitted successfully."
+    )
 
 
 # ---------------------------------------------------------------------------

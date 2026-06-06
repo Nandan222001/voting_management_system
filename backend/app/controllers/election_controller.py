@@ -198,6 +198,7 @@ def create_election(
 ) -> ElectionResponse:
     """
     Create a new election. Requires admin privileges.
+
     The election starts in ``draft`` status and is scoped to the caller's tenant.
     """
     effective_tenant_id = (
@@ -215,20 +216,20 @@ def create_election(
     return ElectionResponse.model_validate(election)
 
 
+
 # ---------------------------------------------------------------------------
 # GET /{election_id}
 # ---------------------------------------------------------------------------
 
 @router.get(
     "/{election_id}",
-    response_model=ElectionResponse,
     summary="Get a single election by ID (authenticated)",
 )
 def get_election(
     election_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> ElectionResponse:
+) -> JSONResponse:
     """
     Fetch a single election by primary key.
     Authenticated users are automatically scoped to their own tenant.
@@ -248,7 +249,10 @@ def get_election(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Election with id={election_id} not found.",
         )
-    return ElectionResponse.model_validate(election)
+    return success_response(
+        data=ElectionResponse.model_validate(election).model_dump(mode="json"),
+        message="Election details retrieved."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +261,6 @@ def get_election(
 
 @router.put(
     "/{election_id}",
-    response_model=ElectionResponse,
     summary="Update an election (admin only)",
 )
 def update_election(
@@ -265,7 +268,7 @@ def update_election(
     payload: ElectionUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> ElectionResponse:
+) -> JSONResponse:
     """
     Apply a partial update to an election. Requires admin privileges.
     Scoped to the caller's tenant.  Raises 400 if closed or cancelled.
@@ -276,7 +279,10 @@ def update_election(
         payload,
         tenant_id=current_user.tenant_id,
     )
-    return ElectionResponse.model_validate(updated)
+    return success_response(
+        data=ElectionResponse.model_validate(updated).model_dump(mode="json"),
+        message="Election updated successfully."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -311,14 +317,13 @@ def delete_election(
 
 @router.patch(
     "/{election_id}/activate",
-    response_model=ElectionResponse,
     summary="Activate a draft election (admin only)",
 )
 def activate_election(
     election_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> ElectionResponse:
+) -> JSONResponse:
     """
     Transition a draft election to ``active``, opening it for voting.
     Requires admin privileges.  Scoped to the caller's tenant.
@@ -328,7 +333,10 @@ def activate_election(
         election_id,
         tenant_id=current_user.tenant_id,
     )
-    return ElectionResponse.model_validate(updated)
+    return success_response(
+        data=ElectionResponse.model_validate(updated).model_dump(mode="json"),
+        message="Election activated successfully."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -337,14 +345,13 @@ def activate_election(
 
 @router.patch(
     "/{election_id}/close",
-    response_model=ElectionResponse,
     summary="Close an active election (admin only)",
 )
 def close_election(
     election_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> ElectionResponse:
+) -> JSONResponse:
     """
     Transition an active election to ``closed``, stopping further voting.
     Requires admin privileges.  Scoped to the caller's tenant.
@@ -354,4 +361,7 @@ def close_election(
         election_id,
         tenant_id=current_user.tenant_id,
     )
-    return ElectionResponse.model_validate(updated)
+    return success_response(
+        data=ElectionResponse.model_validate(updated).model_dump(mode="json"),
+        message="Election closed successfully."
+    )
