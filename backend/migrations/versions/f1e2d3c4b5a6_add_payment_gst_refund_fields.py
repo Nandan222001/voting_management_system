@@ -7,7 +7,6 @@ Create Date: 2026-06-05 10:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 revision = 'f1e2d3c4b5a6'
@@ -18,7 +17,7 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
 
     columns = [c['name'] for c in inspector.get_columns('payments')]
 
@@ -42,7 +41,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     columns = [c['name'] for c in inspector.get_columns('payments')]
 
     if 'refund_reason' in columns:
