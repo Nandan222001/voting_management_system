@@ -428,7 +428,7 @@ voting_management_system/
 
 #### FR-TENANT-04: Platform Statistics
 
-- `GET /api/v1/tenants/platform-stats` — returns: total_tenants, active_tenants, trial_tenants, suspended_tenants, total_members, total_elections, total_votes, total_subscription_revenue
+- `GET /api/v1/tenants/platform-stats` — returns: total_tenants, active_tenants, draft_tenants, suspended_tenants, total_members, total_elections, total_votes, total_subscription_revenue
 
 #### FR-TENANT-05: Cross-Tenant Inspection
 
@@ -470,7 +470,7 @@ voting_management_system/
   - `district` — filter to specific district (e.g., "show all Maharashtra members")
   - `designation_id + district` combined — e.g., "show Vice President of Maharashtra"
   - `status` — active / pending / blocked
-  - `subscription_status` — active / expired / trial
+  - `subscription_status` — active / expired / draft
   - `search` — full-text search on full_name, email
 - Results include: `full_name`, `email`, `phone`, `district`, `designation.title`, `designation.level`, `subscription_status`, `status`
 

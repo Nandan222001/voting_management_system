@@ -6,7 +6,7 @@ Wires together all routers, middleware, and startup/shutdown hooks.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -19,18 +19,18 @@ from app.controllers.report_controller import router as report_router
 from app.controllers.target_controller import router as target_router
 from app.controllers.tenant_controller import router as tenant_router
 from app.controllers.user_controller import router as user_router
-from app.controllers.vote_controller import router as vote_router
-from app.controllers.payment_controller import router as payment_router
-from app.utils.uploads import STATIC_ROOT
+from app.controllers.vote_controller import router as vote_router, voting_router
+from app.controllers.payment_controller import router as payment_router, webhook_router as payment_webhook_router
+from app.controllers.plan_controller import router as plan_router
+from app.controllers.media_controller import router as media_router
+from app.controllers.nomination_controller import router as nomination_router
+from app.controllers.announcement_controller import router as announcement_router
+from app.controllers.notification_controller import router as notification_router
+from app.middlewares.auth_middleware import verify_tenant_header
+from app.utils.uploads import MOBILE_ASSETS_IMAGES_ROOT, STATIC_ROOT
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Import all models so SQLAlchemy registers them before create_all
-    import app.models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
-    yield
-
+# app.main.py
 
 app = FastAPI(
     title="Digital Voting System API",
@@ -41,18 +41,21 @@ app = FastAPI(
         "**Default Tenant Admin:** admin@voting.com / Admin@123"
     ),
     version="2.0.0",
-    lifespan=lifespan,
 )
 
 # ---------------------------------------------------------------------------
-# CORS — allow specific origins in development; restrict in production via env
+# CORS — allow all origins in development for mobile/web accessibility
 # ---------------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://voting.indian-merchant-navy.com",
+        "https://voting-management-system-ten.vercel.app",
         "http://localhost:8081",
+        "http://127.0.0.1:8081",
         "http://localhost:3000",
         "http://localhost:5173",
+        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -62,21 +65,38 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
-app.include_router(auth_router, prefix="/api/v1")
-app.include_router(tenant_router, prefix="/api/v1")
-app.include_router(user_router, prefix="/api/v1")
-app.include_router(election_router, prefix="/api/v1")
-app.include_router(candidate_router, prefix="/api/v1")
-app.include_router(candidate_committee_router, prefix="/api/v1")
-app.include_router(target_router, prefix="/api/v1")
-app.include_router(vote_router, prefix="/api/v1")
-app.include_router(payment_router, prefix="/api/v1")
-app.include_router(report_router, prefix="/api/v1")
+# Applying verify_tenant_header globally to all API routes (header is optional where not needed)
+common_dependencies = [Depends(verify_tenant_header)]
+
+app.include_router(auth_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(tenant_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(user_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(election_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(candidate_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(nomination_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(announcement_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(notification_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(candidate_committee_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(target_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(vote_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(voting_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(payment_router, prefix="/api/v1", dependencies=common_dependencies)
+# Webhook router has NO common_dependencies — Razorpay servers don't send X-Tenant-ID
+app.include_router(payment_webhook_router, prefix="/api/v1")
+app.include_router(plan_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(media_router, prefix="/api/v1", dependencies=common_dependencies)
+app.include_router(report_router, prefix="/api/v1", dependencies=common_dependencies)
 
 # Serve uploaded static files from an absolute path so it works regardless of
 # the process working directory.
 STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_ROOT)), name="static")
+MOBILE_ASSETS_IMAGES_ROOT.mkdir(parents=True, exist_ok=True)
+app.mount(
+    "/mobile-assets/images",
+    StaticFiles(directory=str(MOBILE_ASSETS_IMAGES_ROOT)),
+    name="mobile-assets-images",
+)
 
 
 # ---------------------------------------------------------------------------

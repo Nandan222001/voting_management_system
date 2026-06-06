@@ -24,7 +24,7 @@ export default function HierarchyScoper({ selectedId, onSelect, loading }) {
         className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all focus:outline-none focus:ring-4 focus:ring-black/5 disabled:opacity-50"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#1a337e]">
             <selected.icon size={16} />
           </div>
           <div className="text-left">
@@ -51,18 +51,18 @@ export default function HierarchyScoper({ selectedId, onSelect, loading }) {
                 }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                   selectedId === level.id ? 'bg-blue-100 text-blue-600' : 'bg-gray-50 text-gray-400'
+                   selectedId === level.id ? 'bg-blue-100 text-[#1a337e]' : 'bg-gray-50 text-gray-400'
                 }`}>
                   <level.icon size={20} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${selectedId === level.id ? 'text-blue-600' : 'text-gray-900'}`}>
+                  <p className={`text-sm font-bold ${selectedId === level.id ? 'text-[#1a337e]' : 'text-gray-900'}`}>
                     {level.title}
                   </p>
                   <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{level.subtitle}</p>
                 </div>
                 {selectedId === level.id && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#1a337e]" />
                 )}
               </button>
             ))}

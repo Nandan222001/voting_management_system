@@ -26,7 +26,7 @@ export default function ConfirmDialog({
           ) : isBlack ? (
             <Info className="text-gray-900 w-8 h-8" />
           ) : (
-            <Info className="text-[rgb(16_102_177)] w-8 h-8" />
+            <Info className="text-[#1a337e] w-8 h-8" />
           )}
         </div>
 
@@ -49,7 +49,7 @@ export default function ConfirmDialog({
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all ${
               isRed
                 ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-[rgb(16_102_177)] hover:bg-[rgb(12_85_148)]'
+                : 'bg-[#1a337e] hover:bg-[rgb(12_85_148)]'
             }`}
           >
             {confirmLabel}

@@ -8,7 +8,6 @@ Create Date: 2026-05-25 12:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
-from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 revision = 'a1b2c3d4e5f6'
@@ -19,7 +18,7 @@ depends_on = None
 
 def upgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     tables = inspector.get_table_names()
 
     # 1. Add Razorpay keys to tenants if they don't exist
@@ -42,8 +41,8 @@ def upgrade() -> None:
             sa.Column('razorpay_payment_id', sa.String(length=100), nullable=True),
             sa.Column('razorpay_signature', sa.String(length=255), nullable=True),
             sa.Column('user_id', sa.Integer(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-            sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+            sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+            sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
             sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='CASCADE'),
             sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),
             sa.PrimaryKeyConstraint('id')
@@ -57,7 +56,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = sa.inspect(conn)
     tables = inspector.get_table_names()
 
     if 'payments' in tables:

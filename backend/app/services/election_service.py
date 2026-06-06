@@ -101,19 +101,22 @@ class ElectionService:
         data: ElectionCreate,
         created_by: int,
         tenant_id: Optional[int] = None,
+        bypass_limit: bool = False,
     ) -> Election:
         """
         Persist a new election, scoped to *tenant_id*.
 
         When *tenant_id* is provided the tenant's ``max_elections`` limit is
-        checked before creation.  Superadmin callers may pass ``None`` to
-        create platform-level elections (no limit check performed).
+        checked before creation unless ``bypass_limit`` is True.  
+        Superadmin callers may pass ``None`` to create platform-level elections 
+        (no limit check performed).
 
         Args:
-            db:         Active database session.
-            data:       Validated creation payload.
-            created_by: Primary key of the admin creating the election.
-            tenant_id:  Tenant to assign the election to, or ``None``.
+            db:           Active database session.
+            data:         Validated creation payload.
+            created_by:   Primary key of the admin creating the election.
+            tenant_id:    Tenant to assign the election to, or ``None``.
+            bypass_limit: If True, skips the election quota check.
 
         Returns:
             The freshly-created ``Election`` ORM instance.
@@ -121,7 +124,7 @@ class ElectionService:
         Raises:
             HTTPException 402: If the tenant's election limit has been reached.
         """
-        if tenant_id is not None:
+        if tenant_id is not None and not bypass_limit:
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(tenant_id)
             if tenant is not None:
@@ -140,10 +143,20 @@ class ElectionService:
                     )
 
         repo = ElectionRepository(db)
-        election_data = data.model_dump()
+        election_data = data.model_dump(exclude={"target_ids"})
         election_data["created_by"] = created_by
         election_data["tenant_id"] = tenant_id
-        return repo.create(election_data)
+        
+        election = repo.create(election_data)
+        
+        # Link multiple targets if provided
+        if data.target_ids:
+            from app.models.target import Target
+            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
+            election.targets = targets
+            db.commit()
+            
+        return election
 
     # ------------------------------------------------------------------
     # Read operations
@@ -154,30 +167,49 @@ class ElectionService:
         db: Session,
         skip: int = 0,
         limit: int = 20,
-        status_filter: Optional[ElectionStatus] = None,
+        status_filter: Optional[str] = None,
+        search_filter: Optional[str] = None,
         tenant_id: Optional[int] = None,
         member_district: Optional[str] = None,
     ) -> tuple[list[Election], int]:
         """
-        Return a paginated list of elections, optionally filtered by status
-        and scoped to a tenant.
+        Return a paginated list of elections, optionally filtered by status,
+        search term, and scoped to a tenant.
 
         Args:
             db:            Active database session.
             skip:          Row offset.
             limit:         Maximum rows to return.
-            status_filter: When supplied, restrict to elections with this status.
+            status_filter: When supplied (e.g. 'active', 'draft'), restrict results.
+                           'all' or None returns everything.
+            search_filter: Optional search term for the election title (LIKE %term%).
             tenant_id:     When supplied, restrict to elections belonging to
                            this tenant.  Pass ``None`` (superadmin) to see all.
 
         Returns:
             A ``(elections, total)`` tuple.
         """
+        from sqlalchemy import text
+
+        # Base query
         query = db.query(Election)
+
+        # 1. Multi-tenancy Scoping
         if tenant_id is not None:
             query = query.filter(Election.tenant_id == tenant_id)
-        if status_filter is not None:
-            query = query.filter(Election.status == status_filter)
+
+        # 2. Strict Status Filtering (Raw SQL logic via text)
+        if status_filter:
+            # Query equivalent: WHERE status = :status
+            query = query.filter(text("status = :status")).params(status=status_filter)
+
+        # 3. Search Filtering (Node Title Search)
+        if search_filter:
+            # Query equivalent: WHERE title LIKE :search
+            search_param = f"%{search_filter}%"
+            query = query.filter(Election.title.ilike(search_param))
+
+        # 4. Member District Scoping
         if member_district is not None:
             query = query.filter(
                 or_(
@@ -247,19 +279,6 @@ class ElectionService:
     ) -> Election:
         """
         Apply a partial update to an election.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key of the election to update.
-            data:        Pydantic schema containing only the fields to change.
-            tenant_id:   When supplied, verify tenant ownership before updating.
-
-        Returns:
-            The updated ``Election`` instance.
-
-        Raises:
-            HTTPException 404: If the election does not exist or is not in tenant.
-            HTTPException 400: If trying to update a closed or cancelled election.
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -270,7 +289,18 @@ class ElectionService:
                 detail=f"Cannot update an election in '{election.status.value}' status.",
             )
 
-        return repo.update(election, data)
+        # Update base fields
+        update_data = data.model_dump(exclude_unset=True, exclude={"target_ids"})
+        updated = repo.update(election, update_data)
+        
+        # Update targets relationship if target_ids provided
+        if data.target_ids is not None:
+            from app.models.target import Target
+            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
+            updated.targets = targets
+            db.commit()
+
+        return updated
 
     def delete_election(
         self,

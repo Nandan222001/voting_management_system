@@ -1,14 +1,42 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaShieldAlt, FaClock, FaArrowRight } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { verifyOTP, clearError } from '../store/slices/authSlice';
 
 const OTP_LENGTH = 6;
 
 export default function OTPPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  
+  const email = location.state?.email;
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [seconds, setSeconds] = useState(178); // 02:58
   const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (!email) {
+      toast.error('Session expired. Please log in again.');
+      navigate('/login');
+    }
+  }, [email, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -52,7 +80,10 @@ export default function OTPPage() {
   const handleResend = () => setSeconds(178);
 
   const handleVerify = () => {
-    if (otp.join('').length === OTP_LENGTH) navigate('/dashboard');
+    const otpCode = otp.join('');
+    if (otpCode.length === OTP_LENGTH) {
+      dispatch(verifyOTP({ email, otp: otpCode }));
+    }
   };
 
   return (
@@ -61,8 +92,8 @@ export default function OTPPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[rgb(16_102_177)] text-lg" />
-          <span className="font-bold text-[rgb(16_102_177)] text-base">SecureVote</span>
+          <FaShieldAlt className="text-[#1a337e] text-lg" />
+          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
           <span className="text-gray-700 text-sm font-bold">JD</span>
@@ -79,7 +110,7 @@ export default function OTPPage() {
       <div className="flex-1 px-5 py-8 max-w-lg mx-auto w-full">
 
         {/* Heading */}
-        <h1 className="text-2xl font-bold text-[rgb(16_102_177)] text-center mb-2">Identity Verification</h1>
+        <h1 className="text-2xl font-bold text-[#1a337e] text-center mb-2">Identity Verification</h1>
         <p className="text-sm text-gray-500 text-center mb-7 leading-relaxed">
           We&apos;ve sent a 6-digit verification code to your registered device ending in{' '}
           <span className="font-semibold text-gray-700">••••4209</span>.
@@ -97,7 +128,7 @@ export default function OTPPage() {
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className="w-12 h-14 text-center text-xl font-bold text-[rgb(16_102_177)] border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[rgb(16_102_177)] focus:ring-2 focus:ring-blue-200 transition-all"
+              className="w-12 h-14 text-center text-xl font-bold text-[#1a337e] border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[#1a337e] focus:ring-2 focus:ring-blue-200 transition-all"
             />
           ))}
         </div>
@@ -116,7 +147,7 @@ export default function OTPPage() {
           <button
             type="button"
             onClick={handleResend}
-            className="text-sm font-semibold text-[rgb(16_102_177)] hover:underline"
+            className="text-sm font-semibold text-[#1a337e] hover:underline"
           >
             Resend Code
           </button>
@@ -151,7 +182,7 @@ export default function OTPPage() {
           type="button"
           onClick={handleVerify}
           disabled={otp.join('').length < OTP_LENGTH}
-          className="w-full flex items-center justify-center gap-2 py-3.5 bg-[rgb(16_102_177)] hover:bg-[rgb(12_85_148)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
+          className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#1a337e] hover:bg-[rgb(12_85_148)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors text-sm shadow-sm"
         >
           Verify &amp; Continue
           <FaArrowRight className="text-sm" />

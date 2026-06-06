@@ -14,10 +14,13 @@ import {
   Search,
   X,
   Building,
+  MapPin,
+  TrendingUp,
 } from 'lucide-react';
 import {
   fetchTenants,
   fetchTenantById,
+  fetchPlatformStats,
   createTenant,
   updateTenant,
   suspendTenant,
@@ -26,6 +29,7 @@ import {
   selectTenants,
   selectCurrentTenant,
   selectTenantTotal,
+  selectPlatformStats,
   selectTenantLoading,
   selectTenantActionLoading,
   selectTenantError,
@@ -40,6 +44,7 @@ import Pagination from '../components/common/Pagination';
 import { format, parseISO } from 'date-fns';
 import ImageUpload from '../components/common/ImageUpload';
 import ImageAvatar from '../components/common/ImageAvatar';
+import Select from '../components/common/Select';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -50,6 +55,41 @@ function safeFormat(dateStr) {
   } catch {
     return dateStr;
   }
+}
+
+function numberFormat(value) {
+  return new Intl.NumberFormat('en-US').format(Number(value || 0));
+}
+
+function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
+  const toneMap = {
+    blue: { icon: 'text-[#1a337e] bg-blue-50 border-blue-100', text: 'text-[#1a337e]' },
+    amber: { icon: 'text-amber-600 bg-amber-50 border-amber-100', text: 'text-amber-600' },
+    emerald: { icon: 'text-emerald-600 bg-emerald-50 border-emerald-100', text: 'text-emerald-600' },
+    indigo: { icon: 'text-[#1a337e] bg-indigo-50 border-indigo-100', text: 'text-[#1a337e]' },
+    red: { icon: 'text-red-600 bg-red-50 border-red-100', text: 'text-red-600' },
+  };
+
+  const style = toneMap[tone] || toneMap.blue;
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110 ${style.icon}`}>
+          <Icon className="h-6 w-6" strokeWidth={2.4} />
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-black uppercase tracking-[0.1em] text-gray-400">{title}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2">
+        {value}
+      </div>
+      <div className="mt-4 border-t border-gray-50 pt-4">
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function slugify(str) {
@@ -63,25 +103,6 @@ function slugify(str) {
 
 function getTenantId(tenant) {
   return tenant?._id ?? tenant?.id ?? '';
-}
-
-// ─── Plan Badge ───────────────────────────────────────────────────────────────
-
-const PLAN_STYLES = {
-  starter: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
-  professional: 'bg-blue-100 text-[rgb(16_102_177)] ring-1 ring-blue-200',
-  enterprise: 'bg-purple-100 text-purple-700 ring-1 ring-purple-200',
-};
-
-function PlanBadge({ plan }) {
-  if (!plan) return <span className="text-gray-400 text-xs">—</span>;
-  const key = plan.toLowerCase();
-  const style = PLAN_STYLES[key] ?? PLAN_STYLES.starter;
-  return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border capitalize ${style}`}>
-      {plan}
-    </span>
-  );
 }
 
 // ─── Field Component ──────────────────────────────────────────────────────────
@@ -109,9 +130,8 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, required
       placeholder={placeholder}
       disabled={disabled}
       required={required}
-      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${
-        hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
-      }`}
+      className={`block w-full px-3 py-2 border rounded-lg text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a337e] focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 transition-colors ${hasError ? 'border-red-400 bg-red-50' : 'border-gray-300'
+        }`}
       {...props}
     />
   );
@@ -123,12 +143,15 @@ const EMPTY_FORM = {
   name: '',
   slug: '',
   contact_email: '',
-  plan: 'starter',
+  contact_phone: '',
+  status: 'draft',
   logo_file: null,
   logo_url: '',
   admin_name: '',
   admin_email: '',
   admin_password: '',
+  razorpay_key_id: '',
+  razorpay_key_secret: '',
 };
 
 function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading }) {
@@ -145,12 +168,15 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
         name: editTenant.name || '',
         slug: editTenant.slug || '',
         contact_email: editTenant.contact_email || editTenant.email || '',
-        plan: editTenant.plan || 'starter',
+        contact_phone: editTenant.contact_phone || '',
+        status: editTenant.status || 'draft',
         logo_file: null,
         logo_url: editTenant.logo_url || '',
         admin_name: '',
         admin_email: '',
         admin_password: '',
+        razorpay_key_id: editTenant.razorpay_key_id || '',
+        razorpay_key_secret: editTenant.razorpay_key_secret || '',
       });
       setSlugManual(true);
     } else {
@@ -183,6 +209,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
     if (!form.name.trim()) errs.name = 'Required.';
     if (!form.slug.trim()) errs.slug = 'Required.';
     if (!form.contact_email.trim()) errs.contact_email = 'Required.';
+    if (!form.contact_phone.trim()) errs.contact_phone = 'Required.';
     if (!isEdit) {
       if (!form.admin_name.trim()) errs.admin_name = 'Required.';
       if (!form.admin_email.trim()) errs.admin_email = 'Required.';
@@ -206,14 +233,20 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
       payload.append('name', form.name.trim());
       payload.append('slug', form.slug.trim());
       payload.append('contact_email', form.contact_email.trim());
-      payload.append('plan', form.plan);
+      payload.append('contact_phone', form.contact_phone.trim());
+      payload.append('status', form.status);
       payload.append('logo', form.logo_file);
+      payload.append('razorpay_key_id', form.razorpay_key_id.trim());
+      payload.append('razorpay_key_secret', form.razorpay_key_secret.trim());
     } else {
       payload = {
         name: form.name.trim(),
         slug: form.slug.trim(),
         contact_email: form.contact_email.trim(),
-        plan: form.plan,
+        contact_phone: form.contact_phone.trim(),
+        status: form.status,
+        razorpay_key_id: form.razorpay_key_id.trim(),
+        razorpay_key_secret: form.razorpay_key_secret.trim(),
       };
     }
 
@@ -233,8 +266,8 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Tenant' : 'Create New Tenant'} size="2xl">
-      <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Modify Organizational Node' : 'Deploy New Tenant'} size="3xl">
+      <form onSubmit={handleSubmit} className="space-y-0" autoComplete="off">
         {!isEdit && (
           <div className="sr-only" aria-hidden="true" style={{ position: 'absolute', opacity: 0, height: 0, width: 0, zIndex: -1 }}>
             <input type="text" name="prevent_autofill_email" tabIndex="-1" autoComplete="username" />
@@ -242,135 +275,201 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
           </div>
         )}
 
-        <div className="space-y-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Organization Details
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Organization Name" required error={errors.name}>
-              <Input
-                name="tenant_name_field"
-                value={form.name}
-                onChange={set('name')}
-                placeholder="Acme Corp"
-                autoComplete="off"
-                required
-                hasError={!!errors.name}
-              />
-            </Field>
-            <Field label="Slug" required hint="Auto-generated from name." error={errors.slug}>
-              <Input
-                name="tenant_slug_field"
-                value={form.slug}
-                onChange={handleSlugChange}
-                placeholder="acme-corp"
-                autoComplete="off"
-                required
-                hasError={!!errors.slug}
-              />
-            </Field>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+          {/* Left Column: Organization Details */}
+          <div className="md:col-span-7 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                 <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                 <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Basic Info</span>
+              </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Contact Email" required error={errors.contact_email}>
-              <Input
-                type="email"
-                name="tenant_contact_email_field"
-                value={form.contact_email}
-                onChange={set('contact_email')}
-                placeholder="admin@acme.com"
-                autoComplete="off"
-                required
-                hasError={!!errors.contact_email}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Name" required error={errors.name}>
+                  <Input
+                    name="tenant_name_field"
+                    value={form.name}
+                    onChange={set('name')}
+                    placeholder="e.g. Acme Regional"
+                    autoComplete="off"
+                    required
+                    hasError={!!errors.name}
+                  />
+                </Field>
+                <Field label="Slug" required hint="Auto-sync" error={errors.slug}>
+                  <Input
+                    name="tenant_slug_field"
+                    value={form.slug}
+                    onChange={handleSlugChange}
+                    placeholder="acme-reg"
+                    autoComplete="off"
+                    required
+                    hasError={!!errors.slug}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Contact Email" required error={errors.contact_email}>
+                  <Input
+                    type="email"
+                    name="tenant_contact_email_field"
+                    value={form.contact_email}
+                    onChange={set('contact_email')}
+                    placeholder="admin@acme.com"
+                    autoComplete="off"
+                    required
+                    hasError={!!errors.contact_email}
+                  />
+                </Field>
+                <Field label="Contact Phone" required error={errors.contact_phone}>
+                  <Input
+                    type="tel"
+                    name="tenant_contact_phone_field"
+                    value={form.contact_phone}
+                    onChange={set('contact_phone')}
+                    placeholder="+91 XXXXX XXXXX"
+                    autoComplete="off"
+                    required
+                    hasError={!!errors.contact_phone}
+                  />
+                </Field>
+              </div>
+
+              <Select
+                label="Status"
+                value={form.status}
+                onChange={set('status')}
+                options={[
+                  { value: 'draft', label: 'Draft (Registry Only)' },
+                  { value: 'active', label: 'Active (Production)' },
+                  { value: 'suspended', label: 'Suspended (Locked)' },
+                ]}
               />
-            </Field>
-            <Field label="Plan">
-              <select
-                value={form.plan}
-                onChange={set('plan')}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="starter">Starter — 5 elections, 1,000 voters</option>
-                <option value="professional">Professional — 25 elections, 10,000 voters</option>
-                <option value="enterprise">Enterprise — Unlimited</option>
-              </select>
-            </Field>
-          </div>
 
-          <Field label="Logo">
-            <ImageUpload
-              file={form.logo_file}
-              existingUrl={form.logo_url}
-              onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
-              id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
-              helperText="Upload a PNG/JPEG logo file (optional) up to 2 MB"
-            />
-          </Field>
-        </div>
+              <div className="pt-4 space-y-4 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-amber-600 rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-amber-600">Payment Gateway (Razorpay)</span>
+                </div>
+                <div className="grid grid-cols-1 gap-4">
+                  <Field label="Key ID">
+                    <Input
+                      name="razorpay_key_id"
+                      value={form.razorpay_key_id}
+                      onChange={set('razorpay_key_id')}
+                      placeholder="rzp_test_..."
+                      autoComplete="off"
+                    />
+                  </Field>
+                  <Field label="Key Secret">
+                    <Input
+                      type="password"
+                      name="razorpay_key_secret"
+                      value={form.razorpay_key_secret}
+                      onChange={set('razorpay_key_secret')}
+                      placeholder="••••••••"
+                      autoComplete="off"
+                    />
+                  </Field>
+                </div>
+              </div>
 
-        {!isEdit && (
-          <div className="space-y-4 pt-6 border-t border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-              Root Administrator
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Full Name" required error={errors.admin_name}>
-                <Input
-                  name="new_tenant_admin_fullname"
-                  value={form.admin_name}
-                  onChange={set('admin_name')}
-                  placeholder="Jane Smith"
-                  autoComplete="off"
-                  hasError={!!errors.admin_name}
-                />
-              </Field>
-              <Field label="Email Address" required error={errors.admin_email}>
-                <Input
-                  type="email"
-                  name="new_tenant_admin_email_field"
-                  value={form.admin_email}
-                  onChange={set('admin_email')}
-                  placeholder="jane@acme.com"
-                  autoComplete="new-user-email"
-                  hasError={!!errors.admin_email}
+              <Field label="Logo">
+                <ImageUpload
+                  file={form.logo_file}
+                  existingUrl={form.logo_url}
+                  onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
+                  id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
+                  helperText="High-res PNG/JPEG (Max 2MB)"
                 />
               </Field>
             </div>
-            <Field label="Password" required hint="Minimum 8 characters." error={errors.admin_password}>
-              <Input
-                type="password"
-                name="new_tenant_admin_password_field"
-                value={form.admin_password}
-                onChange={set('admin_password')}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                hasError={!!errors.admin_password}
-              />
-            </Field>
           </div>
-        )}
 
-        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
+          {/* Right Column: Root Admin or Info */}
+          <div className="md:col-span-5 p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
+            {!isEdit ? (
+              <div className="space-y-6">
+                <div className="flex items-center gap-2">
+                   <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
+                   <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Admin Details</span>
+                </div>
+                <div className="space-y-4">
+                  <Field label="Admin Name" required error={errors.admin_name}>
+                    <Input
+                      name="new_tenant_admin_fullname"
+                      value={form.admin_name}
+                      onChange={set('admin_name')}
+                      placeholder="Jane Doe"
+                      autoComplete="off"
+                      hasError={!!errors.admin_name}
+                    />
+                  </Field>
+                  <Field label="Email" required error={errors.admin_email}>
+                    <Input
+                      type="email"
+                      name="new_tenant_admin_email_field"
+                      value={form.admin_email}
+                      onChange={set('admin_email')}
+                      placeholder="jane@acme.com"
+                      autoComplete="new-user-email"
+                      hasError={!!errors.admin_email}
+                    />
+                  </Field>
+                  <Field label="Password" required hint="Min. 8 chars" error={errors.admin_password}>
+                    <Input
+                      type="password"
+                      name="new_tenant_admin_password_field"
+                      value={form.admin_password}
+                      onChange={set('admin_password')}
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      hasError={!!errors.admin_password}
+                    />
+                  </Field>
+                </div>
+                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                   <p className="text-[10px] font-bold text-[#1a337e] leading-relaxed uppercase tracking-wider">
+                      Note: This user will have absolute authority over the organizational node.
+                   </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center space-y-6 py-12">
+                 <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center shadow-inner border border-indigo-100">
+                    <Building className="text-[#1a337e] w-10 h-10 animate-pulse" />
+                 </div>
+                 <div className="px-6">
+                   <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">Registry Encrypted</h4>
+                   <p className="text-[10px] text-gray-400 font-bold mt-2 leading-relaxed uppercase tracking-wider">Administrator credentials are managed within the internal user registry.</p>
+                 </div>
+              </div>
+            )}
+          </div>
+          </div>
+
+          <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-100 rounded-b-3xl">
           <button
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-5 py-2 text-sm font-semibold text-white bg-[rgb(16_102_177)] rounded-lg hover:bg-[rgb(12_85_148)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[120px] justify-center"
+            className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              isEdit ? 'Save Changes' : 'Create Tenant'
+              isEdit ? 'Save Changes' : 'Add Tenant'
             )}
           </button>
-        </div>
+          </div>
       </form>
     </Modal>
   );
@@ -391,41 +490,44 @@ function SuspendModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Suspend Tenant" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Restrict Node Access" size="md">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-100 rounded-xl">
-          <Ban className="text-orange-500 mt-0.5 flex-shrink-0 w-5 h-5" />
-          <p className="text-sm font-medium text-orange-800">
-            Suspending <span className="font-bold underline">{tenant?.name}</span> will block all access to the platform.
-          </p>
+        <div className="flex items-start gap-4 p-5 bg-red-50 border border-red-100 rounded-2xl shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+            <Ban className="w-6 h-6" strokeWidth={2.4} />
+          </div>
+          <div>
+            <p className="text-sm font-black text-red-900 uppercase tracking-tight">Restricting Node: {tenant?.name}</p>
+            <p className="text-xs font-bold text-red-600/70 mt-1 uppercase tracking-wider">All organizational authorization will be revoked immediately.</p>
+          </div>
         </div>
-        <Field label="Suspension Reason" hint="Optional notice.">
+        <Field label="Reason for Restriction" hint="Included in the audit protocol.">
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             rows={3}
-            placeholder="Describe the reason for suspension..."
-            className="block w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-[#1066b1] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+            placeholder="Violation of service terms / Requested by node admin..."
+            className="block w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-[#1a337e] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-inner"
           />
         </Field>
-        <div className="flex justify-end gap-3 pt-8 border-t border-gray-100">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
           <button
             type="button"
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+            className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all disabled:opacity-60"
+            className="px-8 py-2.5 text-xs font-black uppercase tracking-widest text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-lg shadow-red-900/20 active:scale-95 transition-all disabled:opacity-60"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              'Confirm Suspension'
+              'Confirm Restriction'
             )}
           </button>
         </div>
@@ -440,88 +542,90 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
   if (!tenant) return null;
 
   const detailRows = [
-    { label: 'Organization Name', value: tenant.name },
-    { label: 'URL Identifier', value: tenant.slug, mono: true },
-    { label: 'Admin Email', value: tenant.contact_email || tenant.email },
-    { label: 'Subscription Plan', value: <PlanBadge plan={tenant.plan} /> },
-    { label: 'Current Status', value: <Badge status={tenant.status} /> },
-    { label: 'Created On', value: safeFormat(tenant.created_at || tenant.createdAt) },
+    { label: 'Node Identity', value: tenant.name },
+    { label: 'Protocol Slug', value: tenant.slug, mono: true },
+    { label: 'Admin Access', value: tenant.contact_email || tenant.email },
+    { label: 'Verified Phone', value: tenant.contact_phone },
+    { label: 'Network Status', value: <Badge status={tenant.status} /> },
+    { label: 'Deployment Date', value: safeFormat(tenant.created_at || tenant.createdAt) },
   ];
 
   const stats = tenant.usage || {};
   const usageStats = [
     {
-      label: 'Users',
+      label: 'Authorized Users',
       value: stats.user_count ?? tenant.user_count ?? 0,
       icon: Users,
-      color: 'text-[rgb(16_102_177)]',
-      bg: 'bg-blue-50',
+      tone: 'indigo',
     },
     {
-      label: 'Elections',
+      label: 'Election Nodes',
       value: stats.election_count ?? tenant.election_count ?? 0,
       icon: Vote,
-      color: 'text-green-600',
-      bg: 'bg-green-50',
+      tone: 'emerald',
     },
     {
-      label: 'Total Votes',
+      label: 'Cast Protocols',
       value: stats.vote_count ?? stats.total_votes ?? tenant.total_votes ?? 0,
       icon: Building,
-      color: 'text-purple-600',
-      bg: 'bg-purple-50',
+      tone: 'blue',
     },
   ];
 
+  const toneClasses = {
+    indigo: 'text-[#1a337e] bg-indigo-50 border-indigo-100',
+    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    blue: 'text-[#1a337e] bg-blue-50 border-blue-100',
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Tenant Overview" size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Node Intelligence Overview" size="2xl">
       <div className="space-y-8">
         <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
           <ImageAvatar
             src={tenant.logo_url}
             name={tenant.name}
-            sizeClass="w-16 h-16"
+            sizeClass="w-20 h-20"
             shapeClass="rounded-2xl"
-            imageClassName="border border-gray-200 shadow-sm"
-            fallbackClassName="text-white text-3xl shadow-sm"
-            style={{ backgroundColor: tenant.primary_color || '#000' }}
+            imageClassName="border border-gray-200 shadow-md"
+            fallbackClassName="text-white text-4xl font-black shadow-inner"
+            style={{ backgroundColor: tenant.primary_color || '#1a337e' }}
           />
           <div className="min-w-0">
-            <h3 className="text-lg font-bold text-[#1066b1] truncate">{tenant.name}</h3>
-            <p className="text-sm text-gray-400 font-mono truncate">{tenant.slug}</p>
-            <div className="flex items-center gap-2 mt-1">
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">{tenant.name}</h3>
+            <p className="text-sm text-[#1a337e] font-black uppercase tracking-widest mt-1">Node Protocol: {tenant.slug}</p>
+            <div className="flex items-center gap-2 mt-3">
               <Badge status={tenant.status} />
-              <PlanBadge plan={tenant.plan} />
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Live Usage Metrics
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+            Real-time Node Telemetry
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {usageStats.map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="p-5 rounded-2xl border border-gray-100 bg-gray-50 flex flex-col items-center shadow-sm">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 bg-white border border-gray-100 shadow-sm`}>
-                  <Icon className={`w-5 h-5 ${color}`} />
+            {usageStats.map(({ label, value, icon: Icon, tone }) => (
+              <div key={label} className="p-6 rounded-3xl border border-gray-100 bg-gray-50/50 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-white border border-gray-100 shadow-sm ${toneClasses[tone]?.split(' ')[0]}`}>
+                  <Icon className="w-6 h-6" strokeWidth={2.4} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{label}</p>
+                <p className="text-3xl font-black text-gray-900 tracking-tight">{value.toLocaleString()}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="space-y-4">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-            Configuration Details
+        <div className="space-y-4 pt-4 border-t border-gray-50">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+            Registry Specifications
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
             {detailRows.map(({ label, value, mono }) => (
-              <div key={label} className="space-y-0.5">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
-                <div className={`text-sm font-semibold text-gray-900 ${mono ? 'font-mono' : ''}`}>
+              <div key={label} className="flex flex-col gap-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</p>
+                <div className={`text-sm font-bold text-gray-800 ${mono ? 'font-mono' : ''}`}>
                   {value || '—'}
                 </div>
               </div>
@@ -529,12 +633,12 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
           </div>
         </div>
 
-        <div className="flex justify-end pt-6 border-t border-gray-100">
+        <div className="flex justify-end pt-8 border-t border-gray-100">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            className="px-10 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors shadow-sm active:scale-95"
           >
-            Close Overview
+            Dismiss Protocol
           </button>
         </div>
       </div>
@@ -546,31 +650,36 @@ function TenantDetailModal({ isOpen, onClose, tenant }) {
 
 function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading }) {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Delete Tenant" size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title="Decommission Node" size="sm">
       <div className="space-y-6">
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
-          <Trash2 className="text-red-500 mt-0.5 flex-shrink-0 w-5 h-5" />
-          <p className="text-sm font-medium text-red-800">
-            Are you sure you want to <span className="font-bold underline">permanently delete</span> {tenant?.name}? This action cannot be undone.
-          </p>
+        <div className="flex items-start gap-4 p-5 bg-red-50 border border-red-100 rounded-2xl">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600">
+            <Trash2 className="w-6 h-6" strokeWidth={2.4} />
+          </div>
+          <div>
+            <p className="text-sm font-black text-red-900 uppercase tracking-tight">Final Warning</p>
+            <p className="text-xs font-bold text-red-600/70 mt-1 leading-relaxed uppercase tracking-wider">
+              You are about to <span className="underline">permanently purge</span> {tenant?.name}. This node and all its jurisdictional data will be erased.
+            </p>
+          </div>
         </div>
         <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
           <button
             onClick={onClose}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50"
+            className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={actionLoading}
-            className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60 flex items-center justify-center min-w-[120px]"
+            className="px-8 py-2.5 text-xs font-black uppercase tracking-widest text-white bg-red-600 rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-900/20 active:scale-95 disabled:opacity-60 flex items-center justify-center min-w-[140px]"
           >
             {actionLoading ? (
               <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              'Delete Permanently'
+              'Purge Node'
             )}
           </button>
         </div>
@@ -583,7 +692,7 @@ function DeleteConfirmModal({ isOpen, onClose, tenant, onConfirm, actionLoading 
 
 const STATUS_FILTERS = [
   { value: '', label: 'All' },
-  { value: 'trial', label: 'Trial' },
+  { value: 'draft', label: 'Draft' },
   { value: 'active', label: 'Active' },
   { value: 'suspended', label: 'Suspended' },
 ];
@@ -596,6 +705,7 @@ export default function TenantsPage() {
 
   const tenants = useSelector(selectTenants);
   const currentTenant = useSelector(selectCurrentTenant);
+  const platformStats = useSelector(selectPlatformStats);
   const total = useSelector(selectTenantTotal);
   const loading = useSelector(selectTenantLoading);
   const actionLoading = useSelector(selectTenantActionLoading);
@@ -620,6 +730,7 @@ export default function TenantsPage() {
       const result = await dispatch(activateTenant(id));
       if (activateTenant.fulfilled.match(result)) {
         toast.success('Tenant activated.');
+        dispatch(fetchPlatformStats());
       }
     },
     [dispatch]
@@ -630,6 +741,7 @@ export default function TenantsPage() {
     if (createTenant.fulfilled.match(result)) {
       toast.success('Tenant created successfully!');
       setCreateOpen(false);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -640,6 +752,7 @@ export default function TenantsPage() {
     if (updateTenant.fulfilled.match(result)) {
       toast.success('Tenant updated successfully!');
       setEditTenant(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -650,6 +763,7 @@ export default function TenantsPage() {
     if (suspendTenant.fulfilled.match(result)) {
       toast.success('Tenant suspended.');
       setSuspendTarget(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -660,6 +774,7 @@ export default function TenantsPage() {
     if (deleteTenant.fulfilled.match(result)) {
       toast.success('Tenant deleted.');
       setDeleteTarget(null);
+      dispatch(fetchPlatformStats());
     }
   };
 
@@ -675,6 +790,10 @@ export default function TenantsPage() {
   };
 
   // ── Effects ──────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    dispatch(fetchPlatformStats());
+  }, [dispatch]);
 
   useEffect(() => {
     const params = { page, per_page: PER_PAGE };
@@ -735,175 +854,254 @@ export default function TenantsPage() {
 
   const totalPages = Math.ceil(total / PER_PAGE);
 
+  // Real platform-wide counts from platformStats
+  const totalCount = platformStats?.total_tenants || 0;
+  const activeCount = platformStats?.active_tenants || 0;
+  const draftCount = platformStats?.draft_tenants || 0;
+  const suspendedCount = platformStats?.suspended_tenants || 0;
+
   return (
     <MainLayout title="Tenant Management">
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-[#1066b1]">Organisations</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {total} organisation{total !== 1 ? 's' : ''} on the platform
-            </p>
-          </div>
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[rgb(16_102_177)] text-white text-sm font-semibold rounded-xl hover:bg-[rgb(12_85_148)] transition-all shadow-sm"
+      <div className="w-full space-y-8">
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
+          <MetricCard
+            title="Total Tenants"
+            icon={Building}
+            tone="indigo"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(totalCount)}</span>
+                <span className="mb-1 flex items-center text-xs font-bold text-[#1a337e]">
+                  Tenants
+                </span>
+              </>
+            }
           >
-            <Plus className="w-4 h-4" />
-            New Tenant
-          </button>
-        </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total registered organizations</p>
+          </MetricCard>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-1.5 bg-gray-100/80 p-1.5 rounded-xl border border-gray-200">
-            {STATUS_FILTERS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => handleStatusFilter(value)}
-                className={`px-5 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                  statusFilter === value
-                    ? 'bg-white text-[rgb(16_102_177)] shadow-sm ring-1 ring-gray-200'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <MetricCard
+            title="Active Tenants"
+            icon={CheckCircle2}
+            tone="emerald"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(activeCount)}</span>
+                <span className="mb-1 text-xs font-bold text-emerald-600">
+                  {totalCount ? Math.round((activeCount / totalCount) * 100) : 0}% Reach
+                </span>
+              </>
+            }
+          >
+            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-full bg-emerald-500" style={{ width: `${totalCount ? (activeCount / totalCount) * 100 : 0}%` }} />
+            </div>
+          </MetricCard>
 
-          <div className="relative flex-1 min-w-[300px] max-w-sm group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 group-focus-within:text-[rgb(16_102_177)] transition-colors" />
+          <MetricCard
+            title="Draft Tenants"
+            icon={Edit}
+            tone="blue"
+            value={
+              <>
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(draftCount)}</span>
+                <span className="mb-1 text-xs font-bold text-[#1a337e]">Draft</span>
+              </>
+            }
+          >
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pending configuration nodes</p>
+          </MetricCard>
+
+          <MetricCard
+            title="Restricted Access"
+            icon={Ban}
+            tone="red"
+            value={
+              <>
+                <span className="text-4xl font-black text-red-600 tracking-tight">{numberFormat(suspendedCount)}</span>
+              </>
+            }
+          >
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Policy violations or inactivity</p>
+            </div>
+          </MetricCard>
+        </section>
+
+        <section className="flex flex-col items-center justify-between gap-6 md:flex-row bg-gray-50 border border-gray-200 p-6 rounded-3xl shadow-sm">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, slug or email…"
-              className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-4 focus:ring-[rgb(16_102_177)]/5 focus:border-[rgb(16_102_177)] bg-white transition-all shadow-sm"
+              placeholder="Search jurisdictional nodes..."
+              className="w-full rounded-2xl border border-gray-100 bg-white py-3 pl-12 pr-10 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1a337e]"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="flex w-full flex-col gap-4 sm:flex-row md:w-auto">
+            <div className="flex items-center gap-1 rounded-xl bg-white border border-gray-100 p-1 shadow-sm">
+              {STATUS_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => handleStatusFilter(value)}
+                  className={`rounded-lg px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${statusFilter === value
+                      ? 'bg-[#1a337e] text-white shadow-lg shadow-indigo-200'
+                      : 'text-gray-500 hover:text-[#1a337e] hover:bg-indigo-50'
+                    }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
+            >
+              <Plus className="h-5 w-5" />
+              Add Tenant
+            </button>
+          </div>
+        </section>
+
+        <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl shadow-gray-200/50">
           {loading && filteredTenants.length === 0 ? (
             <div className="py-20 flex justify-center"><LoadingSpinner /></div>
           ) : filteredTenants.length === 0 ? (
-            <div className="px-6 py-20 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100">
-                <Building className="w-8 h-8 text-gray-300" />
+            <div className="px-6 py-32 text-center">
+              <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100 shadow-inner">
+                <Building className="w-12 h-12 text-gray-200" />
               </div>
-              <p className="text-gray-700 font-semibold text-base">No tenants found</p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-gray-900 font-black uppercase tracking-tight text-xl">No Nodes Found</p>
+              <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-2">
                 {search
-                  ? `No results for "${search}".`
-                  : statusFilter
-                  ? 'Try a different status filter.'
-                  : 'Create your first tenant to get started.'}
+                  ? `Zero matches for "${search}"`
+                  : 'Start by deploying your first node.'}
               </p>
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-              <table className="w-full text-sm text-left border-collapse min-w-[800px]">
+              <table className="w-full min-w-[1000px] border-separate border-spacing-y-2 px-4 pb-4">
                 <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    {['Organisation', 'Identifier', 'Plan', 'Status', 'Users', 'Created', 'Actions'].map((col) => (
-                      <th
-                        key={col}
-                        className={`px-3 py-4 sm:px-6 ${col === 'Actions' ? 'text-right' : ''}`}
-                      >
-                        {col}
-                      </th>
-                    ))}
+                  <tr className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                    <th className="px-6 py-5 text-left">Organization Identity</th>
+                    <th className="px-6 py-5 text-left">Protocol / Slug</th>
+                    <th className="px-6 py-5 text-left">Contact Channel</th>
+                    <th className="px-6 py-5 text-left">Network Status</th>
+                    <th className="px-6 py-5 text-left">Usage</th>
+                    <th className="px-6 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="space-y-2">
                   {filteredTenants.map((tenant) => {
                     const id = getTenantId(tenant);
                     const isSuspended = tenant.status === 'suspended';
                     return (
-                      <tr key={id} className="hover:bg-[#e6edfb]/50 transition-colors group">
-                        <td className="px-3 py-4 sm:px-6">
-                          <div className="flex items-center gap-3">
+                      <tr key={id} className="group transition-all duration-200">
+                        <td className="rounded-l-2xl bg-white border border-r-0 border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
                             <ImageAvatar
                               src={tenant.logo_url}
                               name={tenant.name}
-                              sizeClass="w-10 h-10"
+                              sizeClass="w-12 h-12"
                               shapeClass="rounded-xl"
-                              imageClassName="border border-gray-200 shadow-sm"
-                              fallbackClassName="text-white text-xs shadow-sm"
-                              style={{ backgroundColor: tenant.primary_color || 'rgb(16_102_177)' }}
+                              imageClassName="border border-gray-100 shadow-sm transition-transform group-hover:scale-105"
+                              fallbackClassName="text-white text-sm font-black shadow-inner"
+                              style={{ backgroundColor: tenant.primary_color || '#1a337e' }}
                             />
                             <div className="min-w-0">
-                              <p className="font-semibold text-gray-800 truncate max-w-[160px]">
+                              <p className="max-w-[200px] truncate text-sm font-black text-gray-900 tracking-tight">
                                 {tenant.name}
                               </p>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">ID: {String(id).padStart(4, '0')}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6 font-mono text-[10px] text-gray-400">
-                          {tenant.slug}
-                        </td>
-                        <td className="px-3 py-4 sm:px-6">
-                          <PlanBadge plan={tenant.plan} />
-                        </td>
-                        <td className="px-3 py-4 sm:px-6">
-                          <Badge status={tenant.status} />
-                        </td>
-                        <td className="px-3 py-4 sm:px-6">
-                          <div className="flex items-center gap-1.5 text-gray-600 font-semibold">
-                            <Users className="w-4 h-4 text-gray-400" />
-                            {tenant.user_count ?? 0}
+                        <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-md bg-indigo-50 px-2 py-1 font-mono text-[10px] font-black text-[#1a337e] border border-indigo-100">
+                              {tenant.slug}
+                            </span>
                           </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6 text-xs text-gray-500 whitespace-nowrap">
-                          {safeFormat(tenant.created_at || tenant.createdAt)}
+                        <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-normal text-gray-900">
+                              {tenant.contact_email || tenant.email || '—'}
+                            </span>
+
+                            {tenant.contact_phone && (
+                              <span className="text-[10px] font-normal text-gray-400">
+                                {tenant.contact_phone}
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="px-3 py-4 sm:px-6 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                        <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <Badge status={tenant.status} />
+                        </td>
+                        <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col items-center">
+                              <Users className="h-3.5 w-3.5 text-gray-400 mb-0.5" />
+                              <span className="text-[11px] font-black text-gray-900">{tenant.user_count ?? 0}</span>
+                            </div>
+                            <div className="h-6 w-px bg-gray-100 mx-1" />
+                            <div className="flex flex-col items-center">
+                              <Vote className="h-3.5 w-3.5 text-gray-400 mb-0.5" />
+                              <span className="text-[11px] font-black text-gray-900">{tenant.election_count ?? 0}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="rounded-r-2xl bg-white border border-l-0 border-gray-100 px-6 py-5 text-right group-hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                             <button
                               onClick={() => handleViewDetails(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-blue-50 hover:text-[rgb(16_102_177)] transition-colors"
-                              title="View Details"
+                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#1a337e] hover:bg-[#1a337e] hover:text-white transition-all shadow-sm border border-blue-100"
+                              title="Inspect Node"
                             >
-                              <Eye size={16} />
+                              <Eye size={16} strokeWidth={2.4} />
                             </button>
                             <button
                               onClick={() => setEditTenant(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                              title="Edit"
+                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm border border-amber-100"
+                              title="Modify Registry"
                             >
-                              <Edit size={16} />
+                              <Edit size={16} strokeWidth={2.4} />
                             </button>
                             {isSuspended ? (
                               <button
                                 onClick={() => handleActivate(tenant)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors"
-                                title="Activate"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm border border-emerald-100"
+                                title="Authorize Node"
                               >
-                                <CheckCircle2 size={16} />
+                                <CheckCircle2 size={16} strokeWidth={2.4} />
                               </button>
                             ) : (
                               <button
                                 onClick={() => setSuspendTarget(tenant)}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors"
-                                title="Suspend"
+                                className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm border border-rose-100"
+                                title="Restrict Node"
                               >
-                                <Ban size={16} />
+                                <Ban size={16} strokeWidth={2.4} />
                               </button>
                             )}
                             <button
                               onClick={() => setDeleteTarget(tenant)}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                              title="Delete"
+                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100"
+                              title="Decommission Node"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={16} strokeWidth={2.4} />
                             </button>
                           </div>
                         </td>
@@ -916,7 +1114,7 @@ export default function TenantsPage() {
           )}
 
           {totalPages > 1 && (
-            <div className="border-t border-gray-100 bg-gray-50/50">
+            <div className="border-t border-gray-100 bg-gray-50/50 p-4 rounded-b-3xl">
               <Pagination
                 page={page}
                 totalPages={totalPages}

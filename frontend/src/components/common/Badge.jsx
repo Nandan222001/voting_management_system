@@ -1,7 +1,7 @@
 const STATUS_STYLES = {
   // Positive
-  active: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
-  open: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
+  active: 'bg-[#e6edfb] text-[#1a337e] border-[#e6edfb]',
+  open: 'bg-[#e6edfb] text-[#1a337e] border-[#e6edfb]',
   approved: 'bg-green-50 text-green-700 border-green-100',
   // Negative
   blocked: 'bg-red-50 text-red-700 border-red-100',
@@ -12,14 +12,13 @@ const STATUS_STYLES = {
   // Neutral
   pending: 'bg-yellow-50 text-yellow-700 border-yellow-100',
   'pending approval': 'bg-yellow-50 text-yellow-700 border-yellow-100',
-  trial: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
-  provisioning: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
+  provisioning: 'bg-[#e6edfb] text-[#1a337e] border-[#e6edfb]',
   // Draft
-  draft: 'bg-gray-50 text-gray-500 border-gray-100',
+  draft: 'bg-gray-100 text-gray-600 border-gray-200',
   inactive: 'bg-gray-50 text-gray-500 border-gray-100',
   // Roles
-  admin: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
-  superadmin: 'bg-[#e6edfb] text-[rgb(16_102_177)] border-[#e6edfb]',
+  admin: 'bg-[#e6edfb] text-[#1a337e] border-[#e6edfb]',
+  superadmin: 'bg-[#e6edfb] text-[#1a337e] border-[#e6edfb]',
 };
 
 const DEFAULT_STYLE = 'bg-gray-50 text-gray-500 border-gray-100';

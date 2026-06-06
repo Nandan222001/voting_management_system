@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -56,9 +57,39 @@ class Candidate(Base):
 
     # Candidate details
     full_name = Column(String(150), nullable=False)
+    position_name = Column(String(100), nullable=True)  # Free-text position
+    email = Column(String(150), nullable=True)
+    phone = Column(String(20), nullable=True)
+    date_of_birth = Column(String(50), nullable=True)
+    gender = Column(String(20), nullable=True)
+    parent_name = Column(String(150), nullable=True)
+    
+    # ID & Address
+    kyc_type = Column(String(50), nullable=True)
+    voter_id_number = Column(String(50), nullable=True)
+    state = Column(String(100), nullable=True)
+    district = Column(String(100), nullable=True)
+    taluka = Column(String(100), nullable=True)
+    village = Column(String(100), nullable=True)
+    pincode = Column(String(20), nullable=True)
+    
+    # Profile & Symbols
     symbol = Column(String(100), nullable=True)
     image_url = Column(String(500), nullable=True)
+    cover_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
+    
+    # Eligibility & Declarations
+    is_willing = Column(Boolean, default=True)
+    held_previously = Column(Boolean, default=False)
+    prev_position = Column(String(150), nullable=True)
+    prev_duration = Column(String(100), nullable=True)
+    is_disciplined = Column(Boolean, default=False)
+    discipline_details = Column(Text, nullable=True)
+    has_complaints = Column(Boolean, default=False)
+    agreed_constitution = Column(Boolean, default=False)
+    accepted_results = Column(Boolean, default=False)
+    signature_url = Column(String(500), nullable=True)
 
     # Denormalised vote tally – updated atomically whenever a vote is cast
     vote_count = Column(Integer, nullable=False, default=0)

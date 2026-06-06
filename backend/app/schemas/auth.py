@@ -10,39 +10,50 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict
 class RegisterRequest(BaseModel):
     """Payload for new-user self-registration."""
 
-    full_name: str = Field(
-        ...,
-        min_length=2,
-        max_length=150,
-        examples=["Jane Doe"],
-    )
-    email: EmailStr = Field(..., examples=["jane@example.com"])
-    phone: str = Field(
-        ...,
-        max_length=20,
-        pattern=r"^\+?[0-9\s\-()]{7,20}$",
-        examples=["+1-800-555-0199"],
-    )
-    date_of_birth: Optional[str] = Field(None, examples=["10/14/1982"])
-    voter_id: Optional[str] = Field(None, examples=["VTR-990-221-X8"])
-    designation: str = Field(..., min_length=2, max_length=100, examples=["Vice President"])
-    street_address: str = Field(..., min_length=3, max_length=300, examples=["12 Park Street"])
-    city: str = Field(..., min_length=2, max_length=100, examples=["Mumbai"])
-    district: str = Field(..., min_length=2, max_length=100, examples=["Maharashtra"])
-    state: str = Field(..., min_length=2, max_length=100, examples=["Maharashtra"])
-    country: str = Field(..., min_length=2, max_length=100, examples=["India"])
-    pincode: str = Field(..., min_length=3, max_length=20, examples=["400001"])
-    password: str = Field(
-        ...,
-        min_length=8,
-        max_length=128,
-        examples=["Str0ng!Pass"],
-    )
-    tenant_id: Optional[int] = Field(
-        default=None,
-        description="ID of the tenant organisation this user is registering under.",
-        examples=[1],
-    )
+    full_name: str = Field(..., min_length=2, max_length=150)
+    email: EmailStr
+    phone: str = Field(..., max_length=20)
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    parent_name: Optional[str] = None
+    password: str = Field(..., min_length=8, max_length=128)
+    
+    # KYC
+    kyc_type: Optional[str] = None
+    kyc_front_url: Optional[str] = None
+    kyc_back_url: Optional[str] = None
+
+    # Address (Permanent)
+    house_number: Optional[str] = None
+    street_address: Optional[str] = None
+    village: Optional[str] = None
+    landmark: Optional[str] = None
+    pincode: Optional[str] = None
+    city: Optional[str] = None
+    taluka: Optional[str] = None
+    district: Optional[str] = None
+    state: Optional[str] = None
+    country: str = "India"
+
+    # Current Address
+    current_street_address: Optional[str] = None
+    current_city: Optional[str] = None
+    current_district: Optional[str] = None
+    current_state: Optional[str] = None
+    current_pincode: Optional[str] = None
+
+    # Mapping
+    tenant_id: Optional[int] = None
+    target_id: Optional[int] = None
+    committee_id: Optional[int] = None
+    membership_plan_id: Optional[int] = None
+    designation: str = "voter"
+    voter_id: Optional[str] = None
+
+    # Razorpay Payment (for paid registration)
+    razorpay_payment_id: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -84,16 +95,52 @@ class ResetPasswordRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 class AuthUserInfo(BaseModel):
-    """Minimal user information embedded in the token response."""
+    """User information embedded in the token response for profile sync."""
 
     id: int
     full_name: str
     email: EmailStr
+    phone: Optional[str] = None
     role: str
+    status: str = "active"
     is_verified: bool
     tenant_id: Optional[int] = None
+    
+    # Profile Details
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    parent_name: Optional[str] = None
+    voter_id: Optional[str] = None
     designation: Optional[str] = None
+    
+    # KYC Details
+    kyc_type: Optional[str] = None
+    kyc_front_url: Optional[str] = None
+    kyc_back_url: Optional[str] = None
+
+    # Address Information (Permanent)
+    house_number: Optional[str] = None
+    street_address: Optional[str] = None
+    village: Optional[str] = None
+    landmark: Optional[str] = None
+    pincode: Optional[str] = None
+    city: Optional[str] = None
+    taluka: Optional[str] = None
     district: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = "India"
+
+    # Current Address
+    current_street_address: Optional[str] = None
+    current_city: Optional[str] = None
+    current_district: Optional[str] = None
+    current_state: Optional[str] = None
+    current_pincode: Optional[str] = None
+
+    # Mapping
+    target_id: Optional[int] = None
+    committee_id: Optional[int] = None
+    membership_plan_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -18,7 +18,7 @@ from app.config.database import Base
 class TenantStatus(str, enum.Enum):
     """Lifecycle status of a tenant account."""
 
-    trial = "trial"
+    draft = "draft"
     active = "active"
     suspended = "suspended"
     cancelled = "cancelled"
@@ -44,6 +44,7 @@ class Tenant(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(100), unique=True, nullable=False, index=True)
     domain = Column(String(255), nullable=True)
+    uuid = Column(String(100), unique=True, nullable=True, index=True) # Secure identifier for API headers
 
     # Branding
     logo_url = Column(String(500), nullable=True)
@@ -53,7 +54,7 @@ class Tenant(Base):
     status = Column(
         Enum(TenantStatus, name="tenant_status_enum"),
         nullable=False,
-        default=TenantStatus.trial,
+        default=TenantStatus.draft,
     )
     plan = Column(
         Enum(TenantPlan, name="tenant_plan_enum"),
@@ -67,6 +68,7 @@ class Tenant(Base):
 
     # Contact
     contact_email = Column(String(255), nullable=True)
+    contact_phone = Column(String(20), nullable=True)
 
     # Payment Gateway (Razorpay)
     razorpay_key_id = Column(String(255), nullable=True)
@@ -110,6 +112,18 @@ class Tenant(Base):
     candidate_committees = relationship(
         "CandidateCommittee",
         back_populates="tenant",
+        lazy="select",
+    )
+    nominations = relationship(
+        "Nomination",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+    announcements = relationship(
+        "Announcement",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
         lazy="select",
     )
     targets = relationship(

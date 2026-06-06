@@ -30,9 +30,19 @@ class CandidateBase(BaseModel):
         max_length=500,
         examples=["https://cdn.example.com/candidates/alice.jpg"],
     )
+    cover_url: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        examples=["https://cdn.example.com/candidates/alice-cover.jpg"],
+    )
     bio: Optional[str] = Field(
         default=None,
         examples=["Experienced candidate with 10 years of service."],
+    )
+    position_name: Optional[str] = Field(
+        default=None,
+        max_length=100,
+        examples=["President"],
     )
     committee_id: Optional[int] = Field(
         default=None,
@@ -42,6 +52,36 @@ class CandidateBase(BaseModel):
         default=None,
         examples=[1],
     )
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    parent_name: Optional[str] = None
+    kyc_type: Optional[str] = None
+    voter_id_number: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    taluka: Optional[str] = None
+    village: Optional[str] = None
+    pincode: Optional[str] = None
+    is_willing: Optional[bool] = Field(default=True)
+    held_previously: Optional[bool] = Field(default=False)
+    prev_position: Optional[str] = None
+    prev_duration: Optional[str] = None
+    is_disciplined: Optional[bool] = Field(default=False)
+    discipline_details: Optional[str] = None
+    has_complaints: Optional[bool] = Field(default=False)
+    agreed_constitution: Optional[bool] = Field(default=False)
+    accepted_results: Optional[bool] = Field(default=False)
+    signature_url: Optional[str] = None
+
+    @field_validator("is_willing", "held_previously", "is_disciplined", "has_complaints", "agreed_constitution", "accepted_results", mode="before")
+    @classmethod
+    def handle_none_bools(cls, v: Any) -> bool:
+        if v is None:
+            # You can customize logic here per field if needed
+            return False 
+        return bool(v)
 
     @field_validator("committee_id", "target_id", mode="before")
     @classmethod
@@ -79,9 +119,33 @@ class CandidateUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     symbol: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=500)
+    cover_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = None
+    position_name: Optional[str] = Field(default=None, max_length=100)
     committee_id: Optional[int] = Field(default=None)
     target_id: Optional[int] = Field(default=None)
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    parent_name: Optional[str] = None
+    kyc_type: Optional[str] = None
+    voter_id_number: Optional[str] = None
+    state: Optional[str] = None
+    district: Optional[str] = None
+    taluka: Optional[str] = None
+    village: Optional[str] = None
+    pincode: Optional[str] = None
+    is_willing: Optional[bool] = None
+    held_previously: Optional[bool] = None
+    prev_position: Optional[str] = None
+    prev_duration: Optional[str] = None
+    is_disciplined: Optional[bool] = None
+    discipline_details: Optional[str] = None
+    has_complaints: Optional[bool] = None
+    agreed_constitution: Optional[bool] = None
+    accepted_results: Optional[bool] = None
+    signature_url: Optional[str] = None
 
     @field_validator("committee_id", "target_id", mode="before")
     @classmethod
@@ -131,3 +195,8 @@ class CandidateListResponse(BaseModel):
     items: List[CandidateResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FollowStatusResponse(BaseModel):
+    """Simple response schema for candidate follow status."""
+    is_following: bool

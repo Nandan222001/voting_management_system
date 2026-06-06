@@ -2,16 +2,16 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
+import VerifyScreen from '../screens/VerifyScreen';
 
 const Stack = createStackNavigator();
 
-const AuthNavigator = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
+const AuthNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login">
-        {(props) => <LoginScreen {...props} onLoginSuccess={onLoginSuccess} />}
-      </Stack.Screen>
+      <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Verify" component={VerifyScreen} />
     </Stack.Navigator>
   );
 };

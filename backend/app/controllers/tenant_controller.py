@@ -5,19 +5,42 @@ All routes require superadmin privileges. Regular tenant admins and voters
 have no access to these endpoints.
 """
 
-from fastapi import APIRouter, Depends, status, UploadFile, File, Form
+from typing import Optional
+
+from fastapi import APIRouter, Depends, status, UploadFile, File, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import require_superadmin
+from app.middlewares.auth_middleware import require_superadmin, verify_tenant_header
 from app.models.user import User
+from app.models.tenant import Tenant
 from app.schemas.tenant import TenantCreate, TenantResponse, TenantUpdate, TenantPublicResponse
 from app.services.tenant_service import tenant_service
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/tenants", tags=["Tenants (SuperAdmin)"])
+
+
+@router.get(
+    "/me",
+    summary="Get details of the current tenant (based on X-Tenant-ID header)",
+)
+def get_current_tenant_public(
+    tenant: Optional[Tenant] = Depends(verify_tenant_header),
+) -> JSONResponse:
+    """
+    Returns details for the tenant identified by the mandatory X-Tenant-ID header.
+    Publicly accessible to allow mobile apps to fetch their branding/config.
+    """
+    if not tenant:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="X-Tenant-ID header is required for this endpoint.",
+        )
+    data = TenantResponse.model_validate(tenant).model_dump(mode="json")
+    return success_response(data=data, message="Tenant details retrieved.")
 
 
 @router.get("/public", summary="List all active tenants for selection")
@@ -94,6 +117,8 @@ def create_tenant(
     name: str = Form(...),
     slug: str | None = Form(None),
     contact_email: EmailStr | None = Form(None),
+    contact_phone: str | None = Form(None),
+    status: str = Form('draft'),
     plan: str = Form('starter'),
     admin_full_name: str = Form(...),
     admin_email: EmailStr = Form(...),
@@ -107,6 +132,8 @@ def create_tenant(
         name=name,
         slug=slug,
         contact_email=contact_email,
+        contact_phone=contact_phone,
+        status=status,
         plan=plan,
         logo_url=None,
         admin_full_name=admin_full_name,
@@ -139,6 +166,7 @@ def update_tenant(
     name: str | None = Form(None),
     slug: str | None = Form(None),
     contact_email: EmailStr | None = Form(None),
+    contact_phone: str | None = Form(None),
     plan: str | None = Form(None),
     logo: UploadFile | None = File(None),
     _: User = Depends(require_superadmin),
@@ -152,6 +180,8 @@ def update_tenant(
         update_data['slug'] = slug
     if contact_email is not None:
         update_data['contact_email'] = contact_email
+    if contact_phone is not None:
+        update_data['contact_phone'] = contact_phone
     if plan is not None:
         update_data['plan'] = plan
 

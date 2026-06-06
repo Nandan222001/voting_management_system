@@ -16,8 +16,14 @@ class ElectionBase(BaseModel):
 
     title: str = Field(..., min_length=3, max_length=255, examples=["Student Council 2025"])
     description: Optional[str] = Field(default=None, examples=["Annual student council election."])
+    nomination_start_date: Optional[datetime] = None
+    nomination_end_date: Optional[datetime] = None
     start_date: datetime = Field(..., examples=["2025-09-01T08:00:00"])
     end_date: datetime = Field(..., examples=["2025-09-01T18:00:00"])
+
+    committee_level: Optional[str] = Field(default=None, examples=["district"])
+    target_ids: Optional[List[int]] = Field(default=None, examples=[[1, 2, 3]])
+
     target_district: Optional[str] = Field(
         default=None,
         max_length=100,
@@ -33,6 +39,7 @@ class ElectionBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+
 # ---------------------------------------------------------------------------
 # Create
 # ---------------------------------------------------------------------------
@@ -43,9 +50,21 @@ class ElectionCreate(ElectionBase):
     status: ElectionStatus = Field(default=ElectionStatus.draft)
 
     @model_validator(mode="after")
-    def end_after_start(self) -> "ElectionCreate":
+    def validate_dates(self) -> "ElectionCreate":
+        # 1. End must be after start
         if self.end_date <= self.start_date:
             raise ValueError("end_date must be after start_date")
+        
+        # 2. Nomination end must be after nomination start
+        if self.nomination_start_date and self.nomination_end_date:
+            if self.nomination_end_date <= self.nomination_start_date:
+                raise ValueError("nomination_end_date must be after nomination_start_date")
+        
+        # 3. Voting start must be after nomination end
+        if self.nomination_end_date and self.start_date:
+            if self.start_date < self.nomination_end_date:
+                raise ValueError("voting start_date must be after nomination_end_date")
+                
         return self
 
 
@@ -58,8 +77,14 @@ class ElectionUpdate(BaseModel):
 
     title: Optional[str] = Field(default=None, min_length=3, max_length=255)
     description: Optional[str] = None
+    nomination_start_date: Optional[datetime] = None
+    nomination_end_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+    
+    committee_level: Optional[str] = None
+    target_ids: Optional[List[int]] = None
+
     target_district: Optional[str] = Field(default=None, max_length=100)
     target_id: Optional[int] = None
     status: Optional[ElectionStatus] = None
@@ -67,10 +92,23 @@ class ElectionUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     @model_validator(mode="after")
-    def end_after_start(self) -> "ElectionUpdate":
+    def validate_dates(self) -> "ElectionUpdate":
+        # Note: In updates, some fields might be None. 
+        # For a full check we'd need the current values from DB, 
+        # but we can at least check what's provided in the payload.
+        
         if self.start_date and self.end_date:
             if self.end_date <= self.start_date:
                 raise ValueError("end_date must be after start_date")
+                
+        if self.nomination_start_date and self.nomination_end_date:
+            if self.nomination_end_date <= self.nomination_start_date:
+                raise ValueError("nomination_end_date must be after nomination_start_date")
+                
+        if self.nomination_end_date and self.start_date:
+            if self.start_date < self.nomination_end_date:
+                raise ValueError("voting start_date must be after nomination_end_date")
+                
         return self
 
 
@@ -96,6 +134,7 @@ class ElectionResponse(ElectionBase):
     winner_declared: bool = False
 
     target: Optional[TargetResponse] = None
+    targets: List[TargetResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 

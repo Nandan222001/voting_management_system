@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.target import Target
@@ -11,6 +12,20 @@ class TargetRepository(BaseRepository[Target]):
 
     def __init__(self, db: Session) -> None:
         super().__init__(db)
+
+    def get_all(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        parent_id: Optional[int] = None,
+    ) -> list[Target]:
+        """
+        Fetch a paginated slice of all records, optionally filtered by parent_id.
+        """
+        query = self.db.query(Target)
+        if parent_id is not None:
+            query = query.filter(Target.parent_id == parent_id)
+        return query.offset(skip).limit(limit).all()
 
     def get_by_tenant(self, tenant_id: int) -> list[Target]:
         """

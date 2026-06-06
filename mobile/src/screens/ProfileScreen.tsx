@@ -7,402 +7,697 @@ import {
   ScrollView,
   Alert,
   Platform,
-  Switch,
   Image,
   ActivityIndicator,
+  SafeAreaView,
+  Dimensions,
+  Modal,
 } from 'react-native';
-import { authService } from '../services/authService';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../context/AuthContext';
+import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 
-const ProfileScreen = ({ onLogout }: { onLogout: () => void }) => {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isBiometricAuth, setIsBiometricAuth] = useState(true);
+const { width } = Dimensions.get('window');
+
+const COLORS = {
+  primary: '#003d9b',
+  primaryContainer: '#eff6ff',
+  background: '#f4f5f7',
+  surface: '#ffffff',
+  onSurface: '#0f172a',
+  onSurfaceVariant: '#64748b',
+  outlineVariant: '#e2e8f0',
+  secondary: '#056e00',
+  accent: '#ff8c00',
+  error: '#ef4444',
+  success: '#10b981',
+};
+
+const ProfileSection = ({ title, icon, children }: any) => (
+  <View style={styles.sectionContainer}>
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionIconBox}>
+        <MaterialIcons name={icon} size={20} color={COLORS.primary} />
+      </View>
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+    <View style={styles.sectionBody}>
+      {children}
+    </View>
+  </View>
+);
+
+const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
+  <View style={[styles.detailRow, isLast && { borderBottomWidth: 0 }]}>
+    <View style={styles.detailIconBg}>
+      <MaterialIcons name={icon} size={18} color={color || COLORS.onSurfaceVariant} />
+    </View>
+    <View style={styles.detailTextContent}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue} numberOfLines={1}>{value || 'Not provided'}</Text>
+    </View>
+  </View>
+);
+
+const ProfileScreen = ({ navigation }: any) => {
+  const { user, logout, isLoading } = useAuth();
+  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error) {
-        console.error("Failed to load user in Profile", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  }, []);
+    if (user?.membership_plan?.name) {
+      setPlanName(user.membership_plan.name);
+    }
+  }, [user?.membership_plan]);
 
-  const handleLogout = () => {
-    const performLogout = async () => {
-      try {
-        console.log('Starting logout process...');
-        await authService.logout();
-        onLogout();
-      } catch (error) {
-        console.error('Logout error:', error);
-        Alert.alert('Error', 'Failed to sign out. Please try again.');
-      }
-    };
+  const handleLogoutPress = () => {
+    setIsLogoutModalVisible(true);
+  };
 
-    if (Platform.OS === 'web') {
-      if (confirm('Are you sure you want to sign out of your account?')) {
-        performLogout();
-      }
-    } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ]);
+  const confirmLogout = async () => {
+    setIsLogoutModalVisible(false);
+    try {
+      await logout();
+      showToast.success('Signed Out', 'You have been successfully logged out.');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast.error('Error', 'Failed to sign out. Please try again.');
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="rgb(16 102 177)" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Header title="Verified Profile" />
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* Profile Header Block */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarWrapper}>
-            <Image 
-              source={{ uri: 'https://ui-avatars.com/api/?name=' + (user?.full_name || 'User') + '&background=3b82f6&color=fff&size=200' }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.verifiedBadge}>
-              <MaterialIcons name="verified" size={18} color="#fff" />
-            </View>
-          </View>
-          <Text style={styles.userName}>{user?.full_name || "Verified Voter"}</Text>
-          <View style={styles.secureIdBadge}>
-            <Ionicons name="finger-print" size={14} color="rgb(16 102 177)" style={{ marginRight: 4 }} />
-            <Text style={styles.secureIdText}>SECURE ID: {(user?.id || '4209').toString().padStart(4, '0')}</Text>
-          </View>
-        </View>
-
-        {/* IDENTITY DETAILS SECTION */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>IDENTITY DETAILS</Text>
-            <MaterialIcons name="info-outline" size={18} color="#6b7280" />
-          </View>
-          
-          <View style={styles.infoCard}>
-            <View style={styles.detailItem}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Full Legal Name</Text>
-                <Text style={styles.detailValue}>{user?.full_name || 'N/A'}</Text>
-              </View>
-              <MaterialIcons name="lock-outline" size={20} color="#9ca3af" />
-            </View>
-
-            <View style={styles.detailItem}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Email Address</Text>
-                <Text style={styles.detailValue}>{user?.email || 'N/A'}</Text>
-              </View>
-              <MaterialIcons name="mail-outline" size={18} color="#9ca3af" />
-            </View>
-
-            <View style={[styles.detailItem, { borderBottomWidth: 0 }]}>
-              <View style={styles.detailTextContainer}>
-                <Text style={styles.detailLabel}>Account Status</Text>
-                <Text style={styles.detailValue}>{(user?.status || 'Pending').toUpperCase()}</Text>
-              </View>
-              <View style={[styles.statusBadge, { backgroundColor: user?.status === 'active' ? '#a7f3d0' : '#fee2e2' }]}>
-                <Text style={[styles.statusText, { color: user?.status === 'active' ? '#047857' : '#991b1b' }]}>
-                  {(user?.status || 'PENDING').toUpperCase()}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* SECURITY SETTINGS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SECURITY SETTINGS</Text>
-          <View style={styles.infoCard}>
+    <SafeAreaView style={styles.container}>
+      <Header title="Member Profile" />
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* ... Cinematic Header ... */}
+        <View style={styles.heroContainer}>
+          <LinearGradient
+            colors={[COLORS.primary, '#1e40af']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroGradient}
+          >
+            <View style={styles.heroDecorativeCircle1} />
+            <View style={styles.heroDecorativeCircle2} />
             
-            <TouchableOpacity style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="password" size={20} color="#1f2937" />
+            <View style={styles.heroContent}>
+              <View style={styles.avatarContainer}>
+                <Image 
+                  source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff&size=200' }} 
+                  style={styles.avatar} 
+                />
+                <View style={styles.verifiedBadge}>
+                  <MaterialIcons name="verified" size={20} color="#fff" />
+                </View>
               </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Change Password</Text>
-                <Text style={styles.menuSubtitle}>Enhance your registry security</Text>
+              
+              <Text style={styles.userName}>{user?.full_name || "Member Name"}</Text>
+              <View style={styles.userMetaRow}>
+                <View style={styles.metaBadge}>
+                  <Text style={styles.metaBadgeText}>{user?.role?.toUpperCase() || 'VOTER'}</Text>
+                </View>
+                <View style={styles.dotSeparator} />
+                <Text style={styles.userEmail}>{user?.email}</Text>
               </View>
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-            </TouchableOpacity>
 
-            <View style={styles.menuItem}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="face" size={20} color="#1f2937" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Biometric Auth</Text>
-                <Text style={styles.menuSubtitle}>Use FaceID or Fingerprint</Text>
-              </View>
-              <Switch
-                value={isBiometricAuth}
-                onValueChange={setIsBiometricAuth}
-                trackColor={{ false: '#e5e7eb', true: 'rgb(16 102 177)' }}
-                thumbColor={'#fff'}
-              />
+              <TouchableOpacity 
+                style={styles.editProfileBtn}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
+                  style={styles.editProfileGradient}
+                >
+                  <MaterialIcons name="edit" size={16} color="#fff" />
+                  <Text style={styles.editProfileText}>Edit Profile</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={[styles.menuItem, { borderBottomWidth: 0 }]}>
-              <View style={styles.menuIconContainer}>
-                <MaterialIcons name="vpn-key" size={20} color="#1f2937" />
-              </View>
-              <View style={styles.menuTextContainer}>
-                <Text style={styles.menuTitle}>Two-Factor Auth</Text>
-                <Text style={[styles.menuSubtitle, { color: '#10b981', fontWeight: '500' }]}>Active Protection</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-            </TouchableOpacity>
-          </View>
+          </LinearGradient>
         </View>
 
-        {/* VERIFICATION DOCUMENTS SECTION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>VERIFICATION DOCUMENTS</Text>
-          
-          <View style={styles.documentCard}>
-            <View style={styles.documentDetails}>
-              <Text style={styles.documentTitle}>Voter Registration Card</Text>
-              <Text style={styles.documentSubtitle}>Verified in Digital Registry</Text>
-            </View>
-            <MaterialIcons name="check-circle" size={22} color="#10b981" />
+        <View style={styles.bodyWrapper}>
+          {/* ... Premium Membership Card ... */}
+          <View style={styles.membershipCard}>
+            <LinearGradient
+              colors={['#ffffff', '#f8fafc']}
+              style={styles.membershipGradient}
+            >
+              <View style={styles.membershipHeader}>
+                <View style={styles.membershipIconBg}>
+                  <FontAwesome5 name="crown" size={20} color={COLORS.accent} />
+                </View>
+                <View style={styles.membershipTitleGroup}>
+                  <Text style={styles.membershipLabel}>MEMBERSHIP TIER</Text>
+                  <Text style={styles.membershipName}>{planName}</Text>
+                </View>
+                <View style={[styles.statusPill, { backgroundColor: COLORS.success + '15' }]}>
+                  <Text style={[styles.statusPillText, { color: COLORS.success }]}>ACTIVE</Text>
+                </View>
+              </View>
+              
+              <View style={styles.membershipDivider} />
+              
+              <View style={styles.membershipMetaGrid}>
+                <View style={styles.membershipMetaItem}>
+                  <Text style={styles.metaLabel}>VALID UNTIL</Text>
+                  <Text style={styles.metaValue}>31 Dec 2026</Text>
+                </View>
+                <View style={styles.membershipMetaItem}>
+                  <Text style={styles.metaLabel}>VOTING RIGHTS</Text>
+                  <Text style={styles.metaValue}>Full Access</Text>
+                </View>
+              </View>
+            </LinearGradient>
           </View>
 
-          <View style={styles.documentCard}>
-            <View style={styles.documentDetails}>
-              <Text style={styles.documentTitle}>Identity Confirmation</Text>
-              <Text style={styles.documentSubtitle}>Verified by System Admin</Text>
-            </View>
-            <MaterialIcons name="check-circle" size={22} color="#10b981" />
+          {/* Profile Information Sections */}
+          <ProfileSection title="Identity & Personal" icon="person">
+            <DetailRow icon="badge" label="Full Name" value={user?.full_name} />
+            <DetailRow icon="email" label="Official Email" value={user?.email} />
+            <DetailRow icon="phone" label="Registry Phone" value={user?.phone} />
+            <DetailRow icon="cake" label="Date of Birth" value={user?.date_of_birth} />
+            <DetailRow icon="wc" label="Gender" value={user?.gender} isLast={true} />
+          </ProfileSection>
+
+          <ProfileSection title="KYC & Verification" icon="verified-user">
+            <DetailRow icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
+            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={true} />
+          </ProfileSection>
+
+          <ProfileSection title="Location Ledger" icon="location-on">
+            <DetailRow icon="home" label="Primary Residence" value={user?.street_address} />
+            <DetailRow icon="map" label="Region / State" value={`${user?.city || ''}, ${user?.state || ''}`} isLast={true} />
+          </ProfileSection>
+
+          {/* Support Actions */}
+          <View style={styles.supportContainer}>
+            <TouchableOpacity style={styles.supportAction}>
+              <MaterialIcons name="help-center" size={22} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Help & Documentation</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.supportAction}>
+              <MaterialIcons name="security" size={22} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Security & Privacy</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Logout Action */}
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogoutPress}
+            activeOpacity={0.7}
+          >
+            <LinearGradient
+              colors={['#fff', '#fff']}
+              style={styles.logoutGradient}
+            >
+              <MaterialIcons name="logout" size={20} color={COLORS.error} />
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* System Footer */}
+          <View style={styles.systemFooter}>
+            <Text style={styles.systemFooterText}>POLLING STATION NODE: {user?.tenant_id || 'LOCAL-01'}</Text>
+            <Text style={styles.systemFooterText}>SECURE VERSION 4.9.0-GOLD</Text>
           </View>
         </View>
-
-        {/* Log Out Action Trigger */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <MaterialIcons name="logout" size={20} color="#dc2626" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutButtonText}>Log out of SecureVote</Text>
-        </TouchableOpacity>
-        
-        {/* Footer Build Specifications */}
-        <Text style={styles.buildVersionText}>Version 2.2.0-secure | Built for Civic Integrity</Text>
-        <View style={{ height: 100 }} />
       </ScrollView>
-    </View>
+
+      {/* Custom Logout Modal */}
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalPopup}>
+            <View style={styles.modalIconBg}>
+              <MaterialIcons name="logout" size={28} color={COLORS.error} />
+            </View>
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmBtn} 
+                onPress={confirmLogout}
+              >
+                <Text style={styles.confirmBtnText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
+  container: { flex: 1, backgroundColor: COLORS.background },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
+  content: { flex: 1 },
+
+  // Hero Header Styles
+  heroContainer: {
+    width: '100%',
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
+      android: { elevation: 12 },
+    })
   },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-  },
-  content: {
-    flex: 1,
-  },
-  profileHeader: {
-    alignItems: 'center',
+  heroGradient: {
     paddingTop: 40,
-    paddingBottom: 24,
-  },
-  avatarWrapper: {
+    paddingBottom: 50,
+    paddingHorizontal: 24,
+    alignItems: 'center',
     position: 'relative',
-    marginBottom: 16,
+  },
+  heroDecorativeCircle1: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  heroDecorativeCircle2: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  heroContent: {
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 20,
   },
   avatar: {
     width: 110,
     height: 110,
-    borderRadius: 55,
-    borderWidth: 2,
-    borderColor: '#fff',
+    borderRadius: 35,
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   verifiedBadge: {
     position: 'absolute',
-    bottom: 2,
-    right: 2,
-    backgroundColor: 'rgb(16 102 177)',
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    bottom: -5,
+    right: -5,
+    backgroundColor: COLORS.success,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#f8fafc',
+    borderWidth: 3,
+    borderColor: COLORS.primary,
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -0.5,
     marginBottom: 8,
   },
-  secureIdBadge: {
-   flexDirection: 'row',
-   alignItems: 'center',
-   backgroundColor: '#eff6ff',
-   paddingHorizontal: 14,
-   paddingVertical: 6,
-   borderRadius: 20,
-  },
-  secureIdText: {
-   fontSize: 12,
-   fontWeight: '600',
-   color: 'rgb(16 102 177)',
-   letterSpacing: 0.5,
-  },  section: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-  },
-  sectionHeaderRow: {
+  userMetaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 12,
+  metaBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  metaBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  dotSeparator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+  },
+  userEmail: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
-    color: '#475569',
-    letterSpacing: 0.5,
+  },
+  editProfileBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  editProfileGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  editProfileText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  // Body Layout
+  bodyWrapper: {
+    paddingHorizontal: 20,
+    marginTop: -25,
+    zIndex: 2,
+  },
+  
+  // Membership Card Styles
+  membershipCard: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 12 },
+      android: { elevation: 6 },
+    })
+  },
+  membershipGradient: {
+    padding: 24,
+  },
+  membershipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  membershipIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 3 },
+    })
+  },
+  membershipTitleGroup: {
     flex: 1,
   },
-  infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    overflow: 'hidden',
+  membershipLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    letterSpacing: 1,
   },
-  detailItem: {
+  membershipName: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.onSurface,
+    marginTop: 2,
+  },
+  statusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  membershipDivider: {
+    height: 1,
+    backgroundColor: COLORS.outlineVariant,
+    marginVertical: 20,
+    opacity: 0.5,
+  },
+  membershipMetaGrid: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  membershipMetaItem: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  metaValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+  },
+
+  // Section Styles
+  sectionContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+    gap: 12,
+    marginBottom: 20,
+  },
+  sectionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    letterSpacing: -0.2,
+  },
+  sectionBody: {
+    gap: 0,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  detailIconBg: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
     borderColor: '#f1f5f9',
   },
-  detailTextContainer: {
+  detailTextContent: {
     flex: 1,
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
     fontSize: 10,
     fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  menuIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#f1f5f9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  menuTextContainer: {
-    flex: 1,
-  },
-  menuTitle: {
+  detailValue: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontWeight: '700',
+    color: COLORS.onSurface,
   },
-  menuSubtitle: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
-  documentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+
+  // Support Styles
+  supportContainer: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    borderRadius: 24,
+    padding: 8,
+    marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
-    marginBottom: 12,
+    borderColor: COLORS.outlineVariant,
   },
-  documentDetails: {
+  supportAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    padding: 16,
+    borderRadius: 18,
+  },
+  supportActionText: {
     flex: 1,
-  },
-  documentTitle: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontWeight: '700',
+    color: COLORS.onSurface,
   },
-  documentSubtitle: {
-    fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
-  },
+
+  // Logout Button Styles
   logoutButton: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.error + '40',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.error, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 },
+    })
+  },
+  logoutGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 16,
-    marginTop: 24,
-    paddingVertical: 14,
-    borderWidth: 1.5,
-    borderColor: '#dc2626',
-    borderRadius: 8,
-    backgroundColor: 'transparent',
+    gap: 12,
+    paddingVertical: 18,
   },
   logoutButtonText: {
-    fontSize: 15,
-    color: '#dc2626',
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.error,
+    letterSpacing: 0.2,
   },
-  buildVersionText: {
+
+  // System Footer
+  systemFooter: {
+    marginTop: 32,
+    alignItems: 'center',
+    gap: 4,
+  },
+  systemFooterText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.3,
+    letterSpacing: 1,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalPopup: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 32,
+    padding: 32,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 16 },
+      android: { elevation: 24 },
+    })
+  },
+  modalIconBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: COLORS.error + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-    color: '#94a3b8',
-    fontSize: 12,
-    marginTop: 20,
+    lineHeight: 24,
+    marginBottom: 32,
+    fontWeight: '500',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fee2e2',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.error,
   },
 });
 

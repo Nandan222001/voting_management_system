@@ -101,20 +101,22 @@ def user_stats(
 
 @router.get(
     "/{user_id}",
-    response_model=UserResponse,
     summary="Get a single user by ID",
 )
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> UserResponse:
+) -> JSONResponse:
     """
     Fetch a user by their primary key, scoped to the caller's tenant.
     Raises 404 if not found or not in the caller's tenant.
     """
     user = user_service.get_user_by_id(db, user_id, tenant_id=current_user.tenant_id)
-    return UserResponse.model_validate(user)
+    return success_response(
+        data=UserResponse.model_validate(user).model_dump(mode="json"),
+        message="User details retrieved."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -123,7 +125,6 @@ def get_user(
 
 @router.put(
     "/{user_id}",
-    response_model=UserResponse,
     summary="Update a user",
 )
 def update_user(
@@ -131,13 +132,16 @@ def update_user(
     payload: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> UserResponse:
+) -> JSONResponse:
     """
     Apply a partial update to the user identified by ``user_id``.
     Only supplied fields are changed.
     """
     updated = user_service.update_user(db, user_id, payload)
-    return UserResponse.model_validate(updated)
+    return success_response(
+        data=UserResponse.model_validate(updated).model_dump(mode="json"),
+        message="User updated successfully."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -203,4 +207,26 @@ def block_user(
     Scoped to the caller's tenant.  Raises 400 if already blocked.
     """
     updated = user_service.block_user(db, user_id, tenant_id=current_user.tenant_id)
+    return UserResponse.model_validate(updated)
+
+
+# ---------------------------------------------------------------------------
+# POST /{user_id}/unblock
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/{user_id}/unblock",
+    response_model=UserResponse,
+    summary="Unblock a user",
+)
+def unblock_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> UserResponse:
+    """
+    Set a user's status to ``active``, allowing logins again.
+    Scoped to the caller's tenant.  Raises 400 if not blocked.
+    """
+    updated = user_service.unblock_user(db, user_id, tenant_id=current_user.tenant_id)
     return UserResponse.model_validate(updated)

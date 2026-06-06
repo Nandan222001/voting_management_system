@@ -13,14 +13,46 @@ Roles
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError
+from jose import ExpiredSignatureError, JWTError
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
+from app.models.tenant import Tenant
 from app.models.user import User, UserRole
 from app.utils.security import decode_token
+
+
+def verify_tenant_header(
+    x_tenant_id: Optional[str] = Header(None, alias="X-Tenant-ID"),
+    db: Session = Depends(get_db),
+) -> Optional[Tenant]:
+    """
+    Validates that the provided X-Tenant-ID header matches a valid tenant ID or UUID.
+    This acts as a 'Mobile API Key' for the platform.
+    """
+    if not x_tenant_id or x_tenant_id.lower() in ("null", "undefined", "none", ""):
+        return None
+    
+    print(f"DEBUG: verify_tenant_header received X-Tenant-ID: {x_tenant_id}")
+    
+    # Try looking up by integer ID first if numeric
+    if x_tenant_id.isdigit():
+        tenant = db.query(Tenant).filter(Tenant.id == int(x_tenant_id)).first()
+        if tenant:
+            return tenant
+
+    # Fallback to UUID lookup
+    tenant = db.query(Tenant).filter(Tenant.uuid == x_tenant_id).first()
+    if not tenant:
+        print(f"DEBUG: verify_tenant_header - Tenant not found for: {x_tenant_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Invalid Tenant ID: {x_tenant_id}",
+        )
+    return tenant
+
 
 # ---------------------------------------------------------------------------
 # OAuth2 schemes
@@ -73,6 +105,12 @@ def get_current_user(
 
         if user_id is None or token_type != "access":
             raise credentials_exception
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Access token expired. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except JWTError:
         raise credentials_exception
 
@@ -210,9 +248,53 @@ def require_tenant_admin(current_user: User = Depends(get_current_user)) -> User
     return current_user
 
 
+def require_tenant_admin_only(current_user: User = Depends(get_current_user)) -> User:
+    """
+    Assert that the caller is strictly a tenant-level admin.
+    Excludes superadmins and voters.
+    """
+    if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Strict Tenant Admin privileges required",
+        )
+    if current_user.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin must be associated with a tenant",
+        )
+    return current_user
+
+
 # ---------------------------------------------------------------------------
 # Tenant context helper
 # ---------------------------------------------------------------------------
+
+
+def get_header_tenant_id(
+    tenant: Optional[Tenant] = Depends(verify_tenant_header),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+) -> Optional[int]:
+    """
+    Return the integer ``tenant_id`` that corresponds to the ``X-Tenant-ID``
+    header, or ``None`` when the header is absent.
+
+    This is the primary way **mobile clients** pass their tenant scope.
+    Web clients do not send this header — they rely on the ``tenant_id``
+    embedded in the user's JWT instead.
+
+    Usage::
+
+        @router.post("/some-endpoint")
+        def endpoint(
+            header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+        ): ...
+    """
+    if tenant:
+        return tenant.id
+    if current_user:
+        return current_user.tenant_id
+    return None
 
 
 def get_tenant_context(

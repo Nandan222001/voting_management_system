@@ -23,6 +23,23 @@ class TargetService:
         """
         repo = self.TargetRepository(db)
         
+        # Check for duplicate name
+        existing = db.query(Target).filter(Target.name == data.name).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A committee with the name '{data.name}' already exists.",
+            )
+
+        # Check for duplicate president_id
+        if data.president_id:
+            existing_p = db.query(Target).filter(Target.president_id == data.president_id).first()
+            if existing_p:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This user is already assigned as a president to another committee.",
+                )
+
         # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
@@ -40,13 +57,12 @@ class TargetService:
         """
         Fetch all targets available for a tenant (including global ones).
         """
-        repo = self.TargetRepository(db)
         # If tenant_id is None (SuperAdmin), return all.
         # If tenant_id is set, return targets for that tenant AND global targets (tenant_id IS NULL)
         query = db.query(Target)
         if tenant_id is not None:
             from sqlalchemy import or_
-            query = query.filter(or_(Target.tenant_id == tenant_id, Target.tenant_id == None))
+            query = query.filter(or_(Target.tenant_id == tenant_id, Target.tenant_id.is_(None)))
         
         return query.all()
 
@@ -54,8 +70,7 @@ class TargetService:
         """
         Fetch a single target by ID.
         """
-        repo = self.TargetRepository(db)
-        target = repo.get_by_id(target_id)
+        target = self.TargetRepository(db).get_by_id(target_id)
         if not target:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -72,6 +87,24 @@ class TargetService:
         target = self.get_target_by_id(db, target_id)
         repo = self.TargetRepository(db)
         
+        # Check for duplicate name (excluding current target)
+        if data.name:
+            existing = db.query(Target).filter(Target.name == data.name, Target.id != target_id).first()
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A committee with the name '{data.name}' already exists.",
+                )
+
+        # Check for duplicate president_id (excluding current target)
+        if data.president_id:
+            existing_p = db.query(Target).filter(Target.president_id == data.president_id, Target.id != target_id).first()
+            if existing_p:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This user is already assigned as a president to another committee.",
+                )
+
         # Optional: Validate parent_id
         if data.parent_id:
             parent = repo.get_by_id(data.parent_id)
@@ -87,7 +120,7 @@ class TargetService:
         """
         Permanently delete a target. (SuperAdmin only)
         """
-        target = self.get_target_by_id(db, target_id)
+        self.get_target_by_id(db, target_id)
         
         # Check if target has children
         repo = self.TargetRepository(db)

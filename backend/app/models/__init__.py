@@ -10,8 +10,12 @@ from app.models.election import Election, ElectionStatus                    # no
 from app.models.target import Target, TargetType                            # noqa: F401
 from app.models.candidate_committee import CandidateCommittee                # noqa: F401
 from app.models.candidate import Candidate                                  # noqa: F401
+from app.models.candidate_follower import CandidateFollower                  # noqa: F401
+from app.models.nomination import Nomination, NominationStatus              # noqa: F401
+from app.models.announcement import Announcement, AnnouncementStatus        # noqa: F401
 from app.models.vote import Vote                                            # noqa: F401
 from app.models.payment import Payment, PaymentStatus                       # noqa: F401
+from app.models.plan import Plan                                           # noqa: F401
 from app.models.audit_log import AuditLog                                   # noqa: F401
 
 __all__ = [
@@ -28,8 +32,14 @@ __all__ = [
     "TargetType",
     "CandidateCommittee",
     "Candidate",
+    "CandidateFollower",
+    "Nomination",
+    "NominationStatus",
+    "Announcement",
+    "AnnouncementStatus",
     "Vote",
     "Payment",
     "PaymentStatus",
+    "Plan",
     "AuditLog",
 ]
