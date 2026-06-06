@@ -1,6 +1,5 @@
 # Digital Voting System
 
-
 **Secure • Transparent • Reliable**
 
 A full-stack digital voting platform with Admin Web Panel, REST API, and Mobile App placeholder.
