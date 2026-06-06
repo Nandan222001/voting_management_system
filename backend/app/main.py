@@ -50,10 +50,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://voting.indian-merchant-navy.com",
+        "https://voting-management-system-ten.vercel.app",
         "http://localhost:8081",
         "http://127.0.0.1:8081",
-        "http://localhost:3000", # standard react web
-        "*", # wildcard for dynamic local IPs (mobile testing)
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "*",
     ],
     allow_credentials=True,
     allow_methods=["*"],
