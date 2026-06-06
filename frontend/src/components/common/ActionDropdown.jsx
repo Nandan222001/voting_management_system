@@ -48,6 +48,7 @@ function DropdownItems({ actions, align, open, updatePosition, position }) {
               {({ active, disabled }) => (
                 <button
                   type="button"
+                  role="menuitem"
                   onClick={action.onClick}
                   disabled={disabled}
                   className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-bold transition-colors duration-150 ${
