@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Image, Platform, Alert, useWindowDimensions, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
 import { electionService } from '../services/electionService';
 import { tenantService } from '../services/tenantService';
 import { Announcement, announcementService } from '../services/announcementService';
+import { mediaService } from '../services/mediaService';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 
@@ -189,7 +190,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               onPress={() => navigation.navigate('AnnouncementDetail', { id: latestAnnouncement.id, announcement: latestAnnouncement })}
             >
               {latestAnnouncement.image_urls?.[0] ? (
-                <Image source={{ uri: latestAnnouncement.image_urls[0] }} style={styles.announcementImage} />
+                <Image source={{ uri: mediaService.getFileUrl(latestAnnouncement.image_urls[0]) }} style={styles.announcementImage} />
               ) : (
                 <View style={styles.announcementFallback}>
                   <Image 

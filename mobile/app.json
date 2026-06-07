@@ -1,34 +1,4 @@
 {
-  "expo": {
-    "name": "CivicVote",
-    "slug": "civicvote",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "resizeMode": "contain",
-      "backgroundColor": "rgb(16 102 177)"
-    },
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.civicvote.mobile"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "rgb(16 102 177)"
-      },
-      "package": "com.civicvote.mobile"
-    },
-    "web": {},
-    "plugins": [
-      "expo-font",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "The app needs access to your photos to upload KYC documents.",
-          "cameraPermission": "The app needs access to your camera to take KYC photos."
-        }
-      ]
-    ]
-  }
+  "name": "CivicVote",
+  "displayName": "CivicVote"
 }

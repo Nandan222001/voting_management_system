@@ -13,7 +13,8 @@ import {
   Platform,
   Image,
 } from "react-native";
-import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "../services/api";
 import Header from "../components/common/Header";

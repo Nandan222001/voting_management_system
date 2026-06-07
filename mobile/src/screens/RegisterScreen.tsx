@@ -20,9 +20,11 @@ import {
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import LinearGradient from 'react-native-linear-gradient';
+import { launchImageLibrary } from 'react-native-image-picker';
 import RazorpayCheckout from 'react-native-razorpay';
 import { showToast } from '../utils/toast';
 import { paymentService, createRegistrationOrder } from '../services/paymentService';
@@ -364,26 +366,16 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   const pickAndUploadImage = async (field: 'kyc_front_url' | 'kyc_back_url') => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      if (Platform.OS === 'web') {
-        showToast.info("Permission Required", "Please allow access to your photos to upload KYC documents.");
-      } else {
-        Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
-      }
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
       quality: 0.7,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
       setUploading(field);
       try {
         const uri = result.assets[0].uri;
+        if (!uri) return;
         const uploadedUrl = await mediaService.uploadFile(uri, `${field}.jpg`);
         handleChange(field, uploadedUrl);
       } catch (error) {
