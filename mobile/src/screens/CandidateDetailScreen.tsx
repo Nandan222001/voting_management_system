@@ -11,11 +11,12 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Header from '../components/common/Header';
 import { candidateService } from '../services/candidateService';
+import { mediaService } from '../services/mediaService';
 import { showToast } from '../utils/toast';
 
 const { width } = Dimensions.get('window');
@@ -62,8 +63,8 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   const constituency = candidate.target?.name || 'General Node';
   
   // Fallback logic for images
-  const portraitUrl = candidate.image_url || DEFAULT_IMAGES.portrait;
-  const coverUrl = candidate.cover_url || DEFAULT_IMAGES.cover;
+  const portraitUrl = candidate.image_url ? mediaService.getFileUrl(candidate.image_url) : DEFAULT_IMAGES.portrait;
+  const coverUrl = candidate.cover_url ? mediaService.getFileUrl(candidate.cover_url) : DEFAULT_IMAGES.cover;
   const bioText = candidate.bio || "Candidate has not provided a specific mission statement.";
 
   useEffect(() => {

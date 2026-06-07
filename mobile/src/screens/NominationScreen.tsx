@@ -21,10 +21,11 @@ import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { candidateService } from '../services/candidateService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
+import DocumentPicker from 'react-native-document-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 import Header from '../components/common/Header';
 
@@ -261,22 +262,25 @@ const NominationScreen = ({ navigation, route }: any) => {
     return label.includes(searchQuery.toLowerCase());
   });
 
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+
   const pickImage = async (field: 'profile_photo_url' | 'signature_url' | 'cover_photo_url') => {
     const isCover = field === 'cover_photo_url';
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: isCover ? [16, 9] : [1, 1],
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
       quality: 0.5,
     });
 
-    if (!result.canceled) {
+    if (!result.didCancel && result.assets && result.assets[0].uri) {
+      const localUri = result.assets[0].uri;
+      setPreviews({ ...previews, [field]: localUri });
       setLoading(true);
       try {
-        const uploadedUrl = await mediaService.uploadImage(result.assets[0].uri);
+        const uploadedUrl = await mediaService.uploadImage(localUri);
         setFormData({ ...formData, [field]: uploadedUrl });
       } catch (error) {
         Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
+        // Revert preview on failure if desired, or leave it
       } finally {
         setLoading(false);
       }
@@ -300,38 +304,39 @@ const NominationScreen = ({ navigation, route }: any) => {
   };
 
   const pickNominationDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/*', 'application/pdf'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-
-    if (result.canceled || !result.assets?.[0]) {
-      return;
-    }
-
-    const asset = result.assets[0];
-    setLoading(true);
     try {
-      const uploadedUrl = await mediaService.uploadFile(
-        asset.uri,
-        asset.name || 'signature',
-        asset.mimeType || 'application/octet-stream',
-      );
-      setFormData({
-        ...formData,
-        signature_url: uploadedUrl,
-        nomination_document_name: asset.name || 'Nomination document',
-        nomination_document_type: asset.mimeType || '',
+      const results = await DocumentPicker.pick({
+        type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
       });
-      setErrors({ ...errors, signature_url: '' });
-    } catch (error: any) {
-      Alert.alert(
-        'Upload Failed',
-        error.response?.data?.detail || 'Could not upload signature. Please upload an image or PDF.',
-      );
-    } finally {
-      setLoading(false);
+
+      const asset = results[0];
+      setPreviews({ ...previews, signature_url: asset.uri });
+      setLoading(true);
+      try {
+        const uploadedUrl = await mediaService.uploadFile(
+          asset.uri,
+          asset.name || 'signature',
+          asset.type || 'application/octet-stream',
+        );
+        setFormData({
+          ...formData,
+          signature_url: uploadedUrl,
+          nomination_document_name: asset.name || 'Nomination document',
+          nomination_document_type: asset.type || '',
+        });
+        setErrors({ ...errors, signature_url: '' });
+      } catch (error: any) {
+        Alert.alert(
+          'Upload Failed',
+          error.response?.data?.detail || 'Could not upload signature. Please upload an image or PDF.',
+        );
+      } finally {
+        setLoading(false);
+      }
+    } catch (err) {
+      if (!DocumentPicker.isCancel(err)) {
+        console.error(err);
+      }
     }
   };
 
@@ -530,8 +535,8 @@ const NominationScreen = ({ navigation, route }: any) => {
               
               <View style={styles.photoUploadContainer}>
                 <TouchableOpacity style={styles.photoBox} onPress={() => pickImage('profile_photo_url')}>
-                  {formData.profile_photo_url ? (
-                    <Image source={{ uri: formData.profile_photo_url }} style={styles.photoPreview} />
+                  {(previews.profile_photo_url || formData.profile_photo_url) ? (
+                    <Image source={{ uri: previews.profile_photo_url || mediaService.getFileUrl(formData.profile_photo_url) }} style={styles.photoPreview} />
                   ) : (
                     <>
                       <MaterialIcons name="add-a-photo" size={32} color={COLORS.textSecondary} />
@@ -544,8 +549,8 @@ const NominationScreen = ({ navigation, route }: any) => {
 
               <View style={styles.photoUploadContainer}>
                 <TouchableOpacity style={[styles.photoBox, styles.coverPhotoBox]} onPress={() => pickImage('cover_photo_url')}>
-                  {formData.cover_photo_url ? (
-                    <Image source={{ uri: formData.cover_photo_url }} style={styles.photoPreview} />
+                  {(previews.cover_photo_url || formData.cover_photo_url) ? (
+                    <Image source={{ uri: previews.cover_photo_url || mediaService.getFileUrl(formData.cover_photo_url) }} style={styles.photoPreview} />
                   ) : (
                     <>
                       <MaterialIcons name="landscape" size={32} color={COLORS.textSecondary} />

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Header from '../components/common/Header';
 import { Announcement } from '../services/announcementService';
 import { notificationService, NotificationItem, NotificationGroups } from '../services/notificationService';

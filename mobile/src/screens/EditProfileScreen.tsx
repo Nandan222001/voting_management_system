@@ -22,9 +22,10 @@ import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { planService } from '../services/planService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';

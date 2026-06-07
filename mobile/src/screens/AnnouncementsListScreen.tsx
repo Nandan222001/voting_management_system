@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Header from '../components/common/Header';
 import { Announcement, announcementService } from '../services/announcementService';
+import { mediaService } from '../services/mediaService';
 
 const COLORS = {
   primary: '#003d9b',
@@ -73,7 +74,7 @@ export default function AnnouncementsListScreen({ navigation }: any) {
             onPress={() => navigation.navigate('AnnouncementDetail', { id: item.id, announcement: item })}
           >
             {item.image_urls?.[0] ? (
-              <Image source={{ uri: item.image_urls[0] }} style={styles.cardImage} />
+              <Image source={{ uri: mediaService.getFileUrl(item.image_urls[0]) }} style={styles.cardImage} />
             ) : (
               <View style={styles.imageFallback}>
                 <Image 

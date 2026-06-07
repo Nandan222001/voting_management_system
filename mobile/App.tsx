@@ -1,7 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Text, StyleSheet, Platform } from 'react-native';
+import { StatusBar, View, ActivityIndicator, Text, StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import TabNavigator from './src/navigation/TabNavigator';
@@ -9,7 +8,7 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import Toast, { BaseToast, ErrorToast, InfoToast } from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { MaterialIcons } from '@expo/vector-icons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const toastConfig = {
   success: (props: any) => (
@@ -157,7 +156,7 @@ function AppContent() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
-        <StatusBar style="auto" />
+        <StatusBar barStyle="dark-content" />
         {token ? (
           <TabNavigator />
         ) : (
