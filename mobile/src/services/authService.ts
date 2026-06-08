@@ -3,12 +3,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const authService = {
   login: async (email: string, password: string) => {
-    // Using a raw string for form-urlencoded payload to ensure compatibility
-    const body = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+    // Exactly matching the successful curl command provided by the user
+    // grant_type=password&username=suhel%40gmail.com&password=Suhel%40123&scope=&client_id=string&client_secret=
+    const params = new URLSearchParams();
+    params.append('grant_type', 'password');
+    params.append('username', email);
+    params.append('password', password);
+    params.append('scope', '');
+    params.append('client_id', 'string');
+    params.append('client_secret', '');
 
-    const response = await api.post('/auth/login', body, {
+    const response = await api.post('/auth/login', params.toString(), {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
       },
     });
 

@@ -1,0 +1,30 @@
+0 verbose cli /usr/local/bin/node /usr/local/bin/npm
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/private/var/folders/8w/6bt0s6791sgfprqd3lwk_26r0000gn/T/rncli-init-template-7Y6e6l/.npmrc
+5 silly config load:file:/Users/li/.npmrc
+6 silly config load:file:/usr/local/etc/npmrc
+7 verbose title npm init
+8 verbose argv "init" "--yes"
+9 verbose logfile logs-max:10 dir:/Users/li/voting_management_system/mobile/.npm-cache/_logs/2026-06-08T19_28_28_654Z-
+10 verbose logfile /Users/li/voting_management_system/mobile/.npm-cache/_logs/2026-06-08T19_28_28_654Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly package data {
+13 silly package data   name: 'rncli-init-template-7y6e6l',
+13 silly package data   version: '1.0.0',
+13 silly package data   description: '',
+13 silly package data   main: 'index.js',
+13 silly package data   scripts: { test: 'echo "Error: no test specified" && exit 1' },
+13 silly package data   keywords: [],
+13 silly package data   author: '',
+13 silly package data   license: 'ISC',
+13 silly package data   type: 'commonjs'
+13 silly package data }
+14 verbose cwd /private/var/folders/8w/6bt0s6791sgfprqd3lwk_26r0000gn/T/rncli-init-template-7Y6e6l
+15 verbose os Darwin 25.5.0
+16 verbose node v24.12.0
+17 verbose npm  v11.6.2
+18 verbose exit 0
+19 info ok
