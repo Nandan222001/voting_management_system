@@ -20,6 +20,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
+import { mediaService } from '../services/mediaService';
 
 const { width } = Dimensions.get('window');
 
@@ -119,7 +120,11 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.heroContent}>
               <View style={styles.avatarContainer}>
                 <Image 
-                  source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff&size=200' }} 
+                  source={{ 
+                    uri: user?.image_url 
+                      ? mediaService.getFileUrl(user.image_url) 
+                      : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff&size=200' 
+                  }} 
                   style={styles.avatar} 
                 />
                 <View style={styles.verifiedBadge}>

@@ -8,6 +8,7 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
+  image_url?: string;
   role: string;
   status: string;
   is_verified: boolean;

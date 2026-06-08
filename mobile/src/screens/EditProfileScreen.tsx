@@ -144,6 +144,7 @@ const EditProfileScreen = ({ navigation }: any) => {
     parent_name: user?.parent_name || '',
     voter_id: user?.voter_id || '',
     designation: user?.designation || '',
+    image_url: user?.image_url || '',
 
     // Step 2
     house_number: user?.house_number || '',
@@ -336,6 +337,28 @@ const EditProfileScreen = ({ navigation }: any) => {
     else navigation.goBack();
   };
 
+  const handlePickImage = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.5,
+    });
+
+    if (!result.didCancel && result.assets && result.assets[0].uri) {
+      const localUri = result.assets[0].uri;
+      setLoading(true);
+      try {
+        const uploadedUrl = await mediaService.uploadImage(localUri);
+        handleChange('image_url', uploadedUrl);
+        showToast.success('Success', 'Image uploaded successfully.');
+      } catch (error) {
+        console.error('Image upload failed:', error);
+        showToast.error('Upload Failed', 'Could not upload profile image.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const handleUpdate = async () => {
     if (!validateStep1() || !validateStep3()) {
       if (!validateStep1()) setStep(1);
@@ -484,6 +507,25 @@ const EditProfileScreen = ({ navigation }: any) => {
           {step === 1 && (
             <View style={styles.formSection}>
               <SectionHeader title="Personal Information" step={1} subtitle="Update your identity details." />
+              
+              <View style={styles.photoUploadContainer}>
+                <TouchableOpacity style={styles.photoBox} onPress={handlePickImage}>
+                  {formData.image_url ? (
+                    <Image source={{ uri: mediaService.getFileUrl(formData.image_url) }} style={styles.photoPreview} />
+                  ) : (
+                    <View style={styles.photoPlaceholder}>
+                      <MaterialIcons name="add-a-photo" size={32} color={COLORS.textSecondary} />
+                      <Text style={styles.photoLabel}>Profile Photo</Text>
+                    </View>
+                  )}
+                  {loading && (
+                    <View style={styles.photoLoadingOverlay}>
+                      <ActivityIndicator color={COLORS.white} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+
               <InputField
                 name="full_name"
                 icon="person-outline"
@@ -850,6 +892,13 @@ const styles = StyleSheet.create({
   nextBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.white },
   btnDisabled: { opacity: 0.6 },
   
+  photoUploadContainer: { alignItems: 'center', marginBottom: 24 },
+  photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  photoPreview: { width: '100%', height: '100%' },
+  photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
+  photoLoadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { 
     backgroundColor: COLORS.white, 

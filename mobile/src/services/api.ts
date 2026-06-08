@@ -2,21 +2,15 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const EXPO_ENV = process.env as Record<string, string | undefined>;
-let RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
-// Auto-fix for Android Emulators if localhost is used
-if (Platform.OS === 'android' && RAW_API_URL.includes('localhost')) {
-  console.log('[API] Android Emulator detected, switching localhost to 10.0.2.2');
-  RAW_API_URL = RAW_API_URL.replace('localhost', '10.0.2.2');
-}
+// Production Endpoint Configuration
+const PRODUCTION_URL = 'http://13.207.201.75:8000/api/v1';
+let RAW_API_URL = PRODUCTION_URL;
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
 // Exported for components that need to construct asset URIs
 export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
 
-const ENV_TENANT_ID = EXPO_ENV.EXPO_PUBLIC_TENANT_ID;
 const TENANT_ID_KEY = 'tenant_id';
 
 export const setTenantID = async (tenantId: string | number | null | undefined) => {
@@ -28,7 +22,7 @@ export const setTenantID = async (tenantId: string | number | null | undefined) 
 };
 
 export const getTenantID = async () => {
-  return ENV_TENANT_ID || (await AsyncStorage.getItem(TENANT_ID_KEY)) || null;
+  return (await AsyncStorage.getItem(TENANT_ID_KEY)) || null;
 };
 
 export const clearTenantID = async () => {

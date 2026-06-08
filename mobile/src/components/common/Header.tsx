@@ -69,7 +69,7 @@ const Header = ({ showBack, onBack, title, transparent }: HeaderProps) => {
               <MaterialIcons name="arrow-back" size={24} color={iconColor} />
             </TouchableOpacity>
           )}
-          <Text style={[styles.brandText, transparent && { color: '#fff' }]}>{title || 'CivicVote'}</Text>
+          <Text style={[styles.brandText, transparent && { color: '#fff' }]}>{title || 'VBA Bharat'}</Text>
         </View>
         
         {token && (
