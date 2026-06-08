@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         // 2. Success Behavior: Active users log in immediately and bypass OTP
         setToken(result.access_token);
         setUser(user);
-        showToast.success("Success", "Welcome back to CivicVote!");
+        showToast.success("Success", "Welcome back to VBA Bharat!");
         // Navigation to Dashboard happens automatically in App.tsx due to token state
       } else {
         // 3. Validation & Error Handling: Prevent login for non-active users
@@ -183,7 +183,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         <View style={styles.bottomBranding}>
-           <Text style={styles.brandingText}>Powered by CivicVote Integrity Engine</Text>
+           <Text style={styles.brandingText}>Powered by VBA Bharat Integrity Engine</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

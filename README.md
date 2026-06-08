@@ -53,8 +53,13 @@ npm run dev                   # Start dev server on :5173
 ```
 
 ### Mobile App Setup
+Web
 <!-- cd mobile -->
 <!-- npm run web -->
+
+<!-- Emulator -->
+<!-- npm start -->
+<!-- npm run android  -->
 
 ### Default Admin Credentials
 - **Email:** admin@voting.com

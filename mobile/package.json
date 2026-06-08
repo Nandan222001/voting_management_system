@@ -1,5 +1,5 @@
 {
-  "name": "civicvote-mobile",
+  "name": "vbabharat",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "1.23.1",
+    "@react-native-community/datetimepicker": "^9.1.0",
     "@react-navigation/bottom-tabs": "^6.5.20",
     "@react-navigation/native": "^6.1.17",
     "@react-navigation/stack": "^6.3.29",
@@ -17,6 +18,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",
+    "react-native-date-picker": "^5.0.13",
     "react-native-document-picker": "^9.3.1",
     "react-native-gesture-handler": "^2.16.1",
     "react-native-image-picker": "^8.2.1",

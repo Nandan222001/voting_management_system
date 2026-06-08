@@ -26,6 +26,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import DocumentPicker from 'react-native-document-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
+import DatePicker from 'react-native-date-picker';
 
 import Header from '../components/common/Header';
 
@@ -237,6 +238,19 @@ const NominationScreen = ({ navigation, route }: any) => {
   const [selectedTargetName, setSelectedTargetName] = useState('');
   const [modalType, setModalType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+  };
 
   const declarationComplete =
     formData.agree_constitution &&
@@ -565,7 +579,33 @@ const NominationScreen = ({ navigation, route }: any) => {
               <InputField label="Full Name" value={formData.full_name} onChangeText={(t: string) => setFormData({...formData, full_name: t})} icon="person-outline" error={errors.full_name} />
               <InputField label="Mobile" value={formData.phone} icon="call-outline" editable={false} />
               <InputField label="Email" value={formData.email} icon="mail-outline" editable={false} />
-              <InputField label="Date of Birth" value={formData.date_of_birth} icon="calendar-outline" />
+              <PickerField 
+                label="Date of Birth" 
+                value={formData.date_of_birth} 
+                icon="calendar-outline" 
+                onPress={() => setShowDatePicker(true)} 
+              />
+              <DatePicker
+                modal
+                open={showDatePicker}
+                date={formData.date_of_birth ? (function() {
+                  const parts = formData.date_of_birth.split('/');
+                  if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return isNaN(d.getTime()) ? new Date() : d;
+                  }
+                  return new Date();
+                })() : new Date()}
+                mode="date"
+                onConfirm={(date) => {
+                  setShowDatePicker(false);
+                  setFormData({ ...formData, date_of_birth: formatDate(date) });
+                }}
+                onCancel={() => {
+                  setShowDatePicker(false);
+                }}
+                maximumDate={new Date()}
+              />
               <InputField label="Father / Spouse Name" value={formData.parent_name} onChangeText={(t: string) => setFormData({...formData, parent_name: t})} icon="people-outline" />
               
               <View style={styles.row}>
