@@ -20,17 +20,24 @@ import {
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import LinearGradient from 'react-native-linear-gradient';
+import { launchImageLibrary } from 'react-native-image-picker';
+import RazorpayCheckout from 'react-native-razorpay';
+import DatePicker from 'react-native-date-picker';
+import { showToast } from '../utils/toast';
+import { paymentService, createRegistrationOrder } from '../services/paymentService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getTenantID, BASE_URL } from '../services/api';
 
 import Header from '../components/common/Header';
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
-// --- COLORS ---
 const COLORS = {
-  primary: 'rgb(16 102 177)',
+  primary: '#003d9b',
   primaryContainer: '#eff6ff',
   text: '#0f172a',
   textSecondary: '#64748b',
@@ -119,16 +126,107 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
   </View>
 );
 
+const getTargetLabel = (target: any) => {
+  if (!target) return '';
+  const type = target.type?.toLowerCase();
+  if (type === 'country') return 'Working Committee';
+  if (type === 'state') return `${target.name} Pradesh Committee`;
+  if (type === 'district') return `${target.name} District`;
+  if (type === 'block') return `${target.name} Block Committee`;
+  if (type === 'booth') return `${target.name} Booth Committee`;
+  return target.name;
+};
+
+// --- RAZORPAY HELPERS ---
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if ((window as any).Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      const Razorpay = (window as any).Razorpay;
+      if (!Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
+};
+
 // --- MAIN COMPONENT ---
 
 const RegisterScreen = ({ navigation }: any) => {
   const { register } = useAuth();
   const [step, setStep] = useState(1);
+
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Data States
   const [formData, setFormData] = useState({
@@ -146,6 +244,8 @@ const RegisterScreen = ({ navigation }: any) => {
     kyc_type: '',
     kyc_front_url: '',
     kyc_back_url: '',
+    voter_id: '',
+    designation: '',
 
     // Step 3
     house_number: '',
@@ -156,7 +256,6 @@ const RegisterScreen = ({ navigation }: any) => {
     state: '',
     district: '',
     taluka: '',
-    country: 'India',
 
     current_street_address: '',
     current_city: '',
@@ -166,6 +265,7 @@ const RegisterScreen = ({ navigation }: any) => {
 
     // Step 4
     tenant_id: null as number | null,
+    target_id: null as number | null,
     committee_id: null as number | null,
     state_id: null as number | null,
     district_id: null as number | null,
@@ -175,6 +275,20 @@ const RegisterScreen = ({ navigation }: any) => {
     // Step 5
     membership_plan_id: null as number | null,
   });
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+  };
+
+  // ... (maintain other states and effects)
 
   const [sameAsPermanent, setSameAsPermanent] = useState(true);
 
@@ -187,6 +301,7 @@ const RegisterScreen = ({ navigation }: any) => {
   const [districts, setDistricts] = useState<any[]>([]);
   const [talukas, setTalukas] = useState<any[]>([]);
   const [villages, setVillages] = useState<any[]>([]);
+  const [regTargets, setRegTargets] = useState<any[]>([]);
 
   const [selectedTenantName, setSelectedTenantName] = useState('');
   const [selectedCommitteeName, setSelectedCommitteeName] = useState('');
@@ -196,7 +311,6 @@ const RegisterScreen = ({ navigation }: any) => {
   const [selectedTalukaName, setSelectedTalukaName] = useState('');
   const [selectedVillageName, setSelectedVillageName] = useState('');
 
-  // Modals
   const [modalType, setModalType] = useState<string | null>(null);
   const [uploading, setUploading] = useState<string | null>(null);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
@@ -213,20 +327,27 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const fetchInitialData = async () => {
     try {
-      // 1. Fetch current tenant details based on UUID in header
+      // 1. Fetch current tenant details based on ID in header
       const tenant = await tenantService.getCurrentTenant();
-      setCurrentTenant(tenant);
       
-      // Auto-set the tenant ID in form
-      setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
-      setSelectedTenantName(tenant.name);
+      if (tenant) {
+        setCurrentTenant(tenant);
+        
+        // Auto-set the tenant ID in form
+        setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
+        setSelectedTenantName(tenant.name);
 
-      // 2. Fetch states
-      const statesData = await tenantService.getPublicTargets(undefined, 'state');
-      setStates(statesData);
+        // 2. Fetch states
+        const statesData = await tenantService.getPublicTargets(undefined, 'state');
+        setStates(statesData);
 
-      // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
-      fetchTenantSpecificData();
+        // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
+        fetchTenantSpecificData();
+      } else {
+        // No tenant selected yet, fetch the list of tenants
+        fetchTenants();
+        fetchStates();
+      }
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
       fetchTenants();
@@ -271,27 +392,36 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   const pickAndUploadImage = async (field: 'kyc_front_url' | 'kyc_back_url') => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "You need to allow access to your photos to upload KYC documents.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
       quality: 0.7,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
       setUploading(field);
       try {
-        const uri = result.assets[0].uri;
-        const uploadedUrl = await mediaService.uploadFile(uri, `${field}.jpg`);
+        const asset = result.assets[0];
+        const uri = asset.uri;
+        if (!uri) return;
+        
+        const fileName = asset.fileName || `${field}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+
+        let uploadedUrl = '';
+        try {
+          // Attempt 1: Standard Upload
+          uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        } catch (firstError: any) {
+          console.warn('Primary upload failed, trying fallback...', firstError);
+          // Attempt 2: Fallback to nomination upload (different backend path)
+          uploadedUrl = await mediaService.uploadNominationDocument(uri, fileName, fileType);
+        }
+
         handleChange(field, uploadedUrl);
-      } catch (error) {
-        console.error('Upload error:', error);
-        Alert.alert('Upload Failed', 'Could not upload the image. Please try again.');
+      } catch (error: any) {
+        console.error('Final upload error:', error);
+        const errorMsg = error.response?.data?.detail || error.message || 'Could not upload the image.';
+        Alert.alert('Upload Failed', `${errorMsg}. Please try again.`);
       } finally {
         setUploading(null);
       }
@@ -319,6 +449,10 @@ const RegisterScreen = ({ navigation }: any) => {
       setCommittees(commData);
       const planData = await tenantService.getPublicPlans();
       setPlans(planData);
+      
+      // Load targets for Step 4 (Constituency / Committee)
+      const targetData = await tenantService.getPublicTargets();
+      setRegTargets(targetData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
     }
@@ -337,15 +471,41 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const validateStep1 = () => {
     let newErrors: Record<string, string> = {};
-    if (!formData.full_name) newErrors.full_name = 'Required';
-    if (!formData.phone) newErrors.phone = 'Required';
-    if (!formData.email) newErrors.email = 'Required';
-    if (!formData.date_of_birth) newErrors.date_of_birth = 'Required';
-    if (!formData.gender) newErrors.gender = 'Required';
-    if (!formData.password) newErrors.password = 'Required';
+    
+    // Full Name
+    if (!formData.full_name?.trim()) newErrors.full_name = 'Full Name is required';
+    
+    // Mobile Number: Exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'Mobile Number is required';
+    } else if (!phoneRegex.test(formData.phone.trim())) {
+      newErrors.phone = 'Enter a valid 10-digit mobile number';
+    }
+
+    // Email: Regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email Address is required';
+    } else if (!emailRegex.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (!formData.date_of_birth?.trim()) newErrors.date_of_birth = 'Date of Birth is required';
+    if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.password) newErrors.password = 'Password is required';
     if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      // Show the first error in a toast
+      const firstError = Object.values(newErrors)[0];
+      showToast.error('Validation Error', firstError);
+      return false;
+    }
+    
+    return true;
   };
 
   const validateStep2 = () => {
@@ -371,31 +531,77 @@ const RegisterScreen = ({ navigation }: any) => {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleRegister = async () => {
+  const handleCompleteRegistration = async (isSkippingPlan: boolean = false) => {
     setLoading(true);
     try {
-      // Prepare submission data
       const submissionData = { ...formData };
+      if (isSkippingPlan) submissionData.membership_plan_id = null;
+
       if (sameAsPermanent) {
         submissionData.current_street_address = formData.street_address;
-        submissionData.current_city = formData.village || ''; // fallback to village if city not explicit
+        submissionData.current_city = formData.village || '';
         submissionData.current_district = formData.district;
         submissionData.current_state = formData.state;
         submissionData.current_pincode = formData.pincode;
       }
 
-      // Resolve target_id (most granular selected)
-      const target_id = formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
+      const target_id = formData.target_id || formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
       (submissionData as any).target_id = target_id;
       
+      // 1. Conditional Payment Logic
+      if (submissionData.membership_plan_id) {
+        const selectedPlan = plans.find(p => p.id === submissionData.membership_plan_id);
+        
+        if (selectedPlan && selectedPlan.price > 0) {
+          // A. Create Razorpay Order via backend (Public endpoint)
+          const order = await createRegistrationOrder(submissionData.tenant_id, submissionData.membership_plan_id);
+          
+          // B. Open Razorpay Checkout using the cross-platform helper
+          const options: RazorpayCheckoutOptions = {
+            description: `Registration: ${selectedPlan?.name}`,
+            image: currentTenant?.logo_url || '',
+            currency: order.currency,
+            key: order.key_id,
+            amount: order.amount,
+            name: currentTenant?.name || 'Digital Voting System',
+            order_id: order.razorpay_order_id,
+            prefill: {
+              email: submissionData.email,
+              contact: submissionData.phone,
+              name: submissionData.full_name
+            },
+            theme: { color: COLORS.primary }
+          };
+
+          try {
+            const success = await openRazorpayCheckout(options);
+            
+            // C. Add payment signatures to registration data
+            submissionData.razorpay_order_id = success.razorpay_order_id;
+            submissionData.razorpay_payment_id = success.razorpay_payment_id;
+            submissionData.razorpay_signature = success.razorpay_signature;
+            
+            showToast.info('Payment Verified', 'Finalizing your registration...');
+          } catch (paymentError: any) {
+             const errorDesc = paymentError?.description || 'Payment cancelled or failed';
+             Alert.alert('Payment Error', `${errorDesc}. You can skip for now or try again.`);
+             setLoading(false);
+             return; // Stop registration
+          }
+        }
+      }
+
+      // 2. Final Registration API Call (Now contains payment signatures if applicable)
       await register(submissionData);
-      Alert.alert(
-        'Success',
-        'Registration successful! Please sign in with your credentials.',
-        [{ text: 'Sign In', onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) }]
-      );
+
+      // 3. Success Navigation
+      showToast.success('Registration Successful', 'Welcome! Please sign in with your credentials.');
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      
     } catch (error: any) {
-      Alert.alert('Registration Failed', error.response?.data?.detail || 'An error occurred');
+      console.error('Full Registration Error:', error);
+      const detail = error.response?.data?.detail || error.message || 'An unexpected error occurred during registration.';
+      showToast.error('Registration Failed', detail);
     } finally {
       setLoading(false);
     }
@@ -424,18 +630,18 @@ const RegisterScreen = ({ navigation }: any) => {
       title = "Select Organization";
       data = tenants;
       onSelect = async (item) => {
-        if (item.uuid) {
-          await tenantService.selectTenant(item.uuid);
+        if (item.id) {
+          await tenantService.selectTenant(String(item.id));
         }
         handleChange('tenant_id', item.id);
         setSelectedTenantName(item.name);
       };
     } else if (modalType === 'committee') {
-      title = "Select Committee";
-      data = committees;
+      title = "Select Constituency / Committee";
+      data = regTargets;
       onSelect = (item) => {
-        handleChange('committee_id', item.id);
-        setSelectedCommitteeName(item.name);
+        handleChange('target_id', item.id);
+        setSelectedCommitteeName(getTargetLabel(item));
         setModalSearchQuery('');
       };
     } else if (modalType === 'plan') {
@@ -481,7 +687,7 @@ const RegisterScreen = ({ navigation }: any) => {
     const searchableData =
       modalType === 'committee' && modalSearchQuery.trim()
         ? data.filter((item) =>
-            String(item.name || '').toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
+            getTargetLabel(item).toLowerCase().includes(modalSearchQuery.trim().toLowerCase()),
           )
         : data;
 
@@ -528,8 +734,19 @@ const RegisterScreen = ({ navigation }: any) => {
                   setModalType(null);
                 }}
               >
-                <Text style={styles.listItemText}>{item.name}</Text>
-                {(formData.gender === item.id || formData.kyc_type === item.id || formData.tenant_id === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id) && (
+                <Text style={styles.listItemText}>
+                  {modalType === 'committee' ? getTargetLabel(item) : item.name}
+                </Text>
+                {(formData.gender === item.id || 
+                  formData.kyc_type === item.id || 
+                  formData.tenant_id === item.id || 
+                  formData.committee_id === item.id || 
+                  formData.membership_plan_id === item.id || 
+                  formData.state_id === item.id || 
+                  formData.district_id === item.id || 
+                  formData.taluka_id === item.id || 
+                  formData.village_id === item.id || 
+                  formData.target_id === item.id) && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
@@ -557,6 +774,7 @@ const RegisterScreen = ({ navigation }: any) => {
           {step === 1 && (
             <View style={styles.formSection}>
               <SectionHeader title="Personal Information" step={1} subtitle="Create your secure identity profile." />
+              
               <InputField
                 name="full_name"
                 icon="person-outline"
@@ -592,16 +810,33 @@ const RegisterScreen = ({ navigation }: any) => {
                 setFocusedField={setFocusedField}
                 keyboardType="email-address"
               />
-              <InputField
-                name="date_of_birth"
-                icon="calendar-outline"
+              <PickerField
                 label="Date of Birth"
-                placeholder="DD/MM/YYYY"
+                icon="calendar-outline"
                 value={formData.date_of_birth}
-                onChangeText={(val: string) => handleChange('date_of_birth', val)}
-                errors={errors}
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
+                onPress={() => setShowDatePicker(true)}
+                error={errors.date_of_birth}
+              />
+              <DatePicker
+                modal
+                open={showDatePicker}
+                date={formData.date_of_birth ? (function() {
+                  const parts = formData.date_of_birth.split('/');
+                  if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return isNaN(d.getTime()) ? new Date() : d;
+                  }
+                  return new Date();
+                })() : new Date()}
+                mode="date"
+                onConfirm={(date) => {
+                  setShowDatePicker(false);
+                  handleChange('date_of_birth', formatDate(date));
+                }}
+                onCancel={() => {
+                  setShowDatePicker(false);
+                }}
+                maximumDate={new Date()}
               />
               <PickerField
                 label="Gender"
@@ -845,8 +1080,8 @@ const RegisterScreen = ({ navigation }: any) => {
                   <InputField
                     name="current_street_address"
                     icon="location-outline"
-                    label="Current Street / Area"
-                    placeholder="Enter street"
+                    label="Full Current Address"
+                    placeholder="Enter Full Address"
                     value={formData.current_street_address}
                     onChangeText={(val: string) => handleChange('current_street_address', val)}
                     errors={errors}
@@ -863,21 +1098,21 @@ const RegisterScreen = ({ navigation }: any) => {
           {step === 4 && (
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
-                <SectionHeader title="Committee Management" step={4} subtitle="Select the committee you belong to." />
+                <SectionHeader title="Constituency Mapping" step={4} subtitle="Select the constituency or committee you belong to." />
                 <TouchableOpacity onPress={() => setStep(5)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
 
               <PickerField
-                label="Committee Management"
+                label="Constituency / Committee"
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => {
                   if (!formData.tenant_id) Alert.alert("Select Organization First");
                   else setModalType('committee');
                 }}
-                error={errors.committee_id}
+                error={errors.target_id}
               />
               
               <View style={styles.infoBox}>
@@ -894,34 +1129,37 @@ const RegisterScreen = ({ navigation }: any) => {
             <View style={styles.formSection}>
               <View style={styles.rowBetween}>
                 <SectionHeader title="Membership Plan" step={5} subtitle="Choose a plan that fits your needs." />
-                <TouchableOpacity onPress={handleRegister} style={styles.skipBtn}>
+                <TouchableOpacity onPress={() => handleCompleteRegistration(true)} style={styles.skipBtn}>
                   <Text style={styles.skipText}>Skip</Text>
                 </TouchableOpacity>
               </View>
 
-              {plans.length > 0 ? (
-                plans.map((plan) => (
-                  <TouchableOpacity
-                    key={plan.id}
-                    style={[
-                      styles.planCard,
-                      formData.membership_plan_id === plan.id && styles.planCardSelected
-                    ]}
-                    onPress={() => {
-                      handleChange('membership_plan_id', plan.id);
-                      setSelectedPlanName(plan.name);
-                    }}
-                  >
-                    <View style={styles.planHeader}>
-                      <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
-                    </View>
-                    <Text style={styles.planDesc}>{plan.description}</Text>
-                    {formData.membership_plan_id === plan.id && (
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
-                    )}
-                  </TouchableOpacity>
-                ))
+              {Array.isArray(plans) && plans.length > 0 ? (
+                plans.map((plan) => {
+                  if (!plan) return null;
+                  return (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={[
+                        styles.planCard,
+                        formData.membership_plan_id === plan.id && styles.planCardSelected
+                      ]}
+                      onPress={() => {
+                        handleChange('membership_plan_id', plan.id);
+                        setSelectedPlanName(plan.name);
+                      }}
+                    >
+                      <View style={styles.planHeader}>
+                        <Text style={styles.planName}>{plan.name}</Text>
+                        <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
+                      </View>
+                      <Text style={styles.planDesc}>{plan.description}</Text>
+                      {formData.membership_plan_id === plan.id && (
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
               ) : (
                 <View style={styles.emptyPlans}>
                    <Text style={styles.emptyText}>No special plans available for this organization. You will be registered as a free member.</Text>
@@ -945,7 +1183,7 @@ const RegisterScreen = ({ navigation }: any) => {
             ) : (
               <TouchableOpacity
                 style={[styles.nextBtn, loading && styles.btnDisabled]}
-                onPress={handleRegister}
+                onPress={() => handleCompleteRegistration(false)}
                 disabled={loading}
               >
                 {loading ? <ActivityIndicator color={COLORS.white} /> : (

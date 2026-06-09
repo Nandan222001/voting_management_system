@@ -9,47 +9,65 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  SafeAreaView,
+  Dimensions,
+  Modal,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons } from '@expo/vector-icons';
-import { tenantService } from '../services/tenantService';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
+import { mediaService } from '../services/mediaService';
+
+const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#003d9b',
-  primaryContainer: '#0052cc',
-  background: '#f8f9fb',
+  primaryContainer: '#eff6ff',
+  background: '#f4f5f7',
   surface: '#ffffff',
-  onSurface: '#191c1e',
-  onSurfaceVariant: '#434654',
-  outlineVariant: '#c3c6d6',
+  onSurface: '#0f172a',
+  onSurfaceVariant: '#64748b',
+  outlineVariant: '#e2e8f0',
   secondary: '#056e00',
-  secondaryContainer: '#8dfc75',
-  onSecondaryContainer: '#067500',
-  surfaceContainer: '#edeef0',
-  surfaceContainerLow: '#f3f4f6',
-  surfaceContainerHighest: '#e1e2e4',
-  outline: '#737685',
-  error: '#ba1a1a',
-  primaryFixed: '#dae2ff',
+  accent: '#ff8c00',
+  error: '#ef4444',
+  success: '#10b981',
 };
 
-const DetailItem = ({ icon, label, value, isLast = false }: any) => (
-  <View style={[styles.detailItem, isLast && { borderBottomWidth: 0 }]}>
-     <View style={styles.detailIconBox}>
-        <MaterialIcons name={icon} size={18} color={COLORS.primary} />
-     </View>
-     <View style={styles.detailTextContent}>
-        <Text style={styles.detailLabel}>{label}</Text>
-        <Text style={styles.detailValue}>{value || 'Not provided'}</Text>
-     </View>
+const ProfileSection = ({ title, icon, children }: any) => (
+  <View style={styles.sectionContainer}>
+    <View style={styles.sectionHeader}>
+      <View style={styles.sectionIconBox}>
+        <MaterialIcons name={icon} size={20} color={COLORS.primary} />
+      </View>
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+    <View style={styles.sectionBody}>
+      {children}
+    </View>
+  </View>
+);
+
+const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
+  <View style={[styles.detailRow, isLast && { borderBottomWidth: 0 }]}>
+    <View style={styles.detailIconBg}>
+      <MaterialIcons name={icon} size={18} color={color || COLORS.onSurfaceVariant} />
+    </View>
+    <View style={styles.detailTextContent}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue} numberOfLines={1}>{value || 'Not provided'}</Text>
+    </View>
   </View>
 );
 
 const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading } = useAuth();
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
   useEffect(() => {
     if (user?.membership_plan?.name) {
@@ -57,29 +75,18 @@ const ProfileScreen = ({ navigation }: any) => {
     }
   }, [user?.membership_plan]);
 
-  const handleLogout = () => {
-    const performLogout = async () => {
-      try {
-        await logout();
-      } catch (error) {
-        console.error('Logout error:', error);
-        Alert.alert('Error', 'Failed to sign out. Please try again.');
-      }
-    };
+  const handleLogoutPress = () => {
+    setIsLogoutModalVisible(true);
+  };
 
-    if (Platform.OS === 'web') {
-      if (confirm('Are you sure you want to sign out of your account?')) {
-        performLogout();
-      }
-    } else {
-      Alert.alert('Sign Out', 'Are you sure you want to sign out of your account?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: performLogout,
-        },
-      ]);
+  const confirmLogout = async () => {
+    setIsLogoutModalVisible(false);
+    try {
+      await logout();
+      showToast.success('Signed Out', 'You have been successfully logged out.');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showToast.error('Error', 'Failed to sign out. Please try again.');
     }
   };
 
@@ -92,167 +99,192 @@ const ProfileScreen = ({ navigation }: any) => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Header title="Member Profile" />
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-        
-        {/* Profile Header Card */}
-        <View style={styles.headerCard}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* ... Cinematic Header ... */}
+        <View style={styles.heroContainer}>
           <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryFixed]}
+            colors={[COLORS.primary, '#1e40af']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.headerGradient}
-          />
-          <View style={styles.headerContent}>
-            <View style={styles.avatarWrapper}>
-              <Image 
-                source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff' }} 
-                style={styles.avatar} 
-              />
-              <View style={styles.verifiedIconBadge}>
-                <MaterialIcons name="verified" size={16} color={COLORS.onSecondaryContainer} />
-              </View>
-            </View>
-            <View style={styles.headerTextWrapper}>
-              <Text style={styles.userName}>{user?.full_name || "Member"}</Text>
-              <View style={styles.badgeRow}>
-                <View style={styles.memberBadge}>
-                   <MaterialIcons name="verified" size={14} color={COLORS.secondary} />
-                   <Text style={[styles.memberBadgeText, { color: COLORS.secondary }]}>{user?.is_verified ? 'VERIFIED' : 'PENDING'}</Text>
-                </View>
-                <View style={[styles.memberBadge, { backgroundColor: COLORS.primary + '10' }]}>
-                   <MaterialIcons name="stars" size={14} color={COLORS.primary} />
-                   <Text style={styles.memberBadgeText}>{planName.toUpperCase()}</Text>
+            end={{ x: 1, y: 1 }}
+            style={styles.heroGradient}
+          >
+            <View style={styles.heroDecorativeCircle1} />
+            <View style={styles.heroDecorativeCircle2} />
+            
+            <View style={styles.heroContent}>
+              <View style={styles.avatarContainer}>
+                {user?.image_url ? (
+                  <Image 
+                    source={{ uri: mediaService.getFileUrl(user.image_url) }} 
+                    style={styles.avatar} 
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.defaultAvatar]}>
+                    <Ionicons name="person" size={60} color="rgba(255,255,255,0.6)" />
+                  </View>
+                )}
+                <View style={styles.verifiedBadge}>
+                  <MaterialIcons name="verified" size={20} color="#fff" />
                 </View>
               </View>
+              
+              <Text style={styles.userName}>{user?.full_name || "Member Name"}</Text>
+              <View style={styles.userMetaRow}>
+                <View style={styles.metaBadge}>
+                  <Text style={styles.metaBadgeText}>{user?.role?.toUpperCase() || 'VOTER'}</Text>
+                </View>
+                <View style={styles.dotSeparator} />
+                <Text style={styles.userEmail}>{user?.email}</Text>
+              </View>
+
+              <TouchableOpacity 
+                style={styles.editProfileBtn}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
+                  style={styles.editProfileGradient}
+                >
+                  <MaterialIcons name="edit" size={16} color="#fff" />
+                  <Text style={styles.editProfileText}>Edit Profile</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={styles.editBtn}
-              onPress={() => navigation.navigate('EditProfile')}
+          </LinearGradient>
+        </View>
+
+        <View style={styles.bodyWrapper}>
+          {/* ... Premium Membership Card ... */}
+          <View style={styles.membershipCard}>
+            <LinearGradient
+              colors={['#ffffff', '#f8fafc']}
+              style={styles.membershipGradient}
             >
-               <MaterialIcons name="edit" size={18} color="#fff" />
-               <Text style={styles.editBtnText}>Edit Profile</Text>
+              <View style={styles.membershipHeader}>
+                <View style={styles.membershipIconBg}>
+                  <FontAwesome5 name="crown" size={20} color={COLORS.accent} />
+                </View>
+                <View style={styles.membershipTitleGroup}>
+                  <Text style={styles.membershipLabel}>MEMBERSHIP TIER</Text>
+                  <Text style={styles.membershipName}>{planName}</Text>
+                </View>
+                <View style={[styles.statusPill, { backgroundColor: COLORS.success + '15' }]}>
+                  <Text style={[styles.statusPillText, { color: COLORS.success }]}>ACTIVE</Text>
+                </View>
+              </View>
+              
+              <View style={styles.membershipDivider} />
+              
+              <View style={styles.membershipMetaGrid}>
+                <View style={styles.membershipMetaItem}>
+                  <Text style={styles.metaLabel}>VALID UNTIL</Text>
+                  <Text style={styles.metaValue}>31 Dec 2026</Text>
+                </View>
+                <View style={styles.membershipMetaItem}>
+                  <Text style={styles.metaLabel}>VOTING RIGHTS</Text>
+                  <Text style={styles.metaValue}>Full Access</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </View>
+
+          {/* Profile Information Sections */}
+          <ProfileSection title="Identity & Personal" icon="person">
+            <DetailRow icon="badge" label="Full Name" value={user?.full_name} />
+            <DetailRow icon="email" label="Official Email" value={user?.email} />
+            <DetailRow icon="phone" label="Registry Phone" value={user?.phone} />
+            <DetailRow icon="cake" label="Date of Birth" value={user?.date_of_birth} />
+            <DetailRow icon="wc" label="Gender" value={user?.gender} isLast={true} />
+          </ProfileSection>
+
+          <ProfileSection title="KYC & Verification" icon="verified-user">
+            <DetailRow icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
+            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={true} />
+          </ProfileSection>
+
+          <ProfileSection title="Location Ledger" icon="location-on">
+            <DetailRow icon="home" label="Primary Residence" value={user?.street_address} />
+            <DetailRow icon="map" label="Region / State" value={`${user?.city || ''}, ${user?.state || ''}`} isLast={true} />
+          </ProfileSection>
+
+          {/* Support Actions */}
+          <View style={styles.supportContainer}>
+            <TouchableOpacity style={styles.supportAction}>
+              <MaterialIcons name="help-center" size={22} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Help & Documentation</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.supportAction}>
+              <MaterialIcons name="security" size={22} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Security & Privacy</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Settings Grid */}
-        <View style={styles.settingsGrid}>
-          {/* Membership Plan */}
-          <View style={styles.settingCard}>
+          {/* Logout Action */}
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogoutPress}
+            activeOpacity={0.7}
+          >
             <LinearGradient
-              colors={['#003d9b', '#4f46e5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.premiumPlanHeader}
+              colors={['#fff', '#fff']}
+              style={styles.logoutGradient}
             >
-               <View style={styles.planHeaderInfo}>
-                  <Text style={styles.planHeaderLabel}>CURRENT PLAN</Text>
-                  <Text style={styles.planHeaderName}>{planName}</Text>
-               </View>
-               <View style={styles.planHeaderBadge}>
-                  <MaterialIcons name="workspace-premium" size={24} color="#fff" />
-               </View>
+              <MaterialIcons name="logout" size={20} color={COLORS.error} />
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
             </LinearGradient>
-            <View style={styles.planBody}>
-               <DetailItem icon="event-available" label="Status" value="Active" />
-               <DetailItem icon="update" label="Renewal Date" value="12 Dec 2026" isLast={true} />
-            </View>
-          </View>
-
-          {/* Personal Info */}
-          <View style={styles.settingCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleRow}>
-                 <View style={styles.iconBox}>
-                    <MaterialIcons name="badge" size={20} color={COLORS.primary} />
-                 </View>
-                 <View>
-                    <Text style={styles.cardTitle}>Identity & Contact</Text>
-                    <Text style={styles.cardSub}>Verified member credentials</Text>
-                 </View>
-              </View>
-            </View>
-            
-            <View style={styles.cardBody}>
-               <DetailItem icon="person" label="Full Name" value={user?.full_name} />
-               <DetailItem icon="email" label="Email Address" value={user?.email} isLast={false} />
-               <DetailItem icon="phone" label="Phone Number" value={user?.phone} />
-               <DetailItem icon="cake" label="Date of Birth" value={user?.date_of_birth} />
-               <DetailItem icon="wc" label="Gender" value={user?.gender} />
-               <DetailItem icon="family-restroom" label="Guardian/Parent" value={user?.parent_name} />
-            </View>
-          </View>
-
-          {/* Identity Verification Card */}
-          <View style={styles.settingCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleRow}>
-                 <View style={[styles.iconBox, { backgroundColor: COLORS.secondaryContainer + '30' }]}>
-                    <MaterialIcons name="verified-user" size={20} color={COLORS.secondary} />
-                 </View>
-                 <View>
-                    <Text style={styles.cardTitle}>KYC Verification</Text>
-                    <Text style={styles.cardSub}>Official documents on file</Text>
-                 </View>
-              </View>
-            </View>
-            <View style={styles.cardBody}>
-               <DetailItem icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
-               <DetailItem icon="fingerprint" label="Member ID / Voter ID" value={user?.voter_id} />
-            </View>
-          </View>
-
-          {/* Address Card */}
-          <View style={styles.settingCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleRow}>
-                 <View style={[styles.iconBox, { backgroundColor: COLORS.primaryFixed + '40' }]}>
-                    <MaterialIcons name="location-on" size={20} color={COLORS.primary} />
-                 </View>
-                 <View>
-                    <Text style={styles.cardTitle}>Primary Address</Text>
-                    <Text style={styles.cardSub}>Residential mapping data</Text>
-                 </View>
-              </View>
-            </View>
-            <View style={styles.cardBody}>
-               <DetailItem icon="home" label="Street Address" value={user?.street_address} />
-               <DetailItem icon="map" label="Region" value={`${user?.city || ''}, ${user?.state || ''}`} />
-               <DetailItem icon="pin-drop" label="Pincode" value={user?.pincode} />
-            </View>
-          </View>
-
-          {/* Support */}
-          <View style={styles.settingCard}>
-             <Text style={styles.cardTitle}>Support</Text>
-             <View style={styles.supportList}>
-                <TouchableOpacity style={styles.supportItem}>
-                   <MaterialIcons name="help-center" size={20} color={COLORS.onSurfaceVariant} />
-                   <Text style={styles.supportText}>Help Center</Text>
-                   <MaterialIcons name="open-in-new" size={14} color={COLORS.onSurfaceVariant} style={{ marginLeft: 'auto' }} />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.supportItem}>
-                   <MaterialIcons name="forum" size={20} color={COLORS.onSurfaceVariant} />
-                   <Text style={styles.supportText}>Contact Admin Support</Text>
-                </TouchableOpacity>
-             </View>
-          </View>
-
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-             <MaterialIcons name="logout" size={20} color={COLORS.error} />
-             <Text style={styles.logoutText}>Logout Account</Text>
           </TouchableOpacity>
 
-          {/* Footer Meta */}
-          <Text style={styles.footerMeta}>
-            Session ID: AWS-NODE-PRM-99201-B | System Version 4.8.2-GA
-          </Text>
+          {/* System Footer */}
+          <View style={styles.systemFooter}>
+            <Text style={styles.systemFooterText}>POLLING STATION NODE: {user?.tenant_id || 'LOCAL-01'}</Text>
+            <Text style={styles.systemFooterText}>SECURE VERSION 4.9.0-GOLD</Text>
+          </View>
         </View>
       </ScrollView>
-    </View>
+
+      {/* Custom Logout Modal */}
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalPopup}>
+            <View style={styles.modalIconBg}>
+              <MaterialIcons name="logout" size={28} color={COLORS.error} />
+            </View>
+            <Text style={styles.modalTitle}>Sign Out</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmBtn} 
+                onPress={confirmLogout}
+              >
+                <Text style={styles.confirmBtnText}>Sign Out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
@@ -260,96 +292,426 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   content: { flex: 1 },
-  
-  headerCard: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant, overflow: 'hidden' },
-  headerGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: 100, opacity: 0.05 },
-  headerContent: { padding: 24, paddingTop: 32, alignItems: 'center' },
-  avatarWrapper: { position: 'relative', marginBottom: 16 },
-  avatar: { 
-    width: 110, 
-    height: 110, 
-    borderRadius: 16, 
-    borderWidth: 4, 
-    borderColor: '#fff', 
-    ...Platform.select({ 
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 }, 
-      android: { elevation: 4 },
-      web: { boxShadow: '0px 4px 8px rgba(0,0,0,0.1)' }
-    }) 
+
+  // Hero Header Styles
+  heroContainer: {
+    width: '100%',
+    backgroundColor: COLORS.primary,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
+      android: { elevation: 12 },
+    })
   },
-  verifiedIconBadge: { position: 'absolute', bottom: -6, right: -6, backgroundColor: COLORS.secondaryContainer, padding: 4, borderRadius: 8, borderWidth: 2, borderColor: '#fff' },
-  headerTextWrapper: { alignItems: 'center', gap: 8 },
-  userName: { fontSize: 24, fontWeight: '800', color: COLORS.onSurface },
-  badgeRow: { flexDirection: 'row', gap: 8 },
-  memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0, 61, 155, 0.05)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
-  memberBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.primary, letterSpacing: 0.5 },
-  idBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 },
-  idBadgeText: { fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant },
-  editBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, marginTop: 24 },
-  editBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-
-  settingsGrid: { padding: 16, gap: 16 },
-  settingCard: { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 20, overflow: 'hidden' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconBox: { width: 40, height: 40, borderRadius: 10, backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  cardSub: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
-  cardBody: { marginTop: 20 },
-  detailItem: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.outlineVariant + '30' },
-  detailIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
-  detailTextContent: { flex: 1 },
-  detailLabel: { fontSize: 11, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6, marginBottom: 2 },
-  detailValue: { fontSize: 15, fontWeight: '600', color: COLORS.onSurface },
-  infoRow: { flexDirection: 'row', gap: 16 },
-  infoItem: { flex: 1, gap: 4 },
-  infoLabel: { fontSize: 8, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
-  infoValue: { fontSize: 14, color: COLORS.onSurface },
-  divider: { height: 1, backgroundColor: COLORS.outlineVariant, marginVertical: 16, opacity: 0.5 },
-
-  supportList: { gap: 8, marginTop: 16 },
-  supportItem: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 8, backgroundColor: COLORS.surfaceContainerLow },
-  supportText: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
-
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: COLORS.error, marginTop: 8 },
-  logoutText: { fontSize: 16, fontWeight: '700', color: COLORS.error },
-  footerMeta: { textAlign: 'center', fontSize: 10, fontWeight: '700', color: COLORS.onSurfaceVariant, opacity: 0.6, marginTop: 16, letterSpacing: 0.5 },
-
-  // Premium Plan Styles
-  premiumPlanHeader: {
-    margin: -20,
-    marginBottom: 0,
-    padding: 24,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  heroGradient: {
+    paddingTop: 40,
+    paddingBottom: 50,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  heroDecorativeCircle1: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  heroDecorativeCircle2: {
+    position: 'absolute',
+    bottom: -30,
+    left: -40,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  heroContent: {
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 35,
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  planHeaderInfo: {
-    gap: 4,
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: COLORS.success,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.primary,
   },
-  planHeaderLabel: {
-    color: 'rgba(255,255,255,0.7)',
+  userName: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  userMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 24,
+  },
+  metaBadge: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  metaBadgeText: {
+    color: '#fff',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  planHeaderName: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '900',
+  dotSeparator: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
-  planHeaderBadge: {
+  userEmail: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    fontWeight: '600',
+  },
+  editProfileBtn: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  editProfileGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  editProfileText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  // Body Layout
+  bodyWrapper: {
+    paddingHorizontal: 20,
+    marginTop: -25,
+    zIndex: 2,
+  },
+  
+  // Membership Card Styles
+  membershipCard: {
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 12 },
+      android: { elevation: 6 },
+    })
+  },
+  membershipGradient: {
+    padding: 24,
+  },
+  membershipHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  membershipIconBg: {
     width: 48,
     height: 48,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 3 },
+    })
+  },
+  membershipTitleGroup: {
+    flex: 1,
+  },
+  membershipLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    letterSpacing: 1,
+  },
+  membershipName: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: COLORS.onSurface,
+    marginTop: 2,
+  },
+  statusPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  statusPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  membershipDivider: {
+    height: 1,
+    backgroundColor: COLORS.outlineVariant,
+    marginVertical: 20,
+    opacity: 0.5,
+  },
+  membershipMetaGrid: {
+    flexDirection: 'row',
+    gap: 24,
+  },
+  membershipMetaItem: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  metaValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+  },
+
+  // Section Styles
+  sectionContainer: {
+    backgroundColor: '#fff',
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  sectionIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    letterSpacing: -0.2,
+  },
+  sectionBody: {
+    gap: 0,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  detailIconBg: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#f1f5f9',
   },
-  planBody: {
-    paddingTop: 12,
+  detailTextContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+
+  // Support Styles
+  supportContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  supportAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    padding: 16,
+    borderRadius: 18,
+  },
+  supportActionText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+
+  // Logout Button Styles
+  logoutButton: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.error + '40',
+    ...Platform.select({
+      ios: { shadowColor: COLORS.error, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 },
+    })
+  },
+  logoutGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    paddingVertical: 18,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.error,
+    letterSpacing: 0.2,
+  },
+
+  // System Footer
+  systemFooter: {
+    marginTop: 32,
+    alignItems: 'center',
+    gap: 4,
+  },
+  systemFooterText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.3,
+    letterSpacing: 1,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalPopup: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 32,
+    padding: 32,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 16 },
+      android: { elevation: 24 },
+    })
+  },
+  modalIconBg: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: COLORS.error + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.primary,
+    marginBottom: 12,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+    fontWeight: '500',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f5f9',
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fee2e2',
+  },
+  confirmBtnText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.error,
   },
 });
 

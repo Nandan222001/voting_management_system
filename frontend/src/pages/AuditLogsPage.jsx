@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { AlertTriangle, CheckCircle2, Download, Filter, History, Search, ShieldCheck, X, Globe, Activity, Lock, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, Filter, History as HistoryIcon, Search, ShieldCheck, X, Globe, Activity, Lock, ShieldAlert } from 'lucide-react'
 import MainLayout from '../components/layout/MainLayout'
 import LoadingSpinner from '../components/common/LoadingSpinner'
 import { fetchAuditLogs } from '../store/slices/voteSlice'
@@ -78,9 +78,12 @@ export default function AuditLogsPage() {
   const totalPages = Math.ceil((auditTotal || 0) / perPage)
   
   const filtered = useMemo(() => {
-    if (!search) return logsArray
+    // Filter out payment logs locally for safety
+    const logs = logsArray.filter(l => !/payment/i.test(l.action || ''));
+    
+    if (!search) return logs;
     const s = search.toLowerCase()
-    return logsArray.filter(l =>
+    return logs.filter(l =>
       (l.action || '').toLowerCase().includes(s) ||
       (l.entity_type || '').toLowerCase().includes(s) ||
       (l.user_name || '').toLowerCase().includes(s) ||
@@ -102,78 +105,20 @@ export default function AuditLogsPage() {
           <div>
             <div className="mb-2 flex items-center gap-2">
               <div className="h-1.5 w-8 rounded-full bg-red-600" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Audit Protocol Active</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600">Audit Logs Active</span>
             </div>
-            <h2 className="text-4xl font-black tracking-tight text-gray-900">Governance & Security</h2>
+            <h2 className="text-4xl font-black tracking-tight text-gray-900">Activity Logs</h2>
             <p className="mt-2 max-w-2xl text-sm font-medium text-gray-500 leading-relaxed">
-              Real-time monitoring of system-wide authorization events. Every action is cryptographically tied to a tenant node for total transparency.
+              Real-time tracking of all system actions. Every event is recorded to ensure full transparency and security.
             </p>
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <MetricCard
-            title="Total Events"
-            icon={History}
-            tone="blue"
-            value={
-              <>
-                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(auditTotal)}</span>
-              </>
-            }
-          >
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Lifetime system logs</p>
-          </MetricCard>
-
-          <MetricCard
-            title="Critical Alerts"
-            icon={ShieldAlert}
-            tone="red"
-            value={
-              <>
-                <span className="text-4xl font-black text-red-600 tracking-tight">{numberFormat(stats.critical)}</span>
-              </>
-            }
-          >
-             <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">Require Investigation</p>
-             </div>
-          </MetricCard>
-
-          <MetricCard
-            title="Active Tenants"
-            icon={Globe}
-            tone="indigo"
-            value={
-              <>
-                <span className="text-4xl font-black text-gray-900 tracking-tight">{numberFormat(stats.uniqueTenants)}</span>
-              </>
-            }
-          >
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reporting Node Nodes</p>
-          </MetricCard>
-
-          <MetricCard
-            title="Protocol Status"
-            icon={Activity}
-            tone="emerald"
-            value={
-              <>
-                <span className="text-4xl font-black text-emerald-600 tracking-tight">Active</span>
-              </>
-            }
-          >
-             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-emerald-600">
-                <CheckCircle2 className="h-3 w-3" />
-                <span>Encrypted & Signed</span>
-             </div>
-          </MetricCard>
-        </section>
+         
 
         <section className="flex flex-col gap-6 rounded-3xl bg-gray-50 border border-gray-200 p-6 md:flex-row md:items-center shadow-sm">
           <div className="flex flex-wrap gap-2">
-            <span className="flex items-center px-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Protocol:</span>
+            <span className="flex items-center px-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Action:</span>
             {['', 'delete', 'update', 'login', 'create'].map((value) => (
               <button
                 key={value || 'all'}
@@ -215,7 +160,7 @@ export default function AuditLogsPage() {
           ) : filtered.length === 0 ? (
             <div className="px-6 py-32 text-center">
               <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-gray-50 text-gray-200 border border-gray-100">
-                <History className="h-12 w-12" />
+                <HistoryIcon className="h-12 w-12" />
               </div>
               <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Protocol Silent</h3>
               <p className="mx-auto mt-2 max-w-xs text-sm font-bold text-gray-400 uppercase tracking-widest">No matching logs found in the current stream.</p>

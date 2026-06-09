@@ -42,8 +42,8 @@ def upgrade() -> None:
             sa.Column('razorpay_payment_id', sa.String(length=100), nullable=True),
             sa.Column('razorpay_signature', sa.String(length=255), nullable=True),
             sa.Column('user_id', sa.Integer(), nullable=True),
-            sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-            sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+            sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+            sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
             sa.ForeignKeyConstraint(['tenant_id'], ['tenants.id'], ondelete='CASCADE'),
             sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='SET NULL'),
             sa.PrimaryKeyConstraint('id')

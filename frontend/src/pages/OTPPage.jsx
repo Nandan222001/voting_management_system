@@ -1,14 +1,42 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaShieldAlt, FaClock, FaArrowRight } from 'react-icons/fa';
+import toast from 'react-hot-toast';
+import { verifyOTP, clearError } from '../store/slices/authSlice';
 
 const OTP_LENGTH = 6;
 
 export default function OTPPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const dispatch = useDispatch();
+  const { loading, error, isAuthenticated } = useSelector((state) => state.auth);
+  
+  const email = location.state?.email;
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [seconds, setSeconds] = useState(178); // 02:58
   const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (!email) {
+      toast.error('Session expired. Please log in again.');
+      navigate('/login');
+    }
+  }, [email, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -52,7 +80,10 @@ export default function OTPPage() {
   const handleResend = () => setSeconds(178);
 
   const handleVerify = () => {
-    if (otp.join('').length === OTP_LENGTH) navigate('/dashboard');
+    const otpCode = otp.join('');
+    if (otpCode.length === OTP_LENGTH) {
+      dispatch(verifyOTP({ email, otp: otpCode }));
+    }
   };
 
   return (

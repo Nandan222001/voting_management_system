@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Image, Platform, Alert, useWindowDimensions, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
 import { electionService } from '../services/electionService';
 import { tenantService } from '../services/tenantService';
+import { Announcement, announcementService } from '../services/announcementService';
+import { mediaService } from '../services/mediaService';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -40,11 +43,27 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const [activeElections, setActiveElections] = useState<any[]>([]);
   const [upcomingElections, setUpcomingElections] = useState<any[]>([]);
   const [stats, setStats] = useState({ activeElections: 0, totalElections: 0, completedElections: 0 });
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'Standard Member');
+  const [tenantName, setTenantName] = useState<string>('VOTE2026');
 
   const loadData = async () => {
+    const latestPromise = announcementService.getLatest().catch((announcementError) => {
+      console.error('Failed to load latest announcement', announcementError);
+      return null;
+    });
+
+    const tenantPromise = tenantService.getCurrentTenant().then(data => {
+      if (data?.name) {
+        setTenantName(data.name.toUpperCase());
+      }
+    }).catch(err => {
+      // If we're not logged in or have no tenant, this is expected to be handled silently
+      console.log('No current tenant info available');
+    });
+
     try {
       let response;
       try {
@@ -85,7 +104,9 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
       });
     } catch (error) {
       console.error('Failed to load dashboard data', error);
+      showToast.error('Load Error', 'Could not refresh dashboard data.');
     } finally {
+      await Promise.all([latestPromise.then(setLatestAnnouncement), tenantPromise]);
       setLoading(false);
     }
   };
@@ -150,9 +171,62 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               </View>
               <Text style={styles.expiresText}>Expires: 12/2026</Text>
             </View>
-            <Text style={styles.voteText}>VOTE2026</Text>
+            <Text style={styles.voteText}>{tenantName}</Text>
           </View>
         </LinearGradient>
+
+        {/* Latest Announcement */}
+        <View style={styles.sectionHeader}>
+           <View style={styles.sectionTitleRow}>
+              <View style={[styles.titleIndicator, { backgroundColor: COLORS.accent }]} />
+              <Text style={styles.sectionTitle}>Latest Announcement</Text>
+           </View>
+        </View>
+
+        {latestAnnouncement ? (
+          <View style={styles.announcementBlock}>
+            <TouchableOpacity
+              style={styles.announcementCard}
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate('AnnouncementDetail', { id: latestAnnouncement.id, announcement: latestAnnouncement })}
+            >
+              {latestAnnouncement.image_urls?.[0] ? (
+                <Image source={{ uri: mediaService.getFileUrl(latestAnnouncement.image_urls[0]) }} style={styles.announcementImage} />
+              ) : (
+                <View style={styles.announcementFallback}>
+                  <Image 
+                    source={{ uri: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?auto=format&fit=crop&q=80&w=800' }} 
+                    style={styles.announcementImage} 
+                  />
+                </View>
+              )}
+              <View style={styles.announcementContent}>
+                <View style={styles.announcementMetaRow}>
+                  <Text style={styles.announcementDate}>
+                    {new Date(latestAnnouncement.publish_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </Text>
+                  {latestAnnouncement.is_featured && (
+                    <View style={styles.announcementFeatured}>
+                      <MaterialIcons name="star" size={12} color={COLORS.primary} />
+                      <Text style={styles.announcementFeaturedText}>Featured</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.announcementTitle} numberOfLines={2}>{latestAnnouncement.title}</Text>
+                <Text style={styles.announcementDescription} numberOfLines={2}>{latestAnnouncement.short_description}</Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.viewAnnouncementsBtn} onPress={() => navigation.navigate('AnnouncementsList')}>
+              <MaterialIcons name="campaign" size={18} color={COLORS.primary} />
+              <Text style={styles.viewAnnouncementsText}>View All Announcements</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.emptyAnnouncementCard}>
+             <MaterialIcons name="campaign" size={26} color={COLORS.outline} />
+             <Text style={styles.emptyActiveText}>No published announcements.</Text>
+          </View>
+        )}
 
         {/* Active Elections Hero */}
         {activeElections.length > 0 && (
@@ -351,6 +425,42 @@ const styles = StyleSheet.create({
   tierBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
   expiresText: { color: COLORS.onPrimaryContainer, fontSize: 12, marginTop: 8 },
   voteText: { color: '#fff', fontSize: 24, fontWeight: '700', fontStyle: 'italic', letterSpacing: -1 },
+
+  announcementBlock: { marginBottom: 28 },
+  announcementCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10 },
+      android: { elevation: 3 }
+    })
+  },
+  announcementImage: { width: '100%', height: 160, backgroundColor: COLORS.surfaceContainerLow },
+  announcementFallback: { height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary + '10' },
+  announcementContent: { padding: 16 },
+  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 25 },
+  announcementDate: { fontSize: 11, fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
+  announcementFeatured: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primary + '12', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  announcementFeaturedText: { fontSize: 9, fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },
+  announcementTitle: { fontSize: 19, fontWeight: '900', color: COLORS.onSurface, lineHeight: 24 },
+  announcementDescription: { marginTop: 6, fontSize: 13, fontWeight: '600', color: COLORS.onSurfaceVariant, lineHeight: 19 },
+  viewAnnouncementsBtn: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '08',
+  },
+  viewAnnouncementsText: { color: COLORS.primary, fontSize: 13, fontWeight: '900' },
+  emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: 20, padding: 28, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: 28 },
 
   heroPremiumCard: {
     borderRadius: 24,

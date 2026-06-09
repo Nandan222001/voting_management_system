@@ -20,10 +20,14 @@ import {
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
+import { planService } from '../services/planService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
+import { launchImageLibrary } from 'react-native-image-picker';
+import DatePicker from 'react-native-date-picker';
+import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';
 
@@ -129,6 +133,19 @@ const EditProfileScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+  };
 
   // Data States
   const [formData, setFormData] = useState({
@@ -141,6 +158,7 @@ const EditProfileScreen = ({ navigation }: any) => {
     parent_name: user?.parent_name || '',
     voter_id: user?.voter_id || '',
     designation: user?.designation || '',
+    image_url: user?.image_url || '',
 
     // Step 2
     house_number: user?.house_number || '',
@@ -175,20 +193,20 @@ const EditProfileScreen = ({ navigation }: any) => {
   // Selection Data
   const [committees, setCommittees] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
-  const [states, setStates] = useState<any[]>([]);
-  const [districts, setDistricts] = useState<any[]>([]);
-  const [talukas, setTalukas] = useState<any[]>([]);
-  const [villages, setVillages] = useState<any[]>([]);
+  const [fetchingCommittees, setFetchingCommittees] = useState(false);
 
   const [selectedCommitteeName, setSelectedCommitteeName] = useState('');
   const [selectedPlanName, setSelectedPlanName] = useState('');
-  const [selectedStateName, setSelectedStateName] = useState('');
-  const [selectedDistrictName, setSelectedDistrictName] = useState('');
-  const [selectedTalukaName, setSelectedTalukaName] = useState('');
-  const [selectedVillageName, setSelectedVillageName] = useState('');
 
   // Modals
   const [modalType, setModalType] = useState<string | null>(null);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (modalType) {
+      setModalSearchQuery('');
+    }
+  }, [modalType]);
 
   useEffect(() => {
     if (user) {
@@ -199,6 +217,8 @@ const EditProfileScreen = ({ navigation }: any) => {
         date_of_birth: user.date_of_birth || '',
         gender: user.gender || '',
         parent_name: user.parent_name || '',
+        voter_id: user.voter_id || '',
+        designation: user.designation || '',
         house_number: user.house_number || '',
         street_address: user.street_address || '',
         village: user.village || '',
@@ -213,83 +233,43 @@ const EditProfileScreen = ({ navigation }: any) => {
         current_state: user.current_state || '',
         current_pincode: user.current_pincode || '',
         tenant_id: user.tenant_id || null,
+        target_id: user.target_id || null,
         committee_id: user.committee_id || null,
-        state_id: user.state_id || null,
-        district_id: user.district_id || null,
-        taluka_id: user.taluka_id || null,
-        village_id: user.village_id || null,
         membership_plan_id: user.membership_plan_id || null,
       });
-
-      if (user.state) setSelectedStateName(user.state);
-      if (user.district) setSelectedDistrictName(user.district);
-      if (user.taluka) setSelectedTalukaName(user.taluka);
-      if (user.village) setSelectedVillageName(user.village);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchInitialData();
+    fetchDynamicData();
   }, []);
 
-  const fetchInitialData = async () => {
+  const fetchDynamicData = async () => {
+    setFetchingCommittees(true);
     try {
-      // Fetch states
-      const statesData = await tenantService.getPublicTargets(undefined, 'state');
-      setStates(statesData);
+      // 1. Fetch dynamic committees from targets table
+      const targetData = await tenantService.getPublicTargets();
+      setCommittees(targetData);
+      
+      // 2. Fetch membership plans
+      const planData = await planService.getPublicPlans();
+      const planItems = (planData?.items ?? planData) || [];
+      setPlans(planItems);
 
-      // Fetch specific data for this tenant
-      fetchTenantSpecificData();
-    } catch (error) {
-      console.error('Failed to fetch initial data:', error);
-    }
-  };
-
-  const fetchDistricts = async (stateId: number) => {
-    try {
-      const data = await tenantService.getPublicTargets(stateId, 'district');
-      setDistricts(data);
-    } catch (error) {
-      console.error('Failed to fetch districts:', error);
-    }
-  };
-
-  const fetchTalukas = async (districtId: number) => {
-    try {
-      const data = await tenantService.getPublicTargets(districtId, 'taluka');
-      setTalukas(data);
-    } catch (error) {
-      console.error('Failed to fetch talukas:', error);
-    }
-  };
-
-  const fetchVillages = async (talukaId: number) => {
-    try {
-      const data = await tenantService.getPublicTargets(talukaId, 'village');
-      setVillages(data);
-    } catch (error) {
-      console.error('Failed to fetch villages:', error);
-    }
-  };
-
-  const fetchTenantSpecificData = async () => {
-    try {
-      const commData = await tenantService.getPublicCommittees();
-      setCommittees(commData);
-      const planData = await tenantService.getPublicPlans();
-      setPlans(planData);
-
-      // Find selected names
-      if (user?.committee_id) {
-        const comm = commData.find((c: any) => c.id === user.committee_id);
-        if (comm) setSelectedCommitteeName(comm.name);
+      // 3. Resolve initial selection names
+      if (user?.target_id) {
+        const target = targetData.find((t: any) => t.id === user.target_id);
+        if (target) setSelectedCommitteeName(target.name);
       }
       if (user?.membership_plan_id) {
-        const p = planData.find((p: any) => p.id === user.membership_plan_id);
+        const p = planItems.find((p: any) => p.id === user.membership_plan_id);
         if (p) setSelectedPlanName(p.name);
       }
     } catch (error) {
-      console.error('Failed to fetch tenant specific data:', error);
+      console.error('Failed to fetch dynamic dropdown data:', error);
+      showToast.error('Fetch Error', 'Failed to load committees or plans.');
+    } finally {
+      setFetchingCommittees(false);
     }
   };
 
@@ -306,18 +286,64 @@ const EditProfileScreen = ({ navigation }: any) => {
 
   const validateStep1 = () => {
     let newErrors: Record<string, string> = {};
-    if (!formData.full_name) newErrors.full_name = 'Required';
-    if (!formData.phone) newErrors.phone = 'Required';
-    if (!formData.date_of_birth) newErrors.date_of_birth = 'Required';
-    if (!formData.gender) newErrors.gender = 'Required';
+    
+    if (!formData.full_name?.trim()) newErrors.full_name = 'Full Name is required';
+    
+    // Mobile Number: Exactly 10 digits
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!formData.phone?.trim()) {
+      newErrors.phone = 'Mobile Number is required';
+    } else if (!phoneRegex.test(formData.phone.trim())) {
+      newErrors.phone = 'Enter a valid 10-digit mobile number';
+    }
+
+    // Email: Regex validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.email && !emailRegex.test(formData.email.trim())) {
+      newErrors.email = 'Enter a valid email address';
+    }
+
+    if (!formData.date_of_birth?.trim()) newErrors.date_of_birth = 'Date of Birth is required';
+    if (!formData.gender) newErrors.gender = 'Gender is required';
+    if (!formData.parent_name?.trim()) newErrors.parent_name = "Father's / Husband's Name is required";
+    if (!formData.voter_id?.trim()) newErrors.voter_id = 'Voter ID / Member ID is required';
+    if (!formData.designation?.trim()) newErrors.designation = 'Designation is required';
+    
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (Object.keys(newErrors).length > 0) {
+      const firstError = Object.values(newErrors)[0];
+      showToast.error('Validation Error', firstError);
+      return false;
+    }
+    
+    return true;
+  };
+
+  const validateStep3 = () => {
+    let newErrors: Record<string, string> = {};
+    // Ensure target_id (selected from dynamic list) is provided
+    if (!formData.target_id) newErrors.target_id = 'Committee is required';
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      showToast.error('Validation Error', 'Please select a committee.');
+      return false;
+    }
+    return true;
   };
 
   const handleNext = () => {
-    if (step === 1 && validateStep1()) setStep(2);
-    else if (step === 2) setStep(3);
-    else if (step === 3) setStep(4);
+    if (step === 1) {
+      if (validateStep1()) {
+        setStep(2);
+      }
+    } else if (step === 2) {
+      setStep(3);
+    } else if (step === 3) {
+      if (validateStep3()) {
+        setStep(4);
+      }
+    }
   };
 
   const handleBack = () => {
@@ -326,9 +352,17 @@ const EditProfileScreen = ({ navigation }: any) => {
   };
 
   const handleUpdate = async () => {
+    if (!validateStep1() || !validateStep3()) {
+      if (!validateStep1()) setStep(1);
+      else if (!validateStep3()) setStep(3);
+      return;
+    }
+
     setLoading(true);
     try {
       const updateData = { ...formData };
+      
+      // Sync address logic
       if (sameAsPermanent) {
         updateData.current_street_address = formData.street_address;
         updateData.current_city = formData.village || '';
@@ -336,16 +370,22 @@ const EditProfileScreen = ({ navigation }: any) => {
         updateData.current_state = formData.state;
         updateData.current_pincode = formData.pincode;
       }
-
-      const target_id = formData.village_id || formData.taluka_id || formData.district_id || formData.state_id;
-      if (target_id) (updateData as any).target_id = target_id;
       
+      // target_id is already in updateData due to PickerField binding
       await updateProfile(updateData);
-      Alert.alert('Success', 'Profile updated successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('ProfileMain') }
-      ]);
+      
+      showToast.success('Success', 'Profile updated successfully.');
+      navigation.navigate('ProfileMain');
+      
     } catch (error: any) {
-      Alert.alert('Update Failed', error.response?.data?.detail || 'An error occurred');
+      console.error('Profile update failed:', error);
+      let errorMessage = 'An error occurred while updating your profile.';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      showToast.error('Update Failed', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -364,7 +404,8 @@ const EditProfileScreen = ({ navigation }: any) => {
       title = "Select Committee";
       data = committees;
       onSelect = (item) => {
-        handleChange('committee_id', item.id);
+        // Bind selection to target_id as per requirement
+        handleChange('target_id', item.id);
         setSelectedCommitteeName(item.name);
       };
     } else if (modalType === 'plan') {
@@ -374,57 +415,12 @@ const EditProfileScreen = ({ navigation }: any) => {
         handleChange('membership_plan_id', item.id);
         setSelectedPlanName(item.name);
       };
-    } else if (modalType === 'state') {
-      title = "Select State";
-      data = states;
-      onSelect = (item) => {
-        handleChange('state_id', item.id);
-        setSelectedStateName(item.name);
-        handleChange('state', item.name);
-        // Clear dependent fields
-        handleChange('district_id', null);
-        setSelectedDistrictName('');
-        handleChange('taluka_id', null);
-        setSelectedTalukaName('');
-        handleChange('village_id', null);
-        setSelectedVillageName('');
-        fetchDistricts(item.id);
-      };
-    } else if (modalType === 'district') {
-      title = "Select District";
-      data = districts;
-      onSelect = (item) => {
-        handleChange('district_id', item.id);
-        setSelectedDistrictName(item.name);
-        handleChange('district', item.name);
-        // Clear dependent fields
-        handleChange('taluka_id', null);
-        setSelectedTalukaName('');
-        handleChange('village_id', null);
-        setSelectedVillageName('');
-        fetchTalukas(item.id);
-      };
-    } else if (modalType === 'taluka') {
-      title = "Select Taluka / Block";
-      data = talukas;
-      onSelect = (item) => {
-        handleChange('taluka_id', item.id);
-        setSelectedTalukaName(item.name);
-        handleChange('taluka', item.name);
-        // Clear dependent fields
-        handleChange('village_id', null);
-        setSelectedVillageName('');
-        fetchVillages(item.id);
-      };
-    } else if (modalType === 'village') {
-      title = "Select Village / City";
-      data = villages;
-      onSelect = (item) => {
-        handleChange('village_id', item.id);
-        setSelectedVillageName(item.name);
-        handleChange('village', item.name);
-      };
     }
+
+    const searchableData = 
+      modalType === 'committee' && modalSearchQuery.trim()
+        ? data.filter((item) => item.name.toLowerCase().includes(modalSearchQuery.trim().toLowerCase()))
+        : data;
 
     return (
       <View style={styles.modalOverlay}>
@@ -435,8 +431,20 @@ const EditProfileScreen = ({ navigation }: any) => {
               <MaterialIcons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
+          {modalType === 'committee' && (
+            <View style={styles.searchBox}>
+              <Ionicons name="search" size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                value={modalSearchQuery}
+                onChangeText={setModalSearchQuery}
+                placeholder="Search committee"
+                placeholderTextColor="#9ca3af"
+                style={styles.searchInput}
+              />
+            </View>
+          )}
           <FlatList
-            data={data}
+            data={searchableData}
             keyExtractor={(item) => (item.id || item.name).toString()}
             renderItem={({ item }) => (
               <TouchableOpacity
@@ -447,7 +455,7 @@ const EditProfileScreen = ({ navigation }: any) => {
                 }}
               >
                 <Text style={styles.listItemText}>{item.name}</Text>
-                {(formData.gender === item.id || formData.committee_id === item.id || formData.membership_plan_id === item.id || formData.state_id === item.id || formData.district_id === item.id || formData.taluka_id === item.id || formData.village_id === item.id) && (
+                {(formData.gender === item.id || formData.target_id === item.id || formData.membership_plan_id === item.id) && (
                   <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
                 )}
               </TouchableOpacity>
@@ -491,6 +499,7 @@ const EditProfileScreen = ({ navigation }: any) => {
           {step === 1 && (
             <View style={styles.formSection}>
               <SectionHeader title="Personal Information" step={1} subtitle="Update your identity details." />
+              
               <InputField
                 name="full_name"
                 icon="person-outline"
@@ -522,16 +531,33 @@ const EditProfileScreen = ({ navigation }: any) => {
                 editable={false}
                 icon="lock-closed-outline"
               />
-              <InputField
-                name="date_of_birth"
-                icon="calendar-outline"
+              <PickerField
                 label="Date of Birth"
-                placeholder="DD/MM/YYYY"
+                icon="calendar-outline"
                 value={formData.date_of_birth}
-                onChangeText={(val: string) => handleChange('date_of_birth', val)}
-                errors={errors}
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
+                onPress={() => setShowDatePicker(true)}
+                error={errors.date_of_birth}
+              />
+              <DatePicker
+                modal
+                open={showDatePicker}
+                date={formData.date_of_birth ? (function() {
+                  const parts = formData.date_of_birth.split('/');
+                  if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return isNaN(d.getTime()) ? new Date() : d;
+                  }
+                  return new Date();
+                })() : new Date()}
+                mode="date"
+                onConfirm={(date) => {
+                  setShowDatePicker(false);
+                  handleChange('date_of_birth', formatDate(date));
+                }}
+                onCancel={() => {
+                  setShowDatePicker(false);
+                }}
+                maximumDate={new Date()}
               />
               <PickerField
                 label="Gender"
@@ -700,8 +726,8 @@ const EditProfileScreen = ({ navigation }: any) => {
                   <InputField
                     name="current_street_address"
                     icon="location-outline"
-                    label="Current Street / Area"
-                    placeholder="Enter street"
+                    label="Full Current Address"
+                    placeholder="Enter Full Address"
                     value={formData.current_street_address}
                     onChangeText={(val: string) => handleChange('current_street_address', val)}
                     errors={errors}
@@ -719,47 +745,11 @@ const EditProfileScreen = ({ navigation }: any) => {
               <SectionHeader title="Organization Mapping" step={3} subtitle="Update your committee details." />
 
               <PickerField
-                label="State"
-                icon="map-outline"
-                value={selectedStateName}
-                onPress={() => setModalType('state')}
-              />
-
-              <PickerField
-                label="District"
-                icon="locate-outline"
-                value={selectedDistrictName}
-                onPress={() => {
-                  if (!formData.state_id) Alert.alert("Select State First");
-                  else setModalType('district');
-                }}
-              />
-
-              <PickerField
-                label="Taluka / Block"
-                icon="trail-sign-outline"
-                value={selectedTalukaName}
-                onPress={() => {
-                  if (!formData.district_id) Alert.alert("Select District First");
-                  else setModalType('taluka');
-                }}
-              />
-
-              <PickerField
-                label="Village / City"
-                icon="business-outline"
-                value={selectedVillageName}
-                onPress={() => {
-                  if (!formData.taluka_id) Alert.alert("Select Taluka First");
-                  else setModalType('village');
-                }}
-              />
-
-              <PickerField
                 label="Committee"
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => setModalType('committee')}
+                error={errors.committee_id}
               />
             </View>
           )}
@@ -893,6 +883,13 @@ const styles = StyleSheet.create({
   nextBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.white },
   btnDisabled: { opacity: 0.6 },
   
+  photoUploadContainer: { alignItems: 'center', marginBottom: 24 },
+  photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  photoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  photoPreview: { width: '100%', height: '100%' },
+  photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
+  photoLoadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { 
     backgroundColor: COLORS.white, 
@@ -906,6 +903,9 @@ const styles = StyleSheet.create({
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
+  searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: COLORS.bg },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
 

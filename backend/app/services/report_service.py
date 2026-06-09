@@ -248,6 +248,8 @@ class ReportService:
         limit: int = 50,
         user_id: Optional[int] = None,
         action: Optional[str] = None,
+        tenant_id: Optional[int] = None,
+        exclude_actions: Optional[list[str]] = None,
     ) -> tuple[list[AuditLogResponse], int]:
         """
         Return a paginated, optionally-filtered list of audit log entries.
@@ -258,6 +260,8 @@ class ReportService:
             limit:   Maximum rows per page.
             user_id: When supplied, restrict to entries from that user.
             action:  When supplied, restrict to entries with that action type.
+            tenant_id: When supplied, restrict to entries for that tenant.
+            exclude_actions: When supplied, exclude these actions from results.
 
         Returns:
             A ``(items, total)`` tuple where items are
@@ -269,6 +273,8 @@ class ReportService:
             limit=limit,
             user_id=user_id,
             action=action,
+            tenant_id=tenant_id,
+            exclude_actions=exclude_actions,
         )
 
         response_items = [

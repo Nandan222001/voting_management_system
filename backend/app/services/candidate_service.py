@@ -25,10 +25,51 @@ from app.schemas.candidate import CandidateCreate, CandidateUpdate
 from app.utils.uploads import delete_uploaded_file, save_uploaded_image
 
 
+from sqlalchemy import text
+from app.models.candidate_follower import CandidateFollower
+
 class CandidateService:
     """
     Orchestrates candidate use-cases for the Digital Voting System.
     """
+
+    # ... (existing methods)
+
+    def get_follow_status(self, db: Session, candidate_id: int, user_id: int) -> bool:
+        """
+        Check if a user is following a candidate using the junction table.
+        """
+        return db.query(CandidateFollower).filter(
+            CandidateFollower.candidate_id == candidate_id,
+            CandidateFollower.user_id == user_id
+        ).first() is not None
+
+    def follow_candidate(self, db: Session, candidate_id: int, user_id: int, tenant_id: int) -> bool:
+        """
+        Toggle follow status for a candidate (creates if not exists, deletes if exists).
+        Returns the new follow status.
+        """
+        # Ensure the candidate existence is validated
+        self.get_by_id(db, candidate_id)
+
+        existing = db.query(CandidateFollower).filter(
+            CandidateFollower.candidate_id == candidate_id,
+            CandidateFollower.user_id == user_id
+        ).first()
+
+        if existing:
+            db.delete(existing)
+            db.commit()
+            return False
+        else:
+            new_follow = CandidateFollower(
+                candidate_id=candidate_id,
+                user_id=user_id,
+                tenant_id=tenant_id
+            )
+            db.add(new_follow)
+            db.commit()
+            return True
 
     # ------------------------------------------------------------------
     # Create

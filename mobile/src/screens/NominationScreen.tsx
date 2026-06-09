@@ -21,10 +21,12 @@ import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { candidateService } from '../services/candidateService';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import LinearGradient from 'react-native-linear-gradient';
+import DocumentPicker from 'react-native-document-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
+import DatePicker from 'react-native-date-picker';
 
 import Header from '../components/common/Header';
 
@@ -195,6 +197,7 @@ const NominationScreen = ({ navigation, route }: any) => {
     member_id: user?.id ? `MEM-${user.id.toString().padStart(5, '0')}` : 'N/A',
     full_name: user?.full_name || '',
     profile_photo_url: '',
+    cover_photo_url: '',
     phone: user?.phone || '',
     email: user?.email || '',
     date_of_birth: user?.date_of_birth || '',
@@ -235,6 +238,19 @@ const NominationScreen = ({ navigation, route }: any) => {
   const [selectedTargetName, setSelectedTargetName] = useState('');
   const [modalType, setModalType] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+  };
 
   const declarationComplete =
     formData.agree_constitution &&
@@ -260,21 +276,30 @@ const NominationScreen = ({ navigation, route }: any) => {
     return label.includes(searchQuery.toLowerCase());
   });
 
-  const pickImage = async (field: 'profile_photo_url' | 'signature_url') => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
+  const [previews, setPreviews] = useState<Record<string, string>>({});
+
+  const pickImage = async (field: 'profile_photo_url' | 'signature_url' | 'cover_photo_url') => {
+    const isCover = field === 'cover_photo_url';
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
       quality: 0.5,
     });
 
-    if (!result.canceled) {
+    if (!result.didCancel && result.assets && result.assets[0].uri) {
+      const asset = result.assets[0];
+      const localUri = asset.uri;
+      setPreviews({ ...previews, [field]: localUri });
       setLoading(true);
       try {
-        const uploadedUrl = await mediaService.uploadImage(result.assets[0].uri);
+        const uploadedUrl = await mediaService.uploadFile(
+          localUri,
+          asset.fileName || `${field}.jpg`,
+          asset.type || 'image/jpeg'
+        );
         setFormData({ ...formData, [field]: uploadedUrl });
-      } catch (error) {
-        Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.detail || error.message || 'Could not upload image.';
+        Alert.alert('Upload Failed', `${errorMsg}. Please try again.`);
       } finally {
         setLoading(false);
       }
@@ -298,38 +323,39 @@ const NominationScreen = ({ navigation, route }: any) => {
   };
 
   const pickNominationDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['image/*', 'application/pdf'],
-      copyToCacheDirectory: true,
-      multiple: false,
-    });
-
-    if (result.canceled || !result.assets?.[0]) {
-      return;
-    }
-
-    const asset = result.assets[0];
-    setLoading(true);
     try {
-      const uploadedUrl = await mediaService.uploadFile(
-        asset.uri,
-        asset.name || 'signature',
-        asset.mimeType || 'application/octet-stream',
-      );
-      setFormData({
-        ...formData,
-        signature_url: uploadedUrl,
-        nomination_document_name: asset.name || 'Nomination document',
-        nomination_document_type: asset.mimeType || '',
+      const results = await DocumentPicker.pick({
+        type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
       });
-      setErrors({ ...errors, signature_url: '' });
-    } catch (error: any) {
-      Alert.alert(
-        'Upload Failed',
-        error.response?.data?.detail || 'Could not upload signature. Please upload an image or PDF.',
-      );
-    } finally {
-      setLoading(false);
+
+      const asset = results[0];
+      setPreviews({ ...previews, signature_url: asset.uri });
+      setLoading(true);
+      try {
+        const uploadedUrl = await mediaService.uploadFile(
+          asset.uri,
+          asset.name || 'signature',
+          asset.type || 'application/octet-stream',
+        );
+        setFormData({
+          ...formData,
+          signature_url: uploadedUrl,
+          nomination_document_name: asset.name || 'Nomination document',
+          nomination_document_type: asset.type || '',
+        });
+        setErrors({ ...errors, signature_url: '' });
+      } catch (error: any) {
+        Alert.alert(
+          'Upload Failed',
+          error.response?.data?.detail || 'Could not upload signature. Please upload an image or PDF.',
+        );
+      } finally {
+        setLoading(false);
+      }
+    } catch (err) {
+      if (!DocumentPicker.isCancel(err)) {
+        console.error(err);
+      }
     }
   };
 
@@ -396,6 +422,7 @@ const NominationScreen = ({ navigation, route }: any) => {
         // Map UI field names to API field names
         voter_id_number: formData.voter_id,
         image_url: formData.profile_photo_url,
+        cover_url: formData.cover_photo_url,
         is_willing: formData.willing_to_contest,
         is_disciplined: formData.suspended_disciplined,
         has_complaints: formData.pending_complaints,
@@ -527,8 +554,8 @@ const NominationScreen = ({ navigation, route }: any) => {
               
               <View style={styles.photoUploadContainer}>
                 <TouchableOpacity style={styles.photoBox} onPress={() => pickImage('profile_photo_url')}>
-                  {formData.profile_photo_url ? (
-                    <Image source={{ uri: formData.profile_photo_url }} style={styles.photoPreview} />
+                  {(previews.profile_photo_url || formData.profile_photo_url) ? (
+                    <Image source={{ uri: previews.profile_photo_url || mediaService.getFileUrl(formData.profile_photo_url) }} style={styles.photoPreview} />
                   ) : (
                     <>
                       <MaterialIcons name="add-a-photo" size={32} color={COLORS.textSecondary} />
@@ -539,11 +566,51 @@ const NominationScreen = ({ navigation, route }: any) => {
                 {errors.profile_photo_url && <Text style={styles.errorText}>{errors.profile_photo_url}</Text>}
               </View>
 
+              <View style={styles.photoUploadContainer}>
+                <TouchableOpacity style={[styles.photoBox, styles.coverPhotoBox]} onPress={() => pickImage('cover_photo_url')}>
+                  {(previews.cover_photo_url || formData.cover_photo_url) ? (
+                    <Image source={{ uri: previews.cover_photo_url || mediaService.getFileUrl(formData.cover_photo_url) }} style={styles.photoPreview} />
+                  ) : (
+                    <>
+                      <MaterialIcons name="landscape" size={32} color={COLORS.textSecondary} />
+                      <Text style={styles.photoLabel}>Cover Photo</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {errors.cover_photo_url && <Text style={styles.errorText}>{errors.cover_photo_url}</Text>}
+              </View>
+
               <InputField label="Member ID" value={formData.member_id} editable={false} icon="id-card-outline" />
               <InputField label="Full Name" value={formData.full_name} onChangeText={(t: string) => setFormData({...formData, full_name: t})} icon="person-outline" error={errors.full_name} />
               <InputField label="Mobile" value={formData.phone} icon="call-outline" editable={false} />
               <InputField label="Email" value={formData.email} icon="mail-outline" editable={false} />
-              <InputField label="Date of Birth" value={formData.date_of_birth} icon="calendar-outline" />
+              <PickerField 
+                label="Date of Birth" 
+                value={formData.date_of_birth} 
+                icon="calendar-outline" 
+                onPress={() => setShowDatePicker(true)} 
+              />
+              <DatePicker
+                modal
+                open={showDatePicker}
+                date={formData.date_of_birth ? (function() {
+                  const parts = formData.date_of_birth.split('/');
+                  if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return isNaN(d.getTime()) ? new Date() : d;
+                  }
+                  return new Date();
+                })() : new Date()}
+                mode="date"
+                onConfirm={(date) => {
+                  setShowDatePicker(false);
+                  setFormData({ ...formData, date_of_birth: formatDate(date) });
+                }}
+                onCancel={() => {
+                  setShowDatePicker(false);
+                }}
+                maximumDate={new Date()}
+              />
               <InputField label="Father / Spouse Name" value={formData.parent_name} onChangeText={(t: string) => setFormData({...formData, parent_name: t})} icon="people-outline" />
               
               <View style={styles.row}>
@@ -568,8 +635,8 @@ const NominationScreen = ({ navigation, route }: any) => {
               />
               {errors.kyc_type && <Text style={styles.errorText}>{errors.kyc_type}</Text>}
               <InputField label="ID Number" value={formData.voter_id} onChangeText={(t: string) => setFormData({...formData, voter_id: t})} icon="fingerprint" error={errors.voter_id} />
-              <InputField label="State" value={formData.state} editable={false} icon="map-outline" error={errors.state} />
-              <InputField label="District" value={formData.district} editable={false} icon="location-outline" error={errors.district} />
+              <InputField label="State" value={formData.state} onChangeText={(t: string) => setFormData({...formData, state: t})} icon="map-outline" error={errors.state} />
+              <InputField label="District" value={formData.district} onChangeText={(t: string) => setFormData({...formData, district: t})} icon="location-outline" error={errors.district} />
               <InputField label="Taluka / Block" value={formData.taluka} onChangeText={(t: string) => setFormData({...formData, taluka: t})} icon="location-outline" />
               <InputField label="Village / Area" value={formData.village} onChangeText={(t: string) => setFormData({...formData, village: t})} icon="home-outline" />
               <InputField label="Pincode" value={formData.pincode} keyboardType="numeric" onChangeText={(t: string) => setFormData({...formData, pincode: t})} icon="pin-outline" error={errors.pincode} />
@@ -704,6 +771,7 @@ const styles = StyleSheet.create({
 
   photoUploadContainer: { alignItems: 'center', marginBottom: 24 },
   photoBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  coverPhotoBox: { width: width - 80, height: 160, borderRadius: 16 },
   photoPreview: { width: '100%', height: '100%' },
   photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
 

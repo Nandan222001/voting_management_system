@@ -101,19 +101,22 @@ class ElectionService:
         data: ElectionCreate,
         created_by: int,
         tenant_id: Optional[int] = None,
+        bypass_limit: bool = False,
     ) -> Election:
         """
         Persist a new election, scoped to *tenant_id*.
 
         When *tenant_id* is provided the tenant's ``max_elections`` limit is
-        checked before creation.  Superadmin callers may pass ``None`` to
-        create platform-level elections (no limit check performed).
+        checked before creation unless ``bypass_limit`` is True.  
+        Superadmin callers may pass ``None`` to create platform-level elections 
+        (no limit check performed).
 
         Args:
-            db:         Active database session.
-            data:       Validated creation payload.
-            created_by: Primary key of the admin creating the election.
-            tenant_id:  Tenant to assign the election to, or ``None``.
+            db:           Active database session.
+            data:         Validated creation payload.
+            created_by:   Primary key of the admin creating the election.
+            tenant_id:    Tenant to assign the election to, or ``None``.
+            bypass_limit: If True, skips the election quota check.
 
         Returns:
             The freshly-created ``Election`` ORM instance.
@@ -121,7 +124,7 @@ class ElectionService:
         Raises:
             HTTPException 402: If the tenant's election limit has been reached.
         """
-        if tenant_id is not None:
+        if tenant_id is not None and not bypass_limit:
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(tenant_id)
             if tenant is not None:
@@ -164,30 +167,49 @@ class ElectionService:
         db: Session,
         skip: int = 0,
         limit: int = 20,
-        status_filter: Optional[ElectionStatus] = None,
+        status_filter: Optional[str] = None,
+        search_filter: Optional[str] = None,
         tenant_id: Optional[int] = None,
         member_district: Optional[str] = None,
     ) -> tuple[list[Election], int]:
         """
-        Return a paginated list of elections, optionally filtered by status
-        and scoped to a tenant.
+        Return a paginated list of elections, optionally filtered by status,
+        search term, and scoped to a tenant.
 
         Args:
             db:            Active database session.
             skip:          Row offset.
             limit:         Maximum rows to return.
-            status_filter: When supplied, restrict to elections with this status.
+            status_filter: When supplied (e.g. 'active', 'draft'), restrict results.
+                           'all' or None returns everything.
+            search_filter: Optional search term for the election title (LIKE %term%).
             tenant_id:     When supplied, restrict to elections belonging to
                            this tenant.  Pass ``None`` (superadmin) to see all.
 
         Returns:
             A ``(elections, total)`` tuple.
         """
+        from sqlalchemy import text
+
+        # Base query
         query = db.query(Election)
+
+        # 1. Multi-tenancy Scoping
         if tenant_id is not None:
             query = query.filter(Election.tenant_id == tenant_id)
-        if status_filter is not None:
-            query = query.filter(Election.status == status_filter)
+
+        # 2. Strict Status Filtering (Raw SQL logic via text)
+        if status_filter:
+            # Query equivalent: WHERE status = :status
+            query = query.filter(text("status = :status")).params(status=status_filter)
+
+        # 3. Search Filtering (Node Title Search)
+        if search_filter:
+            # Query equivalent: WHERE title LIKE :search
+            search_param = f"%{search_filter}%"
+            query = query.filter(Election.title.ilike(search_param))
+
+        # 4. Member District Scoping
         if member_district is not None:
             query = query.filter(
                 or_(
