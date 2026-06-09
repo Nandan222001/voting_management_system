@@ -32,9 +32,6 @@ export const mediaService = {
 
     const response = await api.post('/media/upload', formData, {
       timeout: 60000, // 60 seconds for large files
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
 
     return response.data.data.url;
@@ -63,9 +60,6 @@ export const mediaService = {
 
     const response = await api.post('/media/upload-nomination-document', formData, {
       timeout: 60000,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
     });
     return response.data.data.url;
   },

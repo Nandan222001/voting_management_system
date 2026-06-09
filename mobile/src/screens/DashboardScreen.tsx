@@ -60,7 +60,8 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
         setTenantName(data.name.toUpperCase());
       }
     }).catch(err => {
-      console.error('Failed to load tenant info', err);
+      // If we're not logged in or have no tenant, this is expected to be handled silently
+      console.log('No current tenant info available');
     });
 
     try {

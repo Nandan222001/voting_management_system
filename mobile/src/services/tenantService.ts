@@ -17,13 +17,16 @@ export const tenantService = {
   // Returns all active tenants for the initial selection screen (no auth, no header needed).
   getPublicTenants: async () => {
     const response = await api.get('/tenants/public');
-    return response.data.data;
+    return response.data?.data || [];
   },
 
   // Returns the branding/config for the current tenant using X-Tenant-ID header.
   getCurrentTenant: async () => {
+    const tenantId = await getTenantID();
+    if (!tenantId) return null;
+
     const response = await api.get('/tenants/me');
-    return response.data.data;
+    return response.data?.data || null;
   },
 
   // Public data endpoints — tenant is resolved from X-Tenant-ID header,
@@ -31,12 +34,13 @@ export const tenantService = {
 
   getPublicCommittees: async () => {
     const response = await api.get('/candidate-committees/public');
-    return response.data.data;
+    return response.data?.data || [];
   },
 
   getPublicPlans: async () => {
     const response = await api.get('/plans/public');
-    return response.data.data?.items ?? response.data.data;
+    const data = response.data?.data;
+    return data?.items ?? data ?? [];
   },
 
   getPublicTargets: async (parentId?: number, type?: string) => {
@@ -44,6 +48,6 @@ export const tenantService = {
     if (parentId !== undefined) params.parent_id = String(parentId);
     if (type) params.target_type = type;
     const response = await api.get('/targets/public', { params });
-    return response.data.data;
+    return response.data?.data || [];
   },
 };

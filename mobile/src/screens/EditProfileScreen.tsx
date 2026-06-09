@@ -26,6 +26,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
+import DatePicker from 'react-native-date-picker';
 import { showToast } from '../utils/toast';
 
 import Header from '../components/common/Header';
@@ -132,6 +133,19 @@ const EditProfileScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [day, month, year].join('/');
+  };
 
   // Data States
   const [formData, setFormData] = useState({
@@ -337,28 +351,6 @@ const EditProfileScreen = ({ navigation }: any) => {
     else navigation.goBack();
   };
 
-  const handlePickImage = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.5,
-    });
-
-    if (!result.didCancel && result.assets && result.assets[0].uri) {
-      const localUri = result.assets[0].uri;
-      setLoading(true);
-      try {
-        const uploadedUrl = await mediaService.uploadImage(localUri);
-        handleChange('image_url', uploadedUrl);
-        showToast.success('Success', 'Image uploaded successfully.');
-      } catch (error) {
-        console.error('Image upload failed:', error);
-        showToast.error('Upload Failed', 'Could not upload profile image.');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
   const handleUpdate = async () => {
     if (!validateStep1() || !validateStep3()) {
       if (!validateStep1()) setStep(1);
@@ -508,24 +500,6 @@ const EditProfileScreen = ({ navigation }: any) => {
             <View style={styles.formSection}>
               <SectionHeader title="Personal Information" step={1} subtitle="Update your identity details." />
               
-              <View style={styles.photoUploadContainer}>
-                <TouchableOpacity style={styles.photoBox} onPress={handlePickImage}>
-                  {formData.image_url ? (
-                    <Image source={{ uri: mediaService.getFileUrl(formData.image_url) }} style={styles.photoPreview} />
-                  ) : (
-                    <View style={styles.photoPlaceholder}>
-                      <MaterialIcons name="add-a-photo" size={32} color={COLORS.textSecondary} />
-                      <Text style={styles.photoLabel}>Profile Photo</Text>
-                    </View>
-                  )}
-                  {loading && (
-                    <View style={styles.photoLoadingOverlay}>
-                      <ActivityIndicator color={COLORS.white} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-
               <InputField
                 name="full_name"
                 icon="person-outline"
@@ -557,16 +531,33 @@ const EditProfileScreen = ({ navigation }: any) => {
                 editable={false}
                 icon="lock-closed-outline"
               />
-              <InputField
-                name="date_of_birth"
-                icon="calendar-outline"
+              <PickerField
                 label="Date of Birth"
-                placeholder="DD/MM/YYYY"
+                icon="calendar-outline"
                 value={formData.date_of_birth}
-                onChangeText={(val: string) => handleChange('date_of_birth', val)}
-                errors={errors}
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
+                onPress={() => setShowDatePicker(true)}
+                error={errors.date_of_birth}
+              />
+              <DatePicker
+                modal
+                open={showDatePicker}
+                date={formData.date_of_birth ? (function() {
+                  const parts = formData.date_of_birth.split('/');
+                  if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    return isNaN(d.getTime()) ? new Date() : d;
+                  }
+                  return new Date();
+                })() : new Date()}
+                mode="date"
+                onConfirm={(date) => {
+                  setShowDatePicker(false);
+                  handleChange('date_of_birth', formatDate(date));
+                }}
+                onCancel={() => {
+                  setShowDatePicker(false);
+                }}
+                maximumDate={new Date()}
               />
               <PickerField
                 label="Gender"
@@ -735,8 +726,8 @@ const EditProfileScreen = ({ navigation }: any) => {
                   <InputField
                     name="current_street_address"
                     icon="location-outline"
-                    label="Current Street / Area"
-                    placeholder="Enter street"
+                    label="Full Current Address"
+                    placeholder="Enter Full Address"
                     value={formData.current_street_address}
                     onChangeText={(val: string) => handleChange('current_street_address', val)}
                     errors={errors}

@@ -5,6 +5,7 @@ import Header from '../components/common/Header';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { tenantService } from '../services/tenantService';
+import { mediaService } from '../services/mediaService';
 
 const COLORS = {
   primary: '#003d9b',
@@ -108,10 +109,16 @@ const AnalyticsScreen = () => {
               isWinner && { borderColor: '#10b981' },
               isPresident && !isWinner && { borderColor: '#4338ca' }
             ]}>
-               <Image 
-                 source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(person.full_name)}&background=${isWinner ? '10b981' : (isPresident ? '4338ca' : '003d9b')}&color=fff&bold=true` }} 
-                 style={styles.modernPersonImg} 
-               />
+               {person.image ? (
+                 <Image 
+                   source={{ uri: mediaService.getFileUrl(person.image) }} 
+                   style={styles.modernPersonImg} 
+                 />
+               ) : (
+                 <View style={[styles.modernPersonImg, { backgroundColor: isWinner ? '#10b981' : (isPresident ? '#4338ca' : '#003d9b'), justifyContent: 'center', alignItems: 'center' }]}>
+                    <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "person")} size={32} color="#fff" />
+                 </View>
+               )}
                <View style={[
                  styles.verifiedBadgeSmall, 
                  isWinner && { backgroundColor: '#10b981' },
@@ -123,6 +130,12 @@ const AnalyticsScreen = () => {
          </View>
          <View style={styles.personInfoCol}>
             <View style={styles.roleRow}>
+               {isPresident && !isWinner && (
+                 <MaterialIcons name="workspace-premium" size={14} color="#4338ca" style={{ marginRight: 4 }} />
+               )}
+               {isWinner && (
+                 <MaterialIcons name="stars" size={14} color="#10b981" style={{ marginRight: 4 }} />
+               )}
                <Text style={[
                  styles.personRoleLabel,
                  isWinner && { color: '#10b981' },
@@ -145,7 +158,6 @@ const AnalyticsScreen = () => {
     if (!selectedPerson) return null;
     const isWinner = selectedPersonTitle.toLowerCase().includes('winner');
     const isPresident = selectedPersonTitle.toLowerCase().includes('president');
-    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedPerson.full_name)}&background=${isWinner ? '10b981' : (isPresident ? '4338ca' : '003d9b')}&color=fff&bold=true&size=200`;
 
     return (
       <Modal
@@ -171,7 +183,13 @@ const AnalyticsScreen = () => {
                     style={styles.heroGradient}
                   >
                     <View style={styles.heroAvatarContainer}>
-                       <Image source={{ uri: avatarUrl }} style={styles.heroAvatar} />
+                       {selectedPerson.image ? (
+                         <Image source={{ uri: mediaService.getFileUrl(selectedPerson.image) }} style={styles.heroAvatar} />
+                       ) : (
+                         <View style={[styles.heroAvatar, { backgroundColor: isWinner ? '#10b981' : (isPresident ? '#4338ca' : '#003d9b'), justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#fff' }]}>
+                            <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "person")} size={60} color="#fff" />
+                         </View>
+                       )}
                        <View style={styles.heroBadge}>
                           <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "verified")} size={16} color="#fff" />
                        </View>
@@ -355,12 +373,12 @@ const AnalyticsScreen = () => {
               </TouchableOpacity>
               
               <View style={styles.pageNumbersRow}>
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                   let pageNum;
-                  if (totalPages <= 5) pageNum = i + 1;
-                  else if (currentPage <= 3) pageNum = i + 1;
-                  else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-                  else pageNum = currentPage - 2 + i;
+                  if (totalPages <= 3) pageNum = i + 1;
+                  else if (currentPage <= 2) pageNum = i + 1;
+                  else if (currentPage >= totalPages - 1) pageNum = totalPages - 2 + i;
+                  else pageNum = currentPage - 1 + i;
 
                   return (
                     <TouchableOpacity 
@@ -419,8 +437,16 @@ const styles = StyleSheet.create({
   heroBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   heroTitle: { fontSize: 32, fontWeight: '900', color: '#fff', letterSpacing: -1 },
   heroSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 20, fontWeight: '500', marginBottom: 12 },
-  heroSearchWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, height: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  heroSearchInput: { flex: 1, color: '#fff', fontSize: 16, fontWeight: '600', ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  heroSearchWrapper: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, height: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+  heroSearchInput: { 
+    flex: 1, 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: '600', 
+    paddingVertical: 0,
+    backgroundColor: 'transparent',
+    ...Platform.select({ web: { outlineStyle: 'none' } }) 
+  },
 
   peopleList: { gap: 20, marginTop: 8 },
   targetCard: { 

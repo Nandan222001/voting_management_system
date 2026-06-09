@@ -119,14 +119,16 @@ const ProfileScreen = ({ navigation }: any) => {
             
             <View style={styles.heroContent}>
               <View style={styles.avatarContainer}>
-                <Image 
-                  source={{ 
-                    uri: user?.image_url 
-                      ? mediaService.getFileUrl(user.image_url) 
-                      : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff&size=200' 
-                  }} 
-                  style={styles.avatar} 
-                />
+                {user?.image_url ? (
+                  <Image 
+                    source={{ uri: mediaService.getFileUrl(user.image_url) }} 
+                    style={styles.avatar} 
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.defaultAvatar]}>
+                    <Ionicons name="person" size={60} color="rgba(255,255,255,0.6)" />
+                  </View>
+                )}
                 <View style={styles.verifiedBadge}>
                   <MaterialIcons name="verified" size={20} color="#fff" />
                 </View>
@@ -342,6 +344,11 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.2)',
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   verifiedBadge: {
     position: 'absolute',

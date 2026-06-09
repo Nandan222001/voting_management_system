@@ -13,9 +13,8 @@ async def upload_file(
     General purpose upload endpoint. Currently supports images.
     Returns the public URL of the uploaded file.
     """
-    # For now, we use save_uploaded_image. 
-    # We can expand this to handle PDFs etc.
-    url = await save_uploaded_image(file, subdir="kyc", filename_prefix="kyc_doc")
+    # Use save_uploaded_file to support both images and PDFs as required by mobile KYC
+    url = await save_uploaded_file(file, subdir="kyc", filename_prefix="kyc_doc")
     return success_response(data={"url": url}, message="File uploaded successfully.")
 
 
