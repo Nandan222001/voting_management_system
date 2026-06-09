@@ -1,0 +1,4 @@
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Razorpay.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RazorpayCore.framework
+${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RazorpayStandard.framework

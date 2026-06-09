@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RAW_API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  'http://localhost:8000/api/v1';
+  'http://127.0.0.1:8000/api/v1';
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
