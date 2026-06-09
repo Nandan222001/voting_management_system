@@ -286,15 +286,20 @@ const NominationScreen = ({ navigation, route }: any) => {
     });
 
     if (!result.didCancel && result.assets && result.assets[0].uri) {
-      const localUri = result.assets[0].uri;
+      const asset = result.assets[0];
+      const localUri = asset.uri;
       setPreviews({ ...previews, [field]: localUri });
       setLoading(true);
       try {
-        const uploadedUrl = await mediaService.uploadImage(localUri);
+        const uploadedUrl = await mediaService.uploadFile(
+          localUri,
+          asset.fileName || `${field}.jpg`,
+          asset.type || 'image/jpeg'
+        );
         setFormData({ ...formData, [field]: uploadedUrl });
-      } catch (error) {
-        Alert.alert('Upload Failed', 'Could not upload image. Please try again.');
-        // Revert preview on failure if desired, or leave it
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.detail || error.message || 'Could not upload image.';
+        Alert.alert('Upload Failed', `${errorMsg}. Please try again.`);
       } finally {
         setLoading(false);
       }

@@ -29,6 +29,8 @@ import RazorpayCheckout from 'react-native-razorpay';
 import DatePicker from 'react-native-date-picker';
 import { showToast } from '../utils/toast';
 import { paymentService, createRegistrationOrder } from '../services/paymentService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getTenantID, BASE_URL } from '../services/api';
 
 import Header from '../components/common/Header';
 
@@ -327,18 +329,25 @@ const RegisterScreen = ({ navigation }: any) => {
     try {
       // 1. Fetch current tenant details based on ID in header
       const tenant = await tenantService.getCurrentTenant();
-      setCurrentTenant(tenant);
       
-      // Auto-set the tenant ID in form
-      setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
-      setSelectedTenantName(tenant.name);
+      if (tenant) {
+        setCurrentTenant(tenant);
+        
+        // Auto-set the tenant ID in form
+        setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
+        setSelectedTenantName(tenant.name);
 
-      // 2. Fetch states
-      const statesData = await tenantService.getPublicTargets(undefined, 'state');
-      setStates(statesData);
+        // 2. Fetch states
+        const statesData = await tenantService.getPublicTargets(undefined, 'state');
+        setStates(statesData);
 
-      // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
-      fetchTenantSpecificData();
+        // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
+        fetchTenantSpecificData();
+      } else {
+        // No tenant selected yet, fetch the list of tenants
+        fetchTenants();
+        fetchStates();
+      }
     } catch (error) {
       console.error('Failed to fetch initial data:', error);
       fetchTenants();
@@ -391,13 +400,28 @@ const RegisterScreen = ({ navigation }: any) => {
     if (!result.didCancel && result.assets && result.assets.length > 0) {
       setUploading(field);
       try {
-        const uri = result.assets[0].uri;
+        const asset = result.assets[0];
+        const uri = asset.uri;
         if (!uri) return;
-        const uploadedUrl = await mediaService.uploadFile(uri, `${field}.jpg`);
+        
+        const fileName = asset.fileName || `${field}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+
+        let uploadedUrl = '';
+        try {
+          // Attempt 1: Standard Upload
+          uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        } catch (firstError: any) {
+          console.warn('Primary upload failed, trying fallback...', firstError);
+          // Attempt 2: Fallback to nomination upload (different backend path)
+          uploadedUrl = await mediaService.uploadNominationDocument(uri, fileName, fileType);
+        }
+
         handleChange(field, uploadedUrl);
-      } catch (error) {
-        console.error('Upload error:', error);
-        Alert.alert('Upload Failed', 'Could not upload the image. Please try again.');
+      } catch (error: any) {
+        console.error('Final upload error:', error);
+        const errorMsg = error.response?.data?.detail || error.message || 'Could not upload the image.';
+        Alert.alert('Upload Failed', `${errorMsg}. Please try again.`);
       } finally {
         setUploading(null);
       }
@@ -1056,8 +1080,8 @@ const RegisterScreen = ({ navigation }: any) => {
                   <InputField
                     name="current_street_address"
                     icon="location-outline"
-                    label="Current Street / Area"
-                    placeholder="Enter street"
+                    label="Full Current Address"
+                    placeholder="Enter Full Address"
                     value={formData.current_street_address}
                     onChangeText={(val: string) => handleChange('current_street_address', val)}
                     errors={errors}
@@ -1110,29 +1134,32 @@ const RegisterScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
               </View>
 
-              {plans.length > 0 ? (
-                plans.map((plan) => (
-                  <TouchableOpacity
-                    key={plan.id}
-                    style={[
-                      styles.planCard,
-                      formData.membership_plan_id === plan.id && styles.planCardSelected
-                    ]}
-                    onPress={() => {
-                      handleChange('membership_plan_id', plan.id);
-                      setSelectedPlanName(plan.name);
-                    }}
-                  >
-                    <View style={styles.planHeader}>
-                      <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
-                    </View>
-                    <Text style={styles.planDesc}>{plan.description}</Text>
-                    {formData.membership_plan_id === plan.id && (
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
-                    )}
-                  </TouchableOpacity>
-                ))
+              {Array.isArray(plans) && plans.length > 0 ? (
+                plans.map((plan) => {
+                  if (!plan) return null;
+                  return (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={[
+                        styles.planCard,
+                        formData.membership_plan_id === plan.id && styles.planCardSelected
+                      ]}
+                      onPress={() => {
+                        handleChange('membership_plan_id', plan.id);
+                        setSelectedPlanName(plan.name);
+                      }}
+                    >
+                      <View style={styles.planHeader}>
+                        <Text style={styles.planName}>{plan.name}</Text>
+                        <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
+                      </View>
+                      <Text style={styles.planDesc}>{plan.description}</Text>
+                      {formData.membership_plan_id === plan.id && (
+                        <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })
               ) : (
                 <View style={styles.emptyPlans}>
                    <Text style={styles.emptyText}>No special plans available for this organization. You will be registered as a free member.</Text>

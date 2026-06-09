@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 // Production Endpoint Configuration
-const PRODUCTION_URL = 'http://13.207.201.75:8000/api/v1';
+const PRODUCTION_URL = 'https://13.207.201.75:8000/api/v1';
 let RAW_API_URL = PRODUCTION_URL;
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
@@ -59,9 +59,16 @@ api.interceptors.request.use(
       params: config.params,
     });
 
-    // If sending FormData and no Content-Type is manually set, let axios handle it
-    if (config.data instanceof FormData && !config.headers['Content-Type']) {
-      delete config.headers['Content-Type'];
+    // If sending FormData, let axios handle the Content-Type (it will add the boundary)
+    const isFormData = config.data instanceof FormData || 
+                       (config.data && typeof config.data === 'object' && config.data._parts);
+
+    if (isFormData) {
+      if (config.headers.delete) {
+        config.headers.delete('Content-Type');
+      } else {
+        delete config.headers['Content-Type'];
+      }
     }
 
     return config;
