@@ -12,9 +12,9 @@ export const candidateService = {
   },
 
   nominate: async (formData: any) => {
-    const data = new FormData();
+    // Standardize the payload as a JSON object
+    const payload: any = {};
     
-    // List of all keys to include from the multi-step form
     const keys = [
       'election_id', 'committee_id', 'target_id', 'position_name', 'full_name', 'email', 'phone', 
       'date_of_birth', 'gender', 'parent_name', 'kyc_type', 'voter_id_number', 
@@ -25,12 +25,27 @@ export const candidateService = {
     ];
 
     keys.forEach(key => {
-      if (formData[key] !== undefined && formData[key] !== null && formData[key] !== '') {
-        data.append(key, String(formData[key]));
+      if (formData[key] !== undefined && formData[key] !== null) {
+        // Ensure numeric fields are actually numbers if they are valid digits
+        if (['election_id', 'committee_id', 'target_id'].includes(key) && typeof formData[key] === 'string' && /^\d+$/.test(formData[key])) {
+          payload[key] = parseInt(formData[key], 10);
+        } else {
+          payload[key] = formData[key];
+        }
       }
     });
 
-    const response = await api.post('/candidates/nominate', data);
+    const response = await api.post('/candidates/nominate', payload);
     return response.data.data;
+  },
+
+  followCandidate: async (id: number) => {
+    const response = await api.post(`/candidates/${id}/follow`);
+    return response.data.data;
+  },
+
+  getFollowStatus: async (id: number) => {
+    const response = await api.get(`/candidates/${id}/follow-status`);
+    return response.data.data; // Expected { is_following: boolean }
   },
 };

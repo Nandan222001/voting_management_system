@@ -44,6 +44,7 @@ class User(Base):
     full_name = Column(String(150), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
+    image_url = Column(String(500), nullable=True)
     date_of_birth = Column(String(20), nullable=True)
     gender = Column(String(20), nullable=True)
     parent_name = Column(String(150), nullable=True)
@@ -168,7 +169,7 @@ class User(Base):
     membership_plan = relationship(
         "Plan",
         foreign_keys=[membership_plan_id],
-        lazy="select",
+        lazy="joined",
     )
 
     def __repr__(self) -> str:  # pragma: no cover

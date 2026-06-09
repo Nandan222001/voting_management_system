@@ -12,6 +12,7 @@ import SearchableSelect from '../components/common/SearchableSelect'
 import { fetchTargets, createTarget, updateTarget, deleteTarget } from '../store/slices/targetSlice'
 import { fetchPlatformStats, selectPlatformStats } from '../store/slices/tenantSlice'
 import { fetchUsers, selectUsers } from '../store/slices/userSlice'
+import OrganizationTree from '../components/common/OrganizationTree'
 
 function numberFormat(value) {
   return new Intl.NumberFormat('en-US').format(Number(value || 0));
@@ -87,124 +88,26 @@ const COMMITTEE_TYPES = [
   { value: 'booth', label: 'Booth Committee', levels: ['state', 'district', 'block', 'booth'], icon: Hash, color: 'text-rose-600 bg-rose-50' },
 ]
 
-// ─── Recursive Committee Node Component ───────────────────────────────────────
-
-function CommitteeNode({ node, childrenMap, onEdit, onDelete, level = 0 }) {
-  const [isExpanded, setIsExpanded] = useState(level < 1) 
-  const children = childrenMap[node.id] || []
-  const hasChildren = children.length > 0
-
-  const typeConfig = COMMITTEE_TYPES.find(ct => ct.value === node.type)
-  const Icon = typeConfig?.icon || Shield
-
-  return (
-    <div className="select-none">
-      <div 
-        className={`flex items-center justify-between group py-3 px-5 rounded-2xl transition-all duration-300 border border-transparent hover:border-gray-200 hover:bg-white hover:shadow-lg ${level === 0 ? 'bg-indigo-50/30' : ''}`}
-      >
-        <div className="flex items-center gap-4 flex-1">
-          {hasChildren ? (
-            <button 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className={`p-1.5 rounded-lg border transition-all duration-300 ${isExpanded ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-900 hover:text-gray-900'}`}
-              type="button"
-            >
-              {isExpanded ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
-            </button>
-          ) : (
-            <div className="w-8 h-8 flex items-center justify-center">
-               <div className="w-2 h-2 rounded-full bg-gray-200 group-hover:bg-gray-400 transition-colors" />
-            </div>
-          )}
-          
-          <div className="flex items-center gap-3 min-w-0">
-             <div className={`flex h-10 w-10 items-center justify-center rounded-xl border border-transparent shadow-sm transition-transform group-hover:scale-110 ${typeConfig?.color || 'bg-gray-50 text-gray-600'}`}>
-                <Icon className="h-5 w-5" strokeWidth={2.4} />
-             </div>
-             <div className="flex flex-col">
-               <span className="font-black text-gray-900 tracking-tight truncate">{node.name}</span>
-               <div className="flex items-center gap-2">
-                 <span className="text-[9px] font-black uppercase tracking-[0.15em] text-gray-400">
-                    {typeConfig ? typeConfig.label : node.type}
-                 </span>
-                 {node.president && (
-                   <>
-                     <span className="text-gray-300">•</span>
-                     <span className="text-[9px] font-bold text-[#1a337e] uppercase tracking-widest flex items-center gap-1">
-                       <UserCheck size={10} /> {node.president.full_name}
-                     </span>
-                   </>
-                 )}
-               </div>
-             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
-          <button 
-            onClick={() => onEdit(node)}
-            className="flex h-9 w-9 items-center justify-center bg-blue-50 text-[#1a337e] hover:bg-[#1a337e] hover:text-white rounded-xl transition-all duration-300 shadow-sm shadow-blue-100"
-            title="Edit"
-            type="button"
-          >
-            <FaEdit size={12} />
-          </button>
-          <button 
-            onClick={() => onDelete(node)}
-            className="flex h-9 w-9 items-center justify-center bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all duration-300 shadow-sm shadow-red-100"
-            title="Delete"
-            type="button"
-          >
-            <FaTrash size={12} />
-          </button>
-        </div>
-      </div>
-
-      {isExpanded && hasChildren && (
-        <div className="ml-8 mt-2 relative">
-          {/* Vertical connecting line */}
-          <div className="absolute left-0 top-0 bottom-4 w-0.5 bg-gradient-to-b from-gray-200 to-transparent rounded-full" style={{ left: '-18px' }} />
-          
-          <div className="space-y-2">
-            {children.map(child => (
-              <div key={child.id} className="relative">
-                {/* Horizontal connecting line */}
-                <div className="absolute left-0 top-6 w-4 h-0.5 bg-gray-200 rounded-full" style={{ left: '-18px' }} />
-                
-                <CommitteeNode 
-                  node={child} 
-                  childrenMap={childrenMap} 
-                  onEdit={onEdit} 
-                  onDelete={onDelete} 
-                  level={level + 1} 
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Inline Creation Modal ─────────────────────────────────────────────────────
 
-function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName }) {
+function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName, availablePresidents }) {
   const [name, setName] = useState(initialName || '')
+  const [presidentId, setPresidentId] = useState('')
 
   useEffect(() => { 
     if (isOpen) {
       setName(initialName || '')
+      setPresidentId('')
     }
   }, [isOpen, initialName])
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (name.trim()) onSave(name.trim())
+    if (name.trim()) onSave({ name: name.trim(), president_id: presidentId ? parseInt(presidentId) : null })
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={`Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={`Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`} size="md">
       <form onSubmit={handleSubmit} className="space-y-6 p-1">
         <Field label={`${type} Name`} required>
           <input
@@ -215,6 +118,15 @@ function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName })
             className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/10 outline-none transition-all shadow-inner"
             placeholder={`e.g. ${type === 'state' ? 'Maharashtra' : 'New Area'}`}
             required
+          />
+        </Field>
+
+        <Field label="Committee President" hint="Exclusive leadership assignment.">
+          <SearchableSelect
+            placeholder="Select President..."
+            options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+            value={presidentId}
+            onChange={setPresidentId}
           />
         </Field>
 
@@ -280,8 +192,6 @@ function EditCommitteeModal({ isOpen, onClose, target, onSave, loading, availabl
   )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
-
 export default function TargetsPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -318,20 +228,7 @@ export default function TargetsPage() {
     dispatch(fetchUsers({ limit: 1000 }))
   }, [dispatch])
 
-  // Performance Optimization: Children Map
-  const childrenMap = useMemo(() => {
-    const map = {}
-    targets.forEach(t => {
-      if (t.parent_id) {
-        if (!map[t.parent_id]) map[t.parent_id] = []
-        map[t.parent_id].push(t)
-      }
-    })
-    return map
-  }, [targets])
-
   // Hierarchical Data Processing
-  const rootNodes = useMemo(() => targets.filter(t => !t.parent_id), [targets])
   const states = useMemo(() => targets.filter(t => t.type === 'state'), [targets])
   const districts = useMemo(() => targets.filter(t => t.type === 'district'), [targets])
   const blocks = useMemo(() => targets.filter(t => t.type === 'block'), [targets])
@@ -343,6 +240,7 @@ export default function TargetsPage() {
 
   function openCreate() {
     setCommitteeType('state')
+    setEditTarget(null)
     resetFlow()
     setShowAddModal(true)
   }
@@ -362,13 +260,14 @@ export default function TargetsPage() {
     })
   }
 
-  const handleInlineSave = async (name) => {
+  const handleInlineSave = async ({ name, president_id }) => {
     setInlineSubmitting(true)
     try {
       const res = await dispatch(createTarget({ 
         name: name.trim(), 
         type: inlineModal.type, 
-        parent_id: inlineModal.parentId
+        parent_id: inlineModal.parentId,
+        president_id
       })).unwrap()
       toast.success('Entity added successfully')
       handleLevelChange(inlineModal.type, res.id)
@@ -408,7 +307,8 @@ export default function TargetsPage() {
     const finalData = { 
       name: derivedName, 
       type: committeeType,
-      parent_id: parentId ? parseInt(parentId) : null
+      parent_id: parentId ? parseInt(parentId) : null,
+      president_id: selections.president_id ? parseInt(selections.president_id) : null
     }
 
     try {
@@ -456,11 +356,19 @@ export default function TargetsPage() {
   const activeConfig = COMMITTEE_TYPES.find(c => c.value === committeeType)
 
   const availablePresidents = useMemo(() => {
+    // 1. Map all currently assigned president IDs from the registry
     const assignedIds = targets
       .map(t => t.president_id)
-      .filter(id => id && (!editTarget || id !== editTarget.president_id))
+      .filter(id => id !== null && id !== undefined)
     
-    return users.filter(u => !assignedIds.includes(u.id))
+    // 2. Filter the assigned list to exclude the current edit target's president
+    // This allows the current president to remain in the list while editing
+    const currentAssignedExcludeList = assignedIds.filter(id => 
+      !editTarget || id !== editTarget.president_id
+    )
+    
+    // 3. Return users who are not in the finalized exclude list
+    return users.filter(u => !currentAssignedExcludeList.includes(u.id))
   }, [users, targets, editTarget])
 
   const statsData = useMemo(() => ({
@@ -474,6 +382,22 @@ export default function TargetsPage() {
   return (
     <MainLayout title="Committee Management">
       <div className="w-full space-y-8">
+        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <div className="h-1.5 w-8 rounded-full bg-[#1a337e]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Organizational Architecture</span>
+            </div>
+            <h2 className="text-4xl font-black tracking-tight text-gray-900">Committee Registry</h2>
+          </div>
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:brightness-110 shadow-xl shadow-[#1a337e]/20 active:scale-95 transition-all"
+          >
+            <FaPlus className="h-4 w-4" /> Add Committee
+          </button>
+        </header>
+
         <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
           <MetricCard
             title="Total Committees"
@@ -551,12 +475,6 @@ export default function TargetsPage() {
               className="w-full bg-gray-100 border-0 rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-900 focus:ring-2 focus:ring-[#1a337e]/20 transition-all"
             />
           </div>
-          <button
-            onClick={openCreate}
-            className="w-full md:w-auto flex items-center justify-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95 transition-all"
-          >
-            <FaPlus className="h-4 w-4" /> Add Committee
-          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -578,29 +496,12 @@ export default function TargetsPage() {
               </div>
 
               <div className="p-6 bg-gray-50/30 rounded-3xl border border-gray-200 shadow-sm min-h-[500px]">
-                {loading ? (
-                  <div className="py-20 flex justify-center"><LoadingSpinner /></div>
-                ) : rootNodes.length === 0 ? (
-                  <div className="py-20 text-center">
-                     <div className="w-20 h-20 bg-white rounded-3xl shadow-sm border border-gray-100 flex items-center justify-center mx-auto mb-6">
-                        <Building2 className="w-10 h-10 text-gray-200" />
-                     </div>
-                     <p className="text-gray-400 font-black uppercase tracking-widest text-sm opacity-40">Empty Hierarchy</p>
-                     <p className="text-xs text-gray-400 mt-1">Initialize your first committee to begin.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                     {rootNodes.map(node => (
-                       <CommitteeNode 
-                          key={node.id} 
-                          node={node} 
-                          childrenMap={childrenMap} 
-                          onEdit={openEdit} 
-                          onDelete={setDeleteTargetItem} 
-                       />
-                     ))}
-                  </div>
-                )}
+                <OrganizationTree
+                  data={targets}
+                  onEdit={openEdit}
+                  onDelete={setDeleteTargetItem}
+                  loading={loading}
+                />
               </div>
            </div>
 
@@ -636,9 +537,10 @@ export default function TargetsPage() {
                     <TrendingUp size={160} />
                  </div>
                  <div className="relative z-10">
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/10">
+                   <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 border border-white/10">
                        <TrendingUp className="text-white w-7 h-7" />
-                    </div>
+                   </div>
+
                     <h4 className="text-xl font-black tracking-tight">Coverage Insight</h4>
                     <p className="text-sm text-indigo-100/70 mt-3 leading-relaxed font-medium">Your platform currently oversees <span className="text-white font-bold">{states.length} States</span> and <span className="text-white font-bold">{blocks.length} Blocks</span> across the national network.</p>
                     <button 
@@ -653,7 +555,7 @@ export default function TargetsPage() {
         </div>
       </div>
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Committee" size="3xl">
+      <Modal isOpen={showAddModal} onClose={() => { setShowAddModal(false); setEditTarget(null); }} title="Add Committee" size="3xl">
         <form onSubmit={handleAddSubmit} className="space-y-0" autoComplete="off">
           <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
             {/* Left Column: Classification */}
@@ -767,6 +669,17 @@ export default function TargetsPage() {
                     )}
                   </div>
                 )}
+
+                {/* <div className="pt-4 mt-2 border-t border-gray-50">
+                  <Field label="Committee President 1S" hint="Assign leadership to this new unit.">
+                    <SearchableSelect
+                      placeholder="Select President..."
+                      options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+                      value={selections.president_id}
+                      onChange={(v) => setSelections(s => ({ ...s, president_id: v }))}
+                    />
+                  </Field>
+                </div> */}
                </div>
             </div>
           </div>
@@ -774,22 +687,10 @@ export default function TargetsPage() {
           <div className="flex justify-end gap-3 p-6 bg-gray-50 border-t border-gray-100 rounded-b-3xl">
             <button
               type="button"
-              onClick={() => setShowAddModal(false)}
-              disabled={submitting}
-              className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              onClick={() => { setShowAddModal(false); setEditTarget(null); }}
+              className="px-10 py-2.5 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting || inlineSubmitting || (activeConfig.levels.length > 0 && !selections[activeConfig.levels[activeConfig.levels.length - 1]])}
-              className="px-5 py-2 text-sm font-semibold text-white bg-[#1a337e] rounded-lg hover:bg-[#0d1245] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 min-w-[150px] justify-center"
-            >
-              {submitting ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                'Add Committee'
-              )}
+              Close Protocol
             </button>
           </div>
         </form>
@@ -797,7 +698,7 @@ export default function TargetsPage() {
 
       <EditCommitteeModal
         isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
+        onClose={() => { setShowEditModal(false); setEditTarget(null); }}
         target={editTarget}
         onSave={handleUpdateSubmit}
         loading={submitting}
@@ -812,6 +713,7 @@ export default function TargetsPage() {
         initialName={inlineModal.name}
         onSave={handleInlineSave}
         loading={inlineSubmitting}
+        availablePresidents={availablePresidents}
       />
 
       <ConfirmDialog

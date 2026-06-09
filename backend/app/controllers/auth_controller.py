@@ -13,7 +13,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.config.database import get_db
-from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id
+from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id, verify_tenant_header
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
@@ -28,7 +29,39 @@ from app.services.auth_service import auth_service
 from app.services.user_service import user_service
 from app.utils.response import success_response
 
+from app.schemas.payment import RazorpayOrderResponse, RegistrationOrderCreate
+from app.services.payment_service import payment_service
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+# ---------------------------------------------------------------------------
+# POST /register/payment-order
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/register/payment-order",
+    response_model=RazorpayOrderResponse,
+    summary="Initialize a Razorpay order for a paid registration flow",
+)
+def create_registration_payment_order(
+    payload: RegistrationOrderCreate,
+    db: Session = Depends(get_db),
+    tenant: Optional[Tenant] = Depends(verify_tenant_header),
+) -> RazorpayOrderResponse:
+    """
+    Generate a Razorpay Order ID for a specific membership plan and tenant.
+    Uses the X-Tenant-ID header to securely fetch credentials.
+    """
+    # Prefer tenant from header, fallback to payload if header missing (though header is standard)
+    resolved_tenant_id = tenant.id if tenant else payload.tenant_id
+    
+    order_data = payment_service.create_registration_order(
+        db,
+        tenant_id=resolved_tenant_id,
+        membership_plan_id=payload.membership_plan_id
+    )
+    return RazorpayOrderResponse(**order_data)
 
 
 # ---------------------------------------------------------------------------
@@ -75,15 +108,25 @@ def register(
 )
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
+    header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
     db: Session = Depends(get_db),
-) -> TokenResponse:
+) -> JSONResponse:
     """
     Authenticate with email (``username`` field) and password.
 
     Returns a JWT access token and basic user information on success.
     Raises 401 for invalid credentials, 403 if the account is pending.
     """
-    return auth_service.login(db, form_data.username, form_data.password)
+    token_data = auth_service.login(
+        db, 
+        form_data.username, 
+        form_data.password,
+        header_tenant_id=header_tenant_id
+    )
+    return success_response(
+        data=token_data.model_dump(mode="json"),
+        message="Login successful"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -92,22 +135,27 @@ def login(
 
 @router.post(
     "/verify-otp",
-    response_model=MessageResponse,
+    response_model=TokenResponse,
     summary="Verify email address via OTP",
 )
 def verify_otp(
     payload: OTPVerifyRequest,
     db: Session = Depends(get_db),
-) -> MessageResponse:
+) -> JSONResponse:
     """
     Verify a user's email address by submitting the OTP that was generated
     during registration.
 
     On success the account's ``is_verified`` flag is set to ``True`` and
     the OTP fields are cleared.
+    
+    Returns JWT tokens to log the user in immediately.
     """
-    auth_service.verify_otp(db, payload.email, payload.otp_code)
-    return MessageResponse(message="Email verified successfully.")
+    token_data = auth_service.verify_otp(db, payload.email, payload.otp_code)
+    return success_response(
+        data=token_data.model_dump(mode="json"),
+        message="Email verified and logged in successfully."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -125,11 +173,11 @@ def forgot_password(
 ) -> MessageResponse:
     """
     Send a password reset OTP to the user's registered email address.
-    Always returns a success message to prevent user enumeration.
+    Verifies email existence before sending.
     """
     auth_service.forgot_password(db, payload.email)
     return MessageResponse(
-        message="If an account exists for this email, a password reset OTP has been sent."
+        message="A password reset OTP has been sent to your email."
     )
 
 

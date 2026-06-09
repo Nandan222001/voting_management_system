@@ -9,11 +9,12 @@ export const nominationService = {
         per_page: 1,
       },
     });
-    return response.data.items?.[0] || null;
+    // Standardized envelope: response.data is { success, message, data: { items, total, ... } }
+    return response.data.data?.items?.[0] || null;
   },
 
   withdraw: async (nominationId: number) => {
-    const response = await api.delete(`/nominations/${nominationId}`);
-    return response.data;
+    const response = await api.post(`/nominations/${nominationId}/withdraw`);
+    return response.data.data;
   },
 };

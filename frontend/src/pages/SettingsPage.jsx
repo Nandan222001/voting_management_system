@@ -5,7 +5,7 @@ import {
   Gavel, 
   KeyRound, 
   Palette, 
-  Save, 
+  Save as SaveIcon, 
   ServerCog, 
   ShieldCheck, 
   User, 
@@ -268,7 +268,7 @@ export default function SettingsPage() {
                       disabled={loading}
                       className="px-12 py-4 bg-[#1a337e] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-[#1a337e]/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-3 disabled:opacity-50"
                     >
-                      {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} strokeWidth={2.4} />}
+                      {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <SaveIcon size={16} strokeWidth={2.4} />}
                       Update Profile
                     </button>
                   </div>

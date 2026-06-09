@@ -11,7 +11,8 @@ export const loginUser = createAsyncThunk(
       // authService.login sends form-encoded { username, password } which
       // FastAPI's OAuth2PasswordRequestForm expects (username is email here).
       const response = await authService.login(email, password)
-      const { access_token, user } = response.data
+      // The API returns { success: true, data: { access_token, user, token_type }, message }
+      const { access_token, user } = response.data.data || response.data
       localStorage.setItem('token', access_token)
       return { token: access_token, user }
     } catch (error) {
@@ -24,12 +25,27 @@ export const loginUser = createAsyncThunk(
 
 // registration disabled on frontend
 
+export const registerUser = createAsyncThunk(
+  'auth/registerUser',
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await authService.register(data)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.response?.data?.detail || 'Registration failed.'
+      )
+    }
+  }
+)
+
 export const getMe = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
     try {
       const response = await api.get('/auth/me')
-      return response.data.user || response.data
+      // The API returns { success: true, data: { ...user } }
+      return response.data.data || response.data.user || response.data
     } catch (error) {
       localStorage.removeItem('token')
       return rejectWithValue(
@@ -44,7 +60,8 @@ export const updateMe = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await authService.updateMe(data)
-      return response.data.user || response.data
+      // The API returns { success: true, data: { ...user } }
+      return response.data.data || response.data.user || response.data
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.response?.data?.detail || 'Failed to update settings.'
@@ -71,9 +88,15 @@ export const verifyOTP = createAsyncThunk(
   'auth/verifyOTP',
   async ({ email, otp }, { rejectWithValue }) => {
     try {
-      const response = await api.post('/auth/verify-otp', { email, otp })
-      const { token, user } = response.data
-      localStorage.setItem('token', token)
+      const response = await api.post('/auth/verify-otp', { email, otp_code: otp })
+      // The API should ideally return { success: true, data: { access_token, user } }
+      const data = response.data.data || response.data
+      const token = data.access_token || data.token
+      const user = data.user
+      
+      if (token) {
+        localStorage.setItem('token', token)
+      }
       return { token, user }
     } catch (error) {
       return rejectWithValue(
@@ -98,11 +121,13 @@ export const logoutUser = createAsyncThunk(
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 
+const token = localStorage.getItem('token')
+
 const initialState = {
   user: null,
-  token: localStorage.getItem('token') || null,
+  token: token || null,
   isAuthenticated: false,
-  loading: false,
+  loading: !!token,
   error: null,
 }
 

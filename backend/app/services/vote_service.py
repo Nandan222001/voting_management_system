@@ -22,8 +22,8 @@ from app.models.vote import Vote
 from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.candidate_repository import CandidateRepository
 from app.repositories.election_repository import ElectionRepository
-from app.repositories.payment_repository import PaymentRepository
 from app.repositories.vote_repository import VoteRepository
+from app.services.payment_service import payment_service
 from app.schemas.vote import ElectionResultResponse, VoteResultItem
 
 
@@ -118,7 +118,8 @@ class VoteService:
                 detail="This election is not available for your district.",
             )
 
-        if member.membership_plan_id is None:
+        eligibility = payment_service.check_voting_eligibility(db, member)
+        if not eligibility["membership_selected"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
@@ -126,12 +127,7 @@ class VoteService:
                     "Profile -> Edit Profile -> Select Membership Plan."
                 ),
             )
-
-        effective_tenant_id = tenant_id if tenant_id is not None else election.tenant_id
-        if not PaymentRepository(db).has_captured_payment_for_user(
-            effective_tenant_id,
-            user_id,
-        ):
+        if not eligibility["payment_completed"]:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail=(

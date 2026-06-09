@@ -60,7 +60,7 @@ import { format, parseISO } from 'date-fns';
 const LIMIT = 10;
 
 const STATUS_FILTERS = [
-  { value: '', label: 'All Elections' },
+  { value: 'all', label: 'All Elections' },
   { value: 'draft', label: 'Draft' },
   { value: 'active', label: 'Active' },
   { value: 'closed', label: 'Closed' },
@@ -224,9 +224,9 @@ export default function ElectionsPage() {
   const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('');
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+  const [nodeSearch, setNodeSearch] = useState('');
+  const [debouncedNodeSearch, setDebouncedNodeSearch] = useState('');
 
   // Modal / dialog state
   const [modalOpen, setModalOpen] = useState(false);
@@ -238,22 +238,24 @@ export default function ElectionsPage() {
   const [activateDialog, setActivateDialog] = useState({ open: false, target: null });
   const [closeDialog, setCloseDialog] = useState({ open: false, target: null });
 
-  // Debounce search
+  // Debounce search (500ms delay as requested)
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    const timer = setTimeout(() => setDebouncedNodeSearch(nodeSearch), 500);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [nodeSearch]);
 
   const loadElections = useCallback(() => {
-    const params = { page, limit: LIMIT };
-    if (statusFilter) params.status = statusFilter;
-    if (debouncedSearch) params.search = debouncedSearch;
+    // per_page and search param names ensure strict mapping to the FastAPI backend Query parameters
+    const params = { page, per_page: LIMIT };
+    if (activeTab && activeTab !== 'all') params.status = activeTab;
+    if (debouncedNodeSearch) params.search = debouncedNodeSearch;
+    
     dispatch(fetchElections(params));
     dispatch(fetchTargets());
     if (isSuperAdmin) {
       dispatch(fetchTenants({ page: 1, per_page: 100 }));
     }
-  }, [dispatch, page, statusFilter, debouncedSearch, isSuperAdmin]);
+  }, [dispatch, page, activeTab, debouncedNodeSearch, isSuperAdmin]);
 
   useEffect(() => {
     loadElections();
@@ -262,7 +264,7 @@ export default function ElectionsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, debouncedSearch]);
+  }, [activeTab, debouncedNodeSearch]);
 
   const country = useMemo(() => targets.find(t => t.type === 'country'), [targets]);
 
@@ -386,13 +388,41 @@ export default function ElectionsPage() {
     return null;
   };
 
-  const dataWithAction = elections.map((e) => ({
+  const dataWithAction = Array.isArray(elections) ? elections.map((e) => ({
     ...e,
     id: e._id || e.id,
     _actionLabel: getActionLabel(e),
-  }));
+  })) : [];
 
   const totalPages = Math.ceil(elections.length / LIMIT);
+  
+  // Dynamic empty state content based on activeTab and search results
+  const getEmptyStateContent = () => {
+    if (debouncedNodeSearch) {
+      return {
+        title: "No matches found",
+        sub: `No elections found matching that node title: "${debouncedNodeSearch}"`
+      };
+    }
+    const statusMap = {
+      all: "Protocol Registry Empty",
+      draft: "No Draft Units",
+      active: "No Active Sessions",
+      closed: "No Historical Records"
+    };
+    const subMap = {
+      all: "Zero matching protocols found in the current stream.",
+      draft: "No elections currently in Draft status. Initialize a new election to begin.",
+      active: "No elections are currently Live. Activate a draft to begin voting.",
+      closed: "No historical or finalized elections found in the registry."
+    };
+    return {
+      title: statusMap[activeTab] || "Registry Inactive",
+      sub: subMap[activeTab] || "Zero matching protocols found in the current stream."
+    };
+  };
+
+  const emptyState = getEmptyStateContent();
   const featuredElection = dataWithAction.find((e) => e.status?.toLowerCase() === 'active') || dataWithAction[0];
   const lifecycle = getLifecycle(featuredElection);
   const activeCount = dataWithAction.filter((e) => e.status?.toLowerCase() === 'active').length;
@@ -574,8 +604,8 @@ export default function ElectionsPage() {
                 <input
                   type="text"
                   placeholder="Search by node title..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={nodeSearch}
+                  onChange={(e) => setNodeSearch(e.target.value)}
                   className="w-full rounded-2xl border border-gray-100 bg-white py-3.5 pl-12 pr-4 text-sm font-bold text-gray-900 placeholder-gray-400 focus:border-[#1a337e] focus:ring-4 focus:ring-[#1a337e]/5 outline-none transition-all shadow-inner"
                 />
               </div>
@@ -583,9 +613,9 @@ export default function ElectionsPage() {
                 {STATUS_FILTERS.map(({ value, label }) => (
                   <button
                     key={value}
-                    onClick={() => setStatusFilter(value)}
+                    onClick={() => setActiveTab(value)}
                     className={`rounded-xl px-5 py-2 text-[11px] font-black uppercase tracking-wider transition-all duration-200 ${
-                      statusFilter === value
+                      activeTab === value
                         ? 'bg-[#1a337e] text-white shadow-lg shadow-indigo-200'
                         : 'text-gray-500 hover:bg-gray-50 hover:text-[#1a337e]'
                     }`}
@@ -607,8 +637,8 @@ export default function ElectionsPage() {
                   <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gray-50 flex items-center justify-center border border-gray-100 shadow-inner">
                     <Vote className="h-12 w-12 text-gray-200" />
                   </div>
-                  <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Registry Inactive</h3>
-                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2">Zero matching protocols found in the current stream.</p>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">{emptyState.title}</h3>
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mt-2">{emptyState.sub}</p>
                 </div>
               ) : (
                 dataWithAction.map((election) => {

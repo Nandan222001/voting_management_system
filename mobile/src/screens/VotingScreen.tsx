@@ -13,11 +13,13 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
+import { planService } from '../services/planService';
+import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +36,92 @@ const COLORS = {
   onSecondaryContainer: '#067500',
   surfaceContainerLow: '#f3f4f6',
   surfaceContainerHighest: '#e1e2e4',
+};
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+declare const require: (moduleName: string) => any;
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions & {
+      handler: (response: RazorpayCheckoutResult) => void;
+      modal?: { ondismiss?: () => void };
+    }) => { open: () => void };
+  }
+}
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      if (!window.Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new window.Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
 };
 
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
@@ -86,7 +174,7 @@ const CountdownTimer = ({ endDate }: { endDate: string }) => {
 
 const VotingScreen = ({ navigation, route }: any) => {
   const { election: routeElection } = route.params || {};
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { width } = useWindowDimensions();
   const [selectedElection, setSelectedElection] = useState<any>(routeElection);
   const [elections, setElections] = useState<any[]>([]);
@@ -106,6 +194,27 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [submitting, setSubmitting] = useState(false);
   const [withdrawingNomination, setWithdrawingNomination] = useState(false);
 
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [fetchingPlans, setFetchingPlans] = useState(false);
+
+  const fetchPlans = async () => {
+    setFetchingPlans(true);
+    try {
+      const data = await planService.getPublicPlans();
+      const planItems = (data?.items ?? data) || [];
+      setPlans(planItems);
+      if (user?.membership_plan_id) {
+        setSelectedPlanId(user?.membership_plan_id);
+      }
+    } catch (error) {
+      console.error('Failed to fetch plans:', error);
+      showToast.error("Error", "Failed to load membership plans.");
+    } finally {
+      setFetchingPlans(false);
+    }
+  };
+
   useEffect(() => {
     // We allow setting to null to reset to the election list
     setSelectedElection(routeElection);
@@ -124,11 +233,13 @@ const VotingScreen = ({ navigation, route }: any) => {
       setLoading(true);
       // Fetch all published elections (up to 100) to allow accurate frontend filtering/pagination
       const response = await electionService.getElections(false, 1, 100, 'active');
-      setElections(response.data || []);
+      // Handle both cases: direct array or standardized envelope with .data
+      const electionList = Array.isArray(response) ? response : (response?.data || []);
+      setElections(electionList);
       // Total items and pages will be calculated by the filtered list
     } catch (error) {
       console.error("Failed to load elections", error);
-      Alert.alert("Error", "Failed to load elections.");
+      showToast.error("Error", "Failed to load elections.");
     } finally {
       setLoading(false);
     }
@@ -191,7 +302,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       }
     } catch (error) {
       console.error("Failed to load election data", error);
-      Alert.alert("Error", "Failed to load election details.");
+      showToast.error("Error", "Failed to load election details.");
       setMyNomination(null);
     } finally {
       setLoading(false);
@@ -216,6 +327,14 @@ const VotingScreen = ({ navigation, route }: any) => {
           bg: '#fee2e2',
           detail: 'Your nomination was rejected during scrutiny.',
         };
+      case 'withdrawn':
+        return {
+          label: 'Withdrawn',
+          icon: 'remove-circle-outline' as const,
+          color: '#64748b',
+          bg: '#f1f5f9',
+          detail: 'You have withdrawn your nomination for this election.',
+        };
       default:
         return {
           label: 'Pending Scrutiny',
@@ -230,63 +349,136 @@ const VotingScreen = ({ navigation, route }: any) => {
   const handleWithdrawNomination = () => {
     if (!myNomination?.id || !selectedElection) return;
 
-    Alert.alert(
-      'Withdraw Nomination',
-      'Do you want to withdraw your nomination for this election?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Withdraw',
-          style: 'destructive',
-          onPress: async () => {
-            setWithdrawingNomination(true);
-            try {
-              await nominationService.withdraw(myNomination.id);
-              setMyNomination(null);
-              Alert.alert('Withdrawn', 'Your nomination has been withdrawn.');
-              fetchElectionDetails(selectedElection.id);
-            } catch (error: any) {
-              Alert.alert(
-                'Withdrawal Failed',
-                error.response?.data?.detail || error.response?.data?.message || 'Could not withdraw nomination.',
-              );
-            } finally {
-              setWithdrawingNomination(false);
-            }
+    const performWithdrawal = async () => {
+      setWithdrawingNomination(true);
+      try {
+        await nominationService.withdraw(myNomination.id);
+        showToast.success('Withdrawn', 'Your nomination has been withdrawn.');
+        await fetchElectionDetails(selectedElection.id);
+      } catch (error: any) {
+        showToast.error(
+          'Withdrawal Failed',
+          error.response?.data?.detail || error.response?.data?.message || 'Could not withdraw nomination.',
+        );
+      } finally {
+        setWithdrawingNomination(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('Do you want to withdraw your nomination for this election?')) {
+        performWithdrawal();
+      }
+    } else {
+      Alert.alert(
+        'Withdraw Nomination',
+        'Do you want to withdraw your nomination for this election?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Withdraw',
+            style: 'destructive',
+            onPress: performWithdrawal,
           },
+        ],
+      );
+    }
+  };
+
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [membershipModalType, setMembershipModalType] = useState<'select' | 'pay'>('select');
+
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const recordPaymentFailure = async (membershipPlanId: number, error: any) => {
+    try {
+      await paymentService.recordPaymentFailure({
+        membership_plan_id: membershipPlanId,
+        error_message: error.description || error.message || "Payment cancelled or failed",
+        razorpay_order_id: error.metadata?.order_id
+      });
+    } catch (err) {
+      console.error('Failed to record payment failure:', err);
+    }
+  };
+
+  const handleRealPayment = async () => {
+    const membershipPlanId = selectedPlanId || user?.membership_plan_id;
+    if (!membershipPlanId) {
+      showToast.error("Plan Required", "Please select a membership plan first.");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    try {
+      // If the selected plan is different from what's on the user record, update the profile first.
+      // This is required by the backend to create an order for that specific plan.
+      if (membershipPlanId !== user?.membership_plan_id) {
+        await updateProfile({ membership_plan_id: membershipPlanId });
+      }
+
+      const targetPlan = plans.find(p => p.id === membershipPlanId);
+      const planName = targetPlan?.name || "Membership Plan";
+
+      const orderResponse = await paymentService.createMembershipOrder(membershipPlanId);
+
+      const options = {
+        description: `${planName} Activation`,
+        image: 'https://ui-avatars.com/api/?name=Voting+System&background=003d9b&color=fff',
+        currency: orderResponse.currency,
+        key: orderResponse.key_id,
+        amount: orderResponse.amount,
+        name: 'Digital Voting System',
+        order_id: orderResponse.order_id || orderResponse.razorpay_order_id,
+        prefill: {
+          email: user?.email || '',
+          contact: user?.phone || '',
+          name: user?.full_name || ''
         },
-      ],
-    );
+        theme: { color: COLORS.primary }
+      };
+
+      try {
+        const data = await openRazorpayCheckout(options);
+        await paymentService.verifyPayment({
+          razorpay_order_id: data.razorpay_order_id || orderResponse.razorpay_order_id,
+          razorpay_payment_id: data.razorpay_payment_id,
+          razorpay_signature: data.razorpay_signature,
+        });
+        
+        showToast.success("Success", "Payment completed successfully! You can now cast your vote.");
+        setShowMembershipModal(false);
+      } catch (error: any) {
+        // Record failure to backend for audit trail
+        await recordPaymentFailure(membershipPlanId, error);
+
+        // Razorpay error (e.g. payment cancelled)
+        if (error.code === 2) {
+          showToast.info("Payment Cancelled", "The payment process was dismissed.");
+        } else {
+          showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
+        }
+      }
+    } catch (error: any) {
+      showToast.error("System Error", error.response?.data?.detail || "Could not initialize payment gateway.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleCastVote = async () => {
     if (!selectedCandidateId || !selectedElection) return;
-
-    if (!user?.membership_plan_id) {
-      setShowConfirmModal(false);
-      Alert.alert(
-        'Membership Plan Required',
-        'Please select a Membership Plan first:\nProfile -> Edit Profile -> Select Membership Plan',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Edit Profile',
-            onPress: () => navigation.getParent()?.navigate('Profile', { screen: 'EditProfile' }),
-          },
-        ],
-      );
-      return;
-    }
     
     setSubmitting(true);
     try {
-      const membershipStatus = await paymentService.getMyMembershipStatus();
-      if (!membershipStatus?.payment_completed) {
+      const eligibility = await paymentService.checkVotingEligibility();
+      if (!eligibility.membership_selected || !eligibility.payment_completed) {
+        setSubmitting(false);
         setShowConfirmModal(false);
-        Alert.alert(
-          'Payment Required',
-          'Your selected Membership Plan payment is pending or not completed. Please complete the payment to proceed with voting.',
-        );
+        // Show modal first, then fetch plans inside it
+        setShowMembershipModal(true);
+        fetchPlans();
+        setMembershipModalType(eligibility.membership_selected ? 'pay' : 'select');
         return;
       }
 
@@ -295,7 +487,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       setShowSuccessModal(true);
       fetchElectionDetails(selectedElection.id); // Refresh vote status
     } catch (error: any) {
-      Alert.alert("Voting Failed", error.response?.data?.detail || "An error occurred.");
+      showToast.error("Voting Failed", error.response?.data?.message || error.response?.data?.detail || "An error occurred.");
     } finally {
       setSubmitting(false);
     }
@@ -313,9 +505,80 @@ const VotingScreen = ({ navigation, route }: any) => {
     }
   };
 
-  const isElectionLive = selectedElection 
-    ? new Date(selectedElection.start_date).getTime() <= new Date().getTime()
-    : false;
+  // --- Real-time Election Status Logic ---
+  const calculateElectionStatus = () => {
+    if (!selectedElection) return null;
+    
+    const now = new Date().getTime();
+    const start = new Date(selectedElection.start_date).getTime();
+    const end = new Date(selectedElection.end_date).getTime();
+    const dbStatus = selectedElection.status;
+
+    // 1. Cancelled State
+    if (dbStatus === 'cancelled') {
+      return {
+        label: 'CANCELLED',
+        icon: 'cancel' as const,
+        color: '#b91c1c',
+        bg: '#fee2e2',
+        timerLabel: 'SESSION VOID',
+        timerDate: null,
+        isVotingActive: false
+      };
+    }
+
+    // 2. Closed State
+    if (dbStatus === 'closed' || now >= end) {
+      return {
+        label: 'CLOSED',
+        icon: 'lock' as const,
+        color: '#475569',
+        bg: '#f1f5f9',
+        timerLabel: 'SESSION ENDED',
+        timerDate: null,
+        isVotingActive: false
+      };
+    }
+
+    // 3. Scheduled / Upcoming State
+    if (dbStatus === 'draft' || now < start) {
+      return {
+        label: 'SCHEDULED',
+        icon: 'event' as const,
+        color: '#4f46e5',
+        bg: '#eef2ff',
+        timerLabel: 'STARTS IN',
+        timerDate: selectedElection.start_date,
+        isVotingActive: false
+      };
+    }
+
+    // 4. Active State
+    if (dbStatus === 'active' && now >= start && now < end) {
+      return {
+        label: 'ACTIVE',
+        icon: 'sensors' as const,
+        color: COLORS.secondary,
+        bg: '#e5f8e1',
+        timerLabel: 'CLOSES IN',
+        timerDate: selectedElection.end_date,
+        isVotingActive: true
+      };
+    }
+
+    return null;
+  };
+
+  const statusConfig = calculateElectionStatus();
+  const isVotingActive = statusConfig?.isVotingActive || false;
+
+  const handleDisabledVotePress = () => {
+    if (statusConfig?.label === 'SCHEDULED') {
+      showToast.info("Not Started", "Voting has not started yet for this election.");
+    } else {
+      showToast.error("Voting Closed", "Voting is currently closed for this election.");
+    }
+  };
   const nominationStatusMeta = getNominationStatusMeta(myNomination?.status);
 
   if (loading) {
@@ -558,17 +821,27 @@ const VotingScreen = ({ navigation, route }: any) => {
               style={styles.detailHero}
             >
               <View style={styles.heroContent}>
-                <View style={styles.heroBadge}>
-                    <MaterialIcons name={isElectionLive ? "how-to-vote" : "event-upcoming"} size={12} color="#fff" />
-                    <Text style={styles.heroBadgeText}>{isElectionLive ? 'LIVE SESSION' : 'SCHEDULED'}</Text>
+                <View style={[styles.heroBadge, statusConfig && { backgroundColor: statusConfig.bg, borderColor: 'transparent' }]}>
+                    <MaterialIcons name={statusConfig?.icon || "event-upcoming"} size={12} color={statusConfig?.color || "#fff"} />
+                    <Text style={[styles.heroBadgeText, statusConfig && { color: statusConfig.color }]}>
+                      {statusConfig?.label || 'SCHEDULED'}
+                    </Text>
                 </View>
-                <Text style={styles.heroTitlePre}>{isElectionLive ? 'Voting Session' : 'Upcoming Session'}</Text>
+                <Text style={styles.heroTitlePre}>
+                  {statusConfig?.label === 'ACTIVE' ? 'Voting Session' : 'Election Session'}
+                </Text>
                 <Text style={styles.heroTitleMain} numberOfLines={2}>{selectedElection.title}</Text>
                 
                 <View style={styles.detailMetaGrid}>
                   <View style={styles.detailMetaCol}>
-                    <Text style={styles.detailMetaLabel}>{isElectionLive ? 'CLOSES IN' : 'STARTS IN'}</Text>
-                    <CountdownTimer endDate={isElectionLive ? selectedElection.end_date : selectedElection.start_date} />
+                    <Text style={styles.detailMetaLabel}>{statusConfig?.timerLabel || 'CLOSES IN'}</Text>
+                    {statusConfig?.timerDate ? (
+                      <CountdownTimer endDate={statusConfig.timerDate} />
+                    ) : (
+                      <View style={styles.premiumTimerContainer}>
+                         <Text style={[styles.timerValueText, { fontSize: 24, color: 'rgba(255,255,255,0.4)' }]}>-- : -- : --</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.detailMetaDividerVertical} />
                   <View style={styles.detailMetaCol}>
@@ -596,7 +869,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                 )}
               </View>
 
-              {!isElectionLive && (
+              {statusConfig?.label === 'SCHEDULED' && (
                 <>
                   <TouchableOpacity 
                     style={[styles.nominationActionBtn, !myNomination && styles.nominationActionBtnSolo]}
@@ -658,7 +931,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                           </Text>
                         </View>
                       </View>
-                      {String(myNomination.status || '').toLowerCase() === 'pending' && (
+                      {['pending', 'approved'].includes(String(myNomination.status || '').toLowerCase()) && (
                         <TouchableOpacity
                           style={styles.withdrawNominationBtn}
                           onPress={handleWithdrawNomination}
@@ -701,12 +974,19 @@ const VotingScreen = ({ navigation, route }: any) => {
                     return (
                       <TouchableOpacity 
                         key={candidate.id}
-                        activeOpacity={existingVote ? 1 : 0.7}
-                        onPress={() => !existingVote && setSelectedCandidateId(candidate.id)}
+                        activeOpacity={existingVote || !isVotingActive ? 1 : 0.7}
+                        onPress={() => {
+                          if (!isVotingActive && !hasVoted) {
+                            handleDisabledVotePress();
+                            return;
+                          }
+                          if (!existingVote) setSelectedCandidateId(candidate.id);
+                        }}
                         style={[
                           styles.candRowCard,
                           isSelected && styles.candRowCardSelected,
-                          hasVoted && styles.candRowCardVoted
+                          hasVoted && styles.candRowCardVoted,
+                          !isVotingActive && !hasVoted && { opacity: 0.7, borderColor: COLORS.outlineVariant }
                         ]}
                       >
                         <View style={styles.candRowContent}>
@@ -736,8 +1016,16 @@ const VotingScreen = ({ navigation, route }: any) => {
 
                           <View style={styles.candRowRight}>
                             {!existingVote ? (
-                              <View style={[styles.rowVoteBtn, isSelected && styles.rowVoteBtnActive]}>
-                                <Text style={[styles.rowVoteBtnText, isSelected && styles.rowVoteBtnTextActive]}>
+                              <View style={[
+                                styles.rowVoteBtn, 
+                                isSelected && styles.rowVoteBtnActive,
+                                !isVotingActive && { backgroundColor: COLORS.surfaceContainerLow }
+                              ]}>
+                                <Text style={[
+                                  styles.rowVoteBtnText, 
+                                  isSelected && styles.rowVoteBtnTextActive,
+                                  !isVotingActive && { color: COLORS.onSurfaceVariant, opacity: 0.5 }
+                                ]}>
                                   {isSelected ? 'SELECTED' : 'VOTE'}
                                 </Text>
                                 {isSelected && <MaterialIcons name="check-circle" size={16} color="#fff" />}
@@ -786,15 +1074,22 @@ const VotingScreen = ({ navigation, route }: any) => {
             style={styles.floatingBarFade}
           />
           <TouchableOpacity 
-            onPress={handleCastVote}
-            disabled={!selectedCandidateId || submitting}
+            onPress={() => {
+              if (!isVotingActive) {
+                handleDisabledVotePress();
+                return;
+              }
+              handleCastVote();
+            }}
+            disabled={submitting}
             style={[
               styles.actionCastBtn,
-              (!selectedCandidateId || submitting) && styles.actionCastBtnDisabled
+              ((!selectedCandidateId || submitting) && isVotingActive) && styles.actionCastBtnDisabled,
+              !isVotingActive && { opacity: 0.8 }
             ]}
           >
             <LinearGradient
-              colors={selectedCandidateId ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6']}
+              colors={!isVotingActive ? ['#94a3b8', '#64748b'] : (selectedCandidateId ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6'])}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionCastGradient}
@@ -803,8 +1098,10 @@ const VotingScreen = ({ navigation, route }: any) => {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <MaterialIcons name="verified" size={22} color="#fff" />
-                  <Text style={styles.actionCastBtnText}>Cast Secure Vote</Text>
+                  <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={22} color="#fff" />
+                  <Text style={styles.actionCastBtnText}>
+                    {isVotingActive ? 'Cast Secure Vote' : 'Voting Unavailable'}
+                  </Text>
                 </>
               )}
             </LinearGradient>
@@ -832,6 +1129,103 @@ const VotingScreen = ({ navigation, route }: any) => {
             >
               <Text style={styles.returnBtnText}>Return</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Membership / Payment Modal */}
+      <Modal transparent visible={showMembershipModal} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.membershipBox}>
+            <View style={[styles.membershipIconCircle, { backgroundColor: COLORS.primary + '10' }]}>
+               <MaterialIcons 
+                name="card-membership" 
+                size={40} 
+                color={COLORS.primary} 
+               />
+            </View>
+            
+            <Text style={styles.membershipTitle}>
+              Membership Plan Required
+            </Text>
+            
+            <Text style={styles.membershipSub}>
+              To participate in voting, please select a Membership Plan and complete the payment.
+            </Text>
+
+            <View style={{ width: '100%', minHeight: 150, maxHeight: 350, marginBottom: 20 }}>
+              {fetchingPlans ? (
+                <View style={styles.modalLoaderContainer}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={styles.loadingPlansText}>Fetching available plans...</Text>
+                </View>
+              ) : (
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {plans.length > 0 ? (
+                    plans.map((plan) => (
+                      <TouchableOpacity
+                        key={plan.id}
+                        activeOpacity={0.8}
+                        style={[
+                          styles.planSelectCard,
+                          selectedPlanId === plan.id && styles.planSelectCardActive
+                        ]}
+                        onPress={() => setSelectedPlanId(plan.id)}
+                      >
+                        <View style={styles.planSelectInfo}>
+                          <Text style={[styles.planSelectName, selectedPlanId === plan.id && styles.planSelectTextActive]}>
+                            {plan.name}
+                          </Text>
+                          <Text style={[styles.planSelectPrice, selectedPlanId === plan.id && styles.planSelectTextActive, { opacity: 0.8 }]}>
+                            ₹{plan.price} / {plan.period || 'one-time'}
+                          </Text>
+                        </View>
+                        <View style={[
+                          styles.selectionCheckCircle,
+                          selectedPlanId === plan.id && styles.selectionCheckCircleActive
+                        ]}>
+                          {selectedPlanId === plan.id && (
+                            <MaterialIcons name="check" size={16} color={COLORS.primary} />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <View style={styles.emptyPlansContainer}>
+                       <Text style={styles.emptyPlansText}>No membership plans found.</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              )}
+            </View>
+
+            <View style={styles.membershipActions}>
+              <TouchableOpacity 
+                style={[
+                  styles.membershipMainBtn, 
+                  { backgroundColor: COLORS.primary },
+                  (!selectedPlanId || isProcessingPayment) && styles.membershipMainBtnDisabled
+                ]}
+                onPress={() => handleRealPayment()}
+                disabled={isProcessingPayment || !selectedPlanId}
+              >
+                {isProcessingPayment ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.membershipMainBtnText}>
+                    Pay & Activate
+                  </Text>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.membershipCancelBtn}
+                onPress={() => !isProcessingPayment && setShowMembershipModal(false)}
+                disabled={isProcessingPayment}
+              >
+                <Text style={styles.membershipCancelText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -2135,6 +2529,308 @@ const styles = StyleSheet.create({
   successSub: { fontSize: 14, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   returnBtn: { backgroundColor: COLORS.surfaceContainerHighest, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, width: '100%', alignItems: 'center' },
   returnBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
+  
+  // Membership Modal Styles
+  membershipBox: { 
+    backgroundColor: '#fff', 
+    width: '100%', 
+    borderRadius: 28, 
+    padding: 24, 
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 10 }
+    })
+  },
+  membershipIconCircle: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 40, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 20 
+  },
+  membershipTitle: { 
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: COLORS.onSurface, 
+    marginBottom: 10,
+    textAlign: 'center'
+  },
+  membershipSub: { 
+    fontSize: 15, 
+    color: COLORS.onSurfaceVariant, 
+    textAlign: 'center', 
+    lineHeight: 22, 
+    marginBottom: 28,
+    opacity: 0.8
+  },
+  membershipActions: { 
+    width: '100%', 
+    gap: 12 
+  },
+  membershipMainBtn: { 
+    paddingVertical: 16, 
+    borderRadius: 16, 
+    width: '100%', 
+    alignItems: 'center',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 4 }
+    })
+  },
+  membershipMainBtnText: { 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: '#fff',
+    letterSpacing: 0.5
+  },
+  membershipCancelBtn: { 
+    paddingVertical: 14, 
+    width: '100%', 
+    alignItems: 'center' 
+  },
+  membershipCancelText: { 
+    fontSize: 14, 
+    fontWeight: '700', 
+    color: COLORS.onSurfaceVariant 
+  },
+
+  planSelectCard: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceContainerLow,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
+  planSelectCardActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primaryContainer,
+    ...Platform.select({
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
+      android: { elevation: 8 }
+    })
+  },
+  planSelectInfo: {
+    flex: 1,
+  },
+  planSelectName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.onSurface,
+    letterSpacing: -0.2,
+  },
+  planSelectPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    marginTop: 4,
+  },
+  planSelectTextActive: {
+    color: '#fff',
+  },
+  selectionCheckCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  selectionCheckCircleActive: {
+    backgroundColor: '#fff',
+    borderColor: '#fff',
+  },
+  modalLoaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingPlansText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+  },
+  emptyPlansContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyPlansText: {
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  membershipMainBtnDisabled: {
+    backgroundColor: COLORS.outlineVariant,
+    opacity: 0.5,
+  },
+
+  // Premium Nomination Detail Styles
+  nominationDeepDetailContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 },
+    }),
+  },
+  nominationStatusHero: {
+    padding: 24,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  statusIconLarge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  nominationStatusHeroLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.onSurfaceVariant,
+    letterSpacing: 1.5,
+    opacity: 0.6,
+  },
+  nominationStatusHeroTitle: {
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: 4,
+    letterSpacing: -0.5,
+  },
+  nominationStatusHeroSub: {
+    fontSize: 13,
+    color: COLORS.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 8,
+    opacity: 0.8,
+  },
+  nominationTimeline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#f8fafc',
+  },
+  timelineItem: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  timelineNode: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#e2e8f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#94a3b8',
+  },
+  timelineConnector: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#e2e8f0',
+    marginHorizontal: 8,
+    marginTop: -18,
+  },
+  timelineConnectorActive: {
+    flex: 1,
+    height: 2,
+    backgroundColor: COLORS.secondary,
+    marginHorizontal: 8,
+    marginTop: -18,
+  },
+  timelineText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.5,
+  },
+  nominationInfoGrid: {
+    padding: 20,
+    gap: 20,
+  },
+  infoGridSection: {
+    gap: 12,
+  },
+  infoGridSectionTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: COLORS.primary,
+    letterSpacing: 1,
+    opacity: 0.5,
+  },
+  infoGridRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  infoGridItem: {
+    flex: 1,
+  },
+  infoGridLabel: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.6,
+    marginBottom: 2,
+  },
+  infoGridValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  premiumWithdrawBtn: {
+    margin: 20,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: '#b91c1c',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    ...Platform.select({
+      ios: { shadowColor: '#b91c1c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  premiumWithdrawBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  nominationFooterNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingBottom: 20,
+    opacity: 0.5,
+  },
+  nominationFooterText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.onSurfaceVariant,
+  },
 });
 
 export default VotingScreen;

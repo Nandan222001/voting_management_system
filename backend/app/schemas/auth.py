@@ -45,10 +45,16 @@ class RegisterRequest(BaseModel):
 
     # Mapping
     tenant_id: Optional[int] = None
+    target_id: Optional[int] = None
     committee_id: Optional[int] = None
     membership_plan_id: Optional[int] = None
     designation: str = "voter"
     voter_id: Optional[str] = None
+
+    # Razorpay Payment (for paid registration)
+    razorpay_payment_id: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

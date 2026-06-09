@@ -195,6 +195,7 @@ export default function CandidatesPage() {
   // CRUD State
   const [showModal, setShowModal] = useState(false)
   const [editCandidateTarget, setEditCandidateTarget] = useState(null)
+  const [viewCandidateTarget, setViewCandidateTarget] = useState(null)
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   
@@ -430,62 +431,63 @@ export default function CandidatesPage() {
                 <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-50">
                    <div className="flex items-center gap-3">
                       <div className="w-1 h-5 bg-[#1a337e] rounded-full" />
-                      <h3 className="text-xl font-black tracking-tight text-gray-900">Personnel Registry</h3>
-                   </div>
-                   <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                      <h3 className="text-xl font-black tracking-tight text-gray-900">Candidates</h3>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
                       Sync: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                   </span>
-                </div>
-                
-                <div className="space-y-4">
-                  {candidates.length === 0 ? (
-                    <div className="py-20 text-center">
+                      </span>
+                      </div>
+
+                      <div className="space-y-4">
+                      {candidates.length === 0 ? (
+                      <div className="py-20 text-center">
                        <Users className="h-16 w-16 mx-auto opacity-10 text-[#1a337e] mb-4" />
-                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">Registry Empty</p>
-                    </div>
-                  ) : (
-                    rows.map(candidate => (
+                       <p className="text-sm font-black uppercase tracking-widest text-gray-300">No Candidates Found</p>
+                      </div>
+                      ) : (
+                      rows.map(candidate => (
                       <CandidateProfileCard
                         key={candidate.id}
                         candidate={candidate}
                         canManage={isAdmin && selectedElection?.status === 'draft'}
+                        onView={setViewCandidateTarget}
                         onEdit={openEdit}
                         onDelete={setDeleteCandidateTarget}
                       />
-                    ))
-                  )}
-                </div>
-              </article>
-            </div>
+                      ))
+                      )}
+                      </div>
+                      </article>
+                      </div>
 
-            <aside className="space-y-8 lg:col-span-4">
-              <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
-                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Election Context</h3>
-                 </div>
-                 <div className="space-y-6">
-                    <InfoRow icon={CalendarDays} label="Active Node" value={selectedElection?.title || '—'} />
-                    <div className="flex items-center justify-between">
-                       <InfoRow icon={ShieldCheck} label="Operational Status" value={<Badge status={selectedElection?.status} />} />
-                    </div>
-                    <InfoRow icon={Users} label="Personnel Count" value={`${rows.length} Registered`} />
-                 </div>
-                 <button
-                    type="button"
-                    onClick={() => navigate(`/elections/${selectedElectionId}`)}
-                    className="mt-8 w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-[#1a337e] bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
-                 >
-                    View Node Specs
-                 </button>
-              </section>
+                      <aside className="space-y-8 lg:col-span-4">
+                      <section className="rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
+                      <div className="flex items-center gap-3 mb-8">
+                      <div className="w-1.5 h-6 bg-[#1a337e] rounded-full" />
+                      <h3 className="text-sm font-black uppercase tracking-widest text-gray-900">Election Details</h3>
+                      </div>
+                      <div className="space-y-6">
+                      <InfoRow icon={CalendarDays} label="Election" value={selectedElection?.title || '—'} />
+                      <div className="flex items-center justify-between">
+                       <InfoRow icon={ShieldCheck} label="Status" value={<Badge status={selectedElection?.status} />} />
+                      </div>
+                      <InfoRow icon={Users} label="Total Candidates" value={`${rows.length} Registered`} />
+                      </div>
+                      <button
+                      type="button"
+                      onClick={() => navigate(`/elections/${selectedElectionId}`)}
+                      className="mt-8 w-full rounded-2xl py-4 text-xs font-black uppercase tracking-widest text-[#1a337e] bg-indigo-50 hover:bg-indigo-100 transition-all active:scale-95"
+                      >
+                      View Details
+                      </button>
+                      </section>
 
-              <div className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30 relative overflow-hidden group">
-                 <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
-                    <TrendingUp size={160} />
-                 </div>
-                 <div className="relative z-10">
-                    <p className="text-xs font-bold uppercase tracking-widest mt-2 text-indigo-200">Aggregate Votes Cast</p>
+                      <div className="rounded-[2.5rem] bg-[#1a337e] p-8 text-white shadow-2xl shadow-[#1a337e]/30 relative overflow-hidden group">
+                      <div className="absolute -right-4 -bottom-4 opacity-10 transform group-hover:scale-110 transition-transform duration-700">
+                      <TrendingUp size={160} />
+                      </div>
+                      <div className="relative z-10">
+                      <p className="text-xs font-bold uppercase tracking-widest mt-2 text-indigo-200">Total Votes Cast</p>
                     <div className="mt-8 flex -space-x-3">
                       {rows.slice(0, 5).map(candidate => (
                         <ImageAvatar
@@ -513,7 +515,7 @@ export default function CandidatesPage() {
       <Modal 
         isOpen={showModal} 
         onClose={() => setShowModal(false)} 
-        title={editCandidateTarget ? 'Modify Personnel' : 'Add Candidate'}
+        title={editCandidateTarget ? 'Edit Candidate' : 'Add Candidate'}
         size="3xl"
       >
         <form onSubmit={handleSubmit} className="space-y-0" autoComplete="off">
@@ -690,16 +692,125 @@ export default function CandidatesPage() {
         confirmLabel="Remove"
         variant="danger"
       />
+
+      {/* Candidate Detail Modal */}
+      <Modal isOpen={!!viewCandidateTarget} onClose={() => setViewCandidateTarget(null)} title="Candidate Details" size="2xl">
+        {viewCandidateTarget && (
+          <div className="space-y-8">
+            <div className="flex items-start gap-8 pb-8 border-b border-gray-100">
+              <ImageAvatar
+                src={viewCandidateTarget.image_url}
+                name={viewCandidateTarget.full_name}
+                sizeClass="w-32 h-32"
+                imageClassName="rounded-[2.5rem] border-4 border-white shadow-2xl"
+                fallbackClassName="rounded-[2.5rem] border-4 border-white bg-indigo-50 text-[#1a337e] text-5xl font-black shadow-2xl flex items-center justify-center"
+              />
+              <div className="flex-1 min-w-0 pt-2">
+                 <div className="flex items-center gap-3 mb-2">
+                    <div className="h-1.5 w-6 rounded-full bg-[#1a337e]" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#1a337e]">Verified Candidate</span>
+                 </div>
+                 <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-2 truncate">{viewCandidateTarget.full_name}</h3>
+                 <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
+                       <ShieldCheck size={12} strokeWidth={3} />
+                       Active
+                    </span>
+                    {viewCandidateTarget.symbol && (
+                      <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest border border-amber-100 flex items-center gap-1.5">
+                        <Trophy size={12} strokeWidth={3} />
+                        {viewCandidateTarget.symbol}
+                      </span>
+                    )}
+                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Location Details</p>
+                    <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100 shadow-inner space-y-4">
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <MapPinned size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Assigned Area</p>
+                             <p className="text-sm font-black text-gray-900">{viewCandidateTarget.target?.name || 'Not set'}</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-[#1a337e] shadow-sm">
+                             <Users size={18} strokeWidth={2.4} />
+                          </div>
+                          <div>
+                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Committee Type</p>
+                             <p className="text-sm font-black text-gray-900 capitalize">{viewCandidateTarget.target?.type || 'General'}</p>
+                          </div>
+                       </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Voting Stats</p>
+                    <div className="bg-[#1a337e] rounded-3xl p-6 shadow-xl shadow-[#1a337e]/20 space-y-4 text-white">
+                       <div className="flex justify-between items-end">
+                          <div>
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Vote Share</p>
+                             <p className="text-3xl font-black tracking-tighter">{(getVotePercentage(viewCandidateTarget)).toFixed(1)}%</p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Total Votes</p>
+                             <p className="text-xl font-black">{numberFormat(getVoteCount(viewCandidateTarget))}</p>
+                          </div>
+                       </div>
+                       <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                          <div className="h-full bg-white rounded-full" style={{ width: `${getVotePercentage(viewCandidateTarget)}%` }} />
+                       </div>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">About Candidate</p>
+                    <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm relative min-h-[200px]">
+                       <div className="absolute top-4 right-4 opacity-5">
+                          <MessageSquare size={80} />
+                       </div>
+                       <p className="text-sm font-medium text-gray-600 leading-relaxed relative z-10">
+                          {viewCandidateTarget.bio || 'Information about this candidate will be added soon. Check back later for details on their experience and goals.'}
+                       </p>
+                    </div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="flex justify-end pt-6 border-t border-gray-50">
+               <button
+                 onClick={() => setViewCandidateTarget(null)}
+                 className="px-10 py-3 text-xs font-black uppercase tracking-widest text-gray-500 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all active:scale-95 border border-gray-100"
+               >
+                 Close
+               </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </MainLayout>
   )
 }
 
-function CandidateProfileCard({ candidate, canManage, onEdit, onDelete }) {
+function CandidateProfileCard({ candidate, canManage, onView, onEdit, onDelete }) {
   const voteCount = getVoteCount(candidate)
   const votePercentage = getVotePercentage(candidate)
 
   return (
-    <div className="group relative flex flex-col gap-6 rounded-3xl border border-gray-100 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl md:flex-row md:items-center overflow-hidden">
+    <div 
+      onClick={() => onView(candidate)}
+      className="group relative flex flex-col gap-6 rounded-3xl border border-gray-100 bg-white p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl md:flex-row md:items-center overflow-hidden cursor-pointer active:scale-[0.99]"
+    >
       <ImageAvatar
         src={candidate.image_url}
         name={candidate.full_name}
@@ -748,14 +859,14 @@ function CandidateProfileCard({ candidate, canManage, onEdit, onDelete }) {
           {canManage && (
             <>
               <button
-                onClick={() => onEdit(candidate)}
+                onClick={(e) => { e.stopPropagation(); onEdit(candidate); }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all shadow-sm border border-amber-100"
                 title="Modify Profile"
               >
                 <Edit3 size={16} strokeWidth={2.4} />
               </button>
               <button
-                onClick={() => onDelete(candidate)}
+                onClick={(e) => { e.stopPropagation(); onDelete(candidate); }}
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100"
                 title="Remove Registry"
               >

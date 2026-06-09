@@ -30,6 +30,11 @@ class CandidateBase(BaseModel):
         max_length=500,
         examples=["https://cdn.example.com/candidates/alice.jpg"],
     )
+    cover_url: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        examples=["https://cdn.example.com/candidates/alice-cover.jpg"],
+    )
     bio: Optional[str] = Field(
         default=None,
         examples=["Experienced candidate with 10 years of service."],
@@ -114,6 +119,7 @@ class CandidateUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     symbol: Optional[str] = Field(default=None, max_length=100)
     image_url: Optional[str] = Field(default=None, max_length=500)
+    cover_url: Optional[str] = Field(default=None, max_length=500)
     bio: Optional[str] = None
     position_name: Optional[str] = Field(default=None, max_length=100)
     committee_id: Optional[int] = Field(default=None)
@@ -189,3 +195,8 @@ class CandidateListResponse(BaseModel):
     items: List[CandidateResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class FollowStatusResponse(BaseModel):
+    """Simple response schema for candidate follow status."""
+    is_following: bool

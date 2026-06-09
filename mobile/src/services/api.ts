@@ -2,42 +2,41 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const EXPO_ENV = process.env as Record<string, string | undefined>;
-const RAW_API_URL = EXPO_ENV.EXPO_PUBLIC_API_URL || 'http://localhost:8001/api/v1';
-const API_URL =
-  Platform.OS === 'android'
-    ? RAW_API_URL.replace('http://localhost:', 'http://10.0.2.2:').replace(
-        'http://127.0.0.1:',
-        'http://10.0.2.2:',
-      )
-    : RAW_API_URL;
-const ENV_TENANT_UUID = EXPO_ENV.EXPO_PUBLIC_TENANT_UUID;
+// Production Endpoint Configuration
+const PRODUCTION_URL = 'https://13.207.201.75:8000/api/v1';
+let RAW_API_URL = PRODUCTION_URL;
 
-// AsyncStorage key used to persist the selected tenant's UUID across sessions
-const TENANT_UUID_KEY = 'tenant_uuid';
+console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
+
+// Exported for components that need to construct asset URIs
+export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
+
+const TENANT_ID_KEY = 'tenant_id';
+
+export const setTenantID = async (tenantId: string | number | null | undefined) => {
+  if (tenantId === null || tenantId === undefined || tenantId === '') {
+    await AsyncStorage.removeItem(TENANT_ID_KEY);
+    return;
+  }
+  await AsyncStorage.setItem(TENANT_ID_KEY, String(tenantId));
+};
+
+export const getTenantID = async () => {
+  return (await AsyncStorage.getItem(TENANT_ID_KEY)) || null;
+};
+
+export const clearTenantID = async () => {
+  await AsyncStorage.removeItem(TENANT_ID_KEY);
+};
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: RAW_API_URL,
+  timeout: 30000,
   headers: {
+    'Accept': 'application/json',
     'Content-Type': 'application/json',
   },
 });
-
-// ─── Tenant UUID helpers ─────────────────────────────────────────────────────
-// Call setTenantUUID after the user selects a tenant during onboarding.
-// All subsequent requests will automatically include X-Tenant-ID.
-
-export const setTenantUUID = async (uuid: string): Promise<void> => {
-  await AsyncStorage.setItem(TENANT_UUID_KEY, uuid);
-};
-
-export const getTenantUUID = async (): Promise<string | null> => {
-  return AsyncStorage.getItem(TENANT_UUID_KEY);
-};
-
-export const clearTenantUUID = async (): Promise<void> => {
-  await AsyncStorage.removeItem(TENANT_UUID_KEY);
-};
 
 // ─── Request interceptor ─────────────────────────────────────────────────────
 
@@ -49,31 +48,63 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Attach X-Tenant-ID for all mobile requests so the backend can scope
-    // public/pre-auth endpoints without requiring a query parameter.
-    // Web clients never send this header — they rely on JWT tenant_id instead.
-    const tenantUUID = (await AsyncStorage.getItem(TENANT_UUID_KEY)) || ENV_TENANT_UUID;
-    if (tenantUUID) {
-      config.headers['X-Tenant-ID'] = tenantUUID;
+    // Attach X-Tenant-ID for all mobile requests
+    const tenantID = await getTenantID();
+    if (tenantID) {
+      config.headers['X-Tenant-ID'] = String(tenantID);
     }
 
-    if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
+      headers: config.headers,
+      params: config.params,
+    });
+
+    // If sending FormData, let axios handle the Content-Type (it will add the boundary)
+    const isFormData = config.data instanceof FormData || 
+                       (config.data && typeof config.data === 'object' && config.data._parts);
+
+    if (isFormData) {
+      if (config.headers.delete) {
+        config.headers.delete('Content-Type');
+      } else {
+        delete config.headers['Content-Type'];
+      }
     }
 
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    console.error('[API Request Error]', error);
+    return Promise.reject(error);
+  },
 );
 
 // ─── Response interceptor ────────────────────────────────────────────────────
 
+let unauthorizedCallback: (() => void) | null = null;
+
+export const onUnauthorized = (callback: () => void) => {
+  unauthorizedCallback = callback;
+};
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log(`[API Response] ${response.status} ${response.config.url}`);
+    return response;
+  },
   async (error) => {
+    console.error(`[API Error] ${error.config?.url}:`, {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+
     if (error.response?.status === 401) {
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('user');
+      if (unauthorizedCallback) {
+        unauthorizedCallback();
+      }
     }
     return Promise.reject(error);
   },

@@ -72,14 +72,17 @@ export default function FancySelect({
           </div>
           <Transition
             as={Fragment}
-            leave="transition ease-in duration-100"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
+            enter="transition ease-out duration-200"
+            enterFrom="opacity-0 translate-y-1 scale-95"
+            enterTo="opacity-100 translate-y-0 scale-100"
+            leave="transition ease-in duration-150"
+            leaveFrom="opacity-100 translate-y-0 scale-100"
+            leaveTo="opacity-0 translate-y-1 scale-95"
             afterLeave={() => setQuery('')}
           >
             <ComboboxOptions 
               anchor="bottom start" 
-              className="z-[9999] mt-1 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1.5 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm [--anchor-gap:4px] animate-in fade-in slide-in-from-top-2 duration-200"
+              className="z-[9999] mt-2 max-h-60 w-[var(--input-width)] overflow-auto rounded-xl bg-white py-1.5 text-base shadow-2xl ring-1 ring-black/5 focus:outline-none sm:text-sm [--anchor-gap:4px] transform-gpu"
             >
               {filteredOptions.length === 0 && query !== '' ? (
                 <div className="relative cursor-default select-none py-3 px-4 text-gray-400 font-medium italic text-center">

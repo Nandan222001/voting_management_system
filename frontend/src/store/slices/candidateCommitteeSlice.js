@@ -6,7 +6,7 @@ export const fetchCandidateCommittees = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await candidateCommitteeService.getCommittees();
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch committees');
     }
@@ -70,7 +70,7 @@ const candidateCommitteeSlice = createSlice({
       })
       .addCase(fetchCandidateCommittees.fulfilled, (state, action) => {
         state.loading = false;
-        state.committees = action.payload;
+        state.committees = action.payload.data || action.payload || [];
       })
       .addCase(fetchCandidateCommittees.rejected, (state, action) => {
         state.loading = false;
@@ -82,7 +82,8 @@ const candidateCommitteeSlice = createSlice({
       })
       .addCase(createCandidateCommittee.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.committees.push(action.payload);
+        const newData = action.payload.data || action.payload;
+        state.committees.push(newData);
       })
       .addCase(createCandidateCommittee.rejected, (state, action) => {
         state.actionLoading = false;
@@ -94,9 +95,10 @@ const candidateCommitteeSlice = createSlice({
       })
       .addCase(updateCandidateCommittee.fulfilled, (state, action) => {
         state.actionLoading = false;
-        const index = state.committees.findIndex((c) => c.id === action.payload.id);
+        const updatedData = action.payload.data || action.payload;
+        const index = state.committees.findIndex((c) => c.id === updatedData.id);
         if (index !== -1) {
-          state.committees[index] = action.payload;
+          state.committees[index] = updatedData;
         }
       })
       .addCase(updateCandidateCommittee.rejected, (state, action) => {

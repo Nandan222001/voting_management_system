@@ -120,6 +120,12 @@ class Tenant(Base):
         cascade="all, delete-orphan",
         lazy="select",
     )
+    announcements = relationship(
+        "Announcement",
+        back_populates="tenant",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
     targets = relationship(
         "Target",
         back_populates="tenant",

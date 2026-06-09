@@ -6,7 +6,7 @@ export const fetchTargets = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await targetService.getTargets();
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch targets');
     }
@@ -18,7 +18,7 @@ export const createTarget = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await targetService.createTarget(data);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create target');
     }
@@ -30,7 +30,7 @@ export const updateTarget = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await targetService.updateTarget(id, data);
-      return response.data.data;
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update target');
     }
@@ -70,7 +70,7 @@ const targetSlice = createSlice({
       })
       .addCase(fetchTargets.fulfilled, (state, action) => {
         state.loading = false;
-        state.targets = action.payload;
+        state.targets = action.payload.data || action.payload || [];
       })
       .addCase(fetchTargets.rejected, (state, action) => {
         state.loading = false;
@@ -82,7 +82,8 @@ const targetSlice = createSlice({
       })
       .addCase(createTarget.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.targets.push(action.payload);
+        const newData = action.payload.data || action.payload;
+        state.targets.push(newData);
       })
       .addCase(createTarget.rejected, (state, action) => {
         state.actionLoading = false;
@@ -94,9 +95,10 @@ const targetSlice = createSlice({
       })
       .addCase(updateTarget.fulfilled, (state, action) => {
         state.actionLoading = false;
-        const index = state.targets.findIndex((t) => t.id === action.payload.id);
+        const updatedData = action.payload.data || action.payload;
+        const index = state.targets.findIndex((t) => t.id === updatedData.id);
         if (index !== -1) {
-          state.targets[index] = action.payload;
+          state.targets[index] = updatedData;
         }
       })
       .addCase(updateTarget.rejected, (state, action) => {

@@ -6,7 +6,7 @@ import {
   Calendar,
   CheckCircle2,
   ChevronRight,
-  History,
+  History as HistoryIcon,
   Lock,
   Plus,
   Search,
@@ -107,7 +107,9 @@ export default function DashboardPage() {
   const userStats = userStatsRaw?.data || userStatsRaw || {};
 
   const logsArray = useMemo(() => {
-    return Array.isArray(auditLogs) ? auditLogs : auditLogs?.data || [];
+    const rawLogs = Array.isArray(auditLogs) ? auditLogs : auditLogs?.data || [];
+    // Filter out payment logs for dashboard view
+    return rawLogs.filter(l => !/payment/i.test(l.action || ''));
   }, [auditLogs]);
 
   const chartData = useMemo(() => [
@@ -117,9 +119,9 @@ export default function DashboardPage() {
     { name: 'Cancelled', value: electionStats.cancelled || 0, color: '#dc2626' },
   ], [electionStats]);
 
-  const totalVoters = userStats.total_voters || userStats.total_users || 0;
-  const activeVoters = userStats.active_count || userStats.active_voters || 0;
-  const pendingUsers = userStats.pending_count || userStats.pending_users || 0;
+  const totalVoters = userStats.total_voters || 0;
+  const activeVoters = userStats.active_voters || 0;
+  const pendingUsers = userStats.pending_users || 0;
   
   const turnoutRate = totalVoters ? Math.round((activeVoters / totalVoters) * 100) : 0;
 
@@ -325,7 +327,7 @@ export default function DashboardPage() {
               <div className="sa-scrollbar flex-1 space-y-2 overflow-y-auto p-4 bg-gray-50/30 max-h-[480px]">
                 {logsArray.length === 0 ? (
                   <div className="py-12 text-center">
-                     <History className="mx-auto mb-4 h-12 w-12 opacity-10 text-gray-900" />
+                     <HistoryIcon className="mx-auto mb-4 h-12 w-12 opacity-10 text-gray-900" />
                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">No activity</p>
                   </div>
                 ) : (

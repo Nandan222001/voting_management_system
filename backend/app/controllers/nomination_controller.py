@@ -34,9 +34,10 @@ def list_nominations(
     election_id: Optional[int] = Query(default=None),
     user_id: Optional[int] = Query(default=None),
     status_filter: Optional[NominationStatus] = Query(default=None, alias="status"),
+    search: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> NominationListResponse:
+) -> JSONResponse:
     skip = (page - 1) * per_page
     nominations, total = nomination_service.list_nominations(
         db=db,
@@ -46,18 +47,24 @@ def list_nominations(
         election_id=election_id,
         user_id=user_id,
         status_filter=status_filter,
+        search=search,
     )
-    return NominationListResponse(
+    
+    data = NominationListResponse(
         total=total,
         page=page,
         per_page=per_page,
         items=[NominationResponse.model_validate(item) for item in nominations],
     )
+    
+    return success_response(
+        data=data.model_dump(mode="json"),
+        message="Nominations retrieved successfully."
+    )
 
 
 @router.get(
     "/my",
-    response_model=NominationListResponse,
     summary="List nominations submitted by the current user",
 )
 def list_my_nominations(
@@ -67,7 +74,7 @@ def list_my_nominations(
     status_filter: Optional[NominationStatus] = Query(default=None, alias="status"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> NominationListResponse:
+) -> JSONResponse:
     skip = (page - 1) * per_page
     nominations, total = nomination_service.list_my_nominations(
         db=db,
@@ -77,31 +84,48 @@ def list_my_nominations(
         election_id=election_id,
         status_filter=status_filter,
     )
-    return NominationListResponse(
+    data = NominationListResponse(
         total=total,
         page=page,
         per_page=per_page,
         items=[NominationResponse.model_validate(item) for item in nominations],
     )
+    return success_response(
+        data=data.model_dump(mode="json"),
+        message="My nominations retrieved successfully."
+    )
+
+
+@router.get(
+    "/stats",
+    summary="Get nomination statistics",
+)
+def get_nomination_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> JSONResponse:
+    stats = nomination_service.get_stats(db, current_user)
+    return success_response(data=stats, message="Nomination statistics retrieved.")
 
 
 @router.get(
     "/{nomination_id}",
-    response_model=NominationResponse,
     summary="Get nomination details",
 )
 def get_nomination(
     nomination_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> NominationResponse:
+) -> JSONResponse:
     nomination = nomination_service.get_nomination(db, nomination_id, current_user)
-    return NominationResponse.model_validate(nomination)
+    return success_response(
+        data=NominationResponse.model_validate(nomination).model_dump(mode="json"),
+        message="Nomination details retrieved."
+    )
 
 
 @router.put(
     "/{nomination_id}",
-    response_model=NominationResponse,
     summary="Update a pending nomination",
 )
 def update_nomination(
@@ -109,52 +133,101 @@ def update_nomination(
     payload: NominationUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> NominationResponse:
+) -> JSONResponse:
     nomination = nomination_service.update_nomination(
         db=db,
         nomination_id=nomination_id,
         data=payload,
         current_user=current_user,
     )
-    return NominationResponse.model_validate(nomination)
+    return success_response(
+        data=NominationResponse.model_validate(nomination).model_dump(mode="json"),
+        message="Nomination updated successfully."
+    )
 
 
 @router.post(
     "/{nomination_id}/approve",
-    response_model=NominationResponse,
     summary="Approve a nomination",
 )
 def approve_nomination(
     nomination_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> NominationResponse:
+) -> JSONResponse:
     nomination = nomination_service.set_status(
         db=db,
         nomination_id=nomination_id,
         next_status=NominationStatus.approved,
         current_user=current_user,
     )
-    return NominationResponse.model_validate(nomination)
+    return success_response(
+        data=NominationResponse.model_validate(nomination).model_dump(mode="json"),
+        message="Nomination approved successfully."
+    )
 
 
 @router.post(
     "/{nomination_id}/reject",
-    response_model=NominationResponse,
     summary="Reject a nomination",
 )
 def reject_nomination(
     nomination_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
-) -> NominationResponse:
+) -> JSONResponse:
     nomination = nomination_service.set_status(
         db=db,
         nomination_id=nomination_id,
         next_status=NominationStatus.rejected,
         current_user=current_user,
     )
-    return NominationResponse.model_validate(nomination)
+    return success_response(
+        data=NominationResponse.model_validate(nomination).model_dump(mode="json"),
+        message="Nomination rejected successfully."
+    )
+
+
+@router.post(
+    "/{nomination_id}/suspend",
+    summary="Suspend a nomination",
+)
+def suspend_nomination(
+    nomination_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+) -> JSONResponse:
+    nomination = nomination_service.set_status(
+        db=db,
+        nomination_id=nomination_id,
+        next_status=NominationStatus.suspended,
+        current_user=current_user,
+    )
+    return success_response(
+        data=NominationResponse.model_validate(nomination).model_dump(mode="json"),
+        message="Nomination suspended successfully."
+    )
+
+
+@router.post(
+    "/{nomination_id}/withdraw",
+    response_model=NominationResponse,
+    summary="Withdraw your own nomination",
+)
+def withdraw_nomination(
+    nomination_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Transition a nomination to 'withdrawn' status. 
+    Only the applicant can withdraw their own nomination.
+    """
+    updated = nomination_service.withdraw_nomination(db, nomination_id, current_user)
+    return success_response(
+        data=NominationResponse.model_validate(updated).model_dump(mode="json"),
+        message="Nomination withdrawn successfully."
+    )
 
 
 @router.delete(

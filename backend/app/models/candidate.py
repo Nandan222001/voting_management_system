@@ -76,6 +76,7 @@ class Candidate(Base):
     # Profile & Symbols
     symbol = Column(String(100), nullable=True)
     image_url = Column(String(500), nullable=True)
+    cover_url = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
     
     # Eligibility & Declarations

@@ -12,9 +12,11 @@ import {
   SafeAreaView,
   Image,
 } from "react-native";
-import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/common/Header";
+import { showToast } from "../utils/toast";
 
 const getInputStyle = () => {
   return Platform.OS === "web" ? ({ 
@@ -32,7 +34,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
 
   useEffect(() => {
     if (!email) {
-      Alert.alert("Error", "Email not provided for verification");
+      showToast.error("Error", "Email not provided for verification");
       navigation.navigate("Login");
     }
   }, [email]);
@@ -69,7 +71,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
   const handleVerify = async () => {
     const otpCode = code.join("");
     if (otpCode.length < 6) {
-      Alert.alert(
+      showToast.error(
         "Incomplete Code",
         "Please enter the complete 6-digit verification code.",
       );
@@ -78,14 +80,12 @@ const VerifyScreen = ({ navigation, route }: any) => {
     setLoading(true);
     try {
       await verifyOtp(email, otpCode);
-      Alert.alert(
-        "Verification Successful",
-        "Your email has been verified. Please sign in to continue.",
-        [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-      );
+      showToast.success("Verified", "Your identity has been confirmed.");
+      // On success, AuthContext updates 'token', and App.tsx automatically 
+      // switches to TabNavigator (Dashboard).
     } catch (error: any) {
       const message = error.response?.data?.detail || "Invalid OTP. Please try again.";
-      Alert.alert("Verification Failed", message);
+      showToast.error("Verification Failed", message);
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
 
         <TouchableOpacity
           onPress={() =>
-            Alert.alert("Resend Code", "A new passcode has been dispatched")
+            showToast.info("Resend Code", "A new passcode has been dispatched")
           }
         >
           <Text style={styles.resendText}>Resend Code</Text>
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   timerText: { fontSize: 14, color: "#334155", fontWeight: "500" },
   resendText: {
     fontSize: 15,
-    color: "rgb(16 102 177)",
+    color: "#003d9b",
     fontWeight: "500",
     marginBottom: 24,
   },
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   graphicOverlayText: { color: "#fff", fontSize: 12, fontWeight: "500" },
   primaryButton: {
-    backgroundColor: "rgb(16 102 177)",
+    backgroundColor: "#003d9b",
     width: "100%",
     height: 52,
     borderRadius: 8,

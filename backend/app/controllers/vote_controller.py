@@ -15,7 +15,7 @@ auto-scoped to their own tenant.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -23,12 +23,15 @@ from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user
 from app.models.election import Election
 from app.models.user import User, UserRole
+from app.schemas.payment import VotingEligibilityResponse
 from app.schemas.vote import VoteCreate, VoteResponse
+from app.services.payment_service import payment_service
 from app.services.vote_service import vote_service
 from app.utils.helpers import get_client_ip
 from app.utils.response import success_response
 
 router = APIRouter(prefix="/votes", tags=["Votes"])
+voting_router = APIRouter(prefix="/voting", tags=["Voting"])
 
 
 def _assert_member_can_access_election(
@@ -61,7 +64,6 @@ def _assert_member_can_access_election(
 
 @router.post(
     "/cast",
-    response_model=VoteResponse,
     summary="Cast a vote (authenticated voter)",
 )
 def cast_vote(
@@ -69,7 +71,7 @@ def cast_vote(
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> VoteResponse:
+) -> JSONResponse:
     """
     Cast a ballot in an active election.
 
@@ -89,7 +91,74 @@ def cast_vote(
         ip_address=ip,
         tenant_id=current_user.tenant_id,
     )
-    return VoteResponse.model_validate(vote)
+    return success_response(
+        data=VoteResponse.model_validate(vote).model_dump(mode="json"),
+        message="Vote cast successfully.",
+        status_code=status.HTTP_201_CREATED
+    )
+
+
+@voting_router.get(
+    "/check-eligibility",
+    summary="Check current user's voting eligibility",
+)
+def check_voting_eligibility(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Check membership selection and verified payment before voting.
+    """
+    data = payment_service.check_voting_eligibility(db, current_user)
+    return success_response(
+        data=data,
+        message="Voting eligibility status retrieved."
+    )
+
+
+@voting_router.post(
+    "/submit",
+    summary="Submit a vote after membership/payment validation",
+)
+def submit_vote(
+    payload: VoteCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Submit a vote only after the backend verifies membership and payment eligibility.
+    """
+    eligibility = payment_service.check_voting_eligibility(db, current_user)
+    if not eligibility["can_vote"]:
+        status_code = (
+            status.HTTP_402_PAYMENT_REQUIRED
+            if eligibility["membership_selected"]
+            else status.HTTP_400_BAD_REQUEST
+        )
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "message": "Membership payment required before voting."
+                if eligibility["membership_selected"]
+                else "Membership Plan required before voting.",
+            },
+        )
+
+    ip = get_client_ip(request)
+    vote = vote_service.cast_vote(
+        db,
+        user_id=current_user.id,
+        election_id=payload.election_id,
+        candidate_id=payload.candidate_id,
+        ip_address=ip,
+        tenant_id=current_user.tenant_id,
+    )
+    return success_response(
+        data={"vote": VoteResponse.model_validate(vote).model_dump(mode="json")},
+        message="Vote submitted successfully."
+    )
 
 
 # ---------------------------------------------------------------------------

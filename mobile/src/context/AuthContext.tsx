@@ -1,12 +1,14 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authService } from '../services/authService';
+import { onUnauthorized } from '../services/api';
 
 interface User {
   id: number;
   full_name: string;
   email: string;
   phone?: string;
+  image_url?: string;
   role: string;
   status: string;
   is_verified: boolean;
@@ -58,11 +60,14 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
   register: (userData: any) => Promise<any>;
+  createRegistrationOrder: (tenantId: number, planId: number) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   updateProfile: (userData: any) => Promise<void>;
+  setToken: (token: string | null) => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +78,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Register global unauthorized handler
+    onUnauthorized(() => {
+      setToken(null);
+      setUser(null);
+    });
+
     // Load stored auth data on mount
     const loadStorageData = async () => {
       try {
@@ -80,8 +91,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedUser = await AsyncStorage.getItem('user');
 
         if (storedToken && storedUser) {
+          const parsedUser = JSON.parse(storedUser);
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          setUser(parsedUser);
+          
+          if (parsedUser?.tenant_id) {
+            await AsyncStorage.setItem('tenant_id', String(parsedUser.tenant_id));
+          }
+
+          // Validate token by fetching fresh user data
+          try {
+            const freshUser = await authService.getProfile();
+            if (freshUser) {
+              setUser(freshUser);
+            }
+          } catch (error: any) {
+            console.error('Token validation failed', error);
+            // Interceptor handles status 401 and calls onUnauthorized
+          }
         }
       } catch (e) {
         console.error('Failed to load auth data from storage', e);
@@ -95,8 +122,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
-    setToken(result.access_token);
-    setUser(result.user);
+    // We return the result but don't automatically set the state here
+    // to allow the Login screen to check the user's status first.
+    return result;
   };
 
   const logout = async () => {
@@ -109,8 +137,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return await authService.register(userData);
   };
 
+  const createRegistrationOrder = async (tenantId: number, planId: number) => {
+    return await authService.createRegistrationOrder(tenantId, planId);
+  };
+
   const verifyOtp = async (email: string, otp: string) => {
-    await authService.verifyOtp(email, otp);
+    const result = await authService.verifyOtp(email, otp);
+    if (result.token) {
+      setToken(result.token);
+      if (result.user) {
+        setUser(result.user);
+      }
+    }
   };
 
   const updateProfile = async (userData: any) => {
@@ -140,6 +178,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         verifyOtp,
         updateProfile,
+        setToken,
+        setUser
       }}
     >
       {children}

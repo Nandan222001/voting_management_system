@@ -58,10 +58,28 @@ class Payment(Base):
     razorpay_payment_id = Column(String(100), nullable=True, index=True)
     razorpay_signature = Column(String(255), nullable=True)
 
+    # GST / Tax
+    gst_rate = Column(Float, nullable=True, default=0.0)
+    gst_amount = Column(Float, nullable=True, default=0.0)
+
+    # Refund tracking
+    refund_id = Column(String(100), nullable=True, index=True)
+    refund_amount = Column(Float, nullable=True)
+    refunded_at = Column(DateTime, nullable=True)
+    refund_reason = Column(String(255), nullable=True)
+
     # Payer Info (Optional - could link to User if internal)
     user_id = Column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # Link to specific membership plan
+    membership_plan_id = Column(
+        Integer,
+        ForeignKey("plans.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -84,6 +102,7 @@ class Payment(Base):
     # Relationships
     tenant = relationship("Tenant", lazy="select")
     user = relationship("User", lazy="select")
+    membership_plan = relationship("Plan", lazy="select")
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<Payment id={self.id} amount={self.amount} status={self.status}>"
