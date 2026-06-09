@@ -1,9 +1,21 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const RAW_API_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  'http://localhost:8000/api/v1';
+// ─── API Configuration ───────────────────────────────────────────────────────
+
+// Production Backend (Remote)
+const PRODUCTION_URL = 'http://13.207.201.75:8000/api/v1';
+
+// Local Development
+const LOCAL_URL = Platform.select({
+  android: 'http://10.0.2.2:8000/api/v1',
+  ios: 'http://localhost:8000/api/v1',
+  default: 'http://localhost:8000/api/v1',
+});
+
+// Set this to PRODUCTION_URL or LOCAL_URL as needed
+const RAW_API_URL = LOCAL_URL || 'http://localhost:8000/api/v1';
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
@@ -33,7 +45,6 @@ const api = axios.create({
   timeout: 30000,
   headers: {
     'Accept': 'application/json',
-    // We omit 'Content-Type' here to avoid interfering with FormData
   },
 });
 
@@ -61,13 +72,11 @@ api.interceptors.request.use(
 
     if (isFormData) {
       console.log(`[API] FormData detected for ${config.url}. Removing Content-Type to allow boundary generation.`);
-      // In Axios 1.x, we MUST use .delete() on the headers object
       if (config.headers) {
         config.headers.delete('Content-Type');
         config.headers.delete('content-type');
       }
     } else {
-      // Ensure JSON content type for standard requests if not already set
       if (config.headers && !config.headers.has('Content-Type') && !config.headers.has('content-type')) {
         config.headers.set('Content-Type', 'application/json');
       }
