@@ -327,13 +327,14 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const fetchInitialData = async () => {
     try {
-      // Seed tenant from env var if not already stored
-      const storedId = await tenantService.getStoredTenantID();
-      if (!storedId && process.env.EXPO_PUBLIC_TENANT_ID) {
-        await tenantService.selectTenant(process.env.EXPO_PUBLIC_TENANT_ID);
+      // Prioritize tenant from env var for fixed organization flow
+      const envTenantId = process.env.EXPO_PUBLIC_TENANT_ID;
+      if (envTenantId) {
+        console.log(`[Register] Using environment Tenant ID: ${envTenantId}`);
+        await tenantService.selectTenant(envTenantId);
       }
 
-      // 1. Fetch current tenant details based on ID in header
+      // 1. Fetch current tenant details based on ID/UUID in header
       const tenant = await tenantService.getCurrentTenant();
 
       if (tenant) {
@@ -341,12 +342,12 @@ const RegisterScreen = ({ navigation }: any) => {
         setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
         setSelectedTenantName(tenant.name);
 
-        // 2. Fetch states
+        // 2. Fetch specific data for this tenant (Committees, Plans, Targets)
+        fetchTenantSpecificData();
+
+        // 3. Fetch states
         const statesData = await tenantService.getPublicTargets(undefined, 'state');
         setStates(statesData);
-
-        // 3. Fetch specific data for this tenant
-        fetchTenantSpecificData();
       } else {
         fetchTenants();
         fetchStates();
@@ -537,11 +538,34 @@ const RegisterScreen = ({ navigation }: any) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateStep3 = () => {
+    let newErrors: Record<string, string> = {};
+    if (!formData.house_number?.trim()) newErrors.house_number = 'House Number is required';
+    if (!formData.street_address?.trim()) newErrors.street_address = 'Street Address is required';
+    if (!formData.village?.trim()) newErrors.village = 'Village / Locality is required';
+    if (!formData.pincode?.trim()) newErrors.pincode = 'Pincode is required';
+    if (!formData.state?.trim()) newErrors.state = 'State is required';
+    if (!formData.district?.trim()) newErrors.district = 'District is required';
+    if (!formData.taluka?.trim()) newErrors.taluka = 'Taluka is required';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep4 = () => {
+    let newErrors: Record<string, string> = {};
+    if (!formData.target_id) {
+      newErrors.target_id = 'Please select a constituency / committee';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleNext = () => {
     if (step === 1 && validateStep1()) setStep(2);
     else if (step === 2 && validateStep2()) setStep(3);
-    else if (step === 3) setStep(4);
-    else if (step === 4) setStep(5);
+    else if (step === 3 && validateStep3()) setStep(4);
+    else if (step === 4 && validateStep4()) setStep(5);
   };
 
   const handleBack = () => {
@@ -1126,10 +1150,9 @@ const RegisterScreen = ({ navigation }: any) => {
                 icon="people-circle-outline"
                 value={selectedCommitteeName}
                 onPress={() => {
-                  if (!formData.tenant_id) Alert.alert("Select Organization First");
-                  else setModalType('committee');
+                  setModalType('committee');
                 }}
-                error={errors.target_id}
+                error={errors.committee_id || errors.target_id}
               />
               
               <View style={styles.infoBox}>

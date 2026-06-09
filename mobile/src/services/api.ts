@@ -1,11 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 const RAW_API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  'http://127.0.0.1:8000/api/v1';
+  (Platform.OS === 'android' ? 'http://10.0.2.2:8000/api/v1' : 'http://127.0.0.1:8000/api/v1');
 
-console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
+console.log(`[API] Initializing with baseURL: ${RAW_API_URL} (Platform: ${Platform.OS})`);
 
 // Exported for components that need to construct asset URIs
 export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
