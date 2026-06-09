@@ -1,19 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-
-const PRODUCTION_URL = 'https://voting.indian-merchant-navy.com/api/v1';
-
-// Use env var if set, otherwise production URL, localhost only as last resort
-const LOCALHOST_URL = Platform.select({
-  android: 'http://10.0.2.2:8000/api/v1',
-  ios: 'http://localhost:8000/api/v1',
-  default: 'http://localhost:8000/api/v1',
-});
 
 const RAW_API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  PRODUCTION_URL;
+  'http://localhost:8000/api/v1';
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
