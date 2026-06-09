@@ -2,9 +2,13 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// Production Endpoint Configuration
-const PRODUCTION_URL = 'https://13.207.201.75:8000/api/v1';
-let RAW_API_URL = PRODUCTION_URL;
+// Development Endpoint Configuration (handles emulator networking)
+const LOCALHOST_URL = Platform.select({
+  android: 'http://10.0.2.2:8000/api/v1',
+  ios: 'http://localhost:8000/api/v1',
+  default: 'http://localhost:8000/api/v1',
+});
+let RAW_API_URL = LOCALHOST_URL || 'http://localhost:8000/api/v1';
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL}`);
 
@@ -34,7 +38,7 @@ const api = axios.create({
   timeout: 30000,
   headers: {
     'Accept': 'application/json',
-    'Content-Type': 'application/json',
+    // We omit 'Content-Type' here to avoid interfering with FormData
   },
 });
 
@@ -42,34 +46,41 @@ const api = axios.create({
 
 api.interceptors.request.use(
   async (config) => {
-    // Attach Bearer token if the user is logged in
+    // 1. Fetch Auth & Tenant Data
     const token = await AsyncStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const tenantID = await getTenantID();
+
+    // 2. Apply Headers (Using Axios 1.x methods for consistency)
+    if (token && config.headers) {
+      config.headers.set('Authorization', `Bearer ${token}`);
     }
 
-    // Attach X-Tenant-ID for all mobile requests
-    const tenantID = await getTenantID();
-    if (tenantID) {
-      config.headers['X-Tenant-ID'] = String(tenantID);
+    if (tenantID && config.headers) {
+      config.headers.set('X-Tenant-ID', String(tenantID));
+    }
+
+    // 3. Handle Content-Type for FormData vs JSON
+    const isFormData = config.data instanceof FormData || 
+                       (config.data && typeof config.data === 'object' && 
+                        (config.data._parts || typeof config.data.append === 'function'));
+
+    if (isFormData) {
+      console.log(`[API] FormData detected for ${config.url}. Removing Content-Type to allow boundary generation.`);
+      // In Axios 1.x, we MUST use .delete() on the headers object
+      if (config.headers) {
+        config.headers.delete('Content-Type');
+        config.headers.delete('content-type');
+      }
+    } else {
+      // Ensure JSON content type for standard requests if not already set
+      if (config.headers && !config.headers.has('Content-Type') && !config.headers.has('content-type')) {
+        config.headers.set('Content-Type', 'application/json');
+      }
     }
 
     console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-      headers: config.headers,
-      params: config.params,
+      headers: config.headers.toJSON ? config.headers.toJSON() : config.headers,
     });
-
-    // If sending FormData, let axios handle the Content-Type (it will add the boundary)
-    const isFormData = config.data instanceof FormData || 
-                       (config.data && typeof config.data === 'object' && config.data._parts);
-
-    if (isFormData) {
-      if (config.headers.delete) {
-        config.headers.delete('Content-Type');
-      } else {
-        delete config.headers['Content-Type'];
-      }
-    }
 
     return config;
   },

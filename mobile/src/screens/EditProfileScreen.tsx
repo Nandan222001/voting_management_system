@@ -760,31 +760,56 @@ const EditProfileScreen = ({ navigation }: any) => {
               <SectionHeader title="Membership Plan" step={4} subtitle="Choose a plan that fits your needs." />
 
               {plans.length > 0 ? (
-                plans.map((plan) => (
-                  <TouchableOpacity
-                    key={plan.id}
-                    style={[
-                      styles.planCard,
-                      formData.membership_plan_id === plan.id && styles.planCardSelected
-                    ]}
-                    onPress={() => {
-                      handleChange('membership_plan_id', plan.id);
-                      setSelectedPlanName(plan.name);
-                    }}
-                  >
-                    <View style={styles.planHeader}>
-                      <Text style={styles.planName}>{plan.name}</Text>
-                      <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
-                    </View>
-                    <Text style={styles.planDesc}>{plan.description}</Text>
-                    {formData.membership_plan_id === plan.id && (
-                      <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
-                    )}
-                  </TouchableOpacity>
-                ))
+                <View style={styles.plansContainer}>
+                  {plans.map((plan) => (
+                    <TouchableOpacity
+                      key={plan.id}
+                      style={[
+                        styles.planCard,
+                        formData.membership_plan_id === plan.id && styles.planCardSelected
+                      ]}
+                      onPress={() => {
+                        handleChange('membership_plan_id', plan.id);
+                        setSelectedPlanName(plan.name);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.planContent}>
+                        <View style={styles.planMainInfo}>
+                          <View style={styles.planTitleRow}>
+                            <Text style={styles.planName} numberOfLines={1}>{plan.name}</Text>
+                            {formData.membership_plan_id === plan.id && (
+                              <View style={styles.selectedBadge}>
+                                <Ionicons name="checkmark-sharp" size={14} color={COLORS.white} />
+                              </View>
+                            )}
+                          </View>
+                          
+                          <View style={styles.planPricingRow}>
+                            <Text style={styles.planPriceSymbol}>₹</Text>
+                            <Text style={styles.planPriceAmount}>{plan.price}</Text>
+                            <Text style={styles.planPricePeriod}> / {plan.period}</Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.planDivider} />
+                        
+                        <View style={styles.planFooter}>
+                          <Text style={styles.planDesc} numberOfLines={2}>{plan.description}</Text>
+                          <MaterialIcons 
+                            name="chevron-right" 
+                            size={20} 
+                            color={formData.membership_plan_id === plan.id ? COLORS.primary : COLORS.textSecondary} 
+                          />
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               ) : (
                 <View style={styles.emptyPlans}>
-                   <Text style={styles.emptyText}>No special plans available.</Text>
+                  <Ionicons name="alert-circle-outline" size={48} color={COLORS.textSecondary} />
+                  <Text style={styles.emptyText}>No subscription plans found for this tenant.</Text>
                 </View>
               )}
             </View>
@@ -955,6 +980,66 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '500',
     marginBottom: 12,
+  },
+
+  // Plan Card Professional Styles
+  plansContainer: {
+    gap: 12,
+  },
+  planContent: {
+    flex: 1,
+  },
+  planMainInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  planTitleRow: {
+    flex: 1,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectedBadge: {
+    backgroundColor: COLORS.primary,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  planPricingRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  planPriceSymbol: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginRight: 2,
+  },
+  planPriceAmount: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.primary,
+  },
+  planPricePeriod: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  planDivider: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginVertical: 12,
+  },
+  planFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });
 
