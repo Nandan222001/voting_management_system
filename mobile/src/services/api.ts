@@ -50,8 +50,9 @@ api.interceptors.request.use(
       config.headers.set('Authorization', `Bearer ${token}`);
     }
 
-    if (tenantID && config.headers) {
-      config.headers.set('X-Tenant-ID', String(tenantID));
+    const resolvedTenantID = tenantID || process.env.EXPO_PUBLIC_TENANT_ID || null;
+    if (resolvedTenantID && config.headers) {
+      config.headers.set('X-Tenant-ID', String(resolvedTenantID));
     }
 
     // 3. Handle Content-Type for FormData vs JSON

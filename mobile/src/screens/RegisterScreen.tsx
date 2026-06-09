@@ -327,13 +327,17 @@ const RegisterScreen = ({ navigation }: any) => {
 
   const fetchInitialData = async () => {
     try {
+      // Seed tenant from env var if not already stored
+      const storedId = await tenantService.getStoredTenantID();
+      if (!storedId && process.env.EXPO_PUBLIC_TENANT_ID) {
+        await tenantService.selectTenant(process.env.EXPO_PUBLIC_TENANT_ID);
+      }
+
       // 1. Fetch current tenant details based on ID in header
       const tenant = await tenantService.getCurrentTenant();
-      
+
       if (tenant) {
         setCurrentTenant(tenant);
-        
-        // Auto-set the tenant ID in form
         setFormData(prev => ({ ...prev, tenant_id: tenant.id }));
         setSelectedTenantName(tenant.name);
 
@@ -341,10 +345,9 @@ const RegisterScreen = ({ navigation }: any) => {
         const statesData = await tenantService.getPublicTargets(undefined, 'state');
         setStates(statesData);
 
-        // 3. Fetch specific data for this tenant (header already carries X-Tenant-ID)
+        // 3. Fetch specific data for this tenant
         fetchTenantSpecificData();
       } else {
-        // No tenant selected yet, fetch the list of tenants
         fetchTenants();
         fetchStates();
       }
