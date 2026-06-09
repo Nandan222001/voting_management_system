@@ -438,23 +438,37 @@ const RegisterScreen = ({ navigation }: any) => {
     try {
       const data = await tenantService.getPublicTenants();
       setTenants(data);
+      // Auto-select if only one tenant exists so constituency can be picked immediately
+      if (data.length === 1 && !formData.tenant_id) {
+        await tenantService.selectTenant(String(data[0].id));
+        setFormData(prev => ({ ...prev, tenant_id: data[0].id }));
+        setSelectedTenantName(data[0].name);
+        setCurrentTenant(data[0]);
+      }
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
     }
   };
+
+  const DEFAULT_PLANS = [
+    { id: 'plan_annual', name: 'Annual Fee', price: 50, period: 'year', description: 'Annual membership valid for 1 year.' },
+    { id: 'plan_active', name: 'Active (3 Yrs)', price: 500, period: '3 years', description: 'Active membership valid for 3 years.' },
+    { id: 'plan_life', name: 'Life Membership', price: 10000, period: 'lifetime', description: 'One-time lifetime membership.' },
+  ];
 
   const fetchTenantSpecificData = async () => {
     try {
       const commData = await tenantService.getPublicCommittees();
       setCommittees(commData);
       const planData = await tenantService.getPublicPlans();
-      setPlans(planData);
-      
+      setPlans(planData.length > 0 ? planData : DEFAULT_PLANS);
+
       // Load targets for Step 4 (Constituency / Committee)
       const targetData = await tenantService.getPublicTargets();
       setRegTargets(targetData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
+      setPlans(DEFAULT_PLANS);
     }
   };
 
@@ -1151,7 +1165,7 @@ const RegisterScreen = ({ navigation }: any) => {
                     >
                       <View style={styles.planHeader}>
                         <Text style={styles.planName}>{plan.name}</Text>
-                        <Text style={styles.planPrice}>₹{plan.price}/{plan.period}</Text>
+                        <Text style={styles.planPrice}>₹{Number(plan.price).toLocaleString('en-IN')}</Text>
                       </View>
                       <Text style={styles.planDesc}>{plan.description}</Text>
                       {formData.membership_plan_id === plan.id && (
