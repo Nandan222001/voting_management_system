@@ -236,17 +236,6 @@ const ProfileScreen = ({ navigation }: any) => {
               <Text style={styles.supportActionText}>My Scheduled Events</Text>
               <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
             </TouchableOpacity>
-
-            {isCandidate && (
-              <TouchableOpacity 
-                style={styles.supportAction}
-                onPress={() => navigation.navigate('EventList', { mode: 'hierarchy' })}
-              >
-                <MaterialIcons name="account-tree" size={22} color={COLORS.primary} />
-                <Text style={styles.supportActionText}>Hierarchy Events</Text>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
-              </TouchableOpacity>
-            )}
           </ProfileSection>
 
           {/* Support Actions */}
