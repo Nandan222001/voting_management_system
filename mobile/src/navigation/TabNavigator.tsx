@@ -14,6 +14,9 @@ import NominationScreen from '../screens/NominationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import CreateEventScreen from '../screens/CreateEventScreen';
+import EventListScreen from '../screens/EventListScreen';
+import EventDetailScreen from '../screens/EventDetailScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -50,6 +53,9 @@ const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileMain" component={ProfileScreen} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+    <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+    <Stack.Screen name="EventList" component={EventListScreen} />
+    <Stack.Screen name="EventDetail" component={EventDetailScreen} />
     <Stack.Screen name="Notifications" component={NotificationScreen} />
     <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
   </Stack.Navigator>

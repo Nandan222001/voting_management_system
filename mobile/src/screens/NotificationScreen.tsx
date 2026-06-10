@@ -14,6 +14,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Header from '../components/common/Header';
 import { Announcement } from '../services/announcementService';
 import { notificationService, NotificationItem, NotificationGroups } from '../services/notificationService';
+import { eventService, EventNotification } from '../services/eventService';
 
 const COLORS = {
   primary: '#003d9b',
@@ -54,6 +55,7 @@ const timeLabel = (value: string) => new Date(value).toLocaleTimeString([], {
 
 export default function NotificationScreen({ navigation }: any) {
   const [data, setData] = useState<NotificationGroups>({ today: [], tomorrow: [] });
+  const [eventNotifs, setEventNotifs] = useState<EventNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -68,8 +70,12 @@ export default function NotificationScreen({ navigation }: any) {
 
   const load = async () => {
     try {
-      const groups = await notificationService.getNotifications();
+      const [groups, events] = await Promise.all([
+        notificationService.getNotifications(),
+        eventService.getEventNotifications()
+      ]);
       setData(groups);
+      setEventNotifs(events);
     } catch (error) {
       console.error('Failed to load notifications', error);
     } finally {
@@ -82,11 +88,17 @@ export default function NotificationScreen({ navigation }: any) {
     load();
   }, []);
 
-  const openItem = (item: NotificationItem) => {
+  const openItem = (item: any) => {
     if (item.item_type === 'announcement') {
       navigation.navigate('AnnouncementDetail', { id: item.id, announcement: item });
-    } else {
+    } else if (item.item_type === 'election') {
       navigation.navigate('Voting', { election: item });
+    } else if (item.event) {
+      // It's an EventNotification
+      navigation.navigate('EventDetail', { event: item.event });
+      if (!item.is_read) {
+        eventService.markNotificationRead(item.id).catch(console.error);
+      }
     }
   };
 
@@ -123,6 +135,35 @@ export default function NotificationScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
+
+        {/* Event Notifications Section */}
+        {eventNotifs.length > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.titleIndicator, { backgroundColor: COLORS.accent }]} />
+              <Text style={styles.sectionTitle}>Event Alerts</Text>
+            </View>
+            {eventNotifs.map((notif) => (
+              <TouchableOpacity 
+                key={`event-notif-${notif.id}`} 
+                style={[styles.notificationCard, !notif.is_read && { borderLeftWidth: 4, borderLeftColor: COLORS.primary }]} 
+                onPress={() => openItem(notif)}
+              >
+                <View style={[styles.notificationIcon, { backgroundColor: COLORS.accent + '15' }]}>
+                  <MaterialIcons name="event" size={22} color={COLORS.accent} />
+                </View>
+                <View style={styles.notificationBody}>
+                  <Text style={styles.notificationTime}>{timeLabel(notif.created_at)}</Text>
+                  <Text style={styles.notificationTitle}>New Event: {notif.event?.event_type}</Text>
+                  <Text style={styles.notificationDescription}>
+                    Scheduled for {notif.event?.event_date} at {notif.event?.place}
+                  </Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={22} color={COLORS.outlineVariant} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {featured && (
           <TouchableOpacity

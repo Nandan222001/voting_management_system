@@ -13,6 +13,7 @@ from app.models.candidate import Candidate                                  # no
 from app.models.candidate_follower import CandidateFollower                  # noqa: F401
 from app.models.nomination import Nomination, NominationStatus              # noqa: F401
 from app.models.announcement import Announcement, AnnouncementStatus        # noqa: F401
+from app.models.event import Event, EventNotification                      # noqa: F401
 from app.models.vote import Vote                                            # noqa: F401
 from app.models.payment import Payment, PaymentStatus                       # noqa: F401
 from app.models.plan import Plan                                           # noqa: F401
@@ -37,6 +38,8 @@ __all__ = [
     "NominationStatus",
     "Announcement",
     "AnnouncementStatus",
+    "Event",
+    "EventNotification",
     "Vote",
     "Payment",
     "PaymentStatus",

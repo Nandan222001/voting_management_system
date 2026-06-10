@@ -172,5 +172,12 @@ class User(Base):
         lazy="joined",
     )
 
+    @property
+    def is_candidate(self) -> bool:
+        """Checks if the user is the winner of any target/committee."""
+        # Using hasattr to avoid issues if Target model isn't yet loaded in some contexts,
+        # though backref "won_committees" is defined in Target model for winner_id.
+        return len(getattr(self, "won_committees", [])) > 0
+
     def __repr__(self) -> str:  # pragma: no cover
         return f"<User id={self.id} email={self.email!r} role={self.role}>"

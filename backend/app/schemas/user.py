@@ -171,6 +171,7 @@ class UserResponse(UserBase):
     membership_plan: Optional[PlanResponse] = None
     created_at: datetime
     updated_at: datetime
+    is_candidate: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

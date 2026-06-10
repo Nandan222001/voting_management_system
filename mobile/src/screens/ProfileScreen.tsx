@@ -69,6 +69,8 @@ const ProfileScreen = ({ navigation }: any) => {
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
 
+  const isCandidate = user?.is_candidate;
+
   useEffect(() => {
     if (user?.membership_plan?.name) {
       setPlanName(user.membership_plan.name);
@@ -106,7 +108,7 @@ const ProfileScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* ... Cinematic Header ... */}
+        {/* Cinematic Header */}
         <View style={styles.heroContainer}>
           <LinearGradient
             colors={[COLORS.primary, '#1e40af']}
@@ -160,7 +162,7 @@ const ProfileScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.bodyWrapper}>
-          {/* ... Premium Membership Card ... */}
+          {/* Premium Membership Card */}
           <View style={styles.membershipCard}>
             <LinearGradient
               colors={['#ffffff', '#f8fafc']}
@@ -211,6 +213,40 @@ const ProfileScreen = ({ navigation }: any) => {
           <ProfileSection title="Location Ledger" icon="location-on">
             <DetailRow icon="home" label="Primary Residence" value={user?.street_address} />
             <DetailRow icon="map" label="Region / State" value={`${user?.city || ''}, ${user?.state || ''}`} isLast={true} />
+          </ProfileSection>
+
+          {/* Event Management Section */}
+          <ProfileSection title="Event Management" icon="event">
+            {isCandidate && (
+              <TouchableOpacity 
+                style={styles.supportAction}
+                onPress={() => navigation.navigate('CreateEvent')}
+              >
+                <MaterialIcons name="add-circle-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.supportActionText}>Create New Event</Text>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('EventList', { mode: 'my' })}
+            >
+              <MaterialIcons name="event-note" size={22} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>My Scheduled Events</Text>
+              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+
+            {isCandidate && (
+              <TouchableOpacity 
+                style={styles.supportAction}
+                onPress={() => navigation.navigate('EventList', { mode: 'hierarchy' })}
+              >
+                <MaterialIcons name="account-tree" size={22} color={COLORS.primary} />
+                <Text style={styles.supportActionText}>Hierarchy Events</Text>
+                <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+              </TouchableOpacity>
+            )}
           </ProfileSection>
 
           {/* Support Actions */}

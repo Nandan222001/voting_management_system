@@ -49,6 +49,7 @@ interface User {
   target_id?: number | null;
   committee_id?: number | null;
   membership_plan_id?: number | null;
+  is_candidate?: boolean;
   membership_plan?: {
     id: number;
     name: string;
