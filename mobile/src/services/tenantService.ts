@@ -33,21 +33,37 @@ export const tenantService = {
   // no query parameter needed from the mobile client.
 
   getPublicCommittees: async () => {
-    const response = await api.get('/candidate-committees/public');
+    const tenantId = (await getTenantID()) || process.env.EXPO_PUBLIC_TENANT_ID;
+    const config: any = {};
+    if (tenantId && String(tenantId) !== 'undefined') {
+      config.headers = { 'X-Tenant-ID': String(tenantId) };
+    }
+    const response = await api.get('/candidate-committees/public', config);
     return response.data?.data || [];
   },
 
   getPublicPlans: async () => {
-    const response = await api.get('/plans/public');
+    const tenantId = (await getTenantID()) || process.env.EXPO_PUBLIC_TENANT_ID;
+    const config: any = {};
+    if (tenantId && String(tenantId) !== 'undefined') {
+      config.headers = { 'X-Tenant-ID': String(tenantId) };
+    }
+    const response = await api.get('/plans/public', config);
     const data = response.data?.data;
     return data?.items ?? data ?? [];
   },
 
   getPublicTargets: async (parentId?: number, type?: string) => {
+    const tenantId = (await getTenantID()) || process.env.EXPO_PUBLIC_TENANT_ID;
     const params: Record<string, string> = {};
     if (parentId !== undefined) params.parent_id = String(parentId);
     if (type) params.target_type = type;
-    const response = await api.get('/targets/public', { params });
+    
+    const config: any = { params };
+    if (tenantId && String(tenantId) !== 'undefined') {
+      config.headers = { 'X-Tenant-ID': String(tenantId) };
+    }
+    const response = await api.get('/targets/public', config);
     return response.data?.data || [];
   },
 };

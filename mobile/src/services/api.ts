@@ -52,8 +52,15 @@ api.interceptors.request.use(
     }
 
     const resolvedTenantID = tenantID || process.env.EXPO_PUBLIC_TENANT_ID || null;
-    if (resolvedTenantID && config.headers) {
-      config.headers.set('X-Tenant-ID', String(resolvedTenantID));
+    
+    if (resolvedTenantID && String(resolvedTenantID) !== 'undefined' && config.headers) {
+      config.headers['X-Tenant-ID'] = String(resolvedTenantID);
+      // Failsafe for older Axios versions
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('X-Tenant-ID', String(resolvedTenantID));
+      }
+    } else {
+      console.warn(`[API Interceptor] No valid Tenant ID found for ${config.url}. X-Tenant-ID header not set.`);
     }
 
     // 3. Handle Content-Type for FormData vs JSON

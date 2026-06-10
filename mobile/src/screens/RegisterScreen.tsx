@@ -329,9 +329,12 @@ const RegisterScreen = ({ navigation }: any) => {
     try {
       // Prioritize tenant from env var for fixed organization flow
       const envTenantId = process.env.EXPO_PUBLIC_TENANT_ID;
-      if (envTenantId) {
+      
+      if (envTenantId && envTenantId !== 'undefined') {
         console.log(`[Register] Using environment Tenant ID: ${envTenantId}`);
         await tenantService.selectTenant(envTenantId);
+      } else {
+        console.warn('[Register] EXPO_PUBLIC_TENANT_ID is missing or undefined. Falling back to public tenant discovery.');
       }
 
       // 1. Fetch current tenant details based on ID/UUID in header
@@ -343,12 +346,15 @@ const RegisterScreen = ({ navigation }: any) => {
         setSelectedTenantName(tenant.name);
 
         // 2. Fetch specific data for this tenant (Committees, Plans, Targets)
-        fetchTenantSpecificData();
+        if (step === 4) {
+           fetchTenantSpecificData();
+        }
 
         // 3. Fetch states
         const statesData = await tenantService.getPublicTargets(undefined, 'state');
         setStates(statesData);
       } else {
+        // Fallback: If no tenant is resolved, fetch all public tenants
         fetchTenants();
         fetchStates();
       }
@@ -433,21 +439,24 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   useEffect(() => {
-    if (formData.tenant_id) {
+    if (step === 4) {
       fetchTenantSpecificData();
     }
-  }, [formData.tenant_id]);
+  }, [step]);
 
   const fetchTenants = async () => {
     try {
       const data = await tenantService.getPublicTenants();
       setTenants(data);
-      // Auto-select if only one tenant exists so constituency can be picked immediately
-      if (data.length === 1 && !formData.tenant_id) {
-        await tenantService.selectTenant(String(data[0].id));
-        setFormData(prev => ({ ...prev, tenant_id: data[0].id }));
-        setSelectedTenantName(data[0].name);
-        setCurrentTenant(data[0]);
+      
+      // Auto-select if only one tenant exists OR if none is selected yet as a fallback
+      if (data.length > 0 && !formData.tenant_id) {
+        const primaryTenant = data[0];
+        console.log(`[Register] Auto-selecting tenant: ${primaryTenant.name} (${primaryTenant.uuid})`);
+        await tenantService.selectTenant(primaryTenant.uuid || String(primaryTenant.id));
+        setFormData(prev => ({ ...prev, tenant_id: primaryTenant.id }));
+        setSelectedTenantName(primaryTenant.name);
+        setCurrentTenant(primaryTenant);
       }
     } catch (error) {
       console.error('Failed to fetch tenants:', error);
@@ -464,15 +473,17 @@ const RegisterScreen = ({ navigation }: any) => {
     try {
       const commData = await tenantService.getPublicCommittees();
       setCommittees(commData);
+      
       const planData = await tenantService.getPublicPlans();
-      setPlans(planData.length > 0 ? planData : DEFAULT_PLANS);
+      if (planData && planData.length > 0) {
+        setPlans(planData);
+      }
 
       // Load targets for Step 4 (Constituency / Committee)
       const targetData = await tenantService.getPublicTargets();
       setRegTargets(targetData);
     } catch (error) {
       console.error('Failed to fetch tenant specific data:', error);
-      setPlans(DEFAULT_PLANS);
     }
   };
 
@@ -679,11 +690,16 @@ const RegisterScreen = ({ navigation }: any) => {
       };
     } else if (modalType === 'committee') {
       title = "Select Constituency / Committee";
-      data = regTargets;
+      data = committees.length > 0 ? committees : regTargets;
       onSelect = (item) => {
         handleChange('target_id', item.id);
-        setSelectedCommitteeName(getTargetLabel(item));
+        setSelectedCommitteeName(item.name || getTargetLabel(item));
         setModalSearchQuery('');
+        
+        // If the committee response contains plans, map them to the plans state
+        if (item.plans && Array.isArray(item.plans) && item.plans.length > 0) {
+          setPlans(item.plans);
+        }
       };
     } else if (modalType === 'plan') {
       title = "Select Membership Plan";
