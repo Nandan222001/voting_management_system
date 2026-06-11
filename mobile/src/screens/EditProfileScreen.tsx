@@ -21,6 +21,7 @@ import {
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { planService } from '../services/planService';
+import { paymentService } from '../services/paymentService';
 import { useAuth } from '../context/AuthContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -124,6 +125,94 @@ const SectionHeader = ({ title, step, subtitle }: any) => (
   </View>
 );
 
+// --- RAZORPAY HELPERS ---
+
+type RazorpayCheckoutOptions = {
+  description: string;
+  image: string;
+  currency: string;
+  key: string;
+  amount: number;
+  name: string;
+  order_id: string;
+  prefill: {
+    email: string;
+    contact: string;
+    name: string;
+  };
+  theme: { color: string };
+};
+
+type RazorpayCheckoutResult = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+declare const require: (moduleName: string) => any;
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayCheckoutOptions & {
+      handler: (response: RazorpayCheckoutResult) => void;
+      modal?: { ondismiss?: () => void };
+    }) => { open: () => void };
+  }
+}
+
+const loadRazorpayWebCheckout = () => {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
+  }
+  if (window.Razorpay) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
+    document.body.appendChild(script);
+  });
+};
+
+const openRazorpayCheckout = async (
+  options: RazorpayCheckoutOptions,
+): Promise<RazorpayCheckoutResult> => {
+  if (Platform.OS === 'web') {
+    await loadRazorpayWebCheckout();
+
+    return new Promise((resolve, reject) => {
+      if (!window.Razorpay) {
+        reject(new Error('Razorpay checkout failed to initialize.'));
+        return;
+      }
+
+      const checkout = new window.Razorpay({
+        ...options,
+        handler: resolve,
+        modal: {
+          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
+        },
+      });
+      checkout.open();
+    });
+  }
+
+  const razorpayModule = require('react-native-razorpay');
+  const RazorpayCheckout = razorpayModule.default || razorpayModule;
+  return RazorpayCheckout.open(options);
+};
+
 // --- MAIN COMPONENT ---
 
 const EditProfileScreen = ({ navigation }: any) => {
@@ -201,6 +290,8 @@ const EditProfileScreen = ({ navigation }: any) => {
   // Modals
   const [modalType, setModalType] = useState<string | null>(null);
   const [modalSearchQuery, setModalSearchQuery] = useState('');
+
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     if (modalType) {
@@ -370,6 +461,30 @@ const EditProfileScreen = ({ navigation }: any) => {
         updateData.current_state = formData.state;
         updateData.current_pincode = formData.pincode;
       }
+
+      // --- PLAN CHANGE VALIDATION ---
+      // Check if membership plan has changed compared to current user record
+      const hasPlanChanged = formData.membership_plan_id !== user?.membership_plan_id;
+
+      if (hasPlanChanged) {
+        setLoading(false);
+        
+        const targetPlan = plans.find(p => p.id === formData.membership_plan_id);
+        const planName = targetPlan?.name || "Membership Plan";
+
+        Alert.alert(
+          'Payment Required',
+          `You have selected the "${planName}" plan. Payment is required to update your membership. Would you like to proceed to payment?`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Pay Now', 
+              onPress: () => handlePlanUpdateWithPayment(updateData) 
+            }
+          ]
+        );
+        return;
+      }
       
       // target_id is already in updateData due to PickerField binding
       await updateProfile(updateData);
@@ -388,6 +503,100 @@ const EditProfileScreen = ({ navigation }: any) => {
       showToast.error('Update Failed', errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePlanUpdateWithPayment = async (updateData: any) => {
+    const membershipPlanId = updateData.membership_plan_id;
+    console.log('[Payment Init] Starting flow for plan ID:', membershipPlanId);
+    
+    setIsProcessingPayment(true);
+    try {
+      // 1. First, update the user profile with the selected plan.
+      // We pass the full updateData to ensure all mandatory fields are preserved.
+      console.log('[Payment Init] Step 1: Updating profile with new plan and data');
+      try {
+        await updateProfile(updateData);
+      } catch (profileErr: any) {
+        console.error('[Payment Init] Step 1 Failed (Profile Update):', profileErr);
+        const detail = profileErr.response?.data?.detail || profileErr.response?.data?.message || profileErr.message;
+        throw new Error(`Profile update failed: ${detail}`);
+      }
+
+      const targetPlan = plans.find(p => p.id === membershipPlanId);
+      const planName = targetPlan?.name || "Membership Plan";
+
+      // 2. Create the payment order
+      console.log('[Payment Init] Step 2: Creating membership order');
+      let orderResponse;
+      try {
+        orderResponse = await paymentService.createMembershipOrder(membershipPlanId);
+        console.log('[Payment Init] Order created:', orderResponse.order_id || orderResponse.razorpay_order_id);
+      } catch (orderErr: any) {
+        console.error('[Payment Init] Step 2 Failed (Order Creation):', orderErr);
+        const detail = orderErr.response?.data?.detail || orderErr.response?.data?.message || orderErr.message;
+        throw new Error(`Order creation failed: ${detail}`);
+      }
+
+      const options = {
+        description: `${planName} Activation`,
+        image: 'https://ui-avatars.com/api/?name=Voting+System&background=003d9b&color=fff',
+        currency: orderResponse.currency,
+        key: orderResponse.key_id,
+        amount: orderResponse.amount,
+        name: 'Digital Voting System',
+        order_id: orderResponse.order_id || orderResponse.razorpay_order_id,
+        prefill: {
+          email: user?.email || '',
+          contact: user?.phone || '',
+          name: user?.full_name || ''
+        },
+        theme: { color: COLORS.primary }
+      };
+
+      try {
+        // 3. Open Razorpay
+        console.log('[Payment Init] Step 3: Opening Razorpay Checkout');
+        const data = await openRazorpayCheckout(options);
+        
+        // 4. Verify Payment
+        console.log('[Payment Init] Step 4: Verifying payment');
+        await paymentService.verifyPayment({
+          razorpay_order_id: data.razorpay_order_id || orderResponse.razorpay_order_id,
+          razorpay_payment_id: data.razorpay_payment_id,
+          razorpay_signature: data.razorpay_signature,
+        });
+
+        // 5. Finally, update the rest of the profile data (all fields)
+        console.log('[Payment Init] Step 5: Finalizing profile update');
+        await updateProfile(updateData);
+        
+        showToast.success("Success", "Plan updated and profile saved successfully!");
+        navigation.navigate('ProfileMain');
+      } catch (error: any) {
+        console.error('[Payment Init] Payment or Verification Failed:', error);
+        // Record failure for audit trail on backend
+        try {
+          await paymentService.recordPaymentFailure({
+            membership_plan_id: membershipPlanId,
+            error_message: error.description || error.message || "Payment cancelled or failed",
+            razorpay_order_id: error.metadata?.order_id
+          });
+        } catch (failErr) {
+          console.error('Failed to record failure:', failErr);
+        }
+
+        if (error.code === 2) {
+          showToast.info("Payment Cancelled", "Membership update requires payment.");
+        } else {
+          showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
+        }
+      }
+    } catch (error: any) {
+      console.error('[Payment Init] Top Level Catch:', error);
+      showToast.error("System Error", error.message || "Could not initialize payment flow.");
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
