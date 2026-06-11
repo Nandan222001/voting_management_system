@@ -25,7 +25,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
-import RazorpayCheckout from 'react-native-razorpay';
+import { openRazorpayCheckout, RazorpayCheckoutOptions } from '../utils/payment';
 import DatePicker from 'react-native-date-picker';
 import { showToast } from '../utils/toast';
 import { paymentService, createRegistrationOrder } from '../services/paymentService';
@@ -143,84 +143,6 @@ const getTargetLabel = (target: any) => {
   if (type === 'block') return `${target.name} Block Committee`;
   if (type === 'booth') return `${target.name} Booth Committee`;
   return target.name;
-};
-
-// --- RAZORPAY HELPERS ---
-
-type RazorpayCheckoutOptions = {
-  description: string;
-  image: string;
-  currency: string;
-  key: string;
-  amount: number;
-  name: string;
-  order_id: string;
-  prefill: {
-    email: string;
-    contact: string;
-    name: string;
-  };
-  theme: { color: string };
-};
-
-type RazorpayCheckoutResult = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
-const loadRazorpayWebCheckout = () => {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
-  }
-  if ((window as any).Razorpay) {
-    return Promise.resolve();
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
-    document.body.appendChild(script);
-  });
-};
-
-const openRazorpayCheckout = async (
-  options: RazorpayCheckoutOptions,
-): Promise<RazorpayCheckoutResult> => {
-  if (Platform.OS === 'web') {
-    await loadRazorpayWebCheckout();
-
-    return new Promise((resolve, reject) => {
-      const Razorpay = (window as any).Razorpay;
-      if (!Razorpay) {
-        reject(new Error('Razorpay checkout failed to initialize.'));
-        return;
-      }
-
-      const checkout = new Razorpay({
-        ...options,
-        handler: resolve,
-        modal: {
-          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
-        },
-      });
-      checkout.open();
-    });
-  }
-
-  const razorpayModule = require('react-native-razorpay');
-  const RazorpayCheckout = razorpayModule.default || razorpayModule;
-  return RazorpayCheckout.open(options);
 };
 
 // --- MAIN COMPONENT ---

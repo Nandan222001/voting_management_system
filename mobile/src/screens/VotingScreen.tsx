@@ -21,6 +21,7 @@ import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
 import { planService } from '../services/planService';
+import { openRazorpayCheckout } from '../utils/payment';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
@@ -41,91 +42,7 @@ const COLORS = {
   surfaceContainerHighest: '#e1e2e4',
 };
 
-type RazorpayCheckoutOptions = {
-  description: string;
-  image: string;
-  currency: string;
-  key: string;
-  amount: number;
-  name: string;
-  order_id: string;
-  prefill: {
-    email: string;
-    contact: string;
-    name: string;
-  };
-  theme: { color: string };
-};
-
-type RazorpayCheckoutResult = {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-};
-
 declare const require: (moduleName: string) => any;
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: RazorpayCheckoutOptions & {
-      handler: (response: RazorpayCheckoutResult) => void;
-      modal?: { ondismiss?: () => void };
-    }) => { open: () => void };
-  }
-}
-
-const loadRazorpayWebCheckout = () => {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    return Promise.reject(new Error('Razorpay web checkout is not available in this runtime.'));
-  }
-  if (window.Razorpay) {
-    return Promise.resolve();
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-    if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(), { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Could not load Razorpay checkout.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Could not load Razorpay checkout.'));
-    document.body.appendChild(script);
-  });
-};
-
-const openRazorpayCheckout = async (
-  options: RazorpayCheckoutOptions,
-): Promise<RazorpayCheckoutResult> => {
-  if (Platform.OS === 'web') {
-    await loadRazorpayWebCheckout();
-
-    return new Promise((resolve, reject) => {
-      if (!window.Razorpay) {
-        reject(new Error('Razorpay checkout failed to initialize.'));
-        return;
-      }
-
-      const checkout = new window.Razorpay({
-        ...options,
-        handler: resolve,
-        modal: {
-          ondismiss: () => reject({ code: 2, description: 'Payment cancelled.' }),
-        },
-      });
-      checkout.open();
-    });
-  }
-
-  const razorpayModule = require('react-native-razorpay');
-  const RazorpayCheckout = razorpayModule.default || razorpayModule;
-  return RazorpayCheckout.open(options);
-};
 
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
   const [time, setTime] = useState({ h: 0, m: 0, s: 0 });
@@ -412,6 +329,7 @@ const VotingScreen = ({ navigation, route }: any) => {
 
   const handleRealPayment = async () => {
     const membershipPlanId = selectedPlanId || user?.membership_plan_id;
+    const originalPlanId = user?.membership_plan_id;
     if (!membershipPlanId) {
       showToast.error("Plan Required", "Please select a membership plan first.");
       return;
@@ -419,7 +337,7 @@ const VotingScreen = ({ navigation, route }: any) => {
 
     setIsProcessingPayment(true);
     try {
-      if (membershipPlanId !== user?.membership_plan_id) {
+      if (membershipPlanId !== originalPlanId) {
         await updateProfile({ membership_plan_id: membershipPlanId });
       }
 
@@ -435,7 +353,7 @@ const VotingScreen = ({ navigation, route }: any) => {
         key: orderResponse.key_id,
         amount: orderResponse.amount,
         name: 'Digital Voting System',
-        order_id: orderResponse.order_id || orderResponse.razorpay_order_id,
+        order_id: orderResponse.razorpay_order_id || (orderResponse as any).order_id,
         prefill: {
           email: user?.email || '',
           contact: user?.phone || '',
@@ -455,14 +373,29 @@ const VotingScreen = ({ navigation, route }: any) => {
         showToast.success("Success", "Payment completed successfully! You can now cast your vote.");
         setShowMembershipModal(false);
       } catch (error: any) {
+        // REVERT: If payment failed and we changed the plan ID, change it back
+        if (membershipPlanId !== originalPlanId && originalPlanId !== undefined) {
+          try {
+            await updateProfile({ membership_plan_id: originalPlanId });
+          } catch (revertErr) {
+            console.error('Failed to revert plan ID:', revertErr);
+          }
+        }
+
         await recordPaymentFailure(membershipPlanId, error);
         if (error.code === 2) {
-          showToast.info("Payment Cancelled", "The payment process was dismissed.");
+          showToast.info("Payment Cancelled", "The payment process was dismissed. Your plan was not changed.");
         } else {
           showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
         }
       }
     } catch (error: any) {
+      // REVERT: If initialization failed but we already changed the plan
+      if (membershipPlanId !== originalPlanId && originalPlanId !== undefined) {
+        try {
+          await updateProfile({ membership_plan_id: originalPlanId });
+        } catch (revertErr) { /* ignore */ }
+      }
       showToast.error("System Error", error.response?.data?.detail || "Could not initialize payment gateway.");
     } finally {
       setIsProcessingPayment(false);

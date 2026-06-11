@@ -22,6 +22,7 @@ import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
 import { planService } from '../services/planService';
 import { paymentService } from '../services/paymentService';
+import { openRazorpayCheckout } from '../utils/payment';
 import { useAuth } from '../context/AuthContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -363,12 +364,18 @@ const EditProfileScreen = ({ navigation }: any) => {
 
   const handlePlanUpdateWithPayment = async (updateData: any) => {
     const membershipPlanId = updateData.membership_plan_id;
+    const originalPlanId = user?.membership_plan_id;
     setIsProcessingPayment(true);
+    
     try {
-      await updateProfile(updateData);
+      // 1. Update the profile with the new plan ID so the backend allows order creation
+      await updateProfile({ membership_plan_id: membershipPlanId });
+
+      // 2. Create Order
       const targetPlan = plans.find(p => p.id === membershipPlanId);
       const planName = targetPlan?.name || "Membership Plan";
       const orderResponse = await paymentService.createMembershipOrder(membershipPlanId);
+      
       const options = {
         description: `${planName} Activation`,
         image: 'https://ui-avatars.com/api/?name=Voting+System&background=003d9b&color=fff',
@@ -376,7 +383,7 @@ const EditProfileScreen = ({ navigation }: any) => {
         key: orderResponse.key_id,
         amount: orderResponse.amount,
         name: 'Digital Voting System',
-        order_id: orderResponse.order_id || orderResponse.razorpay_order_id,
+        order_id: orderResponse.razorpay_order_id || (orderResponse as any).order_id,
         prefill: {
           email: user?.email || '',
           contact: user?.phone || '',
@@ -384,29 +391,66 @@ const EditProfileScreen = ({ navigation }: any) => {
         },
         theme: { color: COLORS.primary }
       };
+
       try {
+        // 3. Open Checkout
         const data = await openRazorpayCheckout(options);
+        
+        // 4. Verify Payment
         await paymentService.verifyPayment({
           razorpay_order_id: data.razorpay_order_id || orderResponse.razorpay_order_id,
           razorpay_payment_id: data.razorpay_payment_id,
           razorpay_signature: data.razorpay_signature,
         });
-        await updateProfile(updateData);
+
+        // 5. Update Profile with full data and Payment Details
+        const finalUpdateData = {
+          ...updateData,
+          razorpay_order_id: data.razorpay_order_id || orderResponse.razorpay_order_id,
+          razorpay_payment_id: data.razorpay_payment_id,
+          razorpay_signature: data.razorpay_signature,
+        };
+
+        await updateProfile(finalUpdateData);
         showToast.success("Success", "Plan updated and profile saved successfully!");
         navigation.navigate('ProfileMain');
       } catch (error: any) {
+        console.error('Payment checkout/verification failed:', error);
+        
+        // REVERT: If payment failed, change the plan back to the original
+        if (originalPlanId !== undefined) {
+          try {
+            await updateProfile({ membership_plan_id: originalPlanId });
+          } catch (revertErr) {
+            console.error('Failed to revert plan ID:', revertErr);
+          }
+        }
+
         try {
           await paymentService.recordPaymentFailure({
             membership_plan_id: membershipPlanId,
             error_message: error.description || error.message || "Payment cancelled or failed",
-            razorpay_order_id: error.metadata?.order_id
+            razorpay_order_id: error.metadata?.order_id || orderResponse.razorpay_order_id
           });
         } catch (failErr) { console.error('Failed to record failure:', failErr); }
-        if (error.code === 2) showToast.info("Payment Cancelled", "Membership update requires payment.");
-        else showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
+        
+        if (error.code === 2) {
+          showToast.info("Payment Cancelled", "Membership update requires payment. Your plan was not changed.");
+        } else {
+          showToast.error("Payment Failed", error.description || "The transaction could not be completed.");
+        }
       }
     } catch (error: any) {
-      showToast.error("System Error", error.message || "Could not initialize payment flow.");
+      console.error('Plan update initialization failed:', error);
+      
+      // REVERT: If we couldn't even create the order, ensure the plan is back to original
+      if (originalPlanId !== undefined) {
+        try {
+          await updateProfile({ membership_plan_id: originalPlanId });
+        } catch (revertErr) { /* ignore */ }
+      }
+
+      showToast.error("System Error", error.response?.data?.detail || error.message || "Could not initialize payment flow.");
     } finally {
       setIsProcessingPayment(false);
     }
