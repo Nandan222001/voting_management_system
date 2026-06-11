@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -21,6 +22,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { mediaService } from '../services/mediaService';
+import { hs, vs, ms } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -42,7 +44,7 @@ const ProfileSection = ({ title, icon, children }: any) => (
   <View style={styles.sectionContainer}>
     <View style={styles.sectionHeader}>
       <View style={styles.sectionIconBox}>
-        <MaterialIcons name={icon} size={20} color={COLORS.primary} />
+        <MaterialIcons name={icon} size={ms(20)} color={COLORS.primary} />
       </View>
       <Text style={styles.sectionTitle}>{title}</Text>
     </View>
@@ -55,7 +57,7 @@ const ProfileSection = ({ title, icon, children }: any) => (
 const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
   <View style={[styles.detailRow, isLast && { borderBottomWidth: 0 }]}>
     <View style={styles.detailIconBg}>
-      <MaterialIcons name={icon} size={18} color={color || COLORS.onSurfaceVariant} />
+      <MaterialIcons name={icon} size={ms(18)} color={color || COLORS.onSurfaceVariant} />
     </View>
     <View style={styles.detailTextContent}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -65,11 +67,22 @@ const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
 );
 
 const ProfileScreen = ({ navigation }: any) => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, updateProfile } = useAuth();
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const isCandidate = user?.is_candidate;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await updateProfile({}); // Calling updateProfile with empty object forces a refresh from token/backend
+    } catch (e) {
+      console.error("Refresh failed", e);
+    }
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     if (user?.membership_plan?.name) {
@@ -92,7 +105,7 @@ const ProfileScreen = ({ navigation }: any) => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !refreshing) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -106,7 +119,10 @@ const ProfileScreen = ({ navigation }: any) => {
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: vs(40) }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
       >
         {/* Cinematic Header */}
         <View style={styles.heroContainer}>
@@ -128,11 +144,11 @@ const ProfileScreen = ({ navigation }: any) => {
                   />
                 ) : (
                   <View style={[styles.avatar, styles.defaultAvatar]}>
-                    <Ionicons name="person" size={60} color="rgba(255,255,255,0.6)" />
+                    <Ionicons name="person" size={ms(60)} color="rgba(255,255,255,0.6)" />
                   </View>
                 )}
                 <View style={styles.verifiedBadge}>
-                  <MaterialIcons name="verified" size={20} color="#fff" />
+                  <MaterialIcons name="verified" size={ms(20)} color="#fff" />
                 </View>
               </View>
               
@@ -153,7 +169,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
                   style={styles.editProfileGradient}
                 >
-                  <MaterialIcons name="edit" size={16} color="#fff" />
+                  <MaterialIcons name="edit" size={ms(16)} color="#fff" />
                   <Text style={styles.editProfileText}>Edit Profile</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -170,7 +186,7 @@ const ProfileScreen = ({ navigation }: any) => {
             >
               <View style={styles.membershipHeader}>
                 <View style={styles.membershipIconBg}>
-                  <FontAwesome5 name="crown" size={20} color={COLORS.accent} />
+                  <FontAwesome5 name="crown" size={ms(20)} color={COLORS.accent} />
                 </View>
                 <View style={styles.membershipTitleGroup}>
                   <Text style={styles.membershipLabel}>MEMBERSHIP TIER</Text>
@@ -222,9 +238,9 @@ const ProfileScreen = ({ navigation }: any) => {
                 style={styles.supportAction}
                 onPress={() => navigation.navigate('CreateEvent')}
               >
-                <MaterialIcons name="add-circle-outline" size={22} color={COLORS.primary} />
+                <MaterialIcons name="add-circle-outline" size={ms(22)} color={COLORS.primary} />
                 <Text style={styles.supportActionText}>Create New Event</Text>
-                <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+                <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
               </TouchableOpacity>
             )}
             
@@ -232,9 +248,9 @@ const ProfileScreen = ({ navigation }: any) => {
               style={styles.supportAction}
               onPress={() => navigation.navigate('EventList', { mode: 'my' })}
             >
-              <MaterialIcons name="event-note" size={22} color={COLORS.primary} />
+              <MaterialIcons name="event-note" size={ms(22)} color={COLORS.primary} />
               <Text style={styles.supportActionText}>My Scheduled Events</Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
             </TouchableOpacity>
           </ProfileSection>
 
@@ -248,7 +264,7 @@ const ProfileScreen = ({ navigation }: any) => {
               colors={['#fff', '#fff']}
               style={styles.logoutGradient}
             >
-              <MaterialIcons name="logout" size={20} color={COLORS.error} />
+              <MaterialIcons name="logout" size={ms(20)} color={COLORS.error} />
               <Text style={styles.logoutButtonText}>Sign Out</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -277,7 +293,7 @@ const ProfileScreen = ({ navigation }: any) => {
           <View style={styles.modalPopup}>
             <View style={styles.modalHandle} />
             <View style={styles.modalIconBg}>
-              <MaterialIcons name="logout" size={32} color={COLORS.error} />
+              <MaterialIcons name="logout" size={ms(32)} color={COLORS.error} />
             </View>
             <Text style={styles.modalTitle}>Sign Out</Text>
             <Text style={styles.modalMessage}>Are you sure you want to exit your secure voting session?</Text>
@@ -314,12 +330,11 @@ const styles = StyleSheet.create({
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   content: { flex: 1 },
 
-  // Hero Header Styles
   heroContainer: {
     width: '100%',
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    borderBottomLeftRadius: ms(40),
+    borderBottomRightRadius: ms(40),
     overflow: 'hidden',
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
@@ -327,28 +342,28 @@ const styles = StyleSheet.create({
     })
   },
   heroGradient: {
-    paddingTop: 40,
-    paddingBottom: 50,
-    paddingHorizontal: 24,
+    paddingTop: vs(40),
+    paddingBottom: vs(50),
+    paddingHorizontal: hs(24),
     alignItems: 'center',
     position: 'relative',
   },
   heroDecorativeCircle1: {
     position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    top: vs(-50),
+    right: hs(-50),
+    width: ms(200),
+    height: ms(200),
+    borderRadius: ms(100),
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   heroDecorativeCircle2: {
     position: 'absolute',
-    bottom: -30,
-    left: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    bottom: vs(-30),
+    left: hs(-40),
+    width: ms(120),
+    height: ms(120),
+    borderRadius: ms(60),
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
   heroContent: {
@@ -357,12 +372,12 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 35,
+    width: ms(110),
+    height: ms(110),
+    borderRadius: ms(35),
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.2)',
   },
@@ -373,55 +388,55 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     position: 'absolute',
-    bottom: -5,
-    right: -5,
+    bottom: vs(-5),
+    right: hs(-5),
     backgroundColor: COLORS.success,
-    width: 32,
-    height: 32,
-    borderRadius: 12,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(12),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: COLORS.primary,
   },
   userName: {
-    fontSize: 26,
+    fontSize: ms(26),
     fontWeight: '900',
     color: '#fff',
     letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: vs(8),
   },
   userMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
+    gap: hs(10),
+    marginBottom: vs(24),
   },
   metaBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
   },
   metaBadgeText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     letterSpacing: 1,
   },
   dotSeparator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: ms(4),
+    height: ms(4),
+    borderRadius: ms(2),
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
   },
   editProfileBtn: {
-    borderRadius: 16,
+    borderRadius: ms(16),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
@@ -429,28 +444,26 @@ const styles = StyleSheet.create({
   editProfileGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    gap: hs(8),
+    paddingHorizontal: hs(20),
+    paddingVertical: vs(12),
   },
   editProfileText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: ms(14),
     fontWeight: '800',
   },
 
-  // Body Layout
   bodyWrapper: {
-    paddingHorizontal: 20,
-    marginTop: -25,
+    paddingHorizontal: hs(20),
+    marginTop: vs(-25),
     zIndex: 2,
   },
   
-  // Membership Card Styles
   membershipCard: {
-    borderRadius: 28,
+    borderRadius: ms(28),
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: vs(24),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
@@ -459,17 +472,17 @@ const styles = StyleSheet.create({
     })
   },
   membershipGradient: {
-    padding: 24,
+    padding: hs(24),
   },
   membershipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: hs(16),
   },
   membershipIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: ms(48),
+    height: ms(48),
+    borderRadius: ms(16),
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -482,80 +495,79 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   membershipLabel: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     letterSpacing: 1,
   },
   membershipName: {
-    fontSize: 20,
+    fontSize: ms(20),
     fontWeight: '900',
     color: COLORS.onSurface,
-    marginTop: 2,
+    marginTop: vs(2),
   },
   statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: hs(12),
+    paddingVertical: vs(6),
+    borderRadius: ms(10),
   },
   statusPillText: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   membershipDivider: {
     height: 1,
     backgroundColor: COLORS.outlineVariant,
-    marginVertical: 20,
+    marginVertical: vs(20),
     opacity: 0.5,
   },
   membershipMetaGrid: {
     flexDirection: 'row',
-    gap: 24,
+    gap: hs(24),
   },
   membershipMetaItem: {
     flex: 1,
   },
   metaLabel: {
-    fontSize: 9,
+    fontSize: ms(9),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: vs(4),
   },
   metaValue: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
     color: COLORS.onSurface,
   },
 
-  // Section Styles
   sectionContainer: {
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: ms(24),
+    padding: hs(20),
+    marginBottom: vs(20),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    gap: hs(12),
+    marginBottom: vs(20),
   },
   sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(12),
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '800',
     color: COLORS.onSurface,
     letterSpacing: -0.2,
@@ -566,15 +578,15 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 14,
+    gap: hs(16),
+    paddingVertical: vs(14),
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   detailIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(10),
     backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
@@ -585,38 +597,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '700',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: vs(2),
   },
   detailValue: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '700',
     color: COLORS.onSurface,
   },
 
-  // Support Styles
   supportAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    padding: 16,
-    borderRadius: 18,
+    gap: hs(16),
+    padding: hs(16),
+    borderRadius: ms(18),
   },
   supportActionText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '700',
     color: COLORS.onSurface,
   },
 
-  // Logout Button Styles
   logoutButton: {
-    borderRadius: 24,
+    borderRadius: ms(24),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.error + '40',
@@ -629,31 +639,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 18,
+    gap: hs(12),
+    paddingVertical: vs(18),
   },
   logoutButtonText: {
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '800',
     color: COLORS.error,
     letterSpacing: 0.2,
   },
 
-  // System Footer
   systemFooter: {
-    marginTop: 32,
+    marginTop: vs(32),
     alignItems: 'center',
-    gap: 4,
+    gap: vs(4),
   },
   systemFooterText: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.3,
     letterSpacing: 1,
   },
 
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
@@ -663,10 +671,10 @@ const styles = StyleSheet.create({
   modalPopup: {
     width: '100%',
     backgroundColor: '#fff',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    padding: 32,
-    paddingTop: 8,
+    borderTopLeftRadius: ms(32),
+    borderTopRightRadius: ms(32),
+    padding: hs(32),
+    paddingTop: vs(8),
     alignItems: 'center',
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
@@ -674,62 +682,62 @@ const styles = StyleSheet.create({
     })
   },
   modalHandle: {
-    width: 40,
-    height: 5,
+    width: hs(40),
+    height: vs(5),
     backgroundColor: '#e2e8f0',
-    borderRadius: 3,
+    borderRadius: ms(3),
     alignSelf: 'center',
-    marginVertical: 12,
-    marginBottom: 24,
+    marginVertical: vs(12),
+    marginBottom: vs(24),
   },
   modalIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(24),
     backgroundColor: COLORS.error + '10',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: ms(24),
     fontWeight: '900',
     color: COLORS.onSurface,
-    marginBottom: 12,
+    marginBottom: vs(12),
     letterSpacing: -0.5,
   },
   modalMessage: {
-    fontSize: 16,
+    fontSize: ms(16),
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
+    lineHeight: vs(24),
+    marginBottom: vs(32),
     fontWeight: '500',
-    paddingHorizontal: 10,
+    paddingHorizontal: hs(10),
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: hs(12),
     width: '100%',
-    marginBottom: 10,
+    marginBottom: vs(10),
   },
   cancelBtn: {
     flex: 1,
-    height: 56,
-    borderRadius: 16,
+    height: vs(56),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
   },
   cancelBtnText: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
   },
   confirmBtn: {
     flex: 1,
-    height: 56,
-    borderRadius: 16,
+    height: vs(56),
+    borderRadius: ms(16),
     overflow: 'hidden',
   },
   confirmBtnGradient: {
@@ -738,7 +746,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmBtnText: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
     color: '#fff',
   },

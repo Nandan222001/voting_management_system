@@ -15,6 +15,7 @@ import { eventService, EventCreate } from '../services/eventService';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import DatePicker from 'react-native-date-picker';
+import { hs, vs, ms } from '../utils/responsive';
 
 const COLORS = {
   primary: '#003d9b',
@@ -90,7 +91,7 @@ const CreateEventScreen = ({ navigation }: any) => {
           <Text style={styles.label}>Event Date</Text>
           <TouchableOpacity style={styles.input} onPress={() => setDateOpen(true)}>
             <Text style={styles.inputText}>{eventDate.toDateString()}</Text>
-            <MaterialIcons name="event" size={20} color={COLORS.onSurfaceVariant} />
+            <MaterialIcons name="event" size={ms(20)} color={COLORS.onSurfaceVariant} />
           </TouchableOpacity>
           <DatePicker
             modal
@@ -109,7 +110,7 @@ const CreateEventScreen = ({ navigation }: any) => {
             <Text style={styles.inputText}>
               {eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
-            <MaterialIcons name="access-time" size={20} color={COLORS.onSurfaceVariant} />
+            <MaterialIcons name="access-time" size={ms(20)} color={COLORS.onSurfaceVariant} />
           </TouchableOpacity>
           <DatePicker
             modal
@@ -141,7 +142,7 @@ const CreateEventScreen = ({ navigation }: any) => {
               >
                 <MaterialIcons
                   name={type === 'Online' ? 'videocam' : 'groups'}
-                  size={18}
+                  size={ms(18)}
                   color={communicationType === type ? '#fff' : COLORS.onSurfaceVariant}
                 />
                 <Text style={[styles.commButtonText, communicationType === type && styles.commButtonTextActive]}>
@@ -180,64 +181,64 @@ const CreateEventScreen = ({ navigation }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { flex: 1, padding: 20 },
-  form: { gap: 16, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface, marginBottom: -8 },
+  content: { flex: 1, padding: hs(20) },
+  form: { gap: vs(16), paddingBottom: vs(40) },
+  label: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurface, marginBottom: vs(-8) },
   input: {
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.outline,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    borderRadius: ms(12),
+    padding: hs(16),
+    fontSize: ms(16),
     color: COLORS.onSurface,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  inputText: { fontSize: 16, color: COLORS.onSurface },
-  textArea: { height: 100, textAlignVertical: 'top' },
-  typeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
+  inputText: { fontSize: ms(16), color: COLORS.onSurface },
+  textArea: { height: vs(100), textAlignVertical: 'top' },
+  typeContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: hs(10), marginTop: vs(10) },
   typeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(10),
+    borderRadius: ms(20),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,
   },
   typeButtonActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  typeButtonText: { fontSize: 14, fontWeight: '600', color: COLORS.onSurfaceVariant },
+  typeButtonText: { fontSize: ms(14), fontWeight: '600', color: COLORS.onSurfaceVariant },
   typeButtonTextActive: { color: '#fff' },
-  commContainer: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  commContainer: { flexDirection: 'row', gap: hs(12), marginTop: vs(10) },
   commButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
+    gap: hs(8),
+    paddingVertical: vs(14),
+    borderRadius: ms(12),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,
   },
   commButtonActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  commButtonText: { fontSize: 14, fontWeight: '700', color: COLORS.onSurfaceVariant },
+  commButtonText: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurfaceVariant },
   commButtonTextActive: { color: '#fff' },
   submitButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 18,
-    borderRadius: 16,
+    paddingVertical: vs(18),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: vs(20),
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
       android: { elevation: 4 },
     }),
   },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  submitButtonText: { color: '#fff', fontSize: ms(16), fontWeight: '800' },
 });
 
 export default CreateEventScreen;

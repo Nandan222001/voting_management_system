@@ -12,9 +12,11 @@ import {
   ActivityIndicator,
   Alert,
   TextInput,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
@@ -22,6 +24,7 @@ import { planService } from '../services/planService';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
+import { hs, vs, ms, hp, wp } from '../utils/responsive';
 
 const COLORS = {
   primary: '#003d9b',
@@ -189,6 +192,7 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [existingVote, setExistingVote] = useState<any>(null);
   const [myNomination, setMyNomination] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -216,7 +220,6 @@ const VotingScreen = ({ navigation, route }: any) => {
   };
 
   useEffect(() => {
-    // We allow setting to null to reset to the election list
     setSelectedElection(routeElection);
   }, [routeElection]);
 
@@ -228,20 +231,27 @@ const VotingScreen = ({ navigation, route }: any) => {
     }
   }, [selectedElection, currentPage]);
 
-  const fetchElections = async () => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (selectedElection) {
+      await fetchElectionDetails(selectedElection.id, true);
+    } else {
+      await fetchElections(true);
+    }
+    setRefreshing(false);
+  };
+
+  const fetchElections = async (silent = false) => {
     try {
-      setLoading(true);
-      // Fetch all published elections (up to 100) to allow accurate frontend filtering/pagination
+      if (!silent) setLoading(true);
       const response = await electionService.getElections(false, 1, 100, 'active');
-      // Handle both cases: direct array or standardized envelope with .data
       const electionList = Array.isArray(response) ? response : (response?.data || []);
       setElections(electionList);
-      // Total items and pages will be calculated by the filtered list
     } catch (error) {
       console.error("Failed to load elections", error);
       showToast.error("Error", "Failed to load elections.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -276,14 +286,13 @@ const VotingScreen = ({ navigation, route }: any) => {
   const currentTotalItems = filteredElections.length;
   const currentTotalPages = Math.ceil(currentTotalItems / itemsPerPage);
 
-  // Reset page when filter or search changes
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedFilter, searchQuery]);
 
-  const fetchElectionDetails = async (electionId: number) => {
+  const fetchElectionDetails = async (electionId: number, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [cands, voteResponse, nominationResponse] = await Promise.all([
         electionService.getCandidates(electionId),
         electionService.getMyVote(electionId).catch(() => null),
@@ -292,7 +301,6 @@ const VotingScreen = ({ navigation, route }: any) => {
       setCandidates(cands);
       setMyNomination(nominationResponse);
       
-      // voteResponse is { has_voted: boolean, vote: any }
       if (voteResponse && voteResponse.has_voted) {
         setExistingVote(voteResponse.vote);
         setSelectedCandidateId(voteResponse.vote.candidate_id);
@@ -305,7 +313,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       showToast.error("Error", "Failed to load election details.");
       setMyNomination(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -411,8 +419,6 @@ const VotingScreen = ({ navigation, route }: any) => {
 
     setIsProcessingPayment(true);
     try {
-      // If the selected plan is different from what's on the user record, update the profile first.
-      // This is required by the backend to create an order for that specific plan.
       if (membershipPlanId !== user?.membership_plan_id) {
         await updateProfile({ membership_plan_id: membershipPlanId });
       }
@@ -449,10 +455,7 @@ const VotingScreen = ({ navigation, route }: any) => {
         showToast.success("Success", "Payment completed successfully! You can now cast your vote.");
         setShowMembershipModal(false);
       } catch (error: any) {
-        // Record failure to backend for audit trail
         await recordPaymentFailure(membershipPlanId, error);
-
-        // Razorpay error (e.g. payment cancelled)
         if (error.code === 2) {
           showToast.info("Payment Cancelled", "The payment process was dismissed.");
         } else {
@@ -475,7 +478,6 @@ const VotingScreen = ({ navigation, route }: any) => {
       if (!eligibility.membership_selected || !eligibility.payment_completed) {
         setSubmitting(false);
         setShowConfirmModal(false);
-        // Show modal first, then fetch plans inside it
         setShowMembershipModal(true);
         fetchPlans();
         setMembershipModalType(eligibility.membership_selected ? 'pay' : 'select');
@@ -485,7 +487,7 @@ const VotingScreen = ({ navigation, route }: any) => {
       await electionService.castVote(selectedElection.id, selectedCandidateId);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-      fetchElectionDetails(selectedElection.id); // Refresh vote status
+      fetchElectionDetails(selectedElection.id);
     } catch (error: any) {
       showToast.error("Voting Failed", error.response?.data?.message || error.response?.data?.detail || "An error occurred.");
     } finally {
@@ -505,7 +507,6 @@ const VotingScreen = ({ navigation, route }: any) => {
     }
   };
 
-  // --- Real-time Election Status Logic ---
   const calculateElectionStatus = () => {
     if (!selectedElection) return null;
     
@@ -514,7 +515,6 @@ const VotingScreen = ({ navigation, route }: any) => {
     const end = new Date(selectedElection.end_date).getTime();
     const dbStatus = selectedElection.status;
 
-    // 1. Cancelled State
     if (dbStatus === 'cancelled') {
       return {
         label: 'CANCELLED',
@@ -527,7 +527,6 @@ const VotingScreen = ({ navigation, route }: any) => {
       };
     }
 
-    // 2. Closed State
     if (dbStatus === 'closed' || now >= end) {
       return {
         label: 'CLOSED',
@@ -540,7 +539,6 @@ const VotingScreen = ({ navigation, route }: any) => {
       };
     }
 
-    // 3. Scheduled / Upcoming State
     if (dbStatus === 'draft' || now < start) {
       return {
         label: 'SCHEDULED',
@@ -553,7 +551,6 @@ const VotingScreen = ({ navigation, route }: any) => {
       };
     }
 
-    // 4. Active State
     if (dbStatus === 'active' && now >= start && now < end) {
       return {
         label: 'ACTIVE',
@@ -581,7 +578,7 @@ const VotingScreen = ({ navigation, route }: any) => {
   };
   const nominationStatusMeta = getNominationStatusMeta(myNomination?.status);
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -589,7 +586,6 @@ const VotingScreen = ({ navigation, route }: any) => {
     );
   }
 
-  // --- MAIN RENDER ---
   return (
     <View style={styles.container}>
       <Header 
@@ -599,12 +595,14 @@ const VotingScreen = ({ navigation, route }: any) => {
       />
       <ScrollView 
         style={styles.scrollContent} 
-        contentContainerStyle={{ paddingBottom: selectedElection ? 100 : 20, paddingTop: 0 }} 
+        contentContainerStyle={{ paddingBottom: selectedElection ? vs(100) : vs(20), paddingTop: 0 }} 
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
       >
         {!selectedElection ? (
           <>
-            {/* Premium Hero Header */}
             <LinearGradient
               colors={['#003d9b', '#4f46e5']}
               start={{ x: 0, y: 0 }}
@@ -613,16 +611,15 @@ const VotingScreen = ({ navigation, route }: any) => {
             >
               <View style={styles.heroContent}>
                 <View style={styles.heroBadge}>
-                    <MaterialIcons name="security" size={12} color="#fff" />
+                    <MaterialIcons name="security" size={ms(12)} color="#fff" />
                     <Text style={styles.heroBadgeText}>SECURE PORTAL</Text>
                 </View>
                 <Text style={styles.heroTitlePre}>Secure</Text>
                 <Text style={styles.heroTitleMain}>Election Portal</Text>
                 <Text style={styles.heroSub}>Access live and upcoming voting sessions for your administrative district.</Text>
                 
-                {/* Modern Integrated Search */}
                 <View style={styles.heroSearchWrapper}>
-                    <MaterialIcons name="search" size={20} color="rgba(255,255,255,0.7)" style={{ marginRight: 8 }} />
+                    <MaterialIcons name="search" size={ms(20)} color="rgba(255,255,255,0.7)" style={{ marginRight: hs(8) }} />
                     <TextInput
                       style={styles.heroSearchInput}
                       placeholder="Search sessions..."
@@ -633,15 +630,14 @@ const VotingScreen = ({ navigation, route }: any) => {
                     />
                     {searchQuery.length > 0 && (
                       <TouchableOpacity onPress={() => setSearchQuery('')}>
-                        <MaterialIcons name="close" size={18} color="#fff" />
+                        <MaterialIcons name="close" size={ms(18)} color="#fff" />
                       </TouchableOpacity>
                     )}
                 </View>
               </View>
             </LinearGradient>
 
-            <View style={{ paddingHorizontal: 16 }}>
-              {/* Premium Status Filter Tabs */}
+            <View style={{ paddingHorizontal: hs(16) }}>
               <View style={styles.premiumFilterContainer}>
                 <TouchableOpacity 
                   activeOpacity={0.8}
@@ -650,7 +646,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                 >
                   <MaterialIcons 
                     name="sensors" 
-                    size={20} 
+                    size={ms(20)} 
                     color={selectedFilter === 'active' ? '#fff' : COLORS.primary} 
                   />
                   <Text style={[styles.premiumFilterTabText, selectedFilter === 'active' && styles.premiumFilterTabTextActive]}>Active</Text>
@@ -663,7 +659,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                 >
                   <MaterialIcons 
                     name="event" 
-                    size={20} 
+                    size={ms(20)} 
                     color={selectedFilter === 'upcoming' ? '#fff' : COLORS.onSurfaceVariant} 
                   />
                   <Text style={[styles.premiumFilterTabText, selectedFilter === 'upcoming' && styles.premiumFilterTabTextActive]}>Upcoming</Text>
@@ -673,7 +669,7 @@ const VotingScreen = ({ navigation, route }: any) => {
               <View style={styles.modernListContainer}>
                 {paginatedElections.length === 0 ? (
                   <View style={styles.emptyCandidatesBox}>
-                    <MaterialIcons name="how-to-vote" size={48} color={COLORS.outlineVariant} />
+                    <MaterialIcons name="how-to-vote" size={ms(48)} color={COLORS.outlineVariant} />
                     <Text style={styles.emptyCandidatesText}>
                       {searchQuery ? "No matching elections found." : `No ${selectedFilter} elections available.`}
                     </Text>
@@ -691,7 +687,6 @@ const VotingScreen = ({ navigation, route }: any) => {
                         activeOpacity={0.9}
                       >
                         <View style={styles.premiumElecLayout}>
-                           {/* Left Column: Date & Status */}
                            <View style={styles.premiumElecLeft}>
                               <View style={[styles.premiumDateBlock, { backgroundColor: accentColor + '10' }]}>
                                  <Text style={[styles.premiumDateMonth, { color: accentColor }]}>
@@ -701,7 +696,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                                     {new Date(elec.start_date).getDate()}
                                  </Text>
                               </View>
-                              <View style={[styles.minimalStatusBadge, { backgroundColor: accentColor + '15', marginTop: 12 }]}>
+                              <View style={[styles.minimalStatusBadge, { backgroundColor: accentColor + '15', marginTop: vs(12) }]}>
                                 <View style={[styles.liveDotSmall, { backgroundColor: accentColor }]} />
                                 <Text style={[styles.statusBadgeTextSmall, { color: accentColor }]}>
                                   {isLive ? 'LIVE' : 'UPCOMING'}
@@ -709,12 +704,11 @@ const VotingScreen = ({ navigation, route }: any) => {
                               </View>
                            </View>
 
-                           {/* Center Column: Detailed Info */}
                            <View style={styles.premiumElecCenter}>
                               <Text style={styles.premiumElecTitle} numberOfLines={1}>{elec.title}</Text>
                               
                               <View style={styles.premiumDetailRow}>
-                                 <MaterialIcons name="location-on" size={14} color={COLORS.onSurfaceVariant} opacity={0.6} />
+                                 <MaterialIcons name="location-on" size={ms(14)} color={COLORS.onSurfaceVariant} opacity={0.6} />
                                  <Text style={styles.premiumDetailText} numberOfLines={1}>
                                     {elec.target_district || 'Regional'} • {elec.committee_level?.toUpperCase() || 'PRECINCT'}
                                  </Text>
@@ -728,12 +722,12 @@ const VotingScreen = ({ navigation, route }: any) => {
 
                               <View style={styles.premiumFooterRow}>
                                  <View style={styles.premiumStatItem}>
-                                    <MaterialIcons name="people-outline" size={14} color={COLORS.primary} />
+                                    <MaterialIcons name="people-outline" size={ms(14)} color={COLORS.primary} />
                                     <Text style={styles.premiumStatText}>{elec.candidate_count || 0} Candidates</Text>
                                  </View>
                                  <View style={styles.premiumStatDivider} />
                                  <View style={styles.premiumStatItem}>
-                                    <MaterialIcons name="schedule" size={14} color={COLORS.primary} />
+                                    <MaterialIcons name="schedule" size={ms(14)} color={COLORS.primary} />
                                     <Text style={styles.premiumStatText}>
                                        {new Date(elec.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
@@ -741,10 +735,9 @@ const VotingScreen = ({ navigation, route }: any) => {
                               </View>
                            </View>
 
-                           {/* Right Column: Action */}
                            <View style={styles.premiumElecRight}>
                               <View style={[styles.premiumArrowBtn, { backgroundColor: accentColor + '15' }]}>
-                                 <MaterialIcons name="chevron-right" size={20} color={accentColor} />
+                                 <MaterialIcons name="chevron-right" size={ms(20)} color={accentColor} />
                               </View>
                            </View>
                         </View>
@@ -755,7 +748,6 @@ const VotingScreen = ({ navigation, route }: any) => {
               </View>
             </View>
 
-            {/* Pagination Controls */}
             {currentTotalPages > 1 && (
               <View style={styles.paginationWrapper}>
                 <View style={styles.resultsInfo}>
@@ -770,7 +762,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                     onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                   >
-                    <MaterialIcons name="chevron-left" size={24} color={currentPage === 1 ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+                    <MaterialIcons name="chevron-left" size={ms(24)} color={currentPage === 1 ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
                   </TouchableOpacity>
                   
                   <View style={styles.pageNumbersRow}>
@@ -805,7 +797,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                     onPress={() => setCurrentPage(prev => Math.min(currentTotalPages, prev + 1))}
                     disabled={currentPage === currentTotalPages}
                   >
-                    <MaterialIcons name="chevron-right" size={24} color={currentPage === currentTotalPages ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
+                    <MaterialIcons name="chevron-right" size={ms(24)} color={currentPage === currentTotalPages ? COLORS.onSurfaceVariant + '40' : COLORS.primary} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -813,7 +805,6 @@ const VotingScreen = ({ navigation, route }: any) => {
           </>
         ) : (
           <>
-            {/* Premium Detail Hero Section */}
             <LinearGradient
               colors={['#003d9b', '#4f46e5']}
               start={{ x: 0, y: 0 }}
@@ -822,7 +813,7 @@ const VotingScreen = ({ navigation, route }: any) => {
             >
               <View style={styles.heroContent}>
                 <View style={[styles.heroBadge, statusConfig && { backgroundColor: statusConfig.bg, borderColor: 'transparent' }]}>
-                    <MaterialIcons name={statusConfig?.icon || "event-upcoming"} size={12} color={statusConfig?.color || "#fff"} />
+                    <MaterialIcons name={statusConfig?.icon || "event-upcoming"} size={ms(12)} color={statusConfig?.color || "#fff"} />
                     <Text style={[styles.heroBadgeText, statusConfig && { color: statusConfig.color }]}>
                       {statusConfig?.label || 'SCHEDULED'}
                     </Text>
@@ -839,7 +830,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                       <CountdownTimer endDate={statusConfig.timerDate} />
                     ) : (
                       <View style={styles.premiumTimerContainer}>
-                         <Text style={[styles.timerValueText, { fontSize: 24, color: 'rgba(255,255,255,0.4)' }]}>-- : -- : --</Text>
+                         <Text style={[styles.timerValueText, { fontSize: ms(24), color: 'rgba(255,255,255,0.4)' }]}>-- : -- : --</Text>
                       </View>
                     )}
                   </View>
@@ -855,10 +846,9 @@ const VotingScreen = ({ navigation, route }: any) => {
             </LinearGradient>
 
             <View style={styles.detailBodyContainer}>
-              {/* Election Info Card */}
               <View style={styles.infoCard}>
                 <View style={styles.infoCardRow}>
-                  <MaterialIcons name="location-on" size={18} color={COLORS.primary} />
+                  <MaterialIcons name="location-on" size={ms(18)} color={COLORS.primary} />
                   <Text style={styles.infoCardText}>{selectedElection.target_district || 'Regional Jurisdiction'}</Text>
                 </View>
                 {selectedElection.description && (
@@ -887,7 +877,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                       end={{ x: 1, y: 0 }}
                       style={styles.nominationActionGradient}
                     >
-                      <MaterialIcons name="assignment-ind" size={22} color="#fff" />
+                      <MaterialIcons name="assignment-ind" size={ms(22)} color="#fff" />
                       <View style={styles.nominationActionTextWrap}>
                         <Text style={styles.nominationActionTitle}>
                           {myNomination ? 'Nomination Submitted' : 'Nominate Yourself'}
@@ -896,7 +886,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                           {myNomination ? 'Track your application status below' : 'Apply to be a candidate in this session'}
                         </Text>
                       </View>
-                      <MaterialIcons name={myNomination ? 'done' : 'chevron-right'} size={20} color="rgba(255,255,255,0.5)" style={{ marginLeft: 'auto' }} />
+                      <MaterialIcons name={myNomination ? 'done' : 'chevron-right'} size={ms(20)} color="rgba(255,255,255,0.5)" style={{ marginLeft: 'auto' }} />
                     </LinearGradient>
                   </TouchableOpacity>
 
@@ -904,7 +894,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                     <View style={styles.nominationStatusCard}>
                       <View style={styles.nominationStatusHeader}>
                         <View style={[styles.nominationStatusIcon, { backgroundColor: nominationStatusMeta.bg }]}>
-                          <MaterialIcons name={nominationStatusMeta.icon} size={20} color={nominationStatusMeta.color} />
+                          <MaterialIcons name={nominationStatusMeta.icon} size={ms(20)} color={nominationStatusMeta.color} />
                         </View>
                         <View style={styles.nominationStatusContent}>
                           <Text style={styles.nominationStatusEyebrow}>YOUR NOMINATION</Text>
@@ -941,7 +931,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                             <ActivityIndicator size="small" color="#b91c1c" />
                           ) : (
                             <>
-                              <MaterialIcons name="delete-outline" size={18} color="#b91c1c" />
+                              <MaterialIcons name="delete-outline" size={ms(18)} color="#b91c1c" />
                               <Text style={styles.withdrawNominationText}>Withdraw Nomination</Text>
                             </>
                           )}
@@ -959,11 +949,10 @@ const VotingScreen = ({ navigation, route }: any) => {
                 </View>
               </View>
 
-              {/* Candidate List (Single Column) */}
               <View style={styles.premiumCandidatesList}>
                 {candidates.length === 0 ? (
                   <View style={styles.emptyCandidatesBox}>
-                    <MaterialIcons name="person-off" size={32} color={COLORS.outline} />
+                    <MaterialIcons name="person-off" size={ms(32)} color={COLORS.outline} />
                     <Text style={styles.emptyCandidatesText}>No candidates registered yet.</Text>
                   </View>
                 ) : (
@@ -998,7 +987,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                               />
                               {hasVoted && (
                                 <View style={styles.rowVotedBadge}>
-                                  <MaterialIcons name="verified" size={14} color="#fff" />
+                                  <MaterialIcons name="verified" size={ms(14)} color="#fff" />
                                 </View>
                               )}
                             </View>
@@ -1028,7 +1017,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                                 ]}>
                                   {isSelected ? 'SELECTED' : 'VOTE'}
                                 </Text>
-                                {isSelected && <MaterialIcons name="check-circle" size={16} color="#fff" />}
+                                {isSelected && <MaterialIcons name="check-circle" size={ms(16)} color="#fff" />}
                               </View>
                             ) : (
                               <View style={[styles.rowStatusBadge, hasVoted && styles.rowStatusBadgeVoted]}>
@@ -1044,7 +1033,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                                 navigateToDetails(candidate);
                               }}
                             >
-                              <MaterialIcons name="info-outline" size={20} color={isSelected ? '#fff' : COLORS.primary} />
+                              <MaterialIcons name="info-outline" size={ms(20)} color={isSelected ? '#fff' : COLORS.primary} />
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -1054,9 +1043,8 @@ const VotingScreen = ({ navigation, route }: any) => {
                 )}
               </View>
 
-              {/* Secure Footer Note */}
               <View style={styles.secureFooterNote}>
-                <MaterialIcons name="security" size={14} color={COLORS.onSurfaceVariant} opacity={0.5} />
+                <MaterialIcons name="security" size={ms(14)} color={COLORS.onSurfaceVariant} opacity={0.5} />
                 <Text style={styles.secureFooterText}>
                   End-to-End Encrypted Session • Protocol V4.2
                 </Text>
@@ -1066,7 +1054,6 @@ const VotingScreen = ({ navigation, route }: any) => {
         )}
       </ScrollView>
 
-      {/* Floating Action Bar */}
       {selectedElection && !existingVote && (
         <View style={styles.floatingVoteBar}>
           <LinearGradient
@@ -1098,7 +1085,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={22} color="#fff" />
+                  <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={ms(22)} color="#fff" />
                   <Text style={styles.actionCastBtnText}>
                     {isVotingActive ? 'Cast Secure Vote' : 'Voting Unavailable'}
                   </Text>
@@ -1109,7 +1096,6 @@ const VotingScreen = ({ navigation, route }: any) => {
         </View>
       )}
 
-      {/* Success Modal */}
       <Modal transparent visible={showSuccessModal} animationType="fade">
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
@@ -1123,7 +1109,7 @@ const VotingScreen = ({ navigation, route }: any) => {
           <View style={styles.modalPopup}>
             <View style={styles.modalHandle} />
             <View style={[styles.modalIconBg, { backgroundColor: COLORS.secondary + '10' }]}>
-              <MaterialIcons name="verified" size={40} color={COLORS.secondary} />
+              <MaterialIcons name="verified" size={ms(40)} color={COLORS.secondary} />
             </View>
             <Text style={styles.modalTitle}>Vote Recorded</Text>
             <Text style={styles.modalMessage}>
@@ -1153,7 +1139,6 @@ const VotingScreen = ({ navigation, route }: any) => {
         </View>
       </Modal>
 
-      {/* Membership / Payment Modal */}
       <Modal transparent visible={showMembershipModal} animationType="slide">
         <View style={styles.modalOverlay}>
           <TouchableOpacity 
@@ -1166,7 +1151,7 @@ const VotingScreen = ({ navigation, route }: any) => {
             <View style={[styles.modalIconBg, { backgroundColor: COLORS.primary + '10' }]}>
                <MaterialIcons 
                 name="card-membership" 
-                size={40} 
+                size={ms(40)} 
                 color={COLORS.primary} 
                />
             </View>
@@ -1181,7 +1166,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                   <Text style={styles.loadingPlansText}>Fetching available plans...</Text>
                 </View>
               ) : (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: vs(10) }}>
                   {plans.length > 0 ? (
                     plans.map((plan) => {
                       const isSelected = selectedPlanId === plan.id;
@@ -1200,7 +1185,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                                <View style={[styles.planIconCircle, isSelected && styles.planIconCircleActive]}>
                                   <MaterialIcons 
                                     name="stars" 
-                                    size={18} 
+                                    size={ms(18)} 
                                     color={isSelected ? COLORS.white : COLORS.primary} 
                                   />
                                </View>
@@ -1215,7 +1200,7 @@ const VotingScreen = ({ navigation, route }: any) => {
                                  ₹{plan.price}
                                </Text>
                                <View style={[styles.selectionCheckCircle, isSelected && styles.selectionCheckCircleActive]}>
-                                  {isSelected && <Ionicons name="checkmark" size={14} color={COLORS.primary} />}
+                                  {isSelected && <Ionicons name="checkmark" size={ms(14)} color={COLORS.primary} />}
                                </View>
                             </View>
                           </View>
@@ -1270,185 +1255,96 @@ const VotingScreen = ({ navigation, route }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  scrollContent: { flex: 1 },
   
-  // Session Detail Header Info
-  sessionHeaderInfo: {
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  sessionLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.primary,
-    letterSpacing: 1.5,
-    opacity: 0.7,
-  },
-  sessionTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    marginTop: 4,
-    letterSpacing: -0.5,
-  },
-  sessionMetaRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  sessionBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.surfaceContainerLow,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  sessionBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.8,
-  },
-
-  nominationBtn: {
-    marginTop: 20,
-    borderRadius: 12,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#f4511e', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-      android: { elevation: 4 }
-    })
-  },
-  nominationGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-  },
-  nominationBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  
-  instructionBannerMini: {
-    paddingHorizontal: 4,
-    marginBottom: 24,
-  },
-  instructionHeaderSmall: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    letterSpacing: -0.5,
-  },
-  instructionDetailSmall: {
-    fontSize: 14,
-    color: COLORS.onSurfaceVariant,
-    marginTop: 4,
-    opacity: 0.7,
-  },
-
-  // Hero Header Styles
   heroHeader: {
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    marginBottom: 24,
+    paddingTop: vs(20),
+    paddingBottom: vs(40),
+    paddingHorizontal: hs(20),
+    borderBottomLeftRadius: ms(32),
+    borderBottomRightRadius: ms(32),
+    marginBottom: vs(24),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }
     })
   },
   heroContent: {
-    gap: 8,
+    gap: vs(8),
   },
   heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: hs(6),
     backgroundColor: 'rgba(255,255,255,0.15)',
     alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
   heroBadgeText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '900',
     letterSpacing: 1,
   },
   heroTitlePre: {
-    fontSize: 20,
+    fontSize: ms(20),
     fontWeight: '400',
     color: 'rgba(255,255,255,0.7)',
   },
   heroTitleMain: {
-    fontSize: 32,
+    fontSize: ms(32),
     fontWeight: '900',
     color: '#fff',
-    marginTop: -4,
-    letterSpacing: -1,
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#fff',
+    marginTop: vs(-4),
     letterSpacing: -1,
   },
   heroSub: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: 'rgba(255,255,255,0.8)',
-    lineHeight: 20,
+    lineHeight: vs(20),
     fontWeight: '500',
-    marginBottom: 12,
+    marginBottom: vs(12),
   },
   heroSearchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    height: 54,
-    paddingHorizontal: 16,
+    borderRadius: ms(16),
+    height: vs(54),
+    paddingHorizontal: hs(16),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
   heroSearchInput: {
     flex: 1,
     color: '#fff',
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '600',
     ...Platform.select({
-      web: { 
-        outlineStyle: 'none' 
-      }
+      web: { outlineStyle: 'none' }
     })
   },
 
-  // Premium Filter Tab Styles
   premiumFilterContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 18,
-    padding: 6,
-    marginBottom: 24,
-    gap: 6,
+    borderRadius: ms(18),
+    padding: ms(6),
+    marginBottom: vs(24),
+    gap: hs(6),
   },
   premiumFilterTab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 14,
+    gap: hs(8),
+    paddingVertical: vs(12),
+    borderRadius: ms(14),
   },
   premiumFilterTabActive: {
     backgroundColor: COLORS.primary,
@@ -1458,7 +1354,7 @@ const styles = StyleSheet.create({
     })
   },
   premiumFilterTabText: {
-    fontSize: 14,
+    fontSize: ms(14),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     letterSpacing: 0.3,
@@ -1467,738 +1363,14 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  premiumCandidatesGrid: {
-    marginTop: 8,
-  },
-  gridRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  gridCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: COLORS.outlineVariant,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10 },
-      android: { elevation: 2 }
-    })
-  },
-  gridCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#f8faff',
-  },
-  gridCardVoted: {
-    borderColor: COLORS.secondary,
-  },
-  cardInfoTopBtn: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 10,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  gridCardContent: {
-    padding: 12,
-    alignItems: 'center',
-    gap: 10,
-  },
-  gridAvatarWrapper: {
-    position: 'relative',
-  },
-  gridAvatarImg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 3,
-    borderColor: '#fff',
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  gridCheckBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  votedBadgeAbsolute: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.secondary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  gridCardInfo: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  gridCandName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    textAlign: 'center',
-  },
-  gridCandNameSelected: {
-    color: COLORS.primary,
-  },
-  gridPartyBadge: {
-    backgroundColor: COLORS.surfaceContainerHighest,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  gridPartyText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.5,
-  },
-  voteSelectBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: COLORS.surfaceContainerLow,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  voteSelectBtnActive: {
-    backgroundColor: COLORS.primary,
-  },
-  voteSelectBtnText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: COLORS.primary,
-    letterSpacing: 0.5,
-  },
-  voteSelectBtnTextActive: {
-    color: '#fff',
-  },
-  voteStatusLabel: {
-    paddingVertical: 8,
-    width: '100%',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 12,
-  },
-  voteStatusLabelVoted: {
-    backgroundColor: COLORS.secondary + '15',
-  },
-  voteStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.5,
-  },
-  voteStatusTextVoted: {
-    color: COLORS.secondary,
-    opacity: 1,
-    fontWeight: '900',
-  },
-  premiumCandidatesList: {
-    gap: 12,
-    marginTop: 8,
-  },
-  candRowCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8 },
-      android: { elevation: 2 }
-    })
-  },
-  candRowCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#f8faff',
-  },
-  candRowCardVoted: {
-    borderColor: COLORS.secondary,
-  },
-  candRowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-  },
-  candRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  rowAvatarWrapper: {
-    position: 'relative',
-  },
-  rowAvatarImg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.surfaceContainerLow,
-  },
-  rowVotedBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    backgroundColor: COLORS.secondary,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  candRowInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  rowCandName: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-  },
-  rowCandNameSelected: {
-    color: COLORS.primary,
-  },
-  rowPartyBadge: {
-    backgroundColor: COLORS.surfaceContainerHighest,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  rowPartyText: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.5,
-  },
-  candRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  rowVoteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.primary + '10',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  rowVoteBtnActive: {
-    backgroundColor: COLORS.primary,
-  },
-  rowVoteBtnText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: COLORS.primary,
-  },
-  rowVoteBtnTextActive: {
-    color: '#fff',
-  },
-  rowStatusBadge: {
-    backgroundColor: COLORS.surfaceContainerLow,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-  },
-  rowStatusBadgeVoted: {
-    backgroundColor: COLORS.secondary + '15',
-  },
-  rowStatusText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.5,
-  },
-  rowStatusTextVoted: {
-    color: COLORS.secondary,
-    opacity: 1,
-    fontWeight: '900',
-  },
-  rowInfoBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   modernListContainer: {
-    gap: 16,
-  },
-
-  // Premium Countdown Timer Styles
-  premiumTimerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 8,
-  },
-  timerSegment: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  timerValueBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  timerValueText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '900',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  timerLabelText: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 8,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  timerSeparator: {
-    paddingBottom: 14,
-  },
-  timerSeparatorText: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 20,
-    fontWeight: '900',
-  },
-
-  detailHero: {
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    marginBottom: 24,
-    ...Platform.select({
-      ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
-      android: { elevation: 8 }
-    })
-  },
-  detailMetaGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.15)',
-    borderRadius: 20,
-    padding: 16,
-    marginTop: 20,
-    gap: 12,
-  },
-  detailMetaCol: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  detailMetaLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  detailMetaDividerVertical: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  heroTypeBadge: {
-    backgroundColor: COLORS.secondaryContainer,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  heroTypeBadgeText: {
-    color: COLORS.onSecondaryContainer,
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  detailBodyContainer: {
-    paddingHorizontal: 16,
-  },
-  infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-  },
-  infoCardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  infoCardText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-  },
-  cardDivider: {
-    height: 1,
-    backgroundColor: COLORS.outlineVariant,
-    marginVertical: 12,
-    opacity: 0.3,
-  },
-  infoDescText: {
-    fontSize: 13,
-    color: COLORS.onSurfaceVariant,
-    lineHeight: 20,
-    opacity: 0.8,
-  },
-  instructionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 16,
-    padding: 14,
-    gap: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-  },
-  instructionIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  instructionTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  instructionSub: {
-    fontSize: 12,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.7,
-    marginTop: 2,
-  },
-  nominationActionBtn: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 12,
-    ...Platform.select({
-      ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12 },
-      android: { elevation: 6 }
-    })
-  },
-  nominationActionBtnSolo: {
-    marginBottom: 32,
-  },
-  nominationActionGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  nominationActionTextWrap: {
-    flex: 1,
-  },
-  nominationActionTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  nominationActionSub: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  nominationStatusCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
-      android: { elevation: 2 },
-    }),
-  },
-  nominationStatusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  nominationStatusIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nominationStatusContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nominationStatusEyebrow: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.8,
-  },
-  nominationStatusTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    marginTop: 2,
-  },
-  nominationStatusBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  nominationStatusBadgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-  },
-  nominationStatusDetail: {
-    fontSize: 13,
-    color: COLORS.onSurfaceVariant,
-    lineHeight: 19,
-    marginTop: 12,
-  },
-  nominationStatusMetaRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 14,
-  },
-  nominationStatusMetaItem: {
-    flex: 1,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: 12,
-    padding: 12,
-  },
-  nominationStatusMetaLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    textTransform: 'uppercase',
-  },
-  nominationStatusMetaValue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    marginTop: 4,
-  },
-  withdrawNominationBtn: {
-    marginTop: 14,
-    minHeight: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    backgroundColor: '#fff5f5',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  withdrawNominationText: {
-    color: '#b91c1c',
-    fontSize: 13,
-    fontWeight: '800',
-  },
-
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  sectionTitleLabel: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 1,
-  },
-  candidateCountBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  candidateCountText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  premiumCandidatesGrid: {
-    gap: 14,
-  },
-  premiumCandidateCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 14,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 10 },
-      android: { elevation: 2 }
-    })
-  },
-  premiumCandidateCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#f8faff',
-  },
-  candCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  candAvatarContainer: {
-    position: 'relative',
-  },
-  candAvatarImg: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  candCheckBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: COLORS.primary,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  candInfoBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  candCardBody: {
-    marginTop: 12,
-    gap: 4,
-  },
-  candName: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-  },
-  candPartyBadge: {
-    backgroundColor: COLORS.surfaceContainerHighest,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  candPartyText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.5,
-  },
-  candSelectionHighlight: {
-    position: 'absolute',
-    left: 0, top: 0, bottom: 0,
-    width: 5,
-    backgroundColor: COLORS.primary,
-  },
-  secureFooterNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 32,
-    marginBottom: 20,
-  },
-  secureFooterText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.4,
-  },
-  floatingVoteBar: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 20,
-  },
-  floatingBarFade: {
-    position: 'absolute',
-    top: -40, left: 0, right: 0,
-    height: 40,
-  },
-  actionCastBtn: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
-      android: { elevation: 8 }
-    })
-  },
-  actionCastBtnDisabled: {
-    opacity: 0.5,
-  },
-  actionCastGradient: {
-    height: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  actionCastBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    gap: vs(16),
   },
   premiumElecCard: {
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 14,
-    marginBottom: 16,
+    borderRadius: ms(24),
+    padding: hs(14),
+    marginBottom: vs(16),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
@@ -2209,36 +1381,54 @@ const styles = StyleSheet.create({
   },
   premiumElecLayout: {
     flexDirection: 'row',
-    gap: 16,
+    gap: hs(16),
   },
   premiumElecLeft: {
     alignItems: 'center',
-    width: 64,
+    width: hs(64),
   },
   premiumDateBlock: {
-    width: 60,
-    height: 68,
-    borderRadius: 16,
+    width: hs(60),
+    height: vs(68),
+    borderRadius: ms(16),
     justifyContent: 'center',
     alignItems: 'center',
   },
   premiumDateMonth: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   premiumDateDay: {
-    fontSize: 24,
+    fontSize: ms(24),
     fontWeight: '900',
-    marginTop: -2,
+    marginTop: vs(-2),
+  },
+  minimalStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(5),
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
+  },
+  statusBadgeTextSmall: {
+    fontSize: ms(9),
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  liveDotSmall: {
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
   },
   premiumElecCenter: {
     flex: 1,
-    paddingVertical: 2,
-    gap: 4,
+    paddingVertical: vs(2),
+    gap: vs(4),
   },
   premiumElecTitle: {
-    fontSize: 18,
+    fontSize: ms(18),
     fontWeight: '800',
     color: COLORS.onSurface,
     letterSpacing: -0.4,
@@ -2246,40 +1436,40 @@ const styles = StyleSheet.create({
   premiumDetailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: hs(6),
   },
   premiumDetailText: {
-    fontSize: 12,
+    fontSize: ms(12),
     color: COLORS.onSurfaceVariant,
     fontWeight: '600',
     opacity: 0.8,
   },
   premiumDescSnippet: {
-    fontSize: 12,
+    fontSize: ms(12),
     color: COLORS.onSurfaceVariant,
-    lineHeight: 18,
-    marginTop: 4,
+    lineHeight: vs(18),
+    marginTop: vs(4),
     opacity: 0.7,
   },
   premiumFooterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    gap: 12,
+    marginTop: vs(8),
+    gap: hs(12),
   },
   premiumStatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: hs(6),
   },
   premiumStatText: {
-    fontSize: 11,
+    fontSize: ms(11),
     fontWeight: '700',
     color: COLORS.primary,
   },
   premiumStatDivider: {
     width: 1,
-    height: 10,
+    height: vs(10),
     backgroundColor: COLORS.outlineVariant,
     opacity: 0.4,
   },
@@ -2287,56 +1477,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   premiumArrowBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(18),
     justifyContent: 'center',
     alignItems: 'center',
   },
-  minimalStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusBadgeTextSmall: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  liveDotSmall: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  emptyCandidatesBox: {
-    padding: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.02)',
-    borderRadius: 24,
-    borderStyle: 'dashed',
-    borderWidth: 2,
-    borderColor: COLORS.outlineVariant,
-  },
-  emptyCandidatesText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-  },
+
   paginationWrapper: {
-    marginTop: 32,
-    paddingBottom: 40,
+    marginTop: vs(32),
+    paddingBottom: vs(40),
     alignItems: 'center',
   },
   resultsInfo: {
-    marginBottom: 16,
+    marginBottom: vs(16),
   },
   resultsText: {
-    fontSize: 13,
+    fontSize: ms(13),
     color: COLORS.onSurfaceVariant,
     opacity: 0.7,
     letterSpacing: 0.2,
@@ -2345,302 +1502,317 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 6,
-    borderRadius: 30,
+    padding: ms(6),
+    borderRadius: ms(30),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12 },
       android: { elevation: 4 },
-      web: { 
-        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)' 
-      }
+      web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)' }
     })
   },
   pageBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: ms(44),
+    height: ms(44),
+    borderRadius: ms(22),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.surfaceContainerLow,
   },
-  pageBtnDisabled: {
-    opacity: 0.2,
-  },
+  pageBtnDisabled: { opacity: 0.2 },
   pageNumbersRow: {
     flexDirection: 'row',
-    marginHorizontal: 8,
-    gap: 6,
+    marginHorizontal: hs(8),
+    gap: hs(6),
   },
   pageNumberBtn: {
-    minWidth: 44,
-    height: 44,
-    borderRadius: 22,
+    minWidth: ms(44),
+    height: ms(44),
+    borderRadius: ms(22),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: hs(12),
   },
   pageNumberBtnActive: {
     backgroundColor: COLORS.primary,
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
       android: { elevation: 4 },
-      web: { 
-        boxShadow: `0px 4px 6px ${COLORS.primary}4D` 
-      }
+      web: { boxShadow: `0px 4px 6px ${COLORS.primary}4D` }
     })
   },
   pageNumberText: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '700',
     color: COLORS.onSurfaceVariant,
   },
-  pageNumberTextActive: {
-    color: '#fff',
-  },
+  pageNumberTextActive: { color: '#fff' },
 
-  // Missing Candidate Card Styles
-  listSectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 1.5,
-    marginBottom: 16,
-    marginLeft: 4,
-    opacity: 0.6,
-  },
-  candidatesGrid: { gap: 16 },
-  modernCandidateCard: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    overflow: 'hidden',
+  detailHero: {
+    paddingTop: vs(20),
+    paddingBottom: vs(40),
+    paddingHorizontal: hs(20),
+    borderBottomLeftRadius: ms(32),
+    borderBottomRightRadius: ms(32),
+    marginBottom: vs(24),
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
-      android: { elevation: 3 },
-      web: { 
-        boxShadow: '0px 6px 12px rgba(0,0,0,0.04)' 
-      }
+      ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
+      android: { elevation: 8 }
     })
   },
-  modernCandidateCardSelected: {
-    borderColor: COLORS.primary,
-    backgroundColor: '#f6faff',
-  },
-  candidateTopRow: {
+  detailMetaGrid: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: ms(20),
+    padding: hs(16),
+    marginTop: vs(20),
+    gap: hs(12),
   },
-  candidateAvatarContainer: {
-    width: 70,
-    height: 70,
-    position: 'relative',
+  detailMetaCol: { flex: 1, alignItems: 'center' },
+  detailMetaLabel: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: ms(9),
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: vs(6),
   },
-  modernCandidateImg: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: COLORS.surfaceContainerLow,
-    borderWidth: 3,
-    borderColor: '#fff',
+  detailMetaDividerVertical: {
+    width: 1,
+    height: vs(30),
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  selectionCheck: {
+  heroTypeBadge: {
+    backgroundColor: COLORS.secondaryContainer,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
+  },
+  heroTypeBadgeText: {
+    color: COLORS.onSecondaryContainer,
+    fontSize: ms(10),
+    fontWeight: '800',
+  },
+  detailBodyContainer: { paddingHorizontal: hs(16) },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: ms(20),
+    padding: hs(16),
+    marginBottom: vs(20),
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+  },
+  infoCardRow: { flexDirection: 'row', alignItems: 'center', gap: hs(10) },
+  infoCardText: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurface },
+  cardDivider: {
+    height: 1,
+    backgroundColor: COLORS.outlineVariant,
+    marginVertical: vs(12),
+    opacity: 0.3,
+  },
+  infoDescText: {
+    fontSize: ms(13),
+    color: COLORS.onSurfaceVariant,
+    lineHeight: vs(20),
+    opacity: 0.8,
+  },
+  nominationActionBtn: {
+    borderRadius: ms(20),
+    overflow: 'hidden',
+    marginBottom: vs(12),
+    ...Platform.select({
+      ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 12 },
+      android: { elevation: 6 }
+    })
+  },
+  nominationActionBtnSolo: { marginBottom: vs(32) },
+  nominationActionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: hs(20),
+    gap: hs(16),
+  },
+  nominationActionTextWrap: { flex: 1 },
+  nominationActionTitle: { color: '#fff', fontSize: ms(18), fontWeight: '800', letterSpacing: -0.2 },
+  nominationActionSub: { color: 'rgba(255,255,255,0.7)', fontSize: ms(12), fontWeight: '600', marginTop: vs(2) },
+  nominationStatusCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: ms(18),
+    padding: hs(16),
+    marginBottom: vs(32),
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 10 },
+      android: { elevation: 2 },
+    }),
+  },
+  nominationStatusHeader: { flexDirection: 'row', alignItems: 'center', gap: hs(12) },
+  nominationStatusIcon: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nominationStatusContent: { flex: 1, minWidth: 0 },
+  nominationStatusEyebrow: { fontSize: ms(10), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 0.8 },
+  nominationStatusTitle: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface, marginTop: vs(2) },
+  nominationStatusBadge: { borderRadius: ms(999), paddingHorizontal: hs(10), paddingVertical: vs(5) },
+  nominationStatusBadgeText: { fontSize: ms(10), fontWeight: '900' },
+  nominationStatusDetail: { fontSize: ms(13), color: COLORS.onSurfaceVariant, lineHeight: vs(19), marginTop: vs(12) },
+  nominationStatusMetaRow: { flexDirection: 'row', gap: hs(12), marginTop: vs(14) },
+  nominationStatusMetaItem: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(12), padding: hs(12) },
+  nominationStatusMetaLabel: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
+  nominationStatusMetaValue: { fontSize: ms(13), fontWeight: '800', color: COLORS.onSurface, marginTop: vs(4) },
+  withdrawNominationBtn: {
+    marginTop: vs(14),
+    minHeight: vs(44),
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fff5f5',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: hs(8),
+  },
+  withdrawNominationText: { color: '#b91c1c', fontSize: ms(13), fontWeight: '800' },
+
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: vs(16),
+    paddingHorizontal: hs(4),
+  },
+  sectionTitleLabel: { fontSize: ms(11), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 1 },
+  candidateCountBadge: { backgroundColor: COLORS.primary, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(10) },
+  candidateCountText: { color: '#fff', fontSize: ms(10), fontWeight: '800' },
+
+  premiumCandidatesList: { gap: vs(12), marginTop: vs(8) },
+  candRowCard: {
+    backgroundColor: '#fff',
+    borderRadius: ms(20),
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
+  },
+  candRowCardSelected: { borderColor: COLORS.primary, backgroundColor: '#f8faff' },
+  candRowCardVoted: { borderColor: COLORS.secondary },
+  candRowContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: hs(12) },
+  candRowLeft: { flexDirection: 'row', alignItems: 'center', gap: hs(12), flex: 1 },
+  rowAvatarWrapper: { position: 'relative' },
+  rowAvatarImg: { width: ms(52), height: ms(52), borderRadius: ms(26), backgroundColor: COLORS.surfaceContainerLow },
+  rowVotedBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    bottom: vs(-2),
+    right: hs(-2),
+    backgroundColor: COLORS.secondary,
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#fff',
   },
-  candidateMainInfo: {
-    flex: 1,
-  },
-  modernCandidateName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-  },
-  modernPartyBadge: {
-    backgroundColor: COLORS.surfaceContainerHighest,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-    marginTop: 6,
-  },
-  modernPartyText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 0.5,
-  },
-  detailsIconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
+  candRowInfo: { flex: 1, gap: vs(2) },
+  rowCandName: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface },
+  rowCandNameSelected: { color: COLORS.primary },
+  rowPartyBadge: { backgroundColor: COLORS.surfaceContainerHighest, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(6), alignSelf: 'flex-start' },
+  rowPartyText: { fontSize: ms(8), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 0.5 },
+  candRowRight: { flexDirection: 'row', alignItems: 'center', gap: hs(8) },
+  rowVoteBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: hs(4),
+    backgroundColor: COLORS.primary + '10',
+    paddingVertical: vs(6),
+    paddingHorizontal: hs(12),
+    borderRadius: ms(10),
   },
-  selectionHighlight: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 6,
-    backgroundColor: COLORS.primary,
-  },
-  auditDisclaimer: {
+  rowVoteBtnActive: { backgroundColor: COLORS.primary },
+  rowVoteBtnText: { fontSize: ms(11), fontWeight: '900', color: COLORS.primary },
+  rowVoteBtnTextActive: { color: '#fff' },
+  rowStatusBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingVertical: vs(6), paddingHorizontal: hs(12), borderRadius: ms(10) },
+  rowStatusBadgeVoted: { backgroundColor: COLORS.secondary + '15' },
+  rowStatusText: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, opacity: 0.5 },
+  rowStatusTextVoted: { color: COLORS.secondary, opacity: 1, fontWeight: '900' },
+  rowInfoBtn: { width: ms(32), height: ms(32), borderRadius: ms(16), backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
+
+  secureFooterNote: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 32,
-    paddingHorizontal: 20,
+    gap: hs(6),
+    marginTop: vs(32),
+    marginBottom: vs(20),
   },
-  auditText: {
-    fontSize: 10,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-    textAlign: 'center',
-    opacity: 0.5,
-    lineHeight: 16,
-  },
-  modernBottomBar: {
+  secureFooterText: { fontSize: ms(10), fontWeight: '700', color: COLORS.onSurfaceVariant, opacity: 0.4 },
+
+  floatingVoteBar: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    bottom: 0, left: 0, right: 0,
+    padding: hs(20),
+    paddingBottom: Platform.OS === 'ios' ? vs(36) : vs(20),
   },
-  bottomBarFade: {
-    position: 'absolute',
-    top: -40,
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-  modernCastBtn: {
-    borderRadius: 20,
+  floatingBarFade: { position: 'absolute', top: vs(-40), left: 0, right: 0, height: vs(40) },
+  actionCastBtn: {
+    borderRadius: ms(20),
     overflow: 'hidden',
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
-      android: { elevation: 8 },
-      web: { 
-        boxShadow: `0px 10px 20px ${COLORS.primary}4D` 
-      }
+      ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
+      android: { elevation: 8 }
     })
   },
-  modernCastBtnDisabled: {
-    opacity: 0.6,
-  },
-  castBtnGradient: {
-    height: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  modernCastBtnText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
+  actionCastBtnDisabled: { opacity: 0.5 },
+  actionCastGradient: { height: vs(60), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: hs(10) },
+  actionCastBtnText: { color: '#fff', fontSize: ms(16), fontWeight: '800', letterSpacing: 0.5 },
+
+  premiumTimerContainer: { flexDirection: 'row', alignItems: 'center', gap: hs(8), marginTop: vs(8) },
+  timerSegment: { alignItems: 'center', gap: vs(4) },
+  timerValueBox: { width: ms(42), height: ms(42), borderRadius: ms(12), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  timerValueText: { color: '#fff', fontSize: ms(18), fontWeight: '900', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  timerLabelText: { color: 'rgba(255,255,255,0.5)', fontSize: ms(8), fontWeight: '800', letterSpacing: 0.5 },
+  timerSeparator: { paddingBottom: vs(14) },
+  timerSeparatorText: { color: 'rgba(255,255,255,0.3)', fontSize: ms(20), fontWeight: '900' },
+
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
   modalDismissArea: { flex: 1 },
   modalPopup: { 
     backgroundColor: '#fff', 
     width: '100%', 
-    borderTopLeftRadius: 32, 
-    borderTopRightRadius: 32, 
-    padding: 24, 
-    paddingTop: 8,
+    borderTopLeftRadius: ms(32), 
+    borderTopRightRadius: ms(32), 
+    padding: hs(24), 
+    paddingTop: vs(8),
     alignItems: 'center',
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
       android: { elevation: 20 }
     })
   },
-  modalHandle: {
-    width: 40,
-    height: 5,
-    backgroundColor: '#e2e8f0',
-    borderRadius: 3,
-    alignSelf: 'center',
-    marginVertical: 12,
-    marginBottom: 20,
-  },
-  modalIconBg: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: { fontSize: 22, fontWeight: '900', color: COLORS.onSurface, marginBottom: 10, letterSpacing: -0.5 },
-  modalMessage: { fontSize: 15, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 22, marginBottom: 24, opacity: 0.8 },
-  
-  receiptCard: {
-    backgroundColor: '#f8fafc',
-    width: '100%',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  receiptLabel: { fontSize: 10, fontWeight: '800', color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: 6 },
-  receiptValue: { fontSize: 13, fontWeight: '700', color: COLORS.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlign: 'center' },
-  
-  modalPrimaryBtn: {
-    width: '100%',
-    height: 56,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  modalPrimaryBtnGradient: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalPrimaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
-  
-  modalSecondaryBtn: {
-    flex: 1,
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalSecondaryBtnText: { fontSize: 15, fontWeight: '800', color: COLORS.onSurfaceVariant },
-  
-  modalActions: { flexDirection: 'row', gap: 12, width: '100%', marginTop: 8, marginBottom: 12 },
-  
-  planScrollContainer: { width: '100%', maxHeight: 300, marginBottom: 20 },
-  
-  planSelectCard: {
-    width: '100%',
-    padding: 16,
-    borderRadius: 20,
-    backgroundColor: '#f8fafc',
-    marginBottom: 10,
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-  },
+  modalHandle: { width: hs(40), height: vs(5), backgroundColor: '#e2e8f0', borderRadius: ms(3), alignSelf: 'center', marginVertical: vs(12), marginBottom: vs(20) },
+  modalIconBg: { width: ms(72), height: ms(72), borderRadius: ms(24), justifyContent: 'center', alignItems: 'center', marginBottom: vs(20) },
+  modalTitle: { fontSize: ms(22), fontWeight: '900', color: COLORS.onSurface, marginBottom: vs(10), letterSpacing: -0.5 },
+  modalMessage: { fontSize: ms(15), color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: vs(22), marginBottom: vs(24), opacity: 0.8 },
+  receiptCard: { backgroundColor: '#f8fafc', width: '100%', padding: hs(16), borderRadius: ms(16), borderWidth: 1, borderColor: '#e2e8f0', marginBottom: vs(24), alignItems: 'center' },
+  receiptLabel: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: vs(6) },
+  receiptValue: { fontSize: ms(13), fontWeight: '700', color: COLORS.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlign: 'center' },
+  modalPrimaryBtn: { width: '100%', height: vs(56), borderRadius: ms(16), overflow: 'hidden' },
+  modalPrimaryBtnGradient: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  modalPrimaryBtnText: { color: '#fff', fontSize: ms(16), fontWeight: '800', letterSpacing: 0.5 },
+  modalSecondaryBtn: { flex: 1, height: vs(56), borderRadius: ms(16), backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  modalSecondaryBtnText: { fontSize: ms(15), fontWeight: '800', color: COLORS.onSurfaceVariant },
+  modalActions: { flexDirection: 'row', gap: hs(12), width: '100%', marginTop: vs(8), marginBottom: vs(12) },
+  planScrollContainer: { width: '100%', maxHeight: vs(300), marginBottom: vs(20) },
+  planSelectCard: { width: '100%', padding: hs(16), borderRadius: ms(20), backgroundColor: '#f8fafc', marginBottom: vs(10), borderWidth: 1.5, borderColor: '#e2e8f0' },
   planSelectCardActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
@@ -2649,219 +1821,22 @@ const styles = StyleSheet.create({
       android: { elevation: 6 }
     })
   },
-  planCardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  planCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    paddingRight: 10,
-  },
-  planIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: COLORS.primary + '10',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  planIconCircleActive: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
+  planCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  planCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: hs(10) },
+  planIconCircle: { width: ms(36), height: ms(36), borderRadius: ms(10), backgroundColor: COLORS.primary + '10', justifyContent: 'center', alignItems: 'center', marginRight: hs(12) },
+  planIconCircleActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
   planCardInfo: { flex: 1 },
-  planSelectName: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
-  planSelectDesc: { fontSize: 11, color: COLORS.onSurfaceVariant, marginTop: 2, fontWeight: '600' },
-  planSelectPrice: { fontSize: 18, fontWeight: '900', color: COLORS.onSurface, letterSpacing: -0.5 },
+  planSelectName: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
+  planSelectDesc: { fontSize: ms(11), color: COLORS.onSurfaceVariant, marginTop: vs(2), fontWeight: '600' },
+  planSelectPrice: { fontSize: ms(18), fontWeight: '900', color: COLORS.onSurface, letterSpacing: -0.5 },
   planSelectTextActive: { color: '#fff' },
-  planCardRight: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  selectionCheckCircle: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    backgroundColor: '#fff', 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#cbd5e1'
-  },
-  selectionCheckCircleActive: { 
-    backgroundColor: '#fff',
-    borderColor: '#fff'
-  },
-  
-  modalLoaderContainer: { paddingVertical: 40, alignItems: 'center' },
-  loadingPlansText: { marginTop: 12, fontSize: 14, color: COLORS.onSurfaceVariant, fontWeight: '600' },
-  emptyPlansContainer: { padding: 40, alignItems: 'center' },
-  emptyPlansText: { color: COLORS.onSurfaceVariant, textAlign: 'center', fontSize: 14 },
-  membershipMainBtnDisabled: {
-    backgroundColor: COLORS.outlineVariant,
-    opacity: 0.5,
-  },
-
-  // Premium Nomination Detail Styles
-  nominationDeepDetailContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
-      android: { elevation: 4 },
-    }),
-  },
-  nominationStatusHero: {
-    padding: 24,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  statusIconLarge: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  nominationStatusHeroLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: COLORS.onSurfaceVariant,
-    letterSpacing: 1.5,
-    opacity: 0.6,
-  },
-  nominationStatusHeroTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    marginTop: 4,
-    letterSpacing: -0.5,
-  },
-  nominationStatusHeroSub: {
-    fontSize: 13,
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 8,
-    opacity: 0.8,
-  },
-  nominationTimeline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
-    backgroundColor: '#f8fafc',
-  },
-  timelineItem: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  timelineNode: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#e2e8f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  timelineDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#94a3b8',
-  },
-  timelineConnector: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#e2e8f0',
-    marginHorizontal: 8,
-    marginTop: -18,
-  },
-  timelineConnectorActive: {
-    flex: 1,
-    height: 2,
-    backgroundColor: COLORS.secondary,
-    marginHorizontal: 8,
-    marginTop: -18,
-  },
-  timelineText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.5,
-  },
-  nominationInfoGrid: {
-    padding: 20,
-    gap: 20,
-  },
-  infoGridSection: {
-    gap: 12,
-  },
-  infoGridSectionTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: COLORS.primary,
-    letterSpacing: 1,
-    opacity: 0.5,
-  },
-  infoGridRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  infoGridItem: {
-    flex: 1,
-  },
-  infoGridLabel: {
-    fontSize: 11,
-    color: COLORS.onSurfaceVariant,
-    opacity: 0.6,
-    marginBottom: 2,
-  },
-  infoGridValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.onSurface,
-  },
-  premiumWithdrawBtn: {
-    margin: 20,
-    height: 54,
-    borderRadius: 16,
-    backgroundColor: '#b91c1c',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    ...Platform.select({
-      ios: { shadowColor: '#b91c1c', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-      android: { elevation: 4 },
-    }),
-  },
-  premiumWithdrawBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  nominationFooterNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingBottom: 20,
-    opacity: 0.5,
-  },
-  nominationFooterText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.onSurfaceVariant,
-  },
+  planCardRight: { alignItems: 'flex-end', gap: vs(6) },
+  selectionCheckCircle: { width: ms(24), height: ms(24), borderRadius: ms(12), backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
+  selectionCheckCircleActive: { backgroundColor: '#fff', borderColor: '#fff' },
+  modalLoaderContainer: { paddingVertical: vs(40), alignItems: 'center' },
+  loadingPlansText: { marginTop: vs(12), fontSize: ms(14), color: COLORS.onSurfaceVariant, fontWeight: '600' },
+  emptyPlansContainer: { padding: hs(40), alignItems: 'center' },
+  emptyPlansText: { color: COLORS.onSurfaceVariant, textAlign: 'center', fontSize: ms(14) },
 });
 
 export default VotingScreen;

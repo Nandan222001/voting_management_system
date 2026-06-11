@@ -12,6 +12,7 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { eventService, EventResponse } from '../services/eventService';
 import Header from '../components/common/Header';
+import { hs, vs, ms } from '../utils/responsive';
 
 const COLORS = {
   primary: '#003d9b',
@@ -60,21 +61,21 @@ const EventListScreen = ({ navigation, route }: any) => {
       <View style={styles.eventIcon}>
         <MaterialIcons
           name={item.event_type === 'Meeting' ? 'groups' : 'campaign'}
-          size={24}
+          size={ms(24)}
           color={COLORS.primary}
         />
       </View>
       <View style={styles.eventInfo}>
         <Text style={styles.eventTitle}>{item.event_type} at {item.place}</Text>
         <Text style={styles.eventMeta}>
-          <MaterialIcons name="event" size={14} /> {item.event_date}  |  
-          <MaterialIcons name="access-time" size={14} /> {item.event_time}
+          <MaterialIcons name="event" size={ms(14)} /> {item.event_date}  |  
+          <MaterialIcons name="access-time" size={ms(14)} /> {item.event_time}
         </Text>
         <Text style={styles.eventComm}>
           {item.communication_type} • {item.description?.substring(0, 50) || 'No description'}...
         </Text>
       </View>
-      <MaterialIcons name="chevron-right" size={24} color={COLORS.outline} />
+      <MaterialIcons name="chevron-right" size={ms(24)} color={COLORS.outline} />
     </TouchableOpacity>
   );
 
@@ -100,7 +101,7 @@ const EventListScreen = ({ navigation, route }: any) => {
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <MaterialIcons name="event-busy" size={48} color={COLORS.outline} />
+              <MaterialIcons name="event-busy" size={ms(48)} color={COLORS.outline} />
               <Text style={styles.emptyText}>No events found.</Text>
             </View>
           }
@@ -113,31 +114,31 @@ const EventListScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 20, gap: 16 },
+  list: { padding: hs(20), gap: vs(16) },
   eventCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: ms(16),
+    padding: hs(16),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: hs(12),
     borderWidth: 1,
     borderColor: COLORS.outline,
   },
   eventIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: ms(48),
+    height: ms(48),
+    borderRadius: ms(12),
     backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
   },
   eventInfo: { flex: 1 },
-  eventTitle: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface },
-  eventMeta: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 4 },
-  eventComm: { fontSize: 12, color: COLORS.onSurfaceVariant, marginTop: 2 },
-  empty: { alignItems: 'center', marginTop: 100, gap: 12 },
-  emptyText: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '600' },
+  eventTitle: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface },
+  eventMeta: { fontSize: ms(12), color: COLORS.onSurfaceVariant, marginTop: vs(4) },
+  eventComm: { fontSize: ms(12), color: COLORS.onSurfaceVariant, marginTop: vs(2) },
+  empty: { alignItems: 'center', marginTop: vs(100), gap: vs(12) },
+  emptyText: { fontSize: ms(16), color: COLORS.onSurfaceVariant, fontWeight: '600' },
 });
 
 export default EventListScreen;

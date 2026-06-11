@@ -16,6 +16,7 @@ import { Announcement } from '../services/announcementService';
 import { notificationService, NotificationItem, NotificationGroups } from '../services/notificationService';
 import { eventService, EventNotification } from '../services/eventService';
 import { navigationService } from '../utils/navigationService';
+import { hs, vs, ms } from '../utils/responsive';
 
 const COLORS = {
   primary: '#003d9b',
@@ -90,25 +91,16 @@ export default function NotificationScreen({ navigation }: any) {
   }, []);
 
   const openItem = (item: any) => {
-    console.log('[NotificationScreen] Tapped notification item:', JSON.stringify(item, null, 2));
-    
     if (item.item_type === 'announcement') {
-      console.log('[NotificationScreen] Navigating to AnnouncementDetail');
-      // AnnouncementDetail is registered in all stacks, so we can use direct navigation.
       navigationService.navigate('AnnouncementDetail', { id: item.id, announcement: item });
     } else if (item.item_type === 'election') {
-      console.log('[NotificationScreen] Navigating to Voting (Nested in Elections)');
-      // Voting is only in VoteStack (Elections tab), so we use nested navigation.
       navigationService.navigate('Voting', { election: item }, 'Elections');
     } else if (item.event) {
-      console.log('[NotificationScreen] Navigating to EventDetail (Nested in Profile)');
-      // EventDetail is only in ProfileStack (Profile tab).
       navigationService.navigate('EventDetail', { event: item.event }, 'Profile');
       if (!item.is_read) {
         eventService.markNotificationRead(item.id).catch(console.error);
       }
     } else {
-      console.warn('[NotificationScreen] Unrecognized item structure, falling back to Dashboard');
       navigationService.navigate('Dashboard');
     }
   };
@@ -131,12 +123,12 @@ export default function NotificationScreen({ navigation }: any) {
       <Header title="Notifications" showBack onBack={() => navigation.goBack()} />
       <ScrollView 
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} COLORS={[COLORS.primary]} />}
       >
         {/* SECTION 1: TODAY */}
         <View style={styles.hero}>
           <View style={styles.heroIcon}>
-            <MaterialIcons name="notifications-active" size={26} color="#fff" />
+            <MaterialIcons name="notifications-active" size={ms(26)} color="#fff" />
           </View>
           <View style={styles.heroTextWrap}>
             <Text style={styles.heroKicker}>Today</Text>
@@ -149,7 +141,7 @@ export default function NotificationScreen({ navigation }: any) {
 
         {/* Event Notifications Section */}
         {eventNotifs.length > 0 && (
-          <View style={{ marginBottom: 16 }}>
+          <View style={{ marginBottom: vs(16) }}>
             <View style={styles.sectionHeader}>
               <View style={[styles.titleIndicator, { backgroundColor: COLORS.accent }]} />
               <Text style={styles.sectionTitle}>Event Alerts</Text>
@@ -161,7 +153,7 @@ export default function NotificationScreen({ navigation }: any) {
                 onPress={() => openItem(notif)}
               >
                 <View style={[styles.notificationIcon, { backgroundColor: COLORS.accent + '15' }]}>
-                  <MaterialIcons name="event" size={22} color={COLORS.accent} />
+                  <MaterialIcons name="event" size={ms(22)} color={COLORS.accent} />
                 </View>
                 <View style={styles.notificationBody}>
                   <Text style={styles.notificationTime}>{timeLabel(notif.created_at)}</Text>
@@ -170,7 +162,7 @@ export default function NotificationScreen({ navigation }: any) {
                     Scheduled for {notif.event?.event_date} at {notif.event?.place}
                   </Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={22} color={COLORS.outlineVariant} />
+                <MaterialIcons name="chevron-right" size={ms(22)} color={COLORS.outlineVariant} />
               </TouchableOpacity>
             ))}
           </View>
@@ -186,19 +178,19 @@ export default function NotificationScreen({ navigation }: any) {
               <Image source={{ uri: featured.image_urls[0] }} style={styles.featuredImage} />
             ) : (
               <View style={styles.featuredFallback}>
-                <MaterialIcons name="campaign" size={34} color={COLORS.primary} />
+                <MaterialIcons name="campaign" size={ms(34)} color={COLORS.primary} />
               </View>
             )}
             <View style={styles.featuredBody}>
               <View style={styles.featuredBadge}>
-                <MaterialIcons name="star" size={12} color={COLORS.primary} />
+                <MaterialIcons name="star" size={ms(12)} color={COLORS.primary} />
                 <Text style={styles.featuredBadgeText}>Featured</Text>
               </View>
               <Text style={styles.featuredTitle} numberOfLines={2}>{featured.title}</Text>
               <Text style={styles.featuredDescription} numberOfLines={2}>{featured.short_description}</Text>
               <View style={styles.readRow}>
                 <Text style={styles.timeText}>{timeLabel(featured.publish_date)}</Text>
-                <MaterialIcons name="chevron-right" size={18} color={COLORS.primary} />
+                <MaterialIcons name="chevron-right" size={ms(18)} color={COLORS.primary} />
               </View>
             </View>
           </TouchableOpacity>
@@ -211,7 +203,7 @@ export default function NotificationScreen({ navigation }: any) {
         ) : (
           !featured && (
             <View style={styles.emptyCard}>
-              <MaterialIcons name="notifications-none" size={36} color={COLORS.outlineVariant} />
+              <MaterialIcons name="notifications-none" size={ms(36)} color={COLORS.outlineVariant} />
               <Text style={styles.emptyTitle}>No announcements for today</Text>
               <Text style={styles.emptyText}>New announcements published today will appear here.</Text>
             </View>
@@ -219,7 +211,7 @@ export default function NotificationScreen({ navigation }: any) {
         )}
 
         {/* SECTION 2: TOMORROW */}
-        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+        <View style={[styles.sectionHeader, { marginTop: vs(24) }]}>
           <View style={[styles.titleIndicator, { backgroundColor: COLORS.primary }]} />
           <Text style={styles.sectionTitle}>Tomorrow</Text>
         </View>
@@ -231,7 +223,7 @@ export default function NotificationScreen({ navigation }: any) {
           ))
         ) : (
           <View style={styles.emptyCard}>
-            <MaterialIcons name="event-note" size={36} color={COLORS.outlineVariant} />
+            <MaterialIcons name="event-note" size={ms(36)} color={COLORS.outlineVariant} />
             <Text style={styles.emptyTitle}>No scheduled events for tomorrow</Text>
             <Text style={styles.emptyText}>Any upcoming announcements or elections will appear here.</Text>
           </View>
@@ -250,7 +242,7 @@ const NotificationCard = ({ item, onPress }: { item: NotificationItem; onPress: 
   return (
     <TouchableOpacity style={styles.notificationCard} activeOpacity={0.9} onPress={onPress}>
       <View style={[styles.notificationIcon, { backgroundColor: iconColor + '15' }]}>
-        <MaterialIcons name={icon} size={22} color={iconColor} />
+        <MaterialIcons name={icon} size={ms(22)} color={iconColor} />
       </View>
       <View style={styles.notificationBody}>
         <View style={styles.notificationTop}>
@@ -266,7 +258,7 @@ const NotificationCard = ({ item, onPress }: { item: NotificationItem; onPress: 
           {isAnnouncement ? (item as Announcement).short_description : (item as any).description || 'Starting tomorrow'}
         </Text>
       </View>
-      <MaterialIcons name="chevron-right" size={22} color={COLORS.outlineVariant} />
+      <MaterialIcons name="chevron-right" size={ms(22)} color={COLORS.outlineVariant} />
     </TouchableOpacity>
   );
 };
@@ -274,73 +266,73 @@ const NotificationCard = ({ item, onPress }: { item: NotificationItem; onPress: 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background },
-  content: { padding: 16, paddingBottom: 40, gap: 12 },
+  content: { padding: hs(16), paddingBottom: vs(40), gap: vs(12) },
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: hs(14),
     backgroundColor: COLORS.primary,
-    borderRadius: 24,
-    padding: 18,
-    marginBottom: 16,
+    borderRadius: ms(24),
+    padding: hs(18),
+    marginBottom: vs(16),
     overflow: 'hidden',
   },
   heroIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
+    width: ms(52),
+    height: ms(52),
+    borderRadius: ms(18),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
   heroTextWrap: { flex: 1 },
-  heroKicker: { color: COLORS.primaryFixed, fontSize: 11, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
-  heroTitle: { color: '#fff', fontSize: 20, fontWeight: '900', marginTop: 2 },
-  heroDescription: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '600', lineHeight: 17, marginTop: 4 },
+  heroKicker: { color: COLORS.primaryFixed, fontSize: ms(11), fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1 },
+  heroTitle: { color: '#fff', fontSize: ms(20), fontWeight: '900', marginTop: vs(2) },
+  heroDescription: { color: 'rgba(255,255,255,0.75)', fontSize: ms(12), fontWeight: '600', lineHeight: vs(17), marginTop: vs(4) },
   featuredCard: {
     overflow: 'hidden',
-    borderRadius: 24,
+    borderRadius: ms(24),
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.primary,
-    marginBottom: 18,
+    marginBottom: vs(18),
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 14 },
       android: { elevation: 4 },
     }),
   },
-  featuredImage: { width: '100%', height: 160, backgroundColor: COLORS.primaryFixed },
-  featuredFallback: { height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryFixed },
-  featuredBody: { padding: 16 },
-  featuredBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 4, backgroundColor: COLORS.primaryFixed, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 9, marginBottom: 10 },
-  featuredBadgeText: { color: COLORS.primary, fontSize: 9, fontWeight: '900', textTransform: 'uppercase' },
-  featuredTitle: { color: COLORS.onSurface, fontSize: 19, fontWeight: '900', lineHeight: 24 },
-  featuredDescription: { color: COLORS.onSurfaceVariant, fontSize: 13, lineHeight: 19, fontWeight: '600', marginTop: 6 },
-  readRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
-  timeText: { color: COLORS.onSurfaceVariant, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  sectionSubtitle: { color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: '600', marginBottom: 12, marginLeft: 13 },
-  titleIndicator: { width: 5, height: 20, borderRadius: 3, backgroundColor: COLORS.accent },
-  sectionTitle: { color: COLORS.onSurface, fontSize: 18, fontWeight: '900' },
-  electionBadge: { backgroundColor: COLORS.secondary + '15', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  electionBadgeText: { color: COLORS.secondary, fontSize: 8, fontWeight: '900' },
-  emptyCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.outlineVariant, borderRadius: 22, padding: 36, marginTop: 10 },
-  emptyTitle: { color: COLORS.onSurface, fontSize: 16, fontWeight: '900', marginTop: 12 },
-  emptyText: { color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 18, marginTop: 5 },
+  featuredImage: { width: '100%', height: vs(160), backgroundColor: COLORS.primaryFixed },
+  featuredFallback: { height: vs(120), alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryFixed },
+  featuredBody: { padding: hs(16) },
+  featuredBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: hs(4), backgroundColor: COLORS.primaryFixed, paddingHorizontal: hs(9), paddingVertical: vs(5), borderRadius: ms(9), marginBottom: vs(10) },
+  featuredBadgeText: { color: COLORS.primary, fontSize: ms(9), fontWeight: '900', textTransform: 'uppercase' },
+  featuredTitle: { color: COLORS.onSurface, fontSize: ms(19), fontWeight: '900', lineHeight: vs(24) },
+  featuredDescription: { color: COLORS.onSurfaceVariant, fontSize: ms(13), lineHeight: vs(19), fontWeight: '600', marginTop: vs(6) },
+  readRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: vs(14) },
+  timeText: { color: COLORS.onSurfaceVariant, fontSize: ms(11), fontWeight: '800', textTransform: 'uppercase' },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: hs(8), marginBottom: vs(4) },
+  sectionSubtitle: { color: COLORS.onSurfaceVariant, fontSize: ms(13), fontWeight: '600', marginBottom: vs(12), marginLeft: hs(13) },
+  titleIndicator: { width: hs(5), height: vs(20), borderRadius: ms(3), backgroundColor: COLORS.accent },
+  sectionTitle: { color: COLORS.onSurface, fontSize: ms(18), fontWeight: '900' },
+  electionBadge: { backgroundColor: COLORS.secondary + '15', paddingHorizontal: hs(6), paddingVertical: vs(2), borderRadius: ms(4) },
+  electionBadgeText: { color: COLORS.secondary, fontSize: ms(8), fontWeight: '900' },
+  emptyCard: { alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderStyle: 'dashed', borderColor: COLORS.outlineVariant, borderRadius: ms(22), padding: hs(36), marginTop: vs(10) },
+  emptyTitle: { color: COLORS.onSurface, fontSize: ms(16), fontWeight: '900', marginTop: vs(12) },
+  emptyText: { color: COLORS.onSurfaceVariant, fontSize: ms(13), fontWeight: '600', textAlign: 'center', lineHeight: vs(18), marginTop: vs(5) },
   notificationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: hs(12),
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: ms(18),
+    padding: hs(14),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
   },
-  notificationIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryFixed },
+  notificationIcon: { width: ms(42), height: ms(42), borderRadius: ms(14), alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primaryFixed },
   notificationBody: { flex: 1 },
-  notificationTop: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 },
-  notificationTime: { color: COLORS.onSurfaceVariant, fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
-  notificationTitle: { color: COLORS.onSurface, fontSize: 15, fontWeight: '900', lineHeight: 20 },
-  notificationDescription: { color: COLORS.onSurfaceVariant, fontSize: 12, fontWeight: '600', lineHeight: 17, marginTop: 3 },
+  notificationTop: { flexDirection: 'row', alignItems: 'center', gap: hs(4), marginBottom: vs(3) },
+  notificationTime: { color: COLORS.onSurfaceVariant, fontSize: ms(10), fontWeight: '900', textTransform: 'uppercase' },
+  notificationTitle: { color: COLORS.onSurface, fontSize: ms(15), fontWeight: '900', lineHeight: vs(20) },
+  notificationDescription: { color: COLORS.onSurfaceVariant, fontSize: ms(12), fontWeight: '600', lineHeight: vs(17), marginTop: vs(3) },
 });

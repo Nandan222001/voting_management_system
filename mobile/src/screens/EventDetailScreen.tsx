@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Header from '../components/common/Header';
+import { hs, vs, ms } from '../utils/responsive';
 
 const COLORS = {
   primary: '#003d9b',
@@ -33,7 +34,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
             <View style={styles.iconBox}>
               <MaterialIcons
                 name={event.event_type === 'Meeting' ? 'groups' : 'campaign'}
-                size={32}
+                size={ms(32)}
                 color={COLORS.primary}
               />
             </View>
@@ -47,14 +48,14 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
           <View style={styles.row}>
             <View style={styles.item}>
-              <MaterialIcons name="event" size={20} color={COLORS.primary} />
+              <MaterialIcons name="event" size={ms(20)} color={COLORS.primary} />
               <View>
                 <Text style={styles.label}>Date</Text>
                 <Text style={styles.value}>{event.event_date}</Text>
               </View>
             </View>
             <View style={styles.item}>
-              <MaterialIcons name="access-time" size={20} color={COLORS.primary} />
+              <MaterialIcons name="access-time" size={ms(20)} color={COLORS.primary} />
               <View>
                 <Text style={styles.label}>Time</Text>
                 <Text style={styles.value}>{event.event_time}</Text>
@@ -63,7 +64,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           </View>
 
           <View style={styles.item}>
-            <MaterialIcons name="videocam" size={20} color={COLORS.primary} />
+            <MaterialIcons name="videocam" size={ms(20)} color={COLORS.primary} />
             <View>
               <Text style={styles.label}>Communication Type</Text>
               <Text style={styles.value}>{event.communication_type}</Text>
@@ -71,7 +72,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           </View>
 
           <View style={styles.item}>
-            <MaterialIcons name="description" size={20} color={COLORS.primary} />
+            <MaterialIcons name="description" size={ms(20)} color={COLORS.primary} />
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Description</Text>
               <Text style={styles.description}>{event.description || 'No additional details provided.'}</Text>
@@ -92,12 +93,12 @@ const EventDetailScreen = ({ navigation, route }: any) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: 20 },
+  content: { padding: hs(20) },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    padding: 24,
-    gap: 20,
+    borderRadius: ms(24),
+    padding: hs(24),
+    gap: vs(20),
     borderWidth: 1,
     borderColor: COLORS.outline,
     ...Platform.select({
@@ -105,33 +106,33 @@ const styles = StyleSheet.create({
       android: { elevation: 6 },
     })
   },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: hs(16) },
   iconBox: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(20),
     backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  type: { fontSize: 24, fontWeight: '900', color: COLORS.onSurface },
-  place: { fontSize: 16, fontWeight: '600', color: COLORS.onSurfaceVariant },
+  type: { fontSize: ms(24), fontWeight: '900', color: COLORS.onSurface },
+  place: { fontSize: ms(16), fontWeight: '600', color: COLORS.onSurfaceVariant },
   divider: { height: 1, backgroundColor: COLORS.outline, opacity: 0.5 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
-  item: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  label: { fontSize: 12, fontWeight: '700', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
-  value: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  description: { fontSize: 15, color: COLORS.onSurface, lineHeight: 22, marginTop: 4 },
+  item: { flexDirection: 'row', gap: hs(12), alignItems: 'flex-start' },
+  label: { fontSize: ms(12), fontWeight: '700', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
+  value: { fontSize: ms(16), fontWeight: '700', color: COLORS.onSurface },
+  description: { fontSize: ms(15), color: COLORS.onSurface, lineHeight: vs(22), marginTop: vs(4) },
   backButton: {
-    marginTop: 30,
-    paddingVertical: 18,
-    borderRadius: 16,
+    marginTop: vs(30),
+    paddingVertical: vs(18),
+    borderRadius: ms(16),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,
     alignItems: 'center',
   },
-  backButtonText: { fontSize: 16, fontWeight: '800', color: COLORS.onSurfaceVariant },
+  backButtonText: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurfaceVariant },
 });
 
 export default EventDetailScreen;

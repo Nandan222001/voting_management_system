@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions, Platform } from 'react-native';
+import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View, Dimensions, Platform, RefreshControl } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import Header from '../components/common/Header';
 import { Announcement, announcementService, stripHtml } from '../services/announcementService';
+import { hs, vs, ms } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -25,17 +26,38 @@ const dateLabel = (value?: string) => value ? new Date(value).toLocaleDateString
 export default function AnnouncementDetailScreen({ route, navigation }: any) {
   const [announcement, setAnnouncement] = useState<Announcement | null>(route.params?.announcement || null);
   const [loading, setLoading] = useState(!route.params?.announcement);
+  const [refreshing, setRefreshing] = useState(false);
   const id = route.params?.id;
 
+  const loadDetails = async (isRefreshing = false) => {
+    if (!id) return;
+    if (isRefreshing) setRefreshing(true);
+    else if (!announcement) setLoading(true);
+
+    try {
+      const data = await announcementService.getDetails(id);
+      setAnnouncement(data);
+    } catch (error) {
+      console.error('Failed to load announcement detail', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-    if (!id || announcement?.id === id) return;
-    announcementService.getDetails(id)
-      .then(setAnnouncement)
-      .catch((error) => console.error('Failed to load announcement detail', error))
-      .finally(() => setLoading(false));
+    if (!id) return;
+    // Only load if we don't have it or ID changed
+    if (!announcement || announcement.id !== id) {
+      loadDetails();
+    }
   }, [id]);
 
-  if (loading || !announcement) {
+  const onRefresh = () => {
+    loadDetails(true);
+  };
+
+  if (loading && !refreshing && !announcement) {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -52,7 +74,13 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
         onBack={() => navigation.goBack()}
       />
       
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
+      >
         {/* Premium Image Hero */}
         <View style={styles.heroContainer}>
           {announcement.image_urls?.[0] ? (
@@ -70,7 +98,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
           
           {announcement.is_featured && (
             <View style={styles.featuredBadge}>
-              <MaterialIcons name="star" size={14} color="#fff" />
+              <MaterialIcons name="star" size={ms(14)} color="#fff" />
               <Text style={styles.featuredBadgeText}>FEATURED</Text>
             </View>
           )}
@@ -102,7 +130,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <View style={styles.sectionIconBg}>
-                  <MaterialIcons name="photo-library" size={18} color={COLORS.primary} />
+                  <MaterialIcons name="photo-library" size={ms(18)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>Visual Gallery</Text>
               </View>
@@ -121,7 +149,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <View style={styles.sectionIconBg}>
-                  <MaterialIcons name="description" size={18} color={COLORS.primary} />
+                  <MaterialIcons name="description" size={ms(18)} color={COLORS.primary} />
                 </View>
                 <Text style={styles.sectionTitle}>Resources & Files</Text>
               </View>
@@ -134,7 +162,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.attachmentIconBox}>
-                      <MaterialIcons name="insert-drive-file" size={24} color={COLORS.primary} />
+                      <MaterialIcons name="insert-drive-file" size={ms(24)} color={COLORS.primary} />
                     </View>
                     <View style={styles.attachmentInfo}>
                       <Text style={styles.attachmentName} numberOfLines={1}>
@@ -142,7 +170,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
                       </Text>
                       <Text style={styles.attachmentMeta}>Official attachment • PDF/DOC</Text>
                     </View>
-                    <MaterialIcons name="arrow-forward-ios" size={14} color={COLORS.outlineVariant} />
+                    <MaterialIcons name="arrow-forward-ios" size={ms(14)} color={COLORS.outlineVariant} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -153,7 +181,7 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
           <View style={styles.footerVerification}>
             <View style={styles.divider} />
             <View style={styles.verificationContent}>
-               <MaterialIcons name="verified-user" size={16} color={COLORS.secondary} opacity={0.6} />
+               <MaterialIcons name="verified-user" size={ms(16)} color={COLORS.secondary} opacity={0.6} />
                <Text style={styles.verificationText}>Official communication verified by precinct administration.</Text>
             </View>
           </View>
@@ -166,124 +194,121 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.background },
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: { paddingBottom: vs(60) },
   
-  // Hero Section
-  heroContainer: { width: '100%', height: 320, position: 'relative' },
+  heroContainer: { width: '100%', height: vs(320), position: 'relative' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   heroOverlay: { ...StyleSheet.absoluteFillObject },
   featuredBadge: {
     position: 'absolute',
-    top: 100,
-    left: 20,
+    top: vs(100),
+    left: hs(20),
     backgroundColor: COLORS.accent,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
+    paddingHorizontal: hs(12),
+    paddingVertical: vs(6),
+    borderRadius: ms(12),
+    gap: hs(6),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
       android: { elevation: 6 },
     })
   },
-  featuredBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  featuredBadgeText: { color: '#fff', fontSize: ms(10), fontWeight: '900', letterSpacing: 1 },
 
-  // Body Layout
   bodyWrapper: {
-    marginTop: -30,
+    marginTop: vs(-30),
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 30,
-    paddingHorizontal: 20,
+    borderTopLeftRadius: ms(32),
+    borderTopRightRadius: ms(32),
+    paddingTop: vs(30),
+    paddingHorizontal: hs(20),
   },
   metaHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
+    marginBottom: vs(16),
+    gap: hs(10),
   },
   categoryTag: {
     backgroundColor: COLORS.primaryContainer,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
   },
   categoryText: {
     color: COLORS.primary,
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: COLORS.outlineVariant },
+  dot: { width: ms(4), height: ms(4), borderRadius: ms(2), backgroundColor: COLORS.outlineVariant },
   dateText: {
-    fontSize: 12,
+    fontSize: ms(12),
     color: COLORS.onSurfaceVariant,
     fontWeight: '700',
     opacity: 0.6,
   },
 
   title: {
-    fontSize: 28,
+    fontSize: ms(28),
     fontWeight: '900',
     color: COLORS.onSurface,
-    lineHeight: 36,
+    lineHeight: vs(36),
     letterSpacing: -0.5,
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   
   summaryContainer: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
+    padding: hs(16),
+    borderRadius: ms(16),
+    marginBottom: vs(24),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     opacity: 0.9,
   },
   quoteBar: {
-    width: 4,
+    width: hs(4),
     backgroundColor: COLORS.primary,
-    borderRadius: 2,
-    marginRight: 12,
+    borderRadius: ms(2),
+    marginRight: hs(12),
   },
   summaryText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: ms(15),
     color: COLORS.onSurfaceVariant,
     fontWeight: '700',
-    lineHeight: 22,
+    lineHeight: vs(22),
     fontStyle: 'italic',
   },
 
   mainContent: {
-    marginBottom: 32,
+    marginBottom: vs(32),
   },
   contentText: {
-    fontSize: 16,
+    fontSize: ms(16),
     color: COLORS.onSurface,
-    lineHeight: 26,
+    lineHeight: vs(26),
     fontWeight: '500',
     opacity: 0.85,
   },
 
-  // Sections
   section: {
-    marginBottom: 32,
+    marginBottom: vs(32),
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 16,
+    gap: hs(12),
+    marginBottom: vs(16),
   },
   sectionIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(12),
     backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
@@ -291,77 +316,77 @@ const styles = StyleSheet.create({
     borderColor: COLORS.outlineVariant,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: ms(18),
     fontWeight: '800',
     color: COLORS.onSurface,
     letterSpacing: -0.2,
   },
 
-  gallery: { gap: 14, paddingRight: 20 },
+  gallery: { gap: hs(14), paddingRight: hs(20) },
   galleryItem: {
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
       android: { elevation: 4 },
     })
   },
-  galleryImage: { width: 220, height: 140, borderRadius: 20, backgroundColor: '#ddd' },
+  galleryImage: { width: hs(220), height: vs(140), borderRadius: ms(20), backgroundColor: '#ddd' },
 
-  attachmentList: { gap: 12 },
+  attachmentList: { gap: vs(12) },
   attachmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 12,
+    borderRadius: ms(18),
+    padding: hs(12),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    gap: 14,
+    gap: hs(14),
   },
   attachmentIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: ms(48),
+    height: ms(48),
+    borderRadius: ms(14),
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',
   },
   attachmentInfo: { flex: 1 },
   attachmentName: {
-    fontSize: 14,
+    fontSize: ms(14),
     fontWeight: '800',
     color: COLORS.onSurface,
-    marginBottom: 2,
+    marginBottom: vs(2),
   },
   attachmentMeta: {
-    fontSize: 11,
+    fontSize: ms(11),
     color: COLORS.onSurfaceVariant,
     opacity: 0.6,
     fontWeight: '600',
   },
 
   footerVerification: {
-    marginTop: 10,
+    marginTop: vs(10),
     alignItems: 'center',
   },
   divider: {
     width: '40%',
     height: 1,
     backgroundColor: COLORS.outlineVariant,
-    marginBottom: 20,
+    marginBottom: vs(20),
     opacity: 0.3,
   },
   verificationContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
+    gap: hs(8),
+    paddingHorizontal: hs(20),
   },
   verificationText: {
-    fontSize: 10,
+    fontSize: ms(10),
     color: COLORS.onSurfaceVariant,
     fontWeight: '700',
     textAlign: 'center',
     opacity: 0.4,
-    lineHeight: 16,
+    lineHeight: vs(16),
   },
 });

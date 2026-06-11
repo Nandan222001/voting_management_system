@@ -17,6 +17,7 @@ import FontAwesome5 from "react-native-vector-icons/FontAwesome5";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/common/Header";
 import { showToast } from "../utils/toast";
+import { hs, vs, ms } from "../utils/responsive";
 
 const getInputStyle = () => {
   return Platform.OS === "web" ? ({ 
@@ -93,13 +94,17 @@ const VerifyScreen = ({ navigation, route }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header />
+      <Header 
+        showBack 
+        onBack={() => navigation.goBack()} 
+        title="Verification"
+      />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.connectionBadge}>
-          <MaterialIcons name="gpp-good" size={14} color="#059669" />
+          <MaterialIcons name="gpp-good" size={ms(14)} color="#059669" />
           <Text style={styles.connectionBadgeText}>
             Encrypted Connection Active
           </Text>
@@ -126,8 +131,8 @@ const VerifyScreen = ({ navigation, route }: any) => {
           ))}
         </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-          <MaterialIcons name="access-time" size={16} color="#475569" style={{ marginRight: 6 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: vs(10) }}>
+          <MaterialIcons name="access-time" size={ms(16)} color="#475569" style={{ marginRight: hs(6) }} />
           <Text style={styles.timerText}>
             Code expires in {formatTime(timer)}
           </Text>
@@ -149,7 +154,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
             style={styles.graphicImage}
           />
           <View style={styles.graphicOverlay}>
-            <FontAwesome5 name="shield-alt" size={12} color="#fff" style={{ marginRight: 6 }} />
+            <FontAwesome5 name="shield-alt" size={ms(12)} color="#fff" style={{ marginRight: hs(6) }} />
             <Text style={styles.graphicOverlayText}>256-bit AES Encryption</Text>
           </View>
         </View>
@@ -164,7 +169,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
           ) : (
             <View style={styles.buttonInnerContent}>
               <Text style={styles.primaryButtonText}>Verify & Continue</Text>
-              <MaterialIcons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 6 }} />
+              <MaterialIcons name="arrow-forward" size={ms(18)} color="#fff" style={{ marginLeft: hs(6) }} />
             </View>
           )}
         </TouchableOpacity>
@@ -184,110 +189,110 @@ const VerifyScreen = ({ navigation, route }: any) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8fafc" },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: hs(24),
+    paddingBottom: vs(40),
     alignItems: "center",
   },
   connectionBadge: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#d1fae5",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(6),
+    borderRadius: ms(20),
     borderWidth: 1,
     borderColor: "#a7f3d0",
-    marginTop: 24,
-    marginBottom: 28,
+    marginTop: vs(24),
+    marginBottom: vs(28),
   },
   connectionBadgeText: {
-    fontSize: 12,
+    fontSize: ms(12),
     fontWeight: "600",
     color: "#065f46",
-    marginLeft: 6,
+    marginLeft: hs(6),
   },
   mainTitleText: {
-    fontSize: 24,
+    fontSize: ms(24),
     fontWeight: "700",
     color: "#0f172a",
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: vs(12),
   },
   descriptionText: {
-    fontSize: 15,
+    fontSize: ms(15),
     color: "#475569",
     textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-    paddingHorizontal: 12,
+    marginBottom: vs(24),
+    lineHeight: vs(22),
+    paddingHorizontal: hs(12),
   },
   otpInputContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   otpBox: {
     width: "14%",
-    height: 52,
+    height: vs(52),
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#cbd5e1",
-    borderRadius: 8,
-    fontSize: 18,
+    borderRadius: ms(8),
+    fontSize: ms(18),
     fontWeight: "600",
     color: "#0f172a",
   },
-  timerText: { fontSize: 14, color: "#334155", fontWeight: "500" },
+  timerText: { fontSize: ms(14), color: "#334155", fontWeight: "500" },
   resendText: {
-    fontSize: 15,
+    fontSize: ms(15),
     color: "#003d9b",
     fontWeight: "500",
-    marginBottom: 24,
+    marginBottom: vs(24),
   },
   graphicCard: {
     width: "100%",
-    height: 190,
-    borderRadius: 12,
+    height: vs(190),
+    borderRadius: ms(12),
     overflow: "hidden",
     position: "relative",
-    marginBottom: 32,
+    marginBottom: vs(32),
     backgroundColor: "#0f172a",
   },
   graphicImage: { width: "100%", height: "100%", opacity: 0.45 },
   graphicOverlay: {
     position: "absolute",
-    bottom: 14,
-    left: 14,
+    bottom: vs(14),
+    left: hs(14),
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(15,23,42,0.6)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(6),
   },
-  graphicOverlayText: { color: "#fff", fontSize: 12, fontWeight: "500" },
+  graphicOverlayText: { color: "#fff", fontSize: ms(12), fontWeight: "500" },
   primaryButton: {
     backgroundColor: "#003d9b",
     width: "100%",
-    height: 52,
-    borderRadius: 8,
+    height: vs(52),
+    borderRadius: ms(8),
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   buttonDisabled: { backgroundColor: "#94a3b8" },
   buttonInnerContent: { flexDirection: "row", alignItems: "center" },
-  primaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  primaryButtonText: { color: "#fff", fontSize: ms(16), fontWeight: "700" },
   backToLoginButton: {
-    paddingVertical: 10,
+    paddingVertical: vs(10),
     width: "100%",
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: vs(40),
   },
-  backToLoginText: { fontSize: 15, color: "#334155", fontWeight: "500" },
+  backToLoginText: { fontSize: ms(15), color: "#334155", fontWeight: "500" },
   footerLegalText: {
-    fontSize: 11,
+    fontSize: ms(11),
     color: "#94a3b8",
     letterSpacing: 1,
     fontWeight: "600",

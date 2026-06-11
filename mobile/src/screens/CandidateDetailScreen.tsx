@@ -10,6 +10,7 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -18,6 +19,7 @@ import Header from '../components/common/Header';
 import { candidateService } from '../services/candidateService';
 import { mediaService } from '../services/mediaService';
 import { showToast } from '../utils/toast';
+import { hs, vs, ms } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -63,6 +65,7 @@ const DEFAULT_IMAGES = {
 const CandidateDetailScreen = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('biography');
+  const [refreshing, setRefreshing] = useState(false);
   
   // Follow State
   const [isFollowing, setIsFollowing] = useState(false);
@@ -70,6 +73,13 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
   // Real data passed from navigation
   const candidate = route.params?.candidate || {};
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await checkFollowStatus();
+    // In a real app we might also fetch the latest candidate details by ID
+    setRefreshing(false);
+  };
 
   const fullName = candidate.full_name || 'Unknown Candidate';
   const role = candidate.position_name || candidate.committee?.name || 'CANDIDATE';
@@ -114,7 +124,6 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
     
     try {
       const result = await candidateService.followCandidate(candidate.id);
-      // Backend returns { is_following: boolean }
       setIsFollowing(result.is_following);
     } catch (error) {
       setIsFollowing(previousState); // Revert on failure
@@ -128,12 +137,12 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="article" size={22} color={COLORS.primary} />
+              <MaterialIcons name="article" size={ms(22)} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Vision & Statement</Text>
             </View>
             <View style={styles.cardBody}>
               <View style={styles.quoteBox}>
-                <MaterialIcons name="format-quote" size={24} color={COLORS.primary} style={styles.quoteIcon} />
+                <MaterialIcons name="format-quote" size={ms(24)} color={COLORS.primary} style={styles.quoteIcon} />
                 <Text style={styles.quoteText}>
                   {candidate.mission_statement || "Transforming our community with integrity and a shared commitment to innovation and democratic progress."}
                 </Text>
@@ -162,7 +171,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="fact_check" size={22} color={COLORS.primary} />
+              <MaterialIcons name="fact_check" size={ms(22)} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Eligibility & Declarations</Text>
             </View>
             <View style={styles.checklist}>
@@ -184,7 +193,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="contact-mail" size={22} color={COLORS.primary} />
+              <MaterialIcons name="contact-mail" size={ms(22)} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Registry & Contact</Text>
             </View>
             <View style={styles.cardBody}>
@@ -228,11 +237,14 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={{ paddingBottom: vs(60) }}
         style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
       >
         {/* Spacer for cover */}
-        <View style={{ height: 140 }} />
+        <View style={{ height: vs(140) }} />
 
         {/* 2. Profile Header Section */}
         <View style={styles.profileHeader}>
@@ -247,12 +259,12 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
           <View style={styles.profileInfo}>
             <View style={styles.badgeRow}>
               <View style={styles.statusBadge}>
-                <MaterialIcons name="verified" size={12} color="#fff" />
+                <MaterialIcons name="verified" size={ms(12)} color="#fff" />
                 <Text style={styles.statusBadgeText}>VERIFIED</Text>
               </View>
               {candidate.held_previously && (
                 <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}>
-                  <MaterialIcons name="stars" size={12} color="#fff" />
+                  <MaterialIcons name="stars" size={ms(12)} color="#fff" />
                   <Text style={styles.statusBadgeText}>INCUMBENT</Text>
                 </View>
               )}
@@ -262,11 +274,11 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
             
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <MaterialIcons name="location-on" size={14} color={COLORS.onSurfaceVariant} />
+                <MaterialIcons name="location-on" size={ms(14)} color={COLORS.onSurfaceVariant} />
                 <Text style={styles.metaText}>{constituency}</Text>
               </View>
               <View style={styles.metaItem}>
-                <MaterialIcons name="account-balance" size={14} color={COLORS.onSurfaceVariant} />
+                <MaterialIcons name="account-balance" size={ms(14)} color={COLORS.onSurfaceVariant} />
                 <Text style={styles.metaText}>{candidate.committee?.name || "Independent"}</Text>
               </View>
             </View>
@@ -279,7 +291,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
             >
               <MaterialIcons 
                 name={isFollowing ? "person-remove" : "person-add"} 
-                size={20} 
+                size={ms(20)} 
                 color={isFollowing ? COLORS.primary : "#fff"} 
               />
               <Text style={[styles.followBtnText, isFollowing && styles.followingBtnTextActive]}>
@@ -315,7 +327,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
           {/* Campaign Metrics Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="insights" size={22} color={COLORS.primary} />
+              <MaterialIcons name="insights" size={ms(22)} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Election Profile</Text>
             </View>
             <View style={styles.metricGrid}>
@@ -336,7 +348,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
           {/* Declarations */}
           <View style={styles.securityBanner}>
-             <MaterialIcons name="verified-user" size={18} color={COLORS.secondary} />
+             <MaterialIcons name="verified-user" size={ms(18)} color={COLORS.secondary} />
              <Text style={styles.securityText}>All candidate data is cryptographically signed and stored in the secure organizational vault.</Text>
           </View>
         </View>
@@ -356,7 +368,7 @@ const CheckItem = ({ label, checked }: any) => (
   <View style={styles.checkItem}>
      <MaterialIcons 
        name={checked ? "check-circle" : "cancel"} 
-       size={18} 
+       size={ms(18)} 
        color={checked ? COLORS.secondary : COLORS.error} 
      />
      <Text style={styles.checkLabel}>{label}</Text>
@@ -367,15 +379,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollView: { flex: 1 },
   
-  coverWrapper: { height: 240, width: '100%', position: 'absolute', top: 0, zIndex: 0 },
+  coverWrapper: { height: vs(240), width: '100%', position: 'absolute', top: 0, zIndex: 0 },
   coverImage: { width: '100%', height: '100%' },
   coverOverlay: { ...StyleSheet.absoluteFillObject },
   
-  profileHeader: { alignItems: 'center', paddingBottom: 10, zIndex: 10 },
+  profileHeader: { alignItems: 'center', paddingBottom: vs(10), zIndex: 10 },
   portraitWrapper: { 
-    width: 130, 
-    height: 130, 
-    borderRadius: 24, 
+    width: ms(130), 
+    height: ms(130), 
+    borderRadius: ms(24), 
     borderWidth: 4, 
     borderColor: '#fff', 
     overflow: 'hidden', 
@@ -387,73 +399,73 @@ const styles = StyleSheet.create({
   },
   heroPortrait: { width: '100%', height: '100%' },
   
-  profileInfo: { alignItems: 'center', marginTop: 16, marginBottom: 12, paddingHorizontal: 24 },
-  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  profileInfo: { alignItems: 'center', marginTop: vs(16), marginBottom: vs(12), paddingHorizontal: hs(24) },
+  badgeRow: { flexDirection: 'row', gap: hs(8), marginBottom: vs(8) },
   statusBadge: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    gap: 4, 
+    gap: hs(4), 
     backgroundColor: COLORS.secondary, 
-    paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    borderRadius: 6 
+    paddingHorizontal: hs(8), 
+    paddingVertical: vs(4), 
+    borderRadius: ms(6) 
   },
-  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-  profileName: { fontSize: 26, fontWeight: '900', color: COLORS.onSurface, textAlign: 'center', letterSpacing: -0.5 },
-  profileRole: { fontSize: 15, color: COLORS.primary, fontWeight: '700', textAlign: 'center', marginTop: 2 },
+  statusBadgeText: { color: '#fff', fontSize: ms(9), fontWeight: '900', letterSpacing: 0.5 },
+  profileName: { fontSize: ms(26), fontWeight: '900', color: COLORS.onSurface, textAlign: 'center', letterSpacing: -0.5 },
+  profileRole: { fontSize: ms(15), color: COLORS.primary, fontWeight: '700', textAlign: 'center', marginTop: vs(2) },
   
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 12 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
-  metaText: { color: COLORS.onSurfaceVariant, fontSize: 12, fontWeight: '600' },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: hs(12), marginTop: vs(12) },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: hs(4), backgroundColor: COLORS.surface, paddingHorizontal: hs(10), paddingVertical: vs(6), borderRadius: ms(20), borderWidth: 1, borderColor: COLORS.outlineVariant },
+  metaText: { color: COLORS.onSurfaceVariant, fontSize: ms(12), fontWeight: '600' },
   
-  actionBlock: { width: '100%', alignItems: 'center', marginTop: 8 },
-  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }) },
+  actionBlock: { width: '100%', alignItems: 'center', marginTop: vs(8) },
+  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: vs(14), borderRadius: ms(16), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(10), ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }) },
   followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary },
-  followBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
+  followBtnText: { color: '#fff', fontWeight: '900', fontSize: ms(14) },
   followingBtnTextActive: { color: COLORS.primary },
 
-  contentPadding: { padding: 16, gap: 16 },
+  contentPadding: { padding: hs(16), gap: vs(16) },
   
-  tabBar: { backgroundColor: '#fff', borderRadius: 16, padding: 4, flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
-  tabItem: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+  tabBar: { backgroundColor: '#fff', borderRadius: ms(16), padding: ms(4), flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  tabItem: { flex: 1, paddingVertical: vs(10), borderRadius: ms(12), alignItems: 'center' },
   activeTabItem: { backgroundColor: COLORS.primary },
-  tabText: { fontSize: 13, fontWeight: '700', color: COLORS.onSurfaceVariant },
+  tabText: { fontSize: ms(13), fontWeight: '700', color: COLORS.onSurfaceVariant },
   activeTabText: { color: '#ffffff' },
 
-  card: { backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 20, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 }, android: { elevation: 2 } }) },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface },
-  cardBody: { gap: 12 },
-  quoteBox: { backgroundColor: COLORS.primary + '08', padding: 16, borderRadius: 12, position: 'relative' },
-  quoteIcon: { position: 'absolute', top: 8, left: 8, opacity: 0.2 },
-  quoteText: { fontSize: 15, fontWeight: '700', color: COLORS.onSurface, lineHeight: 22, fontStyle: 'italic', textAlign: 'center', paddingHorizontal: 10 },
-  bodyText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22, fontWeight: '500' },
+  card: { backgroundColor: '#fff', borderRadius: ms(20), borderWidth: 1, borderColor: COLORS.outlineVariant, padding: hs(20), ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 }, android: { elevation: 2 } }) },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: hs(10), marginBottom: vs(16) },
+  cardTitle: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface },
+  cardBody: { gap: vs(12) },
+  quoteBox: { backgroundColor: COLORS.primary + '08', padding: hs(16), borderRadius: ms(12), position: 'relative' },
+  quoteIcon: { position: 'absolute', top: vs(8), left: hs(8), opacity: 0.2 },
+  quoteText: { fontSize: ms(15), fontWeight: '700', color: COLORS.onSurface, lineHeight: vs(22), fontStyle: 'italic', textAlign: 'center', paddingHorizontal: hs(10) },
+  bodyText: { fontSize: ms(14), color: COLORS.onSurfaceVariant, lineHeight: vs(22), fontWeight: '500' },
   
-  infoGrid: { flexDirection: 'row', gap: 12 },
-  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
-  infoLabel: { fontSize: 9, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
-  infoValue: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface, marginTop: 4 },
+  infoGrid: { flexDirection: 'row', gap: hs(12) },
+  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(12), borderLeftWidth: 4, borderLeftColor: COLORS.primary },
+  infoLabel: { fontSize: ms(9), fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
+  infoValue: { fontSize: ms(13), fontWeight: '800', color: COLORS.onSurface, marginTop: vs(4) },
 
-  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: 12 },
+  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(12), borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: vs(12) },
 
-  checklist: { gap: 12 },
-  checkItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  checkLabel: { fontSize: 14, fontWeight: '600', color: COLORS.onSurface },
-  subDetail: { marginLeft: 30, marginTop: -4 },
-  subDetailLabel: { fontSize: 11, color: COLORS.onSurfaceVariant, fontStyle: 'italic' },
+  checklist: { gap: vs(12) },
+  checkItem: { flexDirection: 'row', alignItems: 'center', gap: hs(12) },
+  checkLabel: { fontSize: ms(14), fontWeight: '600', color: COLORS.onSurface },
+  subDetail: { marginLeft: hs(30), marginTop: vs(-4) },
+  subDetailLabel: { fontSize: ms(11), color: COLORS.onSurfaceVariant, fontStyle: 'italic' },
 
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
-  detailLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6 },
-  detailValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
-  divider: { height: 12 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: vs(10), borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
+  detailLabel: { fontSize: ms(12), fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6 },
+  detailValue: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurface },
+  divider: { height: vs(12) },
 
-  metricGrid: { flexDirection: 'row', gap: 10 },
-  metricItem: { flex: 1, backgroundColor: COLORS.background, padding: 12, borderRadius: 12, alignItems: 'center' },
-  metricLabel: { fontSize: 10, fontWeight: '700', color: COLORS.outline, marginBottom: 4 },
-  metricValue: { fontSize: 16, fontWeight: '900', color: COLORS.onSurface },
+  metricGrid: { flexDirection: 'row', gap: hs(10) },
+  metricItem: { flex: 1, backgroundColor: COLORS.background, padding: hs(12), borderRadius: ms(12), alignItems: 'center' },
+  metricLabel: { fontSize: ms(10), fontWeight: '700', color: COLORS.outline, marginBottom: vs(4) },
+  metricValue: { fontSize: ms(16), fontWeight: '900', color: COLORS.onSurface },
   
-  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: COLORS.secondary + '08', borderRadius: 12, marginTop: 10 },
-  securityText: { flex: 1, fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: 16 },
+  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: hs(12), padding: hs(16), backgroundColor: COLORS.secondary + '08', borderRadius: ms(12), marginTop: vs(10) },
+  securityText: { flex: 1, fontSize: ms(11), color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: vs(16) },
 });
 
 export default CandidateDetailScreen;

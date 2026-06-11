@@ -19,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 import { BASE_URL } from "../services/api";
 import Header from "../components/common/Header";
 import { showToast } from "../utils/toast";
+import { hs, vs, ms } from "../utils/responsive";
 
 const { width } = Dimensions.get('window');
 
@@ -101,14 +102,6 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
             resizeMode="contain"
           />
           
-          {/* <View style={styles.illustrationContainer}>
-            <View style={styles.outerGlow}>
-              <View style={styles.innerGlow}>
-                <FontAwesome5 name="shield-alt" size={48} color="#003d9b" />
-              </View>
-            </View>
-          </View> */}
-          
           <Text style={styles.mainHeading}>Authorized Access</Text>
           <Text style={styles.subHeading}>Sign in to your secure voting profile to participate in active elections.</Text>
         </View>
@@ -119,7 +112,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="person-outline"
-                size={20}
+                size={ms(20)}
                 color="#94a3b8"
                 style={styles.inputIcon}
               />
@@ -142,7 +135,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="lock-outline"
-                size={20}
+                size={ms(20)}
                 color="#94a3b8"
                 style={styles.inputIcon}
               />
@@ -157,7 +150,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <MaterialIcons
                   name={showPassword ? "visibility-off" : "visibility"}
-                  size={20}
+                  size={ms(20)}
                   color="#64748b"
                 />
               </TouchableOpacity>
@@ -175,7 +168,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
             ) : (
               <View style={styles.buttonInnerContent}>
                 <Text style={styles.primaryButtonText}>Verify & Login</Text>
-                <MaterialIcons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
+                <MaterialIcons name="arrow-forward" size={ms(18)} color="#fff" style={{ marginLeft: hs(8) }} />
               </View>
             )}
           </TouchableOpacity>
@@ -189,7 +182,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         <View style={styles.trustBanner}>
-          <MaterialIcons name="verified-user" size={16} color="#047857" />
+          <MaterialIcons name="verified-user" size={ms(16)} color="#047857" />
           <Text style={styles.trustText}>SECURE-RSA ENCRYPTION ACTIVE</Text>
         </View>
 
@@ -207,113 +200,88 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: hs(24),
+    paddingBottom: vs(40),
     flexGrow: 1,
   },
   heroSection: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 32,
+    marginTop: vs(40),
+    marginBottom: vs(32),
   },
   logoImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  illustrationContainer: {
-    marginBottom: 24,
-  },
-  outerGlow: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#eff6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  innerGlow: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: '#dbeafe',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: ms(120),
+    height: ms(120),
+    marginBottom: vs(20),
   },
   mainHeading: {
-    fontSize: 26,
+    fontSize: ms(26),
     fontWeight: '800',
     color: '#0f172a',
     letterSpacing: -0.5,
   },
   subHeading: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: '#64748b',
     textAlign: 'center',
-    marginTop: 10,
-    lineHeight: 20,
-    paddingHorizontal: 20,
+    marginTop: vs(10),
+    lineHeight: vs(20),
+    paddingHorizontal: hs(20),
   },
   formBorderCard: {
     backgroundColor: "#fff",
     width: "100%",
-    borderRadius: 16,
+    borderRadius: ms(16),
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    padding: 24,
+    padding: ms(24),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
       android: { elevation: 3 },
       web: { boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.05)' }
     })
   },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 12, fontWeight: "700", color: "#1e293b", marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  inputGroup: { marginBottom: vs(20) },
+  label: { fontSize: ms(12), fontWeight: "700", color: "#1e293b", marginBottom: vs(8), textTransform: 'uppercase', letterSpacing: 0.5 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 52,
+    borderRadius: ms(10),
+    paddingHorizontal: hs(14),
+    height: vs(52),
   },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 15, color: "#0f172a", fontWeight: '500' },
+  inputIcon: { marginRight: hs(10) },
+  input: { flex: 1, fontSize: ms(15), color: "#0f172a", fontWeight: '500' },
   passwordLabelRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  forgotText: {
-    color: "#003d9b",
-    fontWeight: "700",
-    fontSize: 12,
-    marginBottom: 8,
-  },
   primaryButton: {
     backgroundColor: "#003d9b",
-    height: 56,
-    borderRadius: 10,
+    height: vs(56),
+    borderRadius: ms(10),
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: vs(8),
   },
   buttonDisabled: { backgroundColor: "#94a3b8" },
   buttonInnerContent: { flexDirection: "row", alignItems: "center" },
-  primaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "800", letterSpacing: 0.5 },
+  primaryButtonText: { color: "#fff", fontSize: ms(16), fontWeight: "800", letterSpacing: 0.5 },
   footerOptions: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: vs(24),
   },
   assistanceHelpText: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: "#64748b",
   },
   registerText: {
-    fontSize: 14,
+    fontSize: ms(14),
     color: "#003d9b",
     fontWeight: '800',
   },
@@ -322,28 +290,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ecfdf5',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 32,
+    paddingVertical: vs(10),
+    paddingHorizontal: hs(16),
+    borderRadius: ms(8),
+    marginTop: vs(32),
     borderWidth: 1,
     borderColor: '#d1fae5',
     alignSelf: 'center',
   },
   trustText: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: "800",
     color: "#047857",
-    marginLeft: 8,
+    marginLeft: hs(8),
     letterSpacing: 1,
   },
   bottomBranding: {
     marginTop: 'auto',
-    paddingVertical: 24,
+    paddingVertical: vs(24),
     alignItems: 'center',
   },
   brandingText: {
-    fontSize: 11,
+    fontSize: ms(11),
     color: '#94a3b8',
     fontWeight: '600',
   },
