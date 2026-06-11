@@ -2,14 +2,16 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
+// DEBUG: Log the raw env value
+console.log('[DEBUG API] process.env.EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
+
 const RAW_API_URL =
-  process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === 'android' ? 'http://10.0.2.2:8000/api/v1' : 'http://127.0.0.1:8000/api/v1');
+  process.env.EXPO_PUBLIC_API_URL || 'http://13.200.172.115/api/v1';
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL} (Platform: ${Platform.OS})`);
 
 // Exported for components that need to construct asset URIs
-export const BASE_URL = RAW_API_URL.replace('/api/v1', '');
+export const BASE_URL = RAW_API_URL.replace('/api/v1', '').replace(/\/+$/, '');
 
 const TENANT_ID_KEY = 'tenant_id';
 
@@ -30,11 +32,10 @@ export const clearTenantID = async () => {
 };
 
 const api = axios.create({
-  baseURL: RAW_API_URL,
+  baseURL: RAW_API_URL.replace(/\/+$/, ''),
   timeout: 30000,
   headers: {
     'Accept': 'application/json',
-    // We omit 'Content-Type' here to avoid interfering with FormData
   },
 });
 
@@ -46,22 +47,26 @@ api.interceptors.request.use(
     const token = await AsyncStorage.getItem('token');
     const tenantID = await getTenantID();
 
-    // 2. Apply Headers (Using Axios 1.x methods for consistency)
+    // 2. Apply Headers
     if (token && config.headers) {
-      config.headers.set('Authorization', `Bearer ${token}`);
+      config.headers['Authorization'] = `Bearer ${token}`;
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`);
+      }
     }
 
-    const resolvedTenantID = tenantID || process.env.EXPO_PUBLIC_TENANT_ID || null;
+    const resolvedTenantID = tenantID || process.env.EXPO_PUBLIC_TENANT_ID || '1';
     
     if (resolvedTenantID && String(resolvedTenantID) !== 'undefined' && config.headers) {
       config.headers['X-Tenant-ID'] = String(resolvedTenantID);
-      // Failsafe for older Axios versions
       if (typeof config.headers.set === 'function') {
         config.headers.set('X-Tenant-ID', String(resolvedTenantID));
       }
-    } else {
-      console.warn(`[API Interceptor] No valid Tenant ID found for ${config.url}. X-Tenant-ID header not set.`);
     }
+
+    // DEBUG: Log the final request URL
+    const finalURL = config.baseURL ? `${config.baseURL}${config.url}` : config.url;
+    console.log(`[API REQUEST] ${config.method?.toUpperCase()} ${finalURL}`);
 
     // 3. Handle Content-Type for FormData vs JSON
     const isFormData = config.data instanceof FormData || 
@@ -69,22 +74,22 @@ api.interceptors.request.use(
                         (config.data._parts || typeof config.data.append === 'function'));
 
     if (isFormData) {
-      console.log(`[API] FormData detected for ${config.url}. Removing Content-Type to allow boundary generation.`);
-      // In Axios 1.x, we MUST use .delete() on the headers object
       if (config.headers) {
-        config.headers.delete('Content-Type');
-        config.headers.delete('content-type');
+        delete config.headers['Content-Type'];
+        delete config.headers['content-type'];
+        if (typeof config.headers.delete === 'function') {
+          config.headers.delete('Content-Type');
+        }
       }
     } else {
-      // Ensure JSON content type for standard requests if not already set
-      if (config.headers && !config.headers.has('Content-Type') && !config.headers.has('content-type')) {
-        config.headers.set('Content-Type', 'application/json');
+      if (config.headers && !config.headers['Content-Type'] && !config.headers['content-type']) {
+        if (typeof config.headers.set === 'function') {
+          config.headers.set('Content-Type', 'application/json');
+        } else {
+          config.headers['Content-Type'] = 'application/json';
+        }
       }
     }
-
-    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`, {
-      headers: config.headers.toJSON ? config.headers.toJSON() : config.headers,
-    });
 
     return config;
   },
@@ -108,11 +113,19 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.error(`[API Error] ${error.config?.url}:`, {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
+    if (!error.response) {
+      console.error(`[API Network Error] URL: ${error.config?.url}`, {
+        message: error.message,
+        code: error.code,
+        baseURL: error.config?.baseURL,
+        fullURL: (error.config?.baseURL || '') + (error.config?.url || '')
+      });
+    } else {
+      console.error(`[API Error Response] ${error.config?.url}:`, {
+        status: error.response.status,
+        data: error.response.data,
+      });
+    }
 
     if (error.response?.status === 401) {
       await AsyncStorage.removeItem('token');

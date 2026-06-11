@@ -68,8 +68,19 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         showToast.error("Access Denied", statusMessage);
       }
     } catch (error: any) {
-      // 4. Standard Credential Validation Failures
-      const message = error.response?.data?.detail || "Invalid credentials. Please check your email and password.";
+      // 4. Detailed Error Handling
+      console.error("[Login Error Details]", error);
+      
+      let message = "An unexpected error occurred.";
+      
+      if (error.response) {
+        message = error.response.data?.detail || error.response.data?.message || "Invalid credentials.";
+      } else if (error.request) {
+        message = "Network error. This is likely due to the self-signed SSL certificate on the server. Please ensure your device/simulator trusts the connection.";
+      } else {
+        message = error.message;
+      }
+      
       showToast.error("Sign In Failed", message);
     } finally {
       setLoading(false);

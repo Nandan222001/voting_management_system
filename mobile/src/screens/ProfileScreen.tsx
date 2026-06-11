@@ -238,21 +238,6 @@ const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </ProfileSection>
 
-          {/* Support Actions */}
-          <View style={styles.supportContainer}>
-            <TouchableOpacity style={styles.supportAction}>
-              <MaterialIcons name="help-center" size={22} color={COLORS.primary} />
-              <Text style={styles.supportActionText}>Help & Documentation</Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.supportAction}>
-              <MaterialIcons name="security" size={22} color={COLORS.primary} />
-              <Text style={styles.supportActionText}>Security & Privacy</Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
-            </TouchableOpacity>
-          </View>
-
           {/* Logout Action */}
           <TouchableOpacity 
             style={styles.logoutButton} 
@@ -604,14 +589,6 @@ const styles = StyleSheet.create({
   },
 
   // Support Styles
-  supportContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 8,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-  },
   supportAction: {
     flexDirection: 'row',
     alignItems: 'center',

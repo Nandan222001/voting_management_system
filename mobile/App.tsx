@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import TabNavigator from './src/navigation/TabNavigator';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { navigationRef } from './src/utils/navigationService';
+import { pushNotificationService } from './src/services/pushNotificationService';
 import Toast, { BaseToast, ErrorToast, InfoToast } from 'react-native-toast-message';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -145,6 +147,10 @@ const toastConfig = {
 function AppContent() {
   const { user, token, isLoading, logout } = useAuth();
 
+  React.useEffect(() => {
+    pushNotificationService.init();
+  }, []);
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -155,7 +161,7 @@ function AppContent() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <StatusBar barStyle="dark-content" />
         {token ? (
           <TabNavigator />

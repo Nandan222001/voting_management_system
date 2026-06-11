@@ -15,6 +15,7 @@ import Header from '../components/common/Header';
 import { Announcement } from '../services/announcementService';
 import { notificationService, NotificationItem, NotificationGroups } from '../services/notificationService';
 import { eventService, EventNotification } from '../services/eventService';
+import { navigationService } from '../utils/navigationService';
 
 const COLORS = {
   primary: '#003d9b',
@@ -89,16 +90,26 @@ export default function NotificationScreen({ navigation }: any) {
   }, []);
 
   const openItem = (item: any) => {
+    console.log('[NotificationScreen] Tapped notification item:', JSON.stringify(item, null, 2));
+    
     if (item.item_type === 'announcement') {
-      navigation.navigate('AnnouncementDetail', { id: item.id, announcement: item });
+      console.log('[NotificationScreen] Navigating to AnnouncementDetail');
+      // AnnouncementDetail is registered in all stacks, so we can use direct navigation.
+      navigationService.navigate('AnnouncementDetail', { id: item.id, announcement: item });
     } else if (item.item_type === 'election') {
-      navigation.navigate('Voting', { election: item });
+      console.log('[NotificationScreen] Navigating to Voting (Nested in Elections)');
+      // Voting is only in VoteStack (Elections tab), so we use nested navigation.
+      navigationService.navigate('Voting', { election: item }, 'Elections');
     } else if (item.event) {
-      // It's an EventNotification
-      navigation.navigate('EventDetail', { event: item.event });
+      console.log('[NotificationScreen] Navigating to EventDetail (Nested in Profile)');
+      // EventDetail is only in ProfileStack (Profile tab).
+      navigationService.navigate('EventDetail', { event: item.event }, 'Profile');
       if (!item.is_read) {
         eventService.markNotificationRead(item.id).catch(console.error);
       }
+    } else {
+      console.warn('[NotificationScreen] Unrecognized item structure, falling back to Dashboard');
+      navigationService.navigate('Dashboard');
     }
   };
 

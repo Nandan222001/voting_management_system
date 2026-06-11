@@ -7,7 +7,7 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">13.207.201.75</domain>
+        <domain includeSubdomains="true">13.200.172.115</domain>
         <trust-anchors>
             <certificates src="system"/>
             <certificates src="user"/>
