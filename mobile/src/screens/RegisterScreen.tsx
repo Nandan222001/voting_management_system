@@ -113,10 +113,17 @@ const PickerField = ({ label, value, icon, onPress, error }: any) => (
   </View>
 );
 
-const SectionHeader = ({ title, step, subtitle }: any) => (
+const SectionHeader = ({ title, step, subtitle, onSkip }: any) => (
   <View style={styles.sectionHeaderContainer}>
-    <View style={styles.stepBadge}>
-      <Text style={styles.stepBadgeText}>Step {step} of 5</Text>
+    <View style={[styles.rowBetween, { alignItems: 'center', marginBottom: 8 }]}>
+      <View style={styles.stepBadge}>
+        <Text style={styles.stepBadgeText}>Step {step} of 5</Text>
+      </View>
+      {onSkip && (
+        <TouchableOpacity onPress={onSkip} style={styles.skipBtn}>
+          <Text style={styles.skipText}>Skip</Text>
+        </TouchableOpacity>
+      )}
     </View>
     <Text style={styles.sectionTitle}>{title}</Text>
     {subtitle && <Text style={styles.sectionSubtitle}>{subtitle}</Text>}
@@ -750,64 +757,97 @@ const RegisterScreen = ({ navigation }: any) => {
 
     return (
       <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalDismissArea} 
+          activeOpacity={1} 
+          onPress={() => {
+            setModalSearchQuery('');
+            setModalType(null);
+          }} 
+        />
         <View style={styles.modalContent}>
+          <View style={styles.modalHandle} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={() => {
-              setModalSearchQuery('');
-              setModalType(null);
-            }}>
-              <MaterialIcons name="close" size={24} color={COLORS.text} />
+            <TouchableOpacity 
+              style={styles.modalCloseBtn}
+              onPress={() => {
+                setModalSearchQuery('');
+                setModalType(null);
+              }}>
+              <MaterialIcons name="close" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
+          
           {modalType === 'committee' && (
             <View style={styles.searchBox}>
               <Ionicons name="search" size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
               <TextInput
                 value={modalSearchQuery}
                 onChangeText={setModalSearchQuery}
-                placeholder="Search committee"
+                placeholder="Search by name..."
                 placeholderTextColor="#9ca3af"
                 style={styles.searchInput}
               />
+              {modalSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setModalSearchQuery('')}>
+                  <MaterialIcons name="cancel" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
+
           <FlatList
             data={searchableData}
             keyExtractor={(item) => (item.id || item.name).toString()}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
             ListEmptyComponent={
               modalType === 'committee' ? (
                 <View style={styles.emptySearchState}>
-                  <Text style={styles.emptyText}>No committee found.</Text>
+                  <Ionicons name="search-outline" size={48} color="#e2e8f0" />
+                  <Text style={styles.emptyText}>No committees found matching your search.</Text>
                 </View>
               ) : null
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.listItem}
-                onPress={() => {
-                  onSelect(item);
-                  setModalSearchQuery('');
-                  setModalType(null);
-                }}
-              >
-                <Text style={styles.listItemText}>
-                  {modalType === 'committee' ? getTargetLabel(item) : item.name}
-                </Text>
-                {(formData.gender === item.id || 
-                  formData.kyc_type === item.id || 
-                  formData.tenant_id === item.id || 
-                  formData.committee_id === item.id || 
-                  formData.membership_plan_id === item.id || 
-                  formData.state_id === item.id || 
-                  formData.district_id === item.id || 
-                  formData.taluka_id === item.id || 
-                  formData.village_id === item.id || 
-                  formData.target_id === item.id) && (
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isSelected = 
+                formData.gender === item.id || 
+                formData.kyc_type === item.id || 
+                formData.tenant_id === item.id || 
+                formData.committee_id === item.id || 
+                formData.membership_plan_id === item.id || 
+                formData.state_id === item.id || 
+                formData.district_id === item.id || 
+                formData.taluka_id === item.id || 
+                formData.village_id === item.id || 
+                formData.target_id === item.id;
+
+              return (
+                <TouchableOpacity
+                  style={[styles.listItem, isSelected && styles.listItemActive]}
+                  onPress={() => {
+                    onSelect(item);
+                    setModalSearchQuery('');
+                    setModalType(null);
+                  }}
+                >
+                  <View style={[styles.listIconBox, isSelected && styles.listIconBoxActive]}>
+                    <Ionicons 
+                      name={modalType === 'committee' ? "business" : "radio-button-off"} 
+                      size={18} 
+                      color={isSelected ? COLORS.primary : COLORS.textSecondary} 
+                    />
+                  </View>
+                  <Text style={[styles.listItemText, isSelected && styles.listItemTextActive]}>
+                    {modalType === 'committee' ? getTargetLabel(item) : item.name}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
           />
         </View>
       </View>
@@ -1011,12 +1051,7 @@ const RegisterScreen = ({ navigation }: any) => {
           {/* Step 3: Address Details */}
           {step === 3 && (
             <View style={styles.formSection}>
-              <View style={styles.rowBetween}>
-                <SectionHeader title="Address Details" step={3} />
-                <TouchableOpacity onPress={() => setStep(4)} style={styles.skipBtn}>
-                  <Text style={styles.skipText}>Skip</Text>
-                </TouchableOpacity>
-              </View>
+              <SectionHeader title="Address Details" step={3} onSkip={() => setStep(4)} />
 
               <Text style={styles.subSectionTitle}>Permanent Address</Text>
               <InputField
@@ -1154,12 +1189,12 @@ const RegisterScreen = ({ navigation }: any) => {
           {/* Step 4: Organization Mapping */}
           {step === 4 && (
             <View style={styles.formSection}>
-              <View style={styles.rowBetween}>
-                <SectionHeader title="Constituency Mapping" step={4} subtitle="Select the constituency or committee you belong to." />
-                <TouchableOpacity onPress={() => setStep(5)} style={styles.skipBtn}>
-                  <Text style={styles.skipText}>Skip</Text>
-                </TouchableOpacity>
-              </View>
+              <SectionHeader
+                title="Constituency Mapping"
+                step={4}
+                subtitle="Select the constituency or committee you belong to."
+                onSkip={() => setStep(5)}
+              />
 
               <PickerField
                 label="Constituency / Committee"
@@ -1183,41 +1218,62 @@ const RegisterScreen = ({ navigation }: any) => {
           {/* Step 5: Membership Plan */}
           {step === 5 && (
             <View style={styles.formSection}>
-              <View style={styles.rowBetween}>
-                <SectionHeader title="Membership Plan" step={5} subtitle="Choose a plan that fits your needs." />
-                <TouchableOpacity onPress={() => handleCompleteRegistration(true)} style={styles.skipBtn}>
-                  <Text style={styles.skipText}>Skip</Text>
-                </TouchableOpacity>
-              </View>
+              <SectionHeader
+                title="Membership Plan"
+                step={5}
+                subtitle="Choose a plan that fits your needs."
+                onSkip={() => handleCompleteRegistration(true)}
+              />
 
               {Array.isArray(plans) && plans.length > 0 ? (
-                plans.map((plan) => {
-                  if (!plan) return null;
-                  return (
-                    <TouchableOpacity
-                      key={plan.id}
-                      style={[
-                        styles.planCard,
-                        formData.membership_plan_id === plan.id && styles.planCardSelected
-                      ]}
-                      onPress={() => {
-                        handleChange('membership_plan_id', plan.id);
-                        setSelectedPlanName(plan.name);
-                      }}
-                    >
-                      <View style={styles.planHeader}>
-                        <Text style={styles.planName}>{plan.name}</Text>
-                        <Text style={styles.planPrice}>₹{Number(plan.price).toLocaleString('en-IN')}</Text>
-                      </View>
-                      <Text style={styles.planDesc}>{plan.description}</Text>
-                      {formData.membership_plan_id === plan.id && (
-                        <Ionicons name="checkmark-circle" size={24} color={COLORS.primary} style={styles.planCheck} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })
+                <View style={styles.plansContainer}>
+                  {plans.map((plan) => {
+                    if (!plan) return null;
+                    const isSelected = formData.membership_plan_id === plan.id;
+                    return (
+                      <TouchableOpacity
+                        key={plan.id}
+                        style={[
+                          styles.planCard,
+                          isSelected && styles.planCardSelected
+                        ]}
+                        onPress={() => {
+                          handleChange('membership_plan_id', plan.id);
+                          setSelectedPlanName(plan.name);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.planCardContent}>
+                          <View style={styles.planCardLeft}>
+                             <View style={[styles.planIconCircle, isSelected && styles.planIconCircleActive]}>
+                                <FontAwesome5 
+                                  name="crown" 
+                                  size={16} 
+                                  color={isSelected ? COLORS.white : COLORS.primary} 
+                                />
+                             </View>
+                             <View style={styles.planCardInfo}>
+                                <Text style={[styles.planName, isSelected && styles.planNameSelected]}>{plan.name}</Text>
+                                <Text style={styles.planDesc} numberOfLines={2}>{plan.description}</Text>
+                             </View>
+                          </View>
+                          
+                          <View style={styles.planCardRight}>
+                             <Text style={[styles.planPrice, isSelected && styles.planPriceSelected]}>
+                               ₹{Number(plan.price).toLocaleString('en-IN')}
+                             </Text>
+                             <View style={[styles.planSelectionCircle, isSelected && styles.planSelectionCircleActive]}>
+                                {isSelected && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+                             </View>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               ) : (
                 <View style={styles.emptyPlans}>
+                   <Ionicons name="information-circle-outline" size={48} color={COLORS.border} />
                    <Text style={styles.emptyText}>No special plans available for this organization. You will be registered as a free member.</Text>
                 </View>
               )}
@@ -1286,33 +1342,33 @@ const styles = StyleSheet.create({
   sectionHeaderContainer: { marginBottom: 24 },
   stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginBottom: 8 },
   stepBadgeText: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
-  sectionTitle: { fontSize: 24, fontWeight: '700', color: COLORS.text },
-  sectionSubtitle: { fontSize: 14, color: COLORS.textSecondary, marginTop: 4 },
-  progressBarBg: { height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, marginTop: 16 },
+  sectionTitle: { fontSize: 22, fontWeight: '700', color: COLORS.text, lineHeight: 28 },
+  sectionSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 4, lineHeight: 18 },
+  progressBarBg: { height: 4, backgroundColor: '#e2e8f0', borderRadius: 2, marginTop: 12 },
   progressBarFilled: { height: 4, backgroundColor: COLORS.primary, borderRadius: 2 },
   
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 16, height: 52 },
+  inputGroup: { marginBottom: 16 },
+  label: { fontSize: 13, fontWeight: '600', color: COLORS.text, marginBottom: 6 },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 16, height: 50 },
   inputWrapperFocused: { borderColor: COLORS.primary, backgroundColor: COLORS.white },
   inputWrapperError: { borderColor: COLORS.error },
   inputIcon: { marginRight: 12 },
-  input: { flex: 1, fontSize: 16, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
-  errorText: { color: COLORS.error, fontSize: 12, marginTop: 4 },
+  input: { flex: 1, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
+  errorText: { color: COLORS.error, fontSize: 11, marginTop: 2 },
   
-  pickerText: { flex: 1, fontSize: 16, color: COLORS.text },
+  pickerText: { flex: 1, fontSize: 15, color: COLORS.text },
   
-  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, padding: 24, alignItems: 'center', marginBottom: 16, backgroundColor: COLORS.primaryContainer },
+  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: 12, padding: 20, alignItems: 'center', marginBottom: 16, backgroundColor: COLORS.primaryContainer },
   uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
   uploadBoxError: { borderColor: COLORS.error, backgroundColor: '#fef2f2' },
-  uploadTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginTop: 12 },
-  uploadSubtitle: { fontSize: 12, color: COLORS.textSecondary, marginTop: 4 },
+  uploadTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginTop: 10 },
+  uploadSubtitle: { fontSize: 11, color: COLORS.textSecondary, marginTop: 2 },
   
   row: { flexDirection: 'row' },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  subSectionTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text, marginVertical: 16 },
-  skipBtn: { padding: 4 },
-  skipText: { color: COLORS.primary, fontWeight: '600', fontSize: 14 },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  subSectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginVertical: 12 },
+  skipBtn: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: COLORS.primaryContainer, borderRadius: 8 },
+  skipText: { color: COLORS.primary, fontWeight: '700', fontSize: 12, textTransform: 'uppercase' },
   
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
   checkboxLabel: { marginLeft: 12, fontSize: 14, color: COLORS.textSecondary },
@@ -1320,15 +1376,73 @@ const styles = StyleSheet.create({
   infoBox: { flexDirection: 'row', backgroundColor: COLORS.primaryContainer, padding: 16, borderRadius: 12, marginTop: 8 },
   infoBoxText: { flex: 1, marginLeft: 12, fontSize: 12, color: COLORS.primary, lineHeight: 18 },
   
-  planCard: { padding: 20, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, marginBottom: 16, backgroundColor: COLORS.white },
-  planCardSelected: { borderColor: COLORS.primary, borderWidth: 2, backgroundColor: COLORS.primaryContainer },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  planName: { fontSize: 18, fontWeight: '700', color: COLORS.text },
-  planPrice: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
-  planDesc: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 20 },
-  planCheck: { position: 'absolute', top: 12, right: 12 },
+  planCard: { 
+    padding: 16, 
+    borderWidth: 1.5, 
+    borderColor: '#e2e8f0', 
+    borderRadius: 20, 
+    marginBottom: 12, 
+    backgroundColor: COLORS.white,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
+  },
+  planCardSelected: { 
+    borderColor: COLORS.primary, 
+    backgroundColor: COLORS.primaryContainer 
+  },
+  planCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 12,
+  },
+  planIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  planIconCircleActive: {
+    backgroundColor: COLORS.primary,
+  },
+  planCardInfo: {
+    flex: 1,
+  },
+  planName: { fontSize: 16, fontWeight: '800', color: COLORS.text, letterSpacing: -0.3 },
+  planNameSelected: { color: COLORS.primary },
+  planPrice: { fontSize: 18, fontWeight: '900', color: COLORS.text, letterSpacing: -0.5 },
+  planPriceSelected: { color: COLORS.primary },
+  planDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, lineHeight: 16 },
+  planCardRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  planSelectionCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+  planSelectionCircleActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
+  },
   emptyPlans: { padding: 40, alignItems: 'center' },
-  emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: 22 },
+  emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: 22, marginTop: 12 },
 
   footerActions: { flexDirection: 'row', paddingHorizontal: 16, marginTop: 8, gap: 12 },
   backBtn: { flex: 1, height: 56, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
@@ -1341,25 +1455,42 @@ const styles = StyleSheet.create({
   alreadyText: { color: COLORS.textSecondary, fontSize: 15 },
   loginText: { color: COLORS.primary, fontWeight: '700', fontSize: 15 },
   
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
+  modalDismissArea: { flex: 1 },
   modalContent: { 
     backgroundColor: COLORS.white, 
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32, 
     padding: 24, 
-    maxHeight: height * 0.7,
+    paddingTop: 8,
+    maxHeight: height * 0.8,
     ...Platform.select({
-      web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 20 },
+      web: { boxShadow: '0px -10px 40px rgba(0, 0, 0, 0.1)' }
     })
   },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginVertical: 12,
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
-  searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: COLORS.bg },
-  searchIcon: { marginRight: 8 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
+  modalCloseBtn: { padding: 8, backgroundColor: COLORS.bg, borderRadius: 12 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: 16, paddingHorizontal: 16, marginBottom: 16, height: 52, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchIcon: { marginRight: 12 },
   searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
-  emptySearchState: { paddingVertical: 24, alignItems: 'center' },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  emptySearchState: { paddingVertical: 40, alignItems: 'center' },
+  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, marginBottom: 4 },
+  listItemActive: { backgroundColor: COLORS.primaryContainer },
+  listIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  listIconBoxActive: { backgroundColor: COLORS.white },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
+  listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
 });
 
 export default RegisterScreen;

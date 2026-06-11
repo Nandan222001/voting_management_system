@@ -17,41 +17,45 @@ const toastConfig = {
     <BaseToast
       {...props}
       style={{
-        borderLeftColor: '#056e00',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        height: 70,
-        width: '90%',
+        borderLeftColor: '#10b981',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        height: 80,
+        width: '94%',
+        marginHorizontal: '3%',
         ...Platform.select({
           ios: {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowColor: '#10b981',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.12,
+            shadowRadius: 15,
           },
           android: {
-            elevation: 5,
+            elevation: 8,
           },
           web: {
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0px 10px 30px rgba(16, 185, 129, 0.12)',
           },
         }),
         borderLeftWidth: 6,
       }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
+      contentContainerStyle={{ paddingHorizontal: 20 }}
       text1Style={{
         fontSize: 16,
         fontWeight: '800',
-        color: '#191c1e',
+        color: '#064e3b',
+        marginBottom: 2,
       }}
       text2Style={{
         fontSize: 13,
-        color: '#434654',
+        color: '#065f46',
         fontWeight: '500',
       }}
       renderLeadingIcon={() => (
-        <View style={{ justifyContent: 'center', paddingLeft: 15 }}>
-          <MaterialIcons name="check-circle" size={24} color="#056e00" />
+        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+          <View style={{ backgroundColor: '#d1fae5', padding: 8, borderRadius: 12 }}>
+            <MaterialIcons name="check-circle" size={24} color="#10b981" />
+          </View>
         </View>
       )}
     />
@@ -60,41 +64,45 @@ const toastConfig = {
     <ErrorToast
       {...props}
       style={{
-        borderLeftColor: '#d32f2f',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        height: 70,
-        width: '90%',
+        borderLeftColor: '#ef4444',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        height: 80,
+        width: '94%',
+        marginHorizontal: '3%',
         ...Platform.select({
           ios: {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowColor: '#ef4444',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.12,
+            shadowRadius: 15,
           },
           android: {
-            elevation: 5,
+            elevation: 8,
           },
           web: {
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0px 10px 30px rgba(239, 68, 68, 0.12)',
           },
         }),
         borderLeftWidth: 6,
       }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
+      contentContainerStyle={{ paddingHorizontal: 20 }}
       text1Style={{
         fontSize: 16,
         fontWeight: '800',
-        color: '#191c1e',
+        color: '#7f1d1d',
+        marginBottom: 2,
       }}
       text2Style={{
         fontSize: 13,
-        color: '#434654',
+        color: '#991b1b',
         fontWeight: '500',
       }}
       renderLeadingIcon={() => (
-        <View style={{ justifyContent: 'center', paddingLeft: 15 }}>
-          <MaterialIcons name="error" size={24} color="#d32f2f" />
+        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+          <View style={{ backgroundColor: '#fee2e2', padding: 8, borderRadius: 12 }}>
+            <MaterialIcons name="error-outline" size={24} color="#ef4444" />
+          </View>
         </View>
       )}
     />
@@ -104,40 +112,44 @@ const toastConfig = {
       {...props}
       style={{
         borderLeftColor: '#003d9b',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        height: 70,
-        width: '90%',
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        height: 80,
+        width: '94%',
+        marginHorizontal: '3%',
         ...Platform.select({
           ios: {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
-            shadowRadius: 8,
+            shadowColor: '#003d9b',
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.12,
+            shadowRadius: 15,
           },
           android: {
-            elevation: 5,
+            elevation: 8,
           },
           web: {
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0px 10px 30px rgba(0, 61, 155, 0.12)',
           },
         }),
         borderLeftWidth: 6,
       }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
+      contentContainerStyle={{ paddingHorizontal: 20 }}
       text1Style={{
         fontSize: 16,
         fontWeight: '800',
-        color: '#191c1e',
+        color: '#1e3a8a',
+        marginBottom: 2,
       }}
       text2Style={{
         fontSize: 13,
-        color: '#434654',
+        color: '#1e40af',
         fontWeight: '500',
       }}
       renderLeadingIcon={() => (
-        <View style={{ justifyContent: 'center', paddingLeft: 15 }}>
-          <MaterialIcons name="info" size={24} color="#003d9b" />
+        <View style={{ justifyContent: 'center', paddingLeft: 20 }}>
+          <View style={{ backgroundColor: '#dbeafe', padding: 8, borderRadius: 12 }}>
+            <MaterialIcons name="info-outline" size={24} color="#003d9b" />
+          </View>
         </View>
       )}
     />

@@ -1112,22 +1112,42 @@ const VotingScreen = ({ navigation, route }: any) => {
       {/* Success Modal */}
       <Modal transparent visible={showSuccessModal} animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.successBox}>
-            <View style={styles.successIconContainer}>
-              <MaterialIcons name="check-circle" size={48} color={COLORS.onSecondaryContainer} />
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => {
+              setShowSuccessModal(false);
+              handleBack();
+            }} 
+          />
+          <View style={styles.modalPopup}>
+            <View style={styles.modalHandle} />
+            <View style={[styles.modalIconBg, { backgroundColor: COLORS.secondary + '10' }]}>
+              <MaterialIcons name="verified" size={40} color={COLORS.secondary} />
             </View>
-            <Text style={styles.successTitle}>Vote Submitted</Text>
-            <Text style={styles.successSub}>
-              Your choice has been securely recorded on the precinct ledger. Your receipt ID: <Text style={{fontWeight: '700'}}>{existingVote?.receipt_hash?.substring(0, 12) || '#VX-9821-AZ'}</Text>
+            <Text style={styles.modalTitle}>Vote Recorded</Text>
+            <Text style={styles.modalMessage}>
+              Your choice has been securely recorded on the precinct ledger. Your unique receipt ID is below.
             </Text>
+            
+            <View style={styles.receiptCard}>
+              <Text style={styles.receiptLabel}>RECEIPT HASH</Text>
+              <Text style={styles.receiptValue}>{existingVote?.receipt_hash?.substring(0, 24) || '#VX-9821-AZ-0021-9921-VBA'}</Text>
+            </View>
+
             <TouchableOpacity 
-              style={styles.returnBtn}
+              style={styles.modalPrimaryBtn}
               onPress={() => {
                 setShowSuccessModal(false);
                 handleBack();
               }}
             >
-              <Text style={styles.returnBtnText}>Return</Text>
+              <LinearGradient
+                colors={[COLORS.primary, '#1e40af']}
+                style={styles.modalPrimaryBtnGradient}
+              >
+                <Text style={styles.modalPrimaryBtnText}>Return to Portal</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -1136,8 +1156,14 @@ const VotingScreen = ({ navigation, route }: any) => {
       {/* Membership / Payment Modal */}
       <Modal transparent visible={showMembershipModal} animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.membershipBox}>
-            <View style={[styles.membershipIconCircle, { backgroundColor: COLORS.primary + '10' }]}>
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => !isProcessingPayment && setShowMembershipModal(false)} 
+          />
+          <View style={styles.modalPopup}>
+            <View style={styles.modalHandle} />
+            <View style={[styles.modalIconBg, { backgroundColor: COLORS.primary + '10' }]}>
                <MaterialIcons 
                 name="card-membership" 
                 size={40} 
@@ -1145,22 +1171,17 @@ const VotingScreen = ({ navigation, route }: any) => {
                />
             </View>
             
-            <Text style={styles.membershipTitle}>
-              Membership Plan Required
-            </Text>
-            
-            <Text style={styles.membershipSub}>
-              To participate in voting, please select a Membership Plan and complete the payment.
-            </Text>
+            <Text style={styles.modalTitle}>Membership Required</Text>
+            <Text style={styles.modalMessage}>To participate in this election, please select an active plan and complete the registration fee.</Text>
 
-            <View style={{ width: '100%', minHeight: 150, maxHeight: 350, marginBottom: 20 }}>
+            <View style={styles.planScrollContainer}>
               {fetchingPlans ? (
                 <View style={styles.modalLoaderContainer}>
                   <ActivityIndicator size="large" color={COLORS.primary} />
                   <Text style={styles.loadingPlansText}>Fetching available plans...</Text>
                 </View>
               ) : (
-                <ScrollView showsVerticalScrollIndicator={false}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
                   {plans.length > 0 ? (
                     plans.map((plan) => (
                       <TouchableOpacity
@@ -1184,46 +1205,51 @@ const VotingScreen = ({ navigation, route }: any) => {
                           styles.selectionCheckCircle,
                           selectedPlanId === plan.id && styles.selectionCheckCircleActive
                         ]}>
-                          {selectedPlanId === plan.id && (
-                            <MaterialIcons name="check" size={16} color={COLORS.primary} />
-                          )}
+                          <Ionicons 
+                            name={selectedPlanId === plan.id ? "checkmark" : "radio-button-off"} 
+                            size={18} 
+                            color={selectedPlanId === plan.id ? COLORS.primary : '#94a3b8'} 
+                          />
                         </View>
                       </TouchableOpacity>
                     ))
                   ) : (
                     <View style={styles.emptyPlansContainer}>
-                       <Text style={styles.emptyPlansText}>No membership plans found.</Text>
+                       <Text style={styles.emptyPlansText}>No membership plans found for your region.</Text>
                     </View>
                   )}
                 </ScrollView>
               )}
             </View>
 
-            <View style={styles.membershipActions}>
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalSecondaryBtn}
+                onPress={() => !isProcessingPayment && setShowMembershipModal(false)}
+                disabled={isProcessingPayment}
+              >
+                <Text style={styles.modalSecondaryBtnText}>Cancel</Text>
+              </TouchableOpacity>
+
               <TouchableOpacity 
                 style={[
-                  styles.membershipMainBtn, 
-                  { backgroundColor: COLORS.primary },
-                  (!selectedPlanId || isProcessingPayment) && styles.membershipMainBtnDisabled
+                  styles.modalPrimaryBtn, 
+                  { flex: 2 },
+                  (!selectedPlanId || isProcessingPayment) && { opacity: 0.5 }
                 ]}
                 onPress={() => handleRealPayment()}
                 disabled={isProcessingPayment || !selectedPlanId}
               >
-                {isProcessingPayment ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.membershipMainBtnText}>
-                    Pay & Activate
-                  </Text>
-                )}
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.membershipCancelBtn}
-                onPress={() => !isProcessingPayment && setShowMembershipModal(false)}
-                disabled={isProcessingPayment}
-              >
-                <Text style={styles.membershipCancelText}>Dismiss</Text>
+                <LinearGradient
+                  colors={[COLORS.primary, '#1e40af']}
+                  style={styles.modalPrimaryBtnGradient}
+                >
+                  {isProcessingPayment ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.modalPrimaryBtnText}>Activate Now</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -2522,153 +2548,112 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.5,
   },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
-  successBox: { backgroundColor: '#fff', width: '100%', borderRadius: 24, padding: 24, alignItems: 'center' },
-  successIconContainer: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.secondaryContainer, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  successTitle: { fontSize: 24, fontWeight: '700', color: COLORS.onSurface, marginBottom: 8 },
-  successSub: { fontSize: 14, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  returnBtn: { backgroundColor: COLORS.surfaceContainerHighest, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 12, width: '100%', alignItems: 'center' },
-  returnBtnText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface },
-  
-  // Membership Modal Styles
-  membershipBox: { 
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
+  modalDismissArea: { flex: 1 },
+  modalPopup: { 
     backgroundColor: '#fff', 
     width: '100%', 
-    borderRadius: 28, 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32, 
     padding: 24, 
+    paddingTop: 8,
     alignItems: 'center',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20 },
-      android: { elevation: 10 }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 20 }
     })
   },
-  membershipIconCircle: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 20 
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginVertical: 12,
+    marginBottom: 20,
   },
-  membershipTitle: { 
-    fontSize: 22, 
-    fontWeight: '800', 
-    color: COLORS.onSurface, 
-    marginBottom: 10,
-    textAlign: 'center'
-  },
-  membershipSub: { 
-    fontSize: 15, 
-    color: COLORS.onSurfaceVariant, 
-    textAlign: 'center', 
-    lineHeight: 22, 
-    marginBottom: 28,
-    opacity: 0.8
-  },
-  membershipActions: { 
-    width: '100%', 
-    gap: 12 
-  },
-  membershipMainBtn: { 
-    paddingVertical: 16, 
-    borderRadius: 16, 
-    width: '100%', 
+  modalIconBg: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    justifyContent: 'center',
     alignItems: 'center',
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8 },
-      android: { elevation: 4 }
-    })
+    marginBottom: 20,
   },
-  membershipMainBtnText: { 
-    fontSize: 16, 
-    fontWeight: '800', 
-    color: '#fff',
-    letterSpacing: 0.5
+  modalTitle: { fontSize: 22, fontWeight: '900', color: COLORS.onSurface, marginBottom: 10, letterSpacing: -0.5 },
+  modalMessage: { fontSize: 15, color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: 22, marginBottom: 24, opacity: 0.8 },
+  
+  receiptCard: {
+    backgroundColor: '#f8fafc',
+    width: '100%',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 24,
+    alignItems: 'center',
   },
-  membershipCancelBtn: { 
-    paddingVertical: 14, 
-    width: '100%', 
-    alignItems: 'center' 
+  receiptLabel: { fontSize: 10, fontWeight: '800', color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: 6 },
+  receiptValue: { fontSize: 13, fontWeight: '700', color: COLORS.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlign: 'center' },
+  
+  modalPrimaryBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
-  membershipCancelText: { 
-    fontSize: 14, 
-    fontWeight: '700', 
-    color: COLORS.onSurfaceVariant 
+  modalPrimaryBtnGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
+  modalPrimaryBtnText: { color: '#fff', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+  
+  modalSecondaryBtn: {
+    flex: 1,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSecondaryBtnText: { fontSize: 15, fontWeight: '800', color: COLORS.onSurfaceVariant },
+  
+  modalActions: { flexDirection: 'row', gap: 12, width: '100%', marginTop: 8, marginBottom: 12 },
+  
+  planScrollContainer: { width: '100%', maxHeight: 300, marginBottom: 20 },
+  
   planSelectCard: {
     width: '100%',
-    padding: 20,
+    padding: 18,
     borderRadius: 20,
-    backgroundColor: COLORS.surfaceContainerLow,
-    marginBottom: 12,
+    backgroundColor: '#f8fafc',
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1.5,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: '#e2e8f0',
   },
   planSelectCardActive: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primaryContainer,
+    borderColor: COLORS.primary,
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12 },
-      android: { elevation: 8 }
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10 },
+      android: { elevation: 4 }
     })
   },
-  planSelectInfo: {
-    flex: 1,
-  },
-  planSelectName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.onSurface,
-    letterSpacing: -0.2,
-  },
-  planSelectPrice: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.onSurfaceVariant,
-    marginTop: 4,
-  },
-  planSelectTextActive: {
-    color: '#fff',
-  },
-  selectionCheckCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  selectionCheckCircleActive: {
-    backgroundColor: '#fff',
-    borderColor: '#fff',
-  },
-  modalLoaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingPlansText: {
-    marginTop: 16,
-    fontSize: 14,
-    color: COLORS.onSurfaceVariant,
-    fontWeight: '600',
-  },
-  emptyPlansContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyPlansText: {
-    color: COLORS.onSurfaceVariant,
-    textAlign: 'center',
-    fontSize: 14,
-  },
+  planSelectInfo: { flex: 1 },
+  planSelectName: { fontSize: 17, fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
+  planSelectPrice: { fontSize: 14, fontWeight: '700', color: COLORS.onSurfaceVariant, marginTop: 4 },
+  planSelectTextActive: { color: '#fff' },
+  selectionCheckCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
+  selectionCheckCircleActive: { backgroundColor: '#fff' },
+  
+  modalLoaderContainer: { paddingVertical: 40, alignItems: 'center' },
+  loadingPlansText: { marginTop: 12, fontSize: 14, color: COLORS.onSurfaceVariant, fontWeight: '600' },
+  emptyPlansContainer: { padding: 40, alignItems: 'center' },
+  emptyPlansText: { color: COLORS.onSurfaceVariant, textAlign: 'center', fontSize: 14 },
   membershipMainBtnDisabled: {
     backgroundColor: COLORS.outlineVariant,
     opacity: 0.5,

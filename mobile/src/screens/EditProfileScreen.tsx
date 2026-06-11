@@ -633,42 +633,88 @@ const EditProfileScreen = ({ navigation }: any) => {
 
     return (
       <View style={styles.modalOverlay}>
+        <TouchableOpacity 
+          style={styles.modalDismissArea} 
+          activeOpacity={1} 
+          onPress={() => {
+            setModalSearchQuery('');
+            setModalType(null);
+          }} 
+        />
         <View style={styles.modalContent}>
+          <View style={styles.modalHandle} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{title}</Text>
-            <TouchableOpacity onPress={() => setModalType(null)}>
-              <MaterialIcons name="close" size={24} color={COLORS.text} />
+            <TouchableOpacity 
+              style={styles.modalCloseBtn}
+              onPress={() => {
+                setModalSearchQuery('');
+                setModalType(null);
+              }}>
+              <MaterialIcons name="close" size={20} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
+          
           {modalType === 'committee' && (
             <View style={styles.searchBox}>
               <Ionicons name="search" size={18} color={COLORS.textSecondary} style={styles.searchIcon} />
               <TextInput
                 value={modalSearchQuery}
                 onChangeText={setModalSearchQuery}
-                placeholder="Search committee"
+                placeholder="Search by name..."
                 placeholderTextColor="#9ca3af"
                 style={styles.searchInput}
               />
+              {modalSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setModalSearchQuery('')}>
+                  <MaterialIcons name="cancel" size={18} color="#94a3b8" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
+
           <FlatList
             data={searchableData}
             keyExtractor={(item) => (item.id || item.name).toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.listItem}
-                onPress={() => {
-                  onSelect(item);
-                  setModalType(null);
-                }}
-              >
-                <Text style={styles.listItemText}>{item.name}</Text>
-                {(formData.gender === item.id || formData.target_id === item.id || formData.membership_plan_id === item.id) && (
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
-                )}
-              </TouchableOpacity>
-            )}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            ListEmptyComponent={
+              modalType === 'committee' ? (
+                <View style={styles.emptySearchState}>
+                  <Ionicons name="search-outline" size={48} color="#e2e8f0" />
+                  <Text style={styles.emptyText}>No results found.</Text>
+                </View>
+              ) : null
+            }
+            renderItem={({ item }) => {
+              const isSelected = 
+                formData.gender === item.id || 
+                formData.target_id === item.id || 
+                formData.membership_plan_id === item.id;
+
+              return (
+                <TouchableOpacity
+                  style={[styles.listItem, isSelected && styles.listItemActive]}
+                  onPress={() => {
+                    onSelect(item);
+                    setModalSearchQuery('');
+                    setModalType(null);
+                  }}
+                >
+                  <View style={[styles.listIconBox, isSelected && styles.listIconBoxActive]}>
+                    <Ionicons 
+                      name={modalType === 'committee' ? "business" : "radio-button-off"} 
+                      size={18} 
+                      color={isSelected ? COLORS.primary : COLORS.textSecondary} 
+                    />
+                  </View>
+                  <Text style={[styles.listItemText, isSelected && styles.listItemTextActive]}>{item.name}</Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={22} color={COLORS.primary} />
+                  )}
+                </TouchableOpacity>
+              );
+            }}
           />
         </View>
       </View>
@@ -1124,24 +1170,42 @@ const styles = StyleSheet.create({
   photoLabel: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary, marginTop: 8 },
   photoLoadingOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
+  modalDismissArea: { flex: 1 },
   modalContent: { 
     backgroundColor: COLORS.white, 
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
+    borderTopLeftRadius: 32, 
+    borderTopRightRadius: 32, 
     padding: 24, 
+    paddingTop: 8,
     maxHeight: '80%',
     ...Platform.select({
-      web: { boxShadow: '0px -4px 10px rgba(0, 0, 0, 0.1)' }
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 20 },
+      web: { boxShadow: '0px -10px 40px rgba(0, 0, 0, 0.1)' }
     })
   },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginVertical: 12,
+  },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
-  searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, backgroundColor: COLORS.bg },
-  searchIcon: { marginRight: 8 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
+  modalCloseBtn: { padding: 8, backgroundColor: COLORS.bg, borderRadius: 12 },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: 16, paddingHorizontal: 16, marginBottom: 16, height: 52, borderWidth: 1, borderColor: '#e2e8f0' },
+  searchIcon: { marginRight: 12 },
   searchInput: { flex: 1, height: 48, fontSize: 15, color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  emptySearchState: { paddingVertical: 40, alignItems: 'center' },
+  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16, marginBottom: 4 },
+  listItemActive: { backgroundColor: COLORS.primaryContainer },
+  listIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: 16 },
+  listIconBoxActive: { backgroundColor: COLORS.white },
   listItemText: { flex: 1, fontSize: 16, color: COLORS.text, fontWeight: '500' },
+  listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
 
   // Hero Header Styles
   heroHeader: {

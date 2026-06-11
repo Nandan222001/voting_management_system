@@ -269,26 +269,37 @@ const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsLogoutModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => setIsLogoutModalVisible(false)} 
+          />
           <View style={styles.modalPopup}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalIconBg}>
-              <MaterialIcons name="logout" size={28} color={COLORS.error} />
+              <MaterialIcons name="logout" size={32} color={COLORS.error} />
             </View>
             <Text style={styles.modalTitle}>Sign Out</Text>
-            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to exit your secure voting session?</Text>
             
             <View style={styles.modalActions}>
               <TouchableOpacity 
                 style={styles.cancelBtn} 
                 onPress={() => setIsLogoutModalVisible(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>Keep Session</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.confirmBtn} 
                 onPress={confirmLogout}
               >
-                <Text style={styles.confirmBtnText}>Sign Out</Text>
+                <LinearGradient
+                  colors={[COLORS.error, '#dc2626']}
+                  style={styles.confirmBtnGradient}
+                >
+                  <Text style={styles.confirmBtnText}>Sign Out</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -645,36 +656,47 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
   },
+  modalDismissArea: { flex: 1 },
   modalPopup: {
     width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 32,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: 32,
+    paddingTop: 8,
     alignItems: 'center',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 16 },
-      android: { elevation: 24 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 20 },
     })
   },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#e2e8f0',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginVertical: 12,
+    marginBottom: 24,
+  },
   modalIconBg: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
+    width: 72,
+    height: 72,
+    borderRadius: 24,
     backgroundColor: COLORS.error + '10',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
-    color: COLORS.primary,
+    color: COLORS.onSurface,
     marginBottom: 12,
+    letterSpacing: -0.5,
   },
   modalMessage: {
     fontSize: 16,
@@ -683,15 +705,17 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 32,
     fontWeight: '500',
+    paddingHorizontal: 10,
   },
   modalActions: {
     flexDirection: 'row',
     gap: 12,
     width: '100%',
+    marginBottom: 10,
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 16,
+    height: 56,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -704,16 +728,19 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     flex: 1,
-    paddingVertical: 16,
+    height: 56,
     borderRadius: 16,
+    overflow: 'hidden',
+  },
+  confirmBtnGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fee2e2',
   },
   confirmBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: COLORS.error,
+    color: '#fff',
   },
 });
 
