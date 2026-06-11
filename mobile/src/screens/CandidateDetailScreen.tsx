@@ -21,6 +21,19 @@ import { showToast } from '../utils/toast';
 
 const { width } = Dimensions.get('window');
 
+const LOCAL_IMAGES = [
+  require('../images/image1.jpg'),
+  require('../images/image2.jpg'),
+  require('../images/image3.jpg'),
+  require('../images/image5.jpg'),
+  require('../images/image6.jpg'),
+  require('../images/image7.jpg'),
+  require('../images/image9.jpg'),
+  require('../images/image10.jpg'),
+  require('../images/image11.jpg'),
+  require('../images/ image11.jpg'),
+];
+
 const COLORS = {
   primary: '#003d9b',
   primaryContainer: '#0052cc',
@@ -62,9 +75,22 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
   const role = candidate.position_name || candidate.committee?.name || 'CANDIDATE';
   const constituency = candidate.target?.name || 'General Node';
   
+  // Deterministic random selection based on candidate ID
+  const getRandomLocalImage = (id: any, offset = 0) => {
+    const numericId = typeof id === 'number' ? id : parseInt(id || '0', 10) || 0;
+    const index = (numericId + offset) % LOCAL_IMAGES.length;
+    return LOCAL_IMAGES[index];
+  };
+
   // Fallback logic for images
-  const portraitUrl = candidate.image_url ? mediaService.getFileUrl(candidate.image_url) : DEFAULT_IMAGES.portrait;
-  const coverUrl = candidate.cover_url ? mediaService.getFileUrl(candidate.cover_url) : DEFAULT_IMAGES.cover;
+  const portraitSource = candidate.image_url 
+    ? { uri: mediaService.getFileUrl(candidate.image_url) } 
+    : getRandomLocalImage(candidate.id || 0, 3); // offset 3 for variety
+
+  const coverSource = candidate.cover_url 
+    ? { uri: mediaService.getFileUrl(candidate.cover_url) } 
+    : getRandomLocalImage(candidate.id || 0, 7); // offset 7 for variety
+
   const bioText = candidate.bio || "Candidate has not provided a specific mission statement.";
 
   useEffect(() => {
@@ -102,13 +128,16 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="article" size={24} color={COLORS.primary} />
+              <MaterialIcons name="article" size={22} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Vision & Statement</Text>
             </View>
             <View style={styles.cardBody}>
-              <Text style={styles.quoteText}>
-                "{candidate.mission_statement || "Transforming our community with integrity and a shared commitment to innovation and democratic progress."}"
-              </Text>
+              <View style={styles.quoteBox}>
+                <MaterialIcons name="format-quote" size={24} color={COLORS.primary} style={styles.quoteIcon} />
+                <Text style={styles.quoteText}>
+                  {candidate.mission_statement || "Transforming our community with integrity and a shared commitment to innovation and democratic progress."}
+                </Text>
+              </View>
               <Text style={styles.bodyText}>{bioText}</Text>
               
               <View style={styles.infoGrid}>
@@ -133,7 +162,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="fact_check" size={24} color={COLORS.primary} />
+              <MaterialIcons name="fact_check" size={22} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Eligibility & Declarations</Text>
             </View>
             <View style={styles.checklist}>
@@ -155,7 +184,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
         return (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <MaterialIcons name="contact-mail" size={24} color={COLORS.primary} />
+              <MaterialIcons name="contact-mail" size={22} color={COLORS.primary} />
               <Text style={styles.cardTitle}>Registry & Contact</Text>
             </View>
             <View style={styles.cardBody}>
@@ -179,20 +208,19 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       
-      {/* 1. Static Cover Header Area */}
-      <View style={[styles.coverWrapper, { height: 50 + insets.top }]}>
-        <Image source={{ uri: coverUrl }} style={styles.coverImage} />
+      {/* 1. Cover Area */}
+      <View style={styles.coverWrapper}>
+        <Image source={coverSource} style={styles.coverImage} />
         <LinearGradient
-          colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.4)', 'transparent']}
+          colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.4)']}
           style={styles.coverOverlay}
         />
       </View>
 
-      {/* Header moved outside and after coverWrapper for proper zIndex stacking */}
       <Header 
-        title="Candidate Details" 
+        title="" 
         transparent 
         showBack 
         onBack={() => navigation.goBack()} 
@@ -201,13 +229,16 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={{ paddingBottom: 60 }}
-        style={{ zIndex: 1, paddingTop: 130 }}
+        style={styles.scrollView}
       >
-        {/* 2. Overlapping Profile Section */}
+        {/* Spacer for cover */}
+        <View style={{ height: 140 }} />
+
+        {/* 2. Profile Header Section */}
         <View style={styles.profileHeader}>
           <View style={styles.portraitWrapper}>
             <Image 
-              source={{ uri: portraitUrl }} 
+              source={portraitSource} 
               style={styles.heroPortrait} 
               resizeMode="cover"
             />
@@ -215,19 +246,27 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
           
           <View style={styles.profileInfo}>
             <View style={styles.badgeRow}>
-              <View style={styles.statusBadge}><Text style={styles.statusBadgeText}>VERIFIED CANDIDATE</Text></View>
-              {candidate.held_previously && <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}><Text style={styles.statusBadgeText}>INCUMBENT</Text></View>}
+              <View style={styles.statusBadge}>
+                <MaterialIcons name="verified" size={12} color="#fff" />
+                <Text style={styles.statusBadgeText}>VERIFIED</Text>
+              </View>
+              {candidate.held_previously && (
+                <View style={[styles.statusBadge, { backgroundColor: COLORS.primary }]}>
+                  <MaterialIcons name="stars" size={12} color="#fff" />
+                  <Text style={styles.statusBadgeText}>INCUMBENT</Text>
+                </View>
+              )}
             </View>
-            <Text style={styles.profileName}>{fullName}</Text>
+            <Text style={styles.profileName} numberOfLines={2}>{fullName}</Text>
             <Text style={styles.profileRole}>{role}</Text>
             
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <MaterialIcons name="location-on" size={16} color={COLORS.onSurfaceVariant} />
+                <MaterialIcons name="location-on" size={14} color={COLORS.onSurfaceVariant} />
                 <Text style={styles.metaText}>{constituency}</Text>
               </View>
               <View style={styles.metaItem}>
-                <MaterialIcons name="groups" size={16} color={COLORS.onSurfaceVariant} />
+                <MaterialIcons name="account-balance" size={14} color={COLORS.onSurfaceVariant} />
                 <Text style={styles.metaText}>{candidate.committee?.name || "Independent"}</Text>
               </View>
             </View>
@@ -275,18 +314,23 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
 
           {/* Campaign Metrics Card */}
           <View style={styles.card}>
-            <Text style={styles.sectionLabel}>CAMPAIGN METRICS</Text>
-            <View style={styles.metricRow}>
-              <Text style={styles.metricLabel}>Secure Votes</Text>
-              <Text style={styles.metricValue}>{candidate.vote_count || 0}</Text>
+            <View style={styles.cardHeader}>
+              <MaterialIcons name="insights" size={22} color={COLORS.primary} />
+              <Text style={styles.cardTitle}>Election Profile</Text>
             </View>
-            <View style={styles.metricRow}>
-              <Text style={styles.metricLabel}>Registry ID</Text>
-              <Text style={styles.metricValue}>#{(candidate.id || 0).toString().padStart(3, '0')}</Text>
-            </View>
-            <View style={styles.metricRow}>
-              <Text style={styles.metricLabel}>Verification Status</Text>
-              <Text style={[styles.metricValue, { color: COLORS.secondary }]}>Verified</Text>
+            <View style={styles.metricGrid}>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>Secure Votes</Text>
+                <Text style={styles.metricValue}>{candidate.vote_count || 0}</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>Registry ID</Text>
+                <Text style={styles.metricValue}>#{(candidate.id || 0).toString().padStart(3, '0')}</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Text style={styles.metricLabel}>Rank Status</Text>
+                <Text style={[styles.metricValue, { color: COLORS.secondary }]}>Verified</Text>
+              </View>
             </View>
           </View>
 
@@ -321,53 +365,76 @@ const CheckItem = ({ label, checked }: any) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
+  scrollView: { flex: 1 },
   
-  coverWrapper: { height: 180, width: '100%', position: 'relative', zIndex: 20 },
+  coverWrapper: { height: 240, width: '100%', position: 'absolute', top: 0, zIndex: 0 },
   coverImage: { width: '100%', height: '100%' },
   coverOverlay: { ...StyleSheet.absoluteFillObject },
   
-  profileHeader: { alignItems: 'center', paddingBottom: 10, marginTop: -65, zIndex: 10, elevation: 5 },
-  portraitWrapper: { width: 130, height: 130, borderRadius: 20, borderWidth: 5, borderColor: '#fff', overflow: 'hidden', backgroundColor: '#fff', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 10, elevation: 8 },
+  profileHeader: { alignItems: 'center', paddingBottom: 10, zIndex: 10 },
+  portraitWrapper: { 
+    width: 130, 
+    height: 130, 
+    borderRadius: 24, 
+    borderWidth: 4, 
+    borderColor: '#fff', 
+    overflow: 'hidden', 
+    backgroundColor: '#fff',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 15 },
+      android: { elevation: 12 }
+    })
+  },
   heroPortrait: { width: '100%', height: '100%' },
   
-  profileInfo: { alignItems: 'center', marginTop: 16, marginBottom: 20, paddingHorizontal: 20 },
-  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  statusBadge: { backgroundColor: COLORS.secondary, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
-  statusBadgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
-  profileName: { fontSize: 28, fontWeight: '900', color: COLORS.onSurface, textAlign: 'center' },
-  profileRole: { fontSize: 16, color: COLORS.onSurfaceVariant, fontWeight: '700', textAlign: 'center', marginTop: 4 },
+  profileInfo: { alignItems: 'center', marginTop: 16, marginBottom: 12, paddingHorizontal: 24 },
+  badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  statusBadge: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 4, 
+    backgroundColor: COLORS.secondary, 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 6 
+  },
+  statusBadgeText: { color: '#fff', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  profileName: { fontSize: 26, fontWeight: '900', color: COLORS.onSurface, textAlign: 'center', letterSpacing: -0.5 },
+  profileRole: { fontSize: 15, color: COLORS.primary, fontWeight: '700', textAlign: 'center', marginTop: 2 },
   
-  metaRow: { flexDirection: 'row', gap: 16, marginTop: 14 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { color: COLORS.onSurfaceVariant, fontSize: 13, fontWeight: '600' },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginTop: 12 },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.surface, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: COLORS.outlineVariant },
+  metaText: { color: COLORS.onSurfaceVariant, fontSize: 12, fontWeight: '600' },
   
-  actionBlock: { width: '100%', alignItems: 'center', marginTop: 10 },
-  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary, shadowOpacity: 0.05 },
+  actionBlock: { width: '100%', alignItems: 'center', marginTop: 8 },
+  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: 14, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }) },
+  followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary },
   followBtnText: { color: '#fff', fontWeight: '900', fontSize: 14 },
   followingBtnTextActive: { color: COLORS.primary },
 
   contentPadding: { padding: 16, gap: 16 },
   
-  tabBar: { backgroundColor: '#fff', borderRadius: 12, padding: 4, flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
-  tabItem: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
+  tabBar: { backgroundColor: '#fff', borderRadius: 16, padding: 4, flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  tabItem: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
   activeTabItem: { backgroundColor: COLORS.primary },
   tabText: { fontSize: 13, fontWeight: '700', color: COLORS.onSurfaceVariant },
   activeTabText: { color: '#ffffff' },
 
-  card: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 24 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: COLORS.onSurface },
+  card: { backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: COLORS.outlineVariant, padding: 20, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 }, android: { elevation: 2 } }) },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface },
   cardBody: { gap: 12 },
-  quoteText: { fontSize: 16, fontWeight: '700', color: COLORS.onSurface, lineHeight: 24, fontStyle: 'italic' },
+  quoteBox: { backgroundColor: COLORS.primary + '08', padding: 16, borderRadius: 12, position: 'relative' },
+  quoteIcon: { position: 'absolute', top: 8, left: 8, opacity: 0.2 },
+  quoteText: { fontSize: 15, fontWeight: '700', color: COLORS.onSurface, lineHeight: 22, fontStyle: 'italic', textAlign: 'center', paddingHorizontal: 10 },
   bodyText: { fontSize: 14, color: COLORS.onSurfaceVariant, lineHeight: 22, fontWeight: '500' },
   
   infoGrid: { flexDirection: 'row', gap: 12 },
-  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
+  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: COLORS.primary },
   infoLabel: { fontSize: 9, fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
   infoValue: { fontSize: 13, fontWeight: '800', color: COLORS.onSurface, marginTop: 4 },
 
-  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 8, borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: 12 },
+  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: 12, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: 12 },
 
   checklist: { gap: 12 },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -375,15 +442,15 @@ const styles = StyleSheet.create({
   subDetail: { marginLeft: 30, marginTop: -4 },
   subDetailLabel: { fontSize: 11, color: COLORS.onSurfaceVariant, fontStyle: 'italic' },
 
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
   detailLabel: { fontSize: 12, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.6 },
   detailValue: { fontSize: 14, fontWeight: '700', color: COLORS.onSurface },
   divider: { height: 12 },
 
-  sectionLabel: { fontSize: 10, fontWeight: '900', color: COLORS.outline, letterSpacing: 1.5, marginBottom: 16 },
-  metricRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.surfaceContainerLow },
-  metricLabel: { fontSize: 14, fontWeight: '500', color: COLORS.onSurfaceVariant },
-  metricValue: { fontSize: 14, fontWeight: '800', color: COLORS.onSurface },
+  metricGrid: { flexDirection: 'row', gap: 10 },
+  metricItem: { flex: 1, backgroundColor: COLORS.background, padding: 12, borderRadius: 12, alignItems: 'center' },
+  metricLabel: { fontSize: 10, fontWeight: '700', color: COLORS.outline, marginBottom: 4 },
+  metricValue: { fontSize: 16, fontWeight: '900', color: COLORS.onSurface },
   
   securityBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, backgroundColor: COLORS.secondary + '08', borderRadius: 12, marginTop: 10 },
   securityText: { flex: 1, fontSize: 11, color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: 16 },

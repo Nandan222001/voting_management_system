@@ -1016,50 +1016,48 @@ const EditProfileScreen = ({ navigation }: any) => {
 
               {plans.length > 0 ? (
                 <View style={styles.plansContainer}>
-                  {plans.map((plan) => (
-                    <TouchableOpacity
-                      key={plan.id}
-                      style={[
-                        styles.planCard,
-                        formData.membership_plan_id === plan.id && styles.planCardSelected
-                      ]}
-                      onPress={() => {
-                        handleChange('membership_plan_id', plan.id);
-                        setSelectedPlanName(plan.name);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <View style={styles.planContent}>
-                        <View style={styles.planMainInfo}>
-                          <View style={styles.planTitleRow}>
-                            <Text style={styles.planName} numberOfLines={1}>{plan.name}</Text>
-                            {formData.membership_plan_id === plan.id && (
-                              <View style={styles.selectedBadge}>
-                                <Ionicons name="checkmark-sharp" size={14} color={COLORS.white} />
-                              </View>
-                            )}
+                  {plans.map((plan) => {
+                    const isSelected = formData.membership_plan_id === plan.id;
+                    return (
+                      <TouchableOpacity
+                        key={plan.id}
+                        style={[
+                          styles.planCard,
+                          isSelected && styles.planCardSelected
+                        ]}
+                        onPress={() => {
+                          handleChange('membership_plan_id', plan.id);
+                          setSelectedPlanName(plan.name);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.planCardContent}>
+                          <View style={styles.planCardLeft}>
+                             <View style={[styles.planIconCircle, isSelected && styles.planIconCircleActive]}>
+                                <Ionicons 
+                                  name="ribbon" 
+                                  size={18} 
+                                  color={isSelected ? COLORS.white : COLORS.primary} 
+                                />
+                             </View>
+                             <View style={styles.planCardInfo}>
+                                <Text style={[styles.planName, isSelected && styles.planNameSelected]}>{plan.name}</Text>
+                                <Text style={styles.planDesc} numberOfLines={1}>{plan.description}</Text>
+                             </View>
                           </View>
                           
-                          <View style={styles.planPricingRow}>
-                            <Text style={styles.planPriceSymbol}>₹</Text>
-                            <Text style={styles.planPriceAmount}>{plan.price}</Text>
-                            <Text style={styles.planPricePeriod}> / {plan.period}</Text>
+                          <View style={styles.planCardRight}>
+                             <Text style={[styles.planPriceAmount, isSelected && styles.planPriceSelected]}>
+                               ₹{plan.price}
+                             </Text>
+                             <View style={[styles.planSelectionCircle, isSelected && styles.planSelectionCircleActive]}>
+                                {isSelected && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+                             </View>
                           </View>
                         </View>
-
-                        <View style={styles.planDivider} />
-                        
-                        <View style={styles.planFooter}>
-                          <Text style={styles.planDesc} numberOfLines={2}>{plan.description}</Text>
-                          <MaterialIcons 
-                            name="chevron-right" 
-                            size={20} 
-                            color={formData.membership_plan_id === plan.id ? COLORS.primary : COLORS.textSecondary} 
-                          />
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               ) : (
                 <View style={styles.emptyPlans}>
@@ -1146,13 +1144,71 @@ const styles = StyleSheet.create({
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
   checkboxLabel: { marginLeft: 12, fontSize: 14, color: COLORS.textSecondary },
   
-  planCard: { padding: 20, borderWidth: 1, borderColor: COLORS.border, borderRadius: 16, marginBottom: 16, backgroundColor: COLORS.white },
-  planCardSelected: { borderColor: COLORS.primary, borderWidth: 2, backgroundColor: COLORS.primaryContainer },
-  planHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  planName: { fontSize: 18, fontWeight: '700', color: COLORS.text },
-  planPrice: { fontSize: 16, fontWeight: '800', color: COLORS.primary },
-  planDesc: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 20 },
-  planCheck: { position: 'absolute', top: 12, right: 12 },
+  planCard: { 
+    padding: 16, 
+    borderWidth: 1.5, 
+    borderColor: '#e2e8f0', 
+    borderRadius: 20, 
+    marginBottom: 12, 
+    backgroundColor: COLORS.white,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+      android: { elevation: 2 }
+    })
+  },
+  planCardSelected: { 
+    borderColor: COLORS.primary, 
+    backgroundColor: COLORS.primaryContainer 
+  },
+  planCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 12,
+  },
+  planIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  planIconCircleActive: {
+    backgroundColor: COLORS.primary,
+  },
+  planCardInfo: {
+    flex: 1,
+  },
+  planName: { fontSize: 16, fontWeight: '800', color: COLORS.text, letterSpacing: -0.3 },
+  planNameSelected: { color: COLORS.primary },
+  planPriceAmount: { fontSize: 18, fontWeight: '900', color: COLORS.text, letterSpacing: -0.5 },
+  planPriceSelected: { color: COLORS.primary },
+  planDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, lineHeight: 16 },
+  planCardRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  planSelectionCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#cbd5e1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+  planSelectionCircleActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
+  },
   emptyPlans: { padding: 40, alignItems: 'center' },
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: 22 },
 
@@ -1258,61 +1314,6 @@ const styles = StyleSheet.create({
   // Plan Card Professional Styles
   plansContainer: {
     gap: 12,
-  },
-  planContent: {
-    flex: 1,
-  },
-  planMainInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  planTitleRow: {
-    flex: 1,
-    minWidth: 120,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  selectedBadge: {
-    backgroundColor: COLORS.primary,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  planPricingRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  planPriceSymbol: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginRight: 2,
-  },
-  planPriceAmount: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: COLORS.primary,
-  },
-  planPricePeriod: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-  },
-  planDivider: {
-    height: 1,
-    backgroundColor: '#f1f5f9',
-    marginVertical: 12,
-  },
-  planFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 });
 

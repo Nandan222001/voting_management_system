@@ -1183,36 +1183,45 @@ const VotingScreen = ({ navigation, route }: any) => {
               ) : (
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
                   {plans.length > 0 ? (
-                    plans.map((plan) => (
-                      <TouchableOpacity
-                        key={plan.id}
-                        activeOpacity={0.8}
-                        style={[
-                          styles.planSelectCard,
-                          selectedPlanId === plan.id && styles.planSelectCardActive
-                        ]}
-                        onPress={() => setSelectedPlanId(plan.id)}
-                      >
-                        <View style={styles.planSelectInfo}>
-                          <Text style={[styles.planSelectName, selectedPlanId === plan.id && styles.planSelectTextActive]}>
-                            {plan.name}
-                          </Text>
-                          <Text style={[styles.planSelectPrice, selectedPlanId === plan.id && styles.planSelectTextActive, { opacity: 0.8 }]}>
-                            ₹{plan.price} / {plan.period || 'one-time'}
-                          </Text>
-                        </View>
-                        <View style={[
-                          styles.selectionCheckCircle,
-                          selectedPlanId === plan.id && styles.selectionCheckCircleActive
-                        ]}>
-                          <Ionicons 
-                            name={selectedPlanId === plan.id ? "checkmark" : "radio-button-off"} 
-                            size={18} 
-                            color={selectedPlanId === plan.id ? COLORS.primary : '#94a3b8'} 
-                          />
-                        </View>
-                      </TouchableOpacity>
-                    ))
+                    plans.map((plan) => {
+                      const isSelected = selectedPlanId === plan.id;
+                      return (
+                        <TouchableOpacity
+                          key={plan.id}
+                          activeOpacity={0.8}
+                          style={[
+                            styles.planSelectCard,
+                            isSelected && styles.planSelectCardActive
+                          ]}
+                          onPress={() => setSelectedPlanId(plan.id)}
+                        >
+                          <View style={styles.planCardContent}>
+                            <View style={styles.planCardLeft}>
+                               <View style={[styles.planIconCircle, isSelected && styles.planIconCircleActive]}>
+                                  <MaterialIcons 
+                                    name="stars" 
+                                    size={18} 
+                                    color={isSelected ? COLORS.white : COLORS.primary} 
+                                  />
+                               </View>
+                               <View style={styles.planCardInfo}>
+                                  <Text style={[styles.planSelectName, isSelected && styles.planSelectTextActive]}>{plan.name}</Text>
+                                  <Text style={[styles.planSelectDesc, isSelected && styles.planSelectTextActive]} numberOfLines={1}>{plan.period || 'one-time access'}</Text>
+                               </View>
+                            </View>
+                            
+                            <View style={styles.planCardRight}>
+                               <Text style={[styles.planSelectPrice, isSelected && styles.planSelectTextActive]}>
+                                 ₹{plan.price}
+                               </Text>
+                               <View style={[styles.selectionCheckCircle, isSelected && styles.selectionCheckCircleActive]}>
+                                  {isSelected && <Ionicons name="checkmark" size={14} color={COLORS.primary} />}
+                               </View>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
                   ) : (
                     <View style={styles.emptyPlansContainer}>
                        <Text style={styles.emptyPlansText}>No membership plans found for your region.</Text>
@@ -2625,13 +2634,10 @@ const styles = StyleSheet.create({
   
   planSelectCard: {
     width: '100%',
-    padding: 18,
+    padding: 16,
     borderRadius: 20,
     backgroundColor: '#f8fafc',
     marginBottom: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     borderWidth: 1.5,
     borderColor: '#e2e8f0',
   },
@@ -2640,15 +2646,55 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 10 },
-      android: { elevation: 4 }
+      android: { elevation: 6 }
     })
   },
-  planSelectInfo: { flex: 1 },
-  planSelectName: { fontSize: 17, fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
-  planSelectPrice: { fontSize: 14, fontWeight: '700', color: COLORS.onSurfaceVariant, marginTop: 4 },
+  planCardContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    paddingRight: 10,
+  },
+  planIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  planIconCircleActive: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  planCardInfo: { flex: 1 },
+  planSelectName: { fontSize: 16, fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
+  planSelectDesc: { fontSize: 11, color: COLORS.onSurfaceVariant, marginTop: 2, fontWeight: '600' },
+  planSelectPrice: { fontSize: 18, fontWeight: '900', color: COLORS.onSurface, letterSpacing: -0.5 },
   planSelectTextActive: { color: '#fff' },
-  selectionCheckCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
-  selectionCheckCircleActive: { backgroundColor: '#fff' },
+  planCardRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  selectionCheckCircle: { 
+    width: 24, 
+    height: 24, 
+    borderRadius: 12, 
+    backgroundColor: '#fff', 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#cbd5e1'
+  },
+  selectionCheckCircleActive: { 
+    backgroundColor: '#fff',
+    borderColor: '#fff'
+  },
   
   modalLoaderContainer: { paddingVertical: 40, alignItems: 'center' },
   loadingPlansText: { marginTop: 12, fontSize: 14, color: COLORS.onSurfaceVariant, fontWeight: '600' },
