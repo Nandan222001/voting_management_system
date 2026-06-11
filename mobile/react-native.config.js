@@ -3,5 +3,5 @@ module.exports = {
     ios: {},
     android: {},
   },
-  assets: ['./src/assets/fonts'],
+  assets: [], // Removed to avoid conflict with Pods
 };

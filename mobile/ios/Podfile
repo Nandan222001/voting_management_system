@@ -23,19 +23,12 @@ target 'vbabharat' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  # https://github.com/oblador/react-native-vector-icons#option-install-with-cocoapods
-  # pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
-
   target 'vbabharatTests' do
     inherit! :complete
     # Pods for testing
   end
 
   post_install do |installer|
-    # Copy fonts to resources
-    fcopy = 'cp node_modules/react-native-vector-icons/Fonts/*.ttf ios/vbabharat/Fonts/'
-    system(fcopy) if Dir.exist?('node_modules/react-native-vector-icons/Fonts')
-
     react_native_post_install(
       installer,
       config[:reactNativePath],
