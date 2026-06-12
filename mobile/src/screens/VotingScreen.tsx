@@ -21,6 +21,7 @@ import { electionService } from '../services/electionService';
 import { nominationService } from '../services/nominationService';
 import { paymentService } from '../services/paymentService';
 import { planService } from '../services/planService';
+import { mediaService } from '../services/mediaService';
 import { openRazorpayCheckout } from '../utils/payment';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
@@ -914,10 +915,16 @@ const VotingScreen = ({ navigation, route }: any) => {
                         <View style={styles.candRowContent}>
                           <View style={styles.candRowLeft}>
                             <View style={styles.rowAvatarWrapper}>
-                              <Image 
-                                source={{ uri: candidate.manifesto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.full_name)}&background=${isSelected ? '4f46e5' : 'dae2ff'}&color=${isSelected ? 'fff' : '003d9b'}&bold=true` }} 
-                                style={styles.rowAvatarImg} 
-                              />
+                              {candidate.image_url || candidate.image ? (
+                                <Image 
+                                  source={{ uri: mediaService.getFileUrl(candidate.image_url || candidate.image) }} 
+                                  style={styles.rowAvatarImg} 
+                                />
+                              ) : (
+                                <View style={[styles.rowAvatarImg, { backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' }]}>
+                                  <MaterialIcons name="person" size={ms(32)} color={COLORS.primary} />
+                                </View>
+                              )}
                               {hasVoted && (
                                 <View style={styles.rowVotedBadge}>
                                   <MaterialIcons name="verified" size={ms(14)} color="#fff" />
@@ -1190,8 +1197,8 @@ const styles = StyleSheet.create({
     paddingTop: vs(15),
     height: vs(260),
     paddingHorizontal: hs(20),
-    borderBottomLeftRadius: ms(32),
-    borderBottomRightRadius: ms(32),
+    // borderBottomLeftRadius: ms(32),
+    // borderBottomRightRadius: ms(32),
     marginBottom: vs(24),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
@@ -1479,11 +1486,12 @@ const styles = StyleSheet.create({
   pageNumberTextActive: { color: '#fff' },
 
   detailHero: {
-    paddingTop: vs(75),
-    height: vs(260),
+    paddingTop: vs(25),
+    minHeight: vs(280),
+    paddingBottom: vs(20),
     paddingHorizontal: hs(20),
-    borderBottomLeftRadius: ms(16),
-    borderBottomRightRadius: ms(16),
+    // borderBottomLeftRadius: ms(16),
+    // borderBottomRightRadius: ms(16),
     marginBottom: vs(24),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
@@ -1496,7 +1504,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.15)',
     borderRadius: ms(10),
     padding: hs(16),
-    marginTop: vs(20),
+    marginTop: vs(10),
     gap: hs(12),
   },
   detailMetaCol: { flex: 1, alignItems: 'center' },
@@ -1703,13 +1711,25 @@ const styles = StyleSheet.create({
   actionCastGradient: { height: vs(60), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: hs(10) },
   actionCastBtnText: { color: '#fff', fontSize: ms(16), fontWeight: '800', letterSpacing: 0.5 },
 
-  premiumTimerContainer: { flexDirection: 'row', alignItems: 'center', gap: hs(8), marginTop: vs(8) },
+  premiumTimerContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'flex-start', 
+    justifyContent: 'center',
+    width: '100%',
+    gap: hs(6), 
+    paddingLeft: hs(25),
+    marginTop: vs(8), 
+  },
   timerSegment: { alignItems: 'center', gap: vs(4) },
   timerValueBox: { width: ms(42), height: ms(42), borderRadius: ms(6), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   timerValueText: { color: '#fff', fontSize: ms(18), fontWeight: '900', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   timerLabelText: { color: 'rgba(255,255,255,0.5)', fontSize: ms(8), fontWeight: '800', letterSpacing: 0.5 },
-  timerSeparator: { paddingBottom: vs(14) },
-  timerSeparatorText: { color: 'rgba(255,255,255,0.3)', fontSize: ms(20), fontWeight: '900' },
+  timerSeparator: { 
+    height: ms(42), 
+    justifyContent: 'center', 
+    alignItems: 'center',
+  },
+  timerSeparatorText: { color: 'rgba(255,255,255,0.3)', fontSize: ms(20), fontWeight: '900', marginTop: vs(-2) },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
   modalDismissArea: { flex: 1 },

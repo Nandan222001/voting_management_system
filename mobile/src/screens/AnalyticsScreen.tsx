@@ -21,17 +21,13 @@ const COLORS = {
   error: '#ef4444',
 };
 
-const AnalyticsScreen = () => {
+const AnalyticsScreen = ({ navigation }: any) => {
   const { width, height } = useWindowDimensions();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [committees, setCommittees] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedPerson, setSelectedPerson] = useState<any>(null);
-  const [selectedPersonTitle, setSelectedPersonTitle] = useState('');
-  const [selectedPersonTarget, setSelectedPersonTarget] = useState<any>(null);
-  const [detailVisible, setDetailVisible] = useState(false);
   const itemsPerPage = 10;
 
   const loadPeople = async () => {
@@ -97,10 +93,20 @@ const AnalyticsScreen = () => {
       <TouchableOpacity 
         style={styles.modernPersonRow} 
         onPress={() => {
-          setSelectedPerson(person);
-          setSelectedPersonTitle(title);
-          setSelectedPersonTarget(target);
-          setDetailVisible(true);
+          const mappedCandidate = {
+            id: person.id,
+            full_name: person.full_name,
+            position_name: title,
+            committee: { name: target.name },
+            target: { name: target.name },
+            image_url: person.image,
+            email: person.email,
+            phone: person.phone,
+            gender: person.gender,
+            date_of_birth: person.date_of_birth,
+            is_representative: true,
+          };
+          navigation.navigate('CandidateDetail', { candidate: mappedCandidate });
         }}
         activeOpacity={0.7}
       >
@@ -117,7 +123,7 @@ const AnalyticsScreen = () => {
                  />
                ) : (
                  <View style={[styles.modernPersonImg, { backgroundColor: isWinner ? '#10b981' : (isPresident ? '#4338ca' : '#003d9b'), justifyContent: 'center', alignItems: 'center' }]}>
-                    <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "person")} size={ms(32)} color="#fff" />
+                    <MaterialIcons name="person" size={ms(32)} color="#fff" />
                  </View>
                )}
                <View style={[
@@ -152,123 +158,6 @@ const AnalyticsScreen = () => {
          </View>
          <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
       </TouchableOpacity>
-    );
-  };
-
-  const UserDetailModal = () => {
-    if (!selectedPerson) return null;
-    const isWinner = selectedPersonTitle.toLowerCase().includes('winner');
-    const isPresident = selectedPersonTitle.toLowerCase().includes('president');
-
-    return (
-      <Modal
-        visible={detailVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setDetailVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { height: hp(85) }]}>
-            <View style={styles.modalHeader}>
-               <Text style={styles.modalTitle}>Representative Profile</Text>
-               <TouchableOpacity onPress={() => setDetailVisible(false)} style={styles.closeBtn}>
-                  <MaterialIcons name="close" size={ms(24)} color={COLORS.onSurface} />
-               </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScroll}>
-               <View style={styles.profileHero}>
-                  <LinearGradient
-                    colors={[isWinner ? '#10b981' : (isPresident ? '#4338ca' : '#003d9b'), isWinner ? '#059669' : (isPresident ? '#3730a3' : '#002d72')]}
-                    style={styles.heroGradient}
-                  >
-                    <View style={styles.heroAvatarContainer}>
-                       {selectedPerson.image ? (
-                         <Image source={{ uri: mediaService.getFileUrl(selectedPerson.image) }} style={styles.heroAvatar} />
-                       ) : (
-                         <View style={[styles.heroAvatar, { backgroundColor: isWinner ? '#10b981' : (isPresident ? '#4338ca' : '#003d9b'), justifyContent: 'center', alignItems: 'center', borderWidth: 4, borderColor: '#fff' }]}>
-                            <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "person")} size={ms(60)} color="#fff" />
-                         </View>
-                       )}
-                       <View style={styles.heroBadge}>
-                          <MaterialIcons name={isWinner ? "stars" : (isPresident ? "workspace-premium" : "verified")} size={ms(16)} color="#fff" />
-                       </View>
-                    </View>
-                    <Text style={styles.heroName}>{selectedPerson.full_name}</Text>
-                    <View style={styles.heroTagPill}>
-                       <Text style={styles.heroTagText}>{selectedPersonTitle.toUpperCase()}</Text>
-                    </View>
-                  </LinearGradient>
-               </View>
-
-               <View style={styles.profileBody}>
-                  <View style={styles.infoCard}>
-                     <Text style={styles.infoCardTitle}>Constituency Details</Text>
-                     <View style={styles.infoRow}>
-                        <View style={styles.infoIconBox}>
-                           <Ionicons name="location" size={ms(18)} color={COLORS.primary} />
-                        </View>
-                        <View>
-                           <Text style={styles.infoLabel}>Assigned Node</Text>
-                           <Text style={styles.infoValue}>{selectedPersonTarget?.name || 'Central Command'}</Text>
-                        </View>
-                     </View>
-                     <View style={styles.infoRow}>
-                        <View style={styles.infoIconBox}>
-                           <MaterialIcons name="layers" size={ms(18)} color={COLORS.primary} />
-                        </View>
-                        <View>
-                           <Text style={styles.infoLabel}>Administrative Type</Text>
-                           <Text style={styles.infoValue}>{(selectedPersonTarget?.type || 'CORE').toUpperCase()}</Text>
-                        </View>
-                     </View>
-                  </View>
-
-                  <View style={styles.infoCard}>
-                     <Text style={styles.infoCardTitle}>Contact Ledger</Text>
-                     <View style={styles.infoRow}>
-                        <View style={styles.infoIconBox}>
-                           <MaterialIcons name="email" size={ms(18)} color={COLORS.primary} />
-                        </View>
-                        <View>
-                           <Text style={styles.infoLabel}>Official Email</Text>
-                           <Text style={styles.infoValue}>{selectedPerson.email || 'Confidential'}</Text>
-                        </View>
-                     </View>
-                     <View style={styles.infoRow}>
-                        <View style={styles.infoIconBox}>
-                           <MaterialIcons name="phone" size={ms(18)} color={COLORS.primary} />
-                        </View>
-                        <View>
-                           <Text style={styles.infoLabel}>Registry Phone</Text>
-                           <Text style={styles.infoValue}>{selectedPerson.phone || '+XX XXXXX XXXXX'}</Text>
-                        </View>
-                     </View>
-                  </View>
-
-                  <View style={styles.infoCard}>
-                     <Text style={styles.infoCardTitle}>Personal Identity</Text>
-                     <View style={styles.gridRow}>
-                        <View style={styles.gridItem}>
-                           <Text style={styles.infoLabel}>Gender</Text>
-                           <Text style={styles.infoValue}>{selectedPerson.gender || 'Not Disclosed'}</Text>
-                        </View>
-                        <View style={styles.gridItem}>
-                           <Text style={styles.infoLabel}>Date of Birth</Text>
-                           <Text style={styles.infoValue}>{selectedPerson.date_of_birth || 'XX-XX-XXXX'}</Text>
-                        </View>
-                     </View>
-                  </View>
-
-                  <View style={styles.securitySeal}>
-                     <MaterialIcons name="verified-user" size={ms(20)} color="#10b981" />
-                     <Text style={styles.securitySealText}>This identity record is cryptographically verified and active in the central governance ledger.</Text>
-                  </View>
-               </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     );
   };
 
@@ -376,7 +265,6 @@ const AnalyticsScreen = () => {
            <Text style={styles.footerText}>Records are cryptographically locked and verified by Central Command.</Text>
         </View>
       </ScrollView>
-      <UserDetailModal />
     </View>
   );
 };
@@ -389,8 +277,8 @@ const styles = StyleSheet.create({
     paddingTop: vs(60),
     height: vs(260),
     paddingHorizontal: hs(20),
-    borderBottomLeftRadius: ms(32),
-    borderBottomRightRadius: ms(32),
+    // borderBottomLeftRadius: ms(32),
+    // borderBottomRightRadius: ms(32),
     marginBottom: vs(24),
     
     ...Platform.select({
@@ -406,6 +294,7 @@ const styles = StyleSheet.create({
   peopleList: { gap: vs(20), marginTop: vs(8) },
   targetCard: { 
     backgroundColor: '#fff', borderRadius: ms(12), overflow: 'hidden', borderWidth: 1, borderColor: COLORS.outlineVariant,
+    marginHorizontal: hs(16),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 12 },
       android: { elevation: 3 },

@@ -333,6 +333,12 @@ const EditProfileScreen = ({ navigation }: any) => {
         updateData.current_state = formData.state;
         updateData.current_pincode = formData.pincode;
       }
+
+      // Re-hijack parent_name with image_url if it exists
+      if (formData.image_url) {
+        updateData.parent_name = `${formData.parent_name}|||${formData.image_url}`;
+      }
+
       const hasPlanChanged = formData.membership_plan_id !== user?.membership_plan_id;
       if (hasPlanChanged) {
         setLoading(false);
@@ -369,7 +375,12 @@ const EditProfileScreen = ({ navigation }: any) => {
     
     try {
       // 1. Update the profile with the new plan ID so the backend allows order creation
-      await updateProfile({ membership_plan_id: membershipPlanId });
+      // Note: We should also include the hijacked parent_name here if we want to preserve it during this intermediate step
+      const intermediateUpdateData: any = { membership_plan_id: membershipPlanId };
+      if (formData.image_url) {
+        intermediateUpdateData.parent_name = `${formData.parent_name}|||${formData.image_url}`;
+      }
+      await updateProfile(intermediateUpdateData);
 
       // 2. Create Order
       const targetPlan = plans.find(p => p.id === membershipPlanId);
@@ -410,6 +421,10 @@ const EditProfileScreen = ({ navigation }: any) => {
           razorpay_payment_id: data.razorpay_payment_id,
           razorpay_signature: data.razorpay_signature,
         };
+        // Re-hijack again just in case (updateData should already have it from handleUpdate)
+        if (formData.image_url) {
+          finalUpdateData.parent_name = `${formData.parent_name}|||${formData.image_url}`;
+        }
 
         await updateProfile(finalUpdateData);
         showToast.success("Success", "Plan updated and profile saved successfully!");
@@ -792,8 +807,8 @@ const styles = StyleSheet.create({
     paddingBottom: vs(30),
     minHeight: vs(240),
     paddingHorizontal: hs(20),
-    borderBottomLeftRadius: ms(16),
-    borderBottomRightRadius: ms(16),
+    // borderBottomLeftRadius: ms(16),
+    // borderBottomRightRadius: ms(16),
     marginBottom: vs(8),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },

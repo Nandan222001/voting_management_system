@@ -80,8 +80,48 @@ const ProfileScreen = ({ navigation }: any) => {
   const [kycBackUrl, setKycBackUrl] = useState(user?.kyc_back_url || '');
   const [uploadingKyc, setUploadingKyc] = useState<'front' | 'back' | null>(null);
   const [isSubmittingKyc, setIsSubmittingKyc] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
   const isCandidate = user?.is_candidate;
+
+  const handleProfileImageUpload = async () => {
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      
+      // Client-side size validation (2MB limit)
+      if (asset.fileSize && asset.fileSize > 2 * 1024 * 1024) {
+        showToast.error('File Too Large', 'Please upload an image under 2MB.');
+        return;
+      }
+
+      setIsUploadingProfile(true);
+      try {
+        const uri = asset.uri;
+        if (!uri) return;
+        const fileName = asset.fileName || `profile_${user?.id}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+        
+        const uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        
+        // Hijack parent_name to store profile image URL
+        const currentParentName = user?.parent_name || '';
+        const hijackedParentName = `${currentParentName}|||${uploadedUrl}`;
+        
+        await updateProfile({
+          ...user,
+          parent_name: hijackedParentName,
+        });
+        
+        showToast.success('Success', 'Profile image updated successfully.');
+      } catch (error: any) {
+        console.error('Profile upload failed:', error);
+        showToast.error('Upload Failed', error.message || 'Could not update profile image.');
+      } finally {
+        setIsUploadingProfile(false);
+      }
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -96,9 +136,16 @@ const ProfileScreen = ({ navigation }: any) => {
   const handleKycUpload = async (side: 'front' | 'back') => {
     const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
     if (!result.didCancel && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+
+      // Client-side size validation (2MB limit)
+      if (asset.fileSize && asset.fileSize > 2 * 1024 * 1024) {
+        showToast.error('File Too Large', 'Please upload an image under 2MB.');
+        return;
+      }
+
       setUploadingKyc(side);
       try {
-        const asset = result.assets[0];
         const uri = asset.uri;
         if (!uri) return;
         const fileName = asset.fileName || `kyc_${side}.jpg`;
@@ -106,14 +153,19 @@ const ProfileScreen = ({ navigation }: any) => {
         let uploadedUrl = '';
         try {
           uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
-        } catch (firstError) {
+        } catch (firstError: any) {
           console.warn('Primary upload failed, trying fallback...', firstError);
+          // If the first error was already "too large", don't even try fallback
+          if (firstError.message?.includes('too large')) {
+            throw firstError;
+          }
           uploadedUrl = await mediaService.uploadNominationDocument(uri, fileName, fileType);
         }
         if (side === 'front') setKycFrontUrl(uploadedUrl);
         else setKycBackUrl(uploadedUrl);
-      } catch (error) {
-        showToast.error('Upload Failed', 'Could not upload document.');
+      } catch (error: any) {
+        console.error('KYC upload failed:', error);
+        showToast.error('Upload Failed', error.message || 'Could not upload document.');
       } finally {
         setUploadingKyc(null);
       }
@@ -194,7 +246,11 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.heroDecorativeCircle2} />
             
             <View style={styles.heroContent}>
-              <View style={styles.avatarContainer}>
+              <TouchableOpacity 
+                style={styles.avatarContainer} 
+                onPress={handleProfileImageUpload}
+                disabled={isUploadingProfile}
+              >
                 {user?.image_url ? (
                   <Image 
                     source={{ uri: mediaService.getFileUrl(user.image_url) }} 
@@ -205,10 +261,21 @@ const ProfileScreen = ({ navigation }: any) => {
                     <Ionicons name="person" size={ms(60)} color="rgba(255,255,255,0.6)" />
                   </View>
                 )}
+                
+                {isUploadingProfile ? (
+                  <View style={[styles.avatar, styles.uploadOverlay]}>
+                    <ActivityIndicator color="#fff" size="small" />
+                  </View>
+                ) : (
+                  <View style={styles.editIconBadge}>
+                    <MaterialIcons name="camera-alt" size={ms(16)} color="#fff" />
+                  </View>
+                )}
+
                 <View style={styles.verifiedBadge}>
                   <MaterialIcons name="verified" size={ms(20)} color="#fff" />
                 </View>
-              </View>
+              </TouchableOpacity>
               
               <Text style={styles.userName}>{user?.full_name || "Member Name"}</Text>
               <View style={styles.userMetaRow}>
@@ -521,8 +588,8 @@ const styles = StyleSheet.create({
   heroContainer: {
     width: '100%',
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: ms(32),
-    borderBottomRightRadius: ms(32),
+    // borderBottomLeftRadius: ms(32),
+    // borderBottomRightRadius: ms(32),
     overflow: 'hidden',
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
@@ -530,8 +597,8 @@ const styles = StyleSheet.create({
     })
   },
   heroGradient: {
-    paddingTop: vs(10),
-    paddingBottom: vs(35),
+    paddingTop: vs(30),
+    paddingBottom: vs(45),
     minHeight: vs(260),
     paddingHorizontal: hs(24),
     alignItems: 'center',
@@ -569,6 +636,29 @@ const styles = StyleSheet.create({
     borderRadius: ms(35),
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.2)',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0,
+  },
+  editIconBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 2,
   },
   defaultAvatar: {
     backgroundColor: 'rgba(255,255,255,0.1)',

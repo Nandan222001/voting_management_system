@@ -273,6 +273,13 @@ const NominationScreen = ({ navigation, route }: any) => {
     });
     if (!result.didCancel && result.assets && result.assets[0].uri) {
       const asset = result.assets[0];
+
+      // Client-side size validation (2MB limit)
+      if (asset.fileSize && asset.fileSize > 2 * 1024 * 1024) {
+        Alert.alert('File Too Large', 'Please upload an image under 2MB.');
+        return;
+      }
+
       const localUri = asset.uri;
       setPreviews({ ...previews, [field]: localUri });
       setLoading(true);
@@ -284,7 +291,7 @@ const NominationScreen = ({ navigation, route }: any) => {
         );
         setFormData({ ...formData, [field]: uploadedUrl });
       } catch (error: any) {
-        const errorMsg = error.response?.data?.detail || error.message || 'Could not upload image.';
+        const errorMsg = error.message || 'Could not upload image.';
         Alert.alert('Upload Failed', `${errorMsg}. Please try again.`);
       } finally {
         setLoading(false);
@@ -314,6 +321,13 @@ const NominationScreen = ({ navigation, route }: any) => {
         type: [DocumentPicker.types.images, DocumentPicker.types.pdf],
       });
       const asset = results[0];
+
+      // Client-side size validation (2MB limit)
+      if (asset.size && asset.size > 2 * 1024 * 1024) {
+        Alert.alert('File Too Large', 'Please upload a document under 2MB.');
+        return;
+      }
+
       setPreviews({ ...previews, signature_url: asset.uri });
       setLoading(true);
       try {
@@ -330,7 +344,7 @@ const NominationScreen = ({ navigation, route }: any) => {
         });
         setErrors({ ...errors, signature_url: '' });
       } catch (error: any) {
-        Alert.alert('Upload Failed', error.response?.data?.detail || 'Could not upload signature.');
+        Alert.alert('Upload Failed', error.message || 'Could not upload document.');
       } finally {
         setLoading(false);
       }

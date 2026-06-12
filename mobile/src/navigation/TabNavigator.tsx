@@ -46,6 +46,7 @@ const AnalyticsStack = () => (
     <Stack.Screen name="AnalyticsMain" component={AnalyticsScreen} />
     <Stack.Screen name="Notifications" component={NotificationScreen} />
     <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+    <Stack.Screen name="CandidateDetail" component={CandidateDetailScreen} />
   </Stack.Navigator>
 );
 
