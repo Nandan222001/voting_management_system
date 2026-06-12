@@ -22,6 +22,7 @@ import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
 import { mediaService } from '../services/mediaService';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { hs, vs, ms } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
@@ -72,6 +73,14 @@ const ProfileScreen = ({ navigation }: any) => {
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  // KYC States
+  const [isKycModalVisible, setIsKycModalVisible] = useState(false);
+  const [kycType, setKycType] = useState(user?.kyc_type || 'Aadhaar');
+  const [kycFrontUrl, setKycFrontUrl] = useState(user?.kyc_front_url || '');
+  const [kycBackUrl, setKycBackUrl] = useState(user?.kyc_back_url || '');
+  const [uploadingKyc, setUploadingKyc] = useState<'front' | 'back' | null>(null);
+  const [isSubmittingKyc, setIsSubmittingKyc] = useState(false);
+
   const isCandidate = user?.is_candidate;
 
   const onRefresh = async () => {
@@ -82,6 +91,55 @@ const ProfileScreen = ({ navigation }: any) => {
       console.error("Refresh failed", e);
     }
     setRefreshing(false);
+  };
+
+  const handleKycUpload = async (side: 'front' | 'back') => {
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
+      setUploadingKyc(side);
+      try {
+        const asset = result.assets[0];
+        const uri = asset.uri;
+        if (!uri) return;
+        const fileName = asset.fileName || `kyc_${side}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+        let uploadedUrl = '';
+        try {
+          uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        } catch (firstError) {
+          console.warn('Primary upload failed, trying fallback...', firstError);
+          uploadedUrl = await mediaService.uploadNominationDocument(uri, fileName, fileType);
+        }
+        if (side === 'front') setKycFrontUrl(uploadedUrl);
+        else setKycBackUrl(uploadedUrl);
+      } catch (error) {
+        showToast.error('Upload Failed', 'Could not upload document.');
+      } finally {
+        setUploadingKyc(null);
+      }
+    }
+  };
+
+  const submitKyc = async () => {
+    if (!kycFrontUrl) {
+      showToast.error('Validation Error', 'Front document is required.');
+      return;
+    }
+    setIsSubmittingKyc(true);
+    try {
+      await updateProfile({
+        ...user,
+        kyc_type: kycType,
+        kyc_front_url: kycFrontUrl,
+        kyc_back_url: kycBackUrl,
+      });
+      showToast.success('KYC Submitted', 'Your documents have been uploaded successfully.');
+      setIsKycModalVisible(false);
+    } catch (error) {
+      showToast.error('Submission Failed', 'Failed to update KYC details.');
+    } finally {
+      setIsSubmittingKyc(false);
+    }
   };
 
   useEffect(() => {
@@ -223,12 +281,37 @@ const ProfileScreen = ({ navigation }: any) => {
 
           <ProfileSection title="KYC & Verification" icon="verified-user">
             <DetailRow icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
-            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={true} />
+            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={!!user?.kyc_front_url} />
+            {!user?.kyc_front_url && (
+              <TouchableOpacity 
+                style={styles.uploadKycBtn}
+                onPress={() => setIsKycModalVisible(true)}
+              >
+                <MaterialIcons name="cloud-upload" size={ms(20)} color={COLORS.primary} />
+                <Text style={styles.uploadKycBtnText}>Upload KYC Documents</Text>
+              </TouchableOpacity>
+            )}
           </ProfileSection>
 
           <ProfileSection title="Location Ledger" icon="location-on">
-            <DetailRow icon="home" label="Primary Residence" value={user?.street_address} />
-            <DetailRow icon="map" label="Region / State" value={`${user?.city || ''}, ${user?.state || ''}`} isLast={true} />
+            <DetailRow 
+              icon="home" 
+              label="Primary Residence" 
+              value={[user?.house_number, user?.street_address, user?.village].filter(Boolean).join(', ')} 
+            />
+            <DetailRow 
+              icon="map" 
+              label="Region / State" 
+              value={[user?.district || user?.city, user?.state].filter(Boolean).join(', ')} 
+              isLast={false} 
+            />
+            <TouchableOpacity 
+              style={styles.uploadKycBtn}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
+              <MaterialIcons name="edit-location" size={ms(20)} color={COLORS.primary} />
+              <Text style={styles.uploadKycBtnText}>Update Location Details</Text>
+            </TouchableOpacity>
           </ProfileSection>
 
           {/* Event Management Section */}
@@ -321,6 +404,111 @@ const ProfileScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
+
+      {/* KYC Upload Modal */}
+      <Modal
+        visible={isKycModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsKycModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => setIsKycModalVisible(false)} 
+          />
+          <View style={[styles.modalPopup, { paddingTop: vs(20), paddingHorizontal: hs(20) }]}>
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { alignSelf: 'flex-start', marginBottom: vs(16) }]}>Upload KYC Documents</Text>
+            
+            <ScrollView style={{ width: '100%', maxHeight: Dimensions.get('window').height * 0.6, marginBottom: vs(20) }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.kycLabel}>Select Identity Proof</Text>
+              <View style={styles.kycTypeContainer}>
+                {['Aadhaar', 'Voter ID', 'Driving License'].map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.kycTypeBtn, kycType === type && styles.kycTypeBtnActive]}
+                    onPress={() => setKycType(type)}
+                  >
+                    <Text style={[styles.kycTypeText, kycType === type && styles.kycTypeTextActive]}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.kycLabel}>Front Side Document</Text>
+              <TouchableOpacity 
+                style={[styles.uploadBox, kycFrontUrl ? styles.uploadBoxSuccess : null]} 
+                onPress={() => handleKycUpload('front')}
+                disabled={!!uploadingKyc}
+              >
+                {uploadingKyc === 'front' ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name={kycFrontUrl ? "checkmark-circle" : "cloud-upload-outline"} 
+                      size={ms(32)} 
+                      color={kycFrontUrl ? "#059669" : COLORS.primary} 
+                    />
+                    <Text style={styles.uploadTitle}>
+                      {kycFrontUrl ? "Front Document Uploaded" : "Tap to Upload Front Side"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.kycLabel}>Back Side Document (Optional)</Text>
+              <TouchableOpacity 
+                style={[styles.uploadBox, kycBackUrl ? styles.uploadBoxSuccess : null]} 
+                onPress={() => handleKycUpload('back')}
+                disabled={!!uploadingKyc}
+              >
+                {uploadingKyc === 'back' ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name={kycBackUrl ? "checkmark-circle" : "cloud-upload-outline"} 
+                      size={ms(32)} 
+                      color={kycBackUrl ? "#059669" : COLORS.primary} 
+                    />
+                    <Text style={styles.uploadTitle}>
+                      {kycBackUrl ? "Back Document Uploaded" : "Tap to Upload Back Side"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => setIsKycModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.confirmBtn, isSubmittingKyc && { opacity: 0.7 }]} 
+                onPress={submitKyc}
+                disabled={isSubmittingKyc}
+              >
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.primaryContainer]}
+                  style={styles.confirmBtnGradient}
+                >
+                  {isSubmittingKyc ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmBtnText}>Submit KYC</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -333,8 +521,8 @@ const styles = StyleSheet.create({
   heroContainer: {
     width: '100%',
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: ms(40),
-    borderBottomRightRadius: ms(40),
+    borderBottomLeftRadius: ms(32),
+    borderBottomRightRadius: ms(32),
     overflow: 'hidden',
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
@@ -342,8 +530,9 @@ const styles = StyleSheet.create({
     })
   },
   heroGradient: {
-    paddingTop: vs(40),
-    paddingBottom: vs(50),
+    paddingTop: vs(10),
+    paddingBottom: vs(35),
+    minHeight: vs(260),
     paddingHorizontal: hs(24),
     alignItems: 'center',
     position: 'relative',
@@ -750,6 +939,31 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#fff',
   },
+  uploadKycBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(8),
+    paddingVertical: vs(12),
+    paddingHorizontal: hs(16),
+    marginTop: vs(12),
+    borderRadius: ms(8),
+    backgroundColor: COLORS.primaryContainer,
+    alignSelf: 'flex-start',
+  },
+  uploadKycBtnText: {
+    color: COLORS.primary,
+    fontSize: ms(13),
+    fontWeight: '800',
+  },
+  kycLabel: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurface, marginBottom: vs(8), marginTop: vs(12) },
+  kycTypeContainer: { flexDirection: 'row', gap: hs(8), marginBottom: vs(8), flexWrap: 'wrap' },
+  kycTypeBtn: { paddingHorizontal: hs(14), paddingVertical: vs(8), borderRadius: ms(20), backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
+  kycTypeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  kycTypeText: { fontSize: ms(13), fontWeight: '600', color: COLORS.onSurfaceVariant },
+  kycTypeTextActive: { color: '#fff' },
+  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: ms(8), padding: ms(20), alignItems: 'center', backgroundColor: COLORS.primaryContainer, marginBottom: vs(8) },
+  uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  uploadTitle: { fontSize: ms(14), fontWeight: '600', color: COLORS.onSurface, marginTop: vs(8) },
 });
 
 export default ProfileScreen;

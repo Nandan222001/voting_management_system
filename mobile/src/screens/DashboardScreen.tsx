@@ -341,9 +341,6 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
                          <View style={styles.minimalTypeBadge}>
                             <Text style={styles.minimalTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
                          </View>
-                         <TouchableOpacity style={styles.infoBtnMini}>
-                            <MaterialIcons name="info-outline" size={ms(14)} color={COLORS.primary} />
-                         </TouchableOpacity>
                       </View>
                       
                       <View style={styles.minimalCardBody}>
@@ -603,14 +600,6 @@ const styles = StyleSheet.create({
   minimalCardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  infoBtnMini: {
-    width: ms(24),
-    height: ms(24),
-    borderRadius: ms(6),
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
     alignItems: 'center',
   },
   minimalTypeBadge: {

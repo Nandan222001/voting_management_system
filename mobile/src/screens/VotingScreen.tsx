@@ -1187,8 +1187,8 @@ const styles = StyleSheet.create({
   scrollContent: { flex: 1 },
   
   heroHeader: {
-    paddingTop: vs(20),
-    paddingBottom: vs(40),
+    paddingTop: vs(15),
+    height: vs(260),
     paddingHorizontal: hs(20),
     borderBottomLeftRadius: ms(32),
     borderBottomRightRadius: ms(32),
@@ -1479,8 +1479,8 @@ const styles = StyleSheet.create({
   pageNumberTextActive: { color: '#fff' },
 
   detailHero: {
-    paddingTop: vs(20),
-    paddingBottom: vs(40),
+    paddingTop: vs(75),
+    height: vs(260),
     paddingHorizontal: hs(20),
     borderBottomLeftRadius: ms(16),
     borderBottomRightRadius: ms(16),

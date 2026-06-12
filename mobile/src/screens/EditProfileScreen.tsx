@@ -158,7 +158,7 @@ const EditProfileScreen = ({ navigation }: any) => {
     gender: user?.gender || '',
     parent_name: user?.parent_name || '',
     voter_id: user?.voter_id || '',
-    designation: user?.designation || '',
+    // designation: user?.designation || '',
     image_url: user?.image_url || '',
     house_number: user?.house_number || '',
     street_address: user?.street_address || '',
@@ -203,7 +203,7 @@ const EditProfileScreen = ({ navigation }: any) => {
         gender: user.gender || '',
         parent_name: user.parent_name || '',
         voter_id: user.voter_id || '',
-        designation: user.designation || '',
+        // designation: user.designation || '',
         house_number: user.house_number || '',
         street_address: user.street_address || '',
         village: user.village || '',
@@ -281,7 +281,7 @@ const EditProfileScreen = ({ navigation }: any) => {
     if (!formData.gender) newErrors.gender = 'Gender is required';
     if (!formData.parent_name?.trim()) newErrors.parent_name = "Father's / Husband's Name is required";
     if (!formData.voter_id?.trim()) newErrors.voter_id = 'Voter ID / Member ID is required';
-    if (!formData.designation?.trim()) newErrors.designation = 'Designation is required';
+    // if (!formData.designation?.trim()) newErrors.designation = 'Designation is required';
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       const firstError = Object.values(newErrors)[0];
@@ -592,7 +592,7 @@ const EditProfileScreen = ({ navigation }: any) => {
               <PickerField label="Gender" icon="people-outline" value={formData.gender} onPress={() => setModalType('gender')} error={errors.gender} />
               <InputField name="parent_name" icon="people-circle-outline" label="Father's / Husband's Name" placeholder="Enter name" value={formData.parent_name} onChangeText={(val: string) => handleChange('parent_name', val)} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} />
               <InputField name="voter_id" icon="fingerprint" label="Voter ID / Member ID" placeholder="Enter Voter ID" value={formData.voter_id} onChangeText={(val: string) => handleChange('voter_id', val)} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} />
-              <InputField name="designation" icon="briefcase-outline" label="Designation" placeholder="Enter designation" value={formData.designation} onChangeText={(val: string) => handleChange('designation', val)} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} />
+              {/* <InputField name="designation" icon="briefcase-outline" label="Designation" placeholder="Enter designation" value={formData.designation} onChangeText={(val: string) => handleChange('designation', val)} errors={errors} focusedField={focusedField} setFocusedField={setFocusedField} /> */}
             </View>
           )}
           {step === 2 && (
@@ -788,7 +788,13 @@ const styles = StyleSheet.create({
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
   listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
   heroHeader: {
-    paddingTop: vs(20), paddingBottom: vs(40), paddingHorizontal: hs(20), borderBottomLeftRadius: ms(16), borderBottomRightRadius: ms(16), marginBottom: vs(8),
+    paddingTop: vs(70),
+    paddingBottom: vs(30),
+    minHeight: vs(240),
+    paddingHorizontal: hs(20),
+    borderBottomLeftRadius: ms(16),
+    borderBottomRightRadius: ms(16),
+    marginBottom: vs(8),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }

@@ -60,8 +60,7 @@ const Header = ({ showBack, onBack, title, transparent }: HeaderProps) => {
   return (
     <View style={[
       styles.container, 
-      { paddingTop: Math.max(insets.top, vs(8)) },
-      transparent && { backgroundColor: 'transparent', borderBottomWidth: 0, position: 'absolute', top: 0, left: 0, right: 0 }
+      { paddingTop: Math.max(insets.top, vs(8)) }
     ]}>
       <View style={styles.content}>
         <View style={styles.leftSection}>
@@ -89,9 +88,7 @@ const Header = ({ showBack, onBack, title, transparent }: HeaderProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f8f9fb',
-    borderBottomWidth: 1,
-    borderColor: '#c3c6d6',
+    backgroundColor: 'transparent',
     paddingBottom: vs(12),
     paddingHorizontal: hs(16),
     zIndex: 100,

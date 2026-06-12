@@ -384,9 +384,15 @@ const AnalyticsScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  content: { flex: 1, paddingHorizontal: hs(16) },
+  // content: { flex: 1, paddingHorizontal: hs(16) },
   heroHeader: {
-    paddingTop: vs(20), paddingBottom: vs(40), paddingHorizontal: hs(20), borderBottomLeftRadius: ms(32), borderBottomRightRadius: ms(32), marginBottom: vs(24),
+    paddingTop: vs(60),
+    height: vs(260),
+    paddingHorizontal: hs(20),
+    borderBottomLeftRadius: ms(32),
+    borderBottomRightRadius: ms(32),
+    marginBottom: vs(24),
+    
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }
