@@ -1194,12 +1194,13 @@ const styles = StyleSheet.create({
   scrollContent: { flex: 1 },
   
   heroHeader: {
-    paddingTop: vs(15),
-    height: vs(260),
+    paddingTop: vs(20),
+    minHeight: vs(220),
+    paddingBottom: vs(25),
     paddingHorizontal: hs(20),
     // borderBottomLeftRadius: ms(32),
     // borderBottomRightRadius: ms(32),
-    marginBottom: vs(24),
+    marginBottom: vs(20),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }
@@ -1222,35 +1223,35 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: {
     color: '#fff',
-    fontSize: ms(10),
+    fontSize: ms(9),
     fontWeight: '900',
     letterSpacing: 1,
   },
   heroTitlePre: {
-    fontSize: ms(20),
+    fontSize: ms(18),
     fontWeight: '400',
     color: 'rgba(255,255,255,0.7)',
   },
   heroTitleMain: {
-    fontSize: ms(32),
+    fontSize: ms(28),
     fontWeight: '900',
     color: '#fff',
     marginTop: vs(-4),
     letterSpacing: -1,
   },
   heroSub: {
-    fontSize: ms(14),
+    fontSize: ms(13),
     color: 'rgba(255,255,255,0.8)',
-    lineHeight: vs(20),
+    lineHeight: vs(18),
     fontWeight: '500',
-    marginBottom: vs(12),
+    marginBottom: vs(10),
   },
   heroSearchWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: ms(8),
-    height: vs(54),
+    height: vs(50),
     paddingHorizontal: hs(16),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
@@ -1258,7 +1259,7 @@ const styles = StyleSheet.create({
   heroSearchInput: {
     flex: 1,
     color: '#fff',
-    fontSize: ms(16),
+    fontSize: ms(15),
     fontWeight: '600',
     ...Platform.select({
       web: { outlineStyle: 'none' }
@@ -1270,7 +1271,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     borderRadius: ms(8),
     padding: ms(6),
-    marginBottom: vs(24),
+    marginBottom: vs(20),
     gap: hs(6),
   },
   premiumFilterTab: {
@@ -1279,7 +1280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: hs(8),
-    paddingVertical: vs(12),
+    paddingVertical: vs(10),
     borderRadius: ms(6),
   },
   premiumFilterTabActive: {
@@ -1290,7 +1291,7 @@ const styles = StyleSheet.create({
     })
   },
   premiumFilterTabText: {
-    fontSize: ms(14),
+    fontSize: ms(13),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     letterSpacing: 0.3,
@@ -1306,7 +1307,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: ms(12),
     padding: hs(14),
-    marginBottom: vs(16),
+    marginBottom: vs(14),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
@@ -1317,26 +1318,26 @@ const styles = StyleSheet.create({
   },
   premiumElecLayout: {
     flexDirection: 'row',
-    gap: hs(16),
+    gap: hs(14),
   },
   premiumElecLeft: {
     alignItems: 'center',
-    width: hs(64),
+    width: hs(60),
   },
   premiumDateBlock: {
-    width: hs(60),
-    height: vs(68),
+    width: hs(56),
+    height: vs(64),
     borderRadius: ms(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
   premiumDateMonth: {
-    fontSize: ms(10),
+    fontSize: ms(9),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   premiumDateDay: {
-    fontSize: ms(24),
+    fontSize: ms(22),
     fontWeight: '900',
     marginTop: vs(-2),
   },
@@ -1349,13 +1350,13 @@ const styles = StyleSheet.create({
     borderRadius: ms(8),
   },
   statusBadgeTextSmall: {
-    fontSize: ms(9),
+    fontSize: ms(8),
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   liveDotSmall: {
-    width: ms(6),
-    height: ms(6),
+    width: ms(5),
+    height: ms(5),
     borderRadius: ms(3),
   },
   premiumElecCenter: {
@@ -1364,7 +1365,7 @@ const styles = StyleSheet.create({
     gap: vs(4),
   },
   premiumElecTitle: {
-    fontSize: ms(18),
+    fontSize: ms(16),
     fontWeight: '800',
     color: COLORS.onSurface,
     letterSpacing: -0.4,
@@ -1375,15 +1376,15 @@ const styles = StyleSheet.create({
     gap: hs(6),
   },
   premiumDetailText: {
-    fontSize: ms(12),
+    fontSize: ms(11),
     color: COLORS.onSurfaceVariant,
     fontWeight: '600',
     opacity: 0.8,
   },
   premiumDescSnippet: {
-    fontSize: ms(12),
+    fontSize: ms(11),
     color: COLORS.onSurfaceVariant,
-    lineHeight: vs(18),
+    lineHeight: vs(16),
     marginTop: vs(4),
     opacity: 0.7,
   },
@@ -1399,7 +1400,7 @@ const styles = StyleSheet.create({
     gap: hs(6),
   },
   premiumStatText: {
-    fontSize: ms(11),
+    fontSize: ms(10),
     fontWeight: '700',
     color: COLORS.primary,
   },
@@ -1413,9 +1414,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   premiumArrowBtn: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(18),
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
     justifyContent: 'center',
     alignItems: 'center',
   },

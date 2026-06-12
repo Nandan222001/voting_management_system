@@ -803,9 +803,9 @@ const styles = StyleSheet.create({
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
   listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
   heroHeader: {
-    paddingTop: vs(70),
-    paddingBottom: vs(30),
-    minHeight: vs(240),
+    paddingTop: vs(60),
+    paddingBottom: vs(25),
+    minHeight: vs(220),
     paddingHorizontal: hs(20),
     // borderBottomLeftRadius: ms(16),
     // borderBottomRightRadius: ms(16),
@@ -817,9 +817,9 @@ const styles = StyleSheet.create({
   },
   heroContent: { gap: vs(8) },
   heroBadge: { flexDirection: 'row', alignItems: 'center', gap: hs(6), backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', paddingHorizontal: hs(10), paddingVertical: vs(4), borderRadius: ms(4), borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-  heroBadgeText: { color: '#fff', fontSize: ms(10), fontWeight: '900', letterSpacing: 1 },
-  heroTitle: { fontSize: ms(32), fontWeight: '900', color: '#fff', letterSpacing: -1 },
-  heroSub: { fontSize: ms(14), color: 'rgba(255,255,255,0.8)', lineHeight: vs(20), fontWeight: '500', marginBottom: vs(12) },
+  heroBadgeText: { color: '#fff', fontSize: ms(9), fontWeight: '900', letterSpacing: 1 },
+  heroTitle: { fontSize: ms(28), fontWeight: '900', color: '#fff', letterSpacing: -1 },
+  heroSub: { fontSize: ms(13), color: 'rgba(255,255,255,0.8)', lineHeight: vs(18), fontWeight: '500', marginBottom: vs(10) },
   plansContainer: { gap: vs(12) },
 });
 

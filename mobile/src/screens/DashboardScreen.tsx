@@ -438,18 +438,18 @@ const styles = StyleSheet.create({
   welcomeSubtext: { fontSize: ms(16), color: COLORS.onSurfaceVariant, marginTop: vs(8), lineHeight: vs(22) },
 
   membershipCard: {
-    borderRadius: ms(8),
-    padding: ms(24),
-    height: vs(200),
+    borderRadius: ms(12),
+    padding: ms(20),
+    minHeight: vs(180),
     justifyContent: 'space-between',
     overflow: 'hidden',
-    marginBottom: vs(32),
+    marginBottom: vs(24),
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
-      android: { elevation: 10 },
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12 },
+      android: { elevation: 6 },
       web: {
         // @ts-ignore
-        boxShadow: `0px 10px 15px ${COLORS.primary}4D`
+        boxShadow: `0px 8px 15px ${COLORS.primary}4D`
       }
     })
   },
@@ -457,20 +457,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: vs(-24),
     left: hs(-24),
-    width: ms(128),
-    height: ms(128),
-    borderRadius: ms(64),
+    width: ms(120),
+    height: ms(120),
+    borderRadius: ms(60),
     backgroundColor: 'rgba(141, 252, 117, 0.1)',
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: ms(12), fontWeight: '700', letterSpacing: 0.5 },
-  cardUserName: { color: '#fff', fontSize: ms(18), fontWeight: '600', marginTop: vs(4) },
+  cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: ms(11), fontWeight: '700', letterSpacing: 0.5 },
+  cardUserName: { color: '#fff', fontSize: ms(20), fontWeight: '800', marginTop: vs(4) },
   cardUserId: { color: 'rgba(255,255,255,0.7)', fontSize: ms(12), marginTop: vs(2) },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: vs(20) },
   tierBadge: { backgroundColor: COLORS.tertiary, paddingHorizontal: hs(8), paddingVertical: vs(4), borderRadius: ms(4) },
-  tierBadgeText: { color: '#fff', fontSize: ms(10), fontWeight: '700' },
-  expiresText: { color: COLORS.onPrimaryContainer, fontSize: ms(12), marginTop: vs(8) },
-  voteText: { color: '#fff', fontSize: ms(24), fontWeight: '700', fontStyle: 'italic', letterSpacing: -1 },
+  tierBadgeText: { color: '#fff', fontSize: ms(9), fontWeight: '800' },
+  expiresText: { color: COLORS.onPrimaryContainer, fontSize: ms(11), marginTop: vs(6) },
+  voteText: { color: '#fff', fontSize: ms(22), fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 },
 
   announcementBlock: { marginBottom: vs(28) },
   announcementCard: {
@@ -484,15 +484,15 @@ const styles = StyleSheet.create({
       android: { elevation: 3 }
     })
   },
-  announcementImage: { width: '100%', height: vs(160), backgroundColor: COLORS.surfaceContainerLow },
+  announcementImage: { width: '100%', height: vs(150), backgroundColor: COLORS.surfaceContainerLow },
   announcementFallback: { height: vs(120), alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary + '10' },
   announcementContent: { padding: ms(16) },
-  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: vs(8), marginTop: vs(25) },
-  announcementDate: { fontSize: ms(11), fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
+  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: vs(8) },
+  announcementDate: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
   announcementFeatured: { flexDirection: 'row', alignItems: 'center', gap: hs(4), backgroundColor: COLORS.primary + '12', paddingHorizontal: hs(8), paddingVertical: vs(4), borderRadius: ms(8) },
-  announcementFeaturedText: { fontSize: ms(9), fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },
-  announcementTitle: { fontSize: ms(19), fontWeight: '900', color: COLORS.onSurface, lineHeight: vs(24) },
-  announcementDescription: { marginTop: vs(6), fontSize: ms(13), fontWeight: '600', color: COLORS.onSurfaceVariant, lineHeight: vs(19) },
+  announcementFeaturedText: { fontSize: ms(8), fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },
+  announcementTitle: { fontSize: ms(18), fontWeight: '800', color: COLORS.onSurface, lineHeight: vs(22) },
+  announcementDescription: { marginTop: vs(6), fontSize: ms(13), fontWeight: '500', color: COLORS.onSurfaceVariant, lineHeight: vs(18) },
   viewAnnouncementsBtn: {
     marginTop: vs(12),
     flexDirection: 'row',
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: hs(8),
     paddingVertical: vs(14),
-    borderRadius: ms(14),
+    borderRadius: ms(12),
     borderWidth: 1,
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primary + '08',
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   },
   minimalPremiumCard: {
     width: '100%',
-    height: vs(95),
+    minHeight: vs(100),
     borderRadius: ms(12),
     backgroundColor: '#fff',
     flexDirection: 'row',
@@ -692,18 +692,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: vs(12),
     marginBottom: vs(24),
   },
   statCard: {
-    width: (SCREEN_WIDTH - hs(32) - hs(12)) / 2,
+    width: '48.5%',
     backgroundColor: COLORS.surfaceContainerLow,
-    padding: ms(16),
+    paddingVertical: vs(20),
+    paddingHorizontal: hs(12),
     borderRadius: ms(12),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: vs(12),
   },
   statLabel: {
     fontSize: ms(10),
