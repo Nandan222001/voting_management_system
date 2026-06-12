@@ -80,7 +80,7 @@ const EventListScreen = ({ navigation, route }: any) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header
         title={mode === 'my' ? 'My Events' : 'Hierarchy Events'}
         showBack
@@ -107,7 +107,7 @@ const EventListScreen = ({ navigation, route }: any) => {
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   list: { padding: hs(20), gap: vs(16) },
   eventCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     padding: hs(16),
     flexDirection: 'row',
     alignItems: 'center',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   eventIcon: {
     width: ms(48),
     height: ms(48),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',

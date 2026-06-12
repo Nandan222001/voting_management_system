@@ -433,7 +433,7 @@ const NominationScreen = ({ navigation, route }: any) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header 
         title="Nomination Form" 
         showBack 
@@ -602,7 +602,7 @@ const NominationScreen = ({ navigation, route }: any) => {
         </ScrollView>
       </KeyboardAvoidingView>
       {renderModal()}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -611,15 +611,15 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: vs(40) },
   formSection: { padding: hs(20) },
   sectionHeaderContainer: { marginBottom: vs(30) },
-  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(12), marginBottom: vs(8) },
+  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(6), marginBottom: vs(8) },
   stepBadgeText: { color: COLORS.primary, fontSize: ms(10), fontWeight: '800' },
   sectionTitle: { fontSize: ms(24), fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
   sectionSubtitle: { fontSize: ms(14), color: COLORS.textSecondary, marginTop: vs(4) },
-  progressBarBg: { height: vs(6), backgroundColor: '#e2e8f0', borderRadius: ms(3), marginTop: vs(16), overflow: 'hidden' },
+  progressBarBg: { height: vs(6), backgroundColor: '#e2e8f0', borderRadius: ms(2), marginTop: vs(16), overflow: 'hidden' },
   progressBarFilled: { height: '100%', backgroundColor: COLORS.primary },
   inputGroup: { marginBottom: vs(20) },
   label: { fontSize: ms(14), fontWeight: '700', color: COLORS.text, marginBottom: vs(8), marginLeft: hs(4) },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: ms(12), paddingHorizontal: hs(12), height: vs(56) },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: ms(6), paddingHorizontal: hs(12), height: vs(56) },
   inputWrapperFocused: { backgroundColor: COLORS.white, borderWidth: 2, borderColor: COLORS.primary },
   inputWrapperError: { borderWidth: 1, borderColor: COLORS.error },
   inputIcon: { marginRight: hs(10) },
@@ -628,49 +628,49 @@ const styles = StyleSheet.create({
   errorText: { color: COLORS.error, fontSize: ms(12), marginTop: vs(4), marginLeft: hs(4) },
   photoUploadContainer: { alignItems: 'center', marginBottom: vs(24) },
   photoBox: { width: ms(120), height: ms(120), borderRadius: ms(60), backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  coverPhotoBox: { width: hs(width - 80), height: vs(160), borderRadius: ms(16) },
+  coverPhotoBox: { width: hs(width - 80), height: vs(160), borderRadius: ms(8) },
   photoPreview: { width: '100%', height: '100%' },
   photoLabel: { fontSize: ms(12), fontWeight: '600', color: COLORS.textSecondary, marginTop: vs(8) },
   radioContainer: { flexDirection: 'row', gap: hs(12), marginTop: vs(4) },
-  radioOption: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: hs(8), padding: hs(12), borderRadius: ms(12), backgroundColor: '#f1f5f9' },
+  radioOption: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: hs(8), padding: hs(12), borderRadius: ms(6), backgroundColor: '#f1f5f9' },
   radioOptionSelected: { backgroundColor: COLORS.primaryContainer, borderWidth: 1, borderColor: COLORS.primary },
   radioText: { fontSize: ms(14), fontWeight: '600', color: COLORS.textSecondary },
   radioTextSelected: { color: COLORS.primary },
-  subForm: { backgroundColor: '#f1f5f9', padding: hs(16), borderRadius: ms(12), marginBottom: vs(20) },
+  subForm: { backgroundColor: '#f1f5f9', padding: hs(16), borderRadius: ms(6), marginBottom: vs(20) },
   checkboxGroup: { marginBottom: vs(16) },
   checkboxContainer: { flexDirection: 'row', gap: hs(12), alignItems: 'flex-start', paddingRight: hs(20) },
   checkboxLabel: { fontSize: ms(13), color: COLORS.text, lineHeight: vs(20), fontWeight: '500' },
   checkboxErrorText: { color: COLORS.error, fontSize: ms(12), marginTop: vs(4), marginLeft: hs(36) },
-  declarationBox: { backgroundColor: '#f8fafc', padding: hs(16), borderRadius: ms(16), borderWidth: 1, borderColor: '#e2e8f0', marginBottom: vs(24) },
+  declarationBox: { backgroundColor: '#f8fafc', padding: hs(16), borderRadius: ms(8), borderWidth: 1, borderColor: '#e2e8f0', marginBottom: vs(24) },
   declarationText: { fontSize: ms(14), fontWeight: '700', color: COLORS.text, marginBottom: vs(20), lineHeight: vs(22) },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: vs(20), opacity: 0.5 },
   signatureUploadContainer: { marginBottom: vs(30) },
-  signatureBox: { height: vs(120), backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.border, borderRadius: ms(16), justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  signatureBox: { height: vs(120), backgroundColor: '#f1f5f9', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.border, borderRadius: ms(8), justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   signaturePreview: { width: '100%', height: '100%' },
   documentPreview: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: hs(16) },
   documentName: { fontSize: ms(13), color: COLORS.text, fontWeight: '700', marginTop: vs(8), textAlign: 'center' },
   row: { flexDirection: 'row', gap: hs(12), marginTop: vs(10) },
   nextBtn: { 
-    backgroundColor: COLORS.primary, height: vs(56), borderRadius: ms(16), justifyContent: 'center', alignItems: 'center', 
+    backgroundColor: COLORS.primary, height: vs(56), borderRadius: ms(8), justifyContent: 'center', alignItems: 'center', 
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
       android: { elevation: 4 },
       web: { boxShadow: `0px 4px 8px ${COLORS.primary}33` }
     })
   },
-  nextBtnHalf: { flex: 2, backgroundColor: COLORS.primary, height: vs(56), borderRadius: ms(16), justifyContent: 'center', alignItems: 'center' },
-  backBtn: { flex: 1, backgroundColor: COLORS.white, height: vs(56), borderRadius: ms(16), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  nextBtnHalf: { flex: 2, backgroundColor: COLORS.primary, height: vs(56), borderRadius: ms(8), justifyContent: 'center', alignItems: 'center' },
+  backBtn: { flex: 1, backgroundColor: COLORS.white, height: vs(56), borderRadius: ms(8), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
   nextBtnText: { color: COLORS.white, fontSize: ms(16), fontWeight: '800' },
   backBtnText: { color: COLORS.textSecondary, fontSize: ms(16), fontWeight: '800' },
-  submitBtn: { flex: 2, backgroundColor: COLORS.accent, height: vs(56), borderRadius: ms(16), justifyContent: 'center', alignItems: 'center' },
+  submitBtn: { flex: 2, backgroundColor: COLORS.accent, height: vs(56), borderRadius: ms(8), justifyContent: 'center', alignItems: 'center' },
   submitBtnText: { color: COLORS.white, fontSize: ms(16), fontWeight: '800' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: ms(24), borderTopRightRadius: ms(24), height: '70%', padding: hs(20) },
+  modalContent: { backgroundColor: COLORS.white, borderTopLeftRadius: ms(16), borderTopRightRadius: ms(16), height: '70%', padding: hs(20) },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(20), paddingBottom: vs(10), borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   modalTitle: { fontSize: ms(18), fontWeight: '800', color: COLORS.text },
   listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: vs(16), borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
-  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: ms(12), paddingHorizontal: hs(12), height: vs(48), marginBottom: vs(16), gap: hs(8) },
+  searchBarContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: ms(6), paddingHorizontal: hs(12), height: vs(48), marginBottom: vs(16), gap: hs(8) },
   searchInput: { flex: 1, fontSize: ms(15), color: COLORS.text, height: '100%' },
   emptyContainer: { padding: hs(40), alignItems: 'center', justifyContent: 'center' },
   emptyText: { fontSize: ms(14), color: COLORS.textSecondary, textAlign: 'center' },

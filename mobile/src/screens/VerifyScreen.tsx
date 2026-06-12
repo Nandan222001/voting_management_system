@@ -93,7 +93,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header 
         showBack 
         onBack={() => navigation.goBack()} 
@@ -182,7 +182,7 @@ const VerifyScreen = ({ navigation, route }: any) => {
           OFFICIAL ELECTION AUTHORITY SYSTEM
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#d1fae5",
     paddingHorizontal: hs(16),
     paddingVertical: vs(6),
-    borderRadius: ms(20),
+    borderRadius: ms(8),
     borderWidth: 1,
     borderColor: "#a7f3d0",
     marginTop: vs(24),
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#cbd5e1",
-    borderRadius: ms(8),
+    borderRadius: ms(4),
     fontSize: ms(18),
     fontWeight: "600",
     color: "#0f172a",
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   graphicCard: {
     width: "100%",
     height: vs(190),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     overflow: "hidden",
     position: "relative",
     marginBottom: vs(32),
@@ -269,14 +269,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(15,23,42,0.6)",
     paddingHorizontal: hs(10),
     paddingVertical: vs(4),
-    borderRadius: ms(6),
+    borderRadius: ms(3),
   },
   graphicOverlayText: { color: "#fff", fontSize: ms(12), fontWeight: "500" },
   primaryButton: {
     backgroundColor: "#003d9b",
     width: "100%",
     height: vs(52),
-    borderRadius: ms(8),
+    borderRadius: ms(6),
     justifyContent: "center",
     alignItems: "center",
     marginBottom: vs(20),

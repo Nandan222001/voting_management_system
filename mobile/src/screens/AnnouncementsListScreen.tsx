@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
   pageHeader: { marginBottom: vs(20), marginTop: vs(10) },
   pageTitle: { fontSize: ms(32), fontWeight: '900', color: COLORS.primary, letterSpacing: -1 },
   pageDescription: { fontSize: ms(15), color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: vs(22), marginTop: vs(8) },
-  emptyCard: { alignItems: 'center', justifyContent: 'center', padding: hs(40), backgroundColor: COLORS.surface, borderRadius: ms(20), borderWidth: 1, borderColor: COLORS.outlineVariant },
+  emptyCard: { alignItems: 'center', justifyContent: 'center', padding: hs(40), backgroundColor: COLORS.surface, borderRadius: ms(10), borderWidth: 1, borderColor: COLORS.outlineVariant },
   emptyText: { marginTop: vs(10), color: COLORS.onSurfaceVariant, fontWeight: '700' },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: ms(22),
+    borderRadius: ms(11),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,

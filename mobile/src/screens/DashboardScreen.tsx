@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   welcomeSubtext: { fontSize: ms(16), color: COLORS.onSurfaceVariant, marginTop: vs(8), lineHeight: vs(22) },
   
   membershipCard: {
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     padding: ms(24),
     height: vs(200),
     justifyContent: 'space-between',
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   announcementBlock: { marginBottom: vs(28) },
   announcementCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
@@ -457,10 +457,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '08',
   },
   viewAnnouncementsText: { color: COLORS.primary, fontSize: ms(13), fontWeight: '900' },
-  emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(20), padding: ms(28), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: vs(28) },
+  emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(10), padding: ms(28), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: vs(28) },
 
   heroPremiumCard: {
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     backgroundColor: '#fff',
     flexDirection: 'row',
     overflow: 'hidden',
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  emptyActiveCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(24), padding: ms(40), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, marginBottom: vs(32) },
+  emptyActiveCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(12), padding: ms(40), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, marginBottom: vs(32) },
   emptyActiveText: { marginTop: vs(12), fontSize: ms(14), fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.7 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(16), marginTop: vs(8) },
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: vs(16), 
     backgroundColor: COLORS.primary,
-    borderRadius: ms(16), 
+    borderRadius: ms(8), 
     marginBottom: vs(40),
     gap: hs(10),
     ...Platform.select({
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   footerCircleBtn: {
     width: ms(28),
     height: ms(28),
-    borderRadius: ms(14),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   minimalPremiumCard: {
     width: '100%',
     height: vs(130),
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     backgroundColor: '#fff',
     flexDirection: 'row',
     overflow: 'hidden',
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: ms(8),
-    borderRadius: ms(14),
+    borderRadius: ms(8),
   },
   premiumDateMonth: {
     fontSize: ms(10),
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceContainerLow,
     paddingHorizontal: hs(6),
     paddingVertical: vs(2),
-    borderRadius: ms(6),
+    borderRadius: ms(4),
   },
   statusDot: {
     width: ms(4),
@@ -608,14 +608,14 @@ const styles = StyleSheet.create({
   infoBtnMini: {
     width: ms(24),
     height: ms(24),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     backgroundColor: COLORS.surfaceContainerLow,
     justifyContent: 'center',
     alignItems: 'center',
   },
   minimalTypeBadge: {
     backgroundColor: COLORS.surfaceContainerLow,
-    paddingHorizontal: hs(8), paddingVertical: vs(3), borderRadius: ms(6),
+    paddingHorizontal: hs(8), paddingVertical: vs(3), borderRadius: ms(4),
   },
   minimalTypeBadgeText: {
     color: COLORS.onSurfaceVariant, fontSize: ms(9), fontWeight: '800', letterSpacing: 0.3,

@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   portraitWrapper: { 
     width: ms(130), 
     height: ms(130), 
-    borderRadius: ms(24), 
+    borderRadius: ms(12), 
     borderWidth: 4, 
     borderColor: '#fff', 
     overflow: 'hidden', 
@@ -408,45 +408,45 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.secondary, 
     paddingHorizontal: hs(8), 
     paddingVertical: vs(4), 
-    borderRadius: ms(6) 
+    borderRadius: ms(4) 
   },
   statusBadgeText: { color: '#fff', fontSize: ms(9), fontWeight: '900', letterSpacing: 0.5 },
   profileName: { fontSize: ms(26), fontWeight: '900', color: COLORS.onSurface, textAlign: 'center', letterSpacing: -0.5 },
   profileRole: { fontSize: ms(15), color: COLORS.primary, fontWeight: '700', textAlign: 'center', marginTop: vs(2) },
   
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: hs(12), marginTop: vs(12) },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: hs(4), backgroundColor: COLORS.surface, paddingHorizontal: hs(10), paddingVertical: vs(6), borderRadius: ms(20), borderWidth: 1, borderColor: COLORS.outlineVariant },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: hs(4), backgroundColor: COLORS.surface, paddingHorizontal: hs(10), paddingVertical: vs(6), borderRadius: ms(8), borderWidth: 1, borderColor: COLORS.outlineVariant },
   metaText: { color: COLORS.onSurfaceVariant, fontSize: ms(12), fontWeight: '600' },
   
   actionBlock: { width: '100%', alignItems: 'center', marginTop: vs(8) },
-  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: vs(14), borderRadius: ms(16), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(10), ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }) },
+  followBtn: { backgroundColor: COLORS.primary, width: '80%', paddingVertical: vs(14), borderRadius: ms(8), flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(10), ...Platform.select({ ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }, android: { elevation: 6 } }) },
   followingBtnActive: { backgroundColor: '#fff', borderWidth: 2, borderColor: COLORS.primary },
   followBtnText: { color: '#fff', fontWeight: '900', fontSize: ms(14) },
   followingBtnTextActive: { color: COLORS.primary },
 
   contentPadding: { padding: hs(16), gap: vs(16) },
   
-  tabBar: { backgroundColor: '#fff', borderRadius: ms(16), padding: ms(4), flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
-  tabItem: { flex: 1, paddingVertical: vs(10), borderRadius: ms(12), alignItems: 'center' },
+  tabBar: { backgroundColor: '#fff', borderRadius: ms(8), padding: ms(4), flexDirection: 'row', borderWidth: 1, borderColor: COLORS.outlineVariant },
+  tabItem: { flex: 1, paddingVertical: vs(10), borderRadius: ms(6), alignItems: 'center' },
   activeTabItem: { backgroundColor: COLORS.primary },
   tabText: { fontSize: ms(13), fontWeight: '700', color: COLORS.onSurfaceVariant },
   activeTabText: { color: '#ffffff' },
 
-  card: { backgroundColor: '#fff', borderRadius: ms(20), borderWidth: 1, borderColor: COLORS.outlineVariant, padding: hs(20), ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 }, android: { elevation: 2 } }) },
+  card: { backgroundColor: '#fff', borderRadius: ms(10), borderWidth: 1, borderColor: COLORS.outlineVariant, padding: hs(20), ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 }, android: { elevation: 2 } }) },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: hs(10), marginBottom: vs(16) },
   cardTitle: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface },
   cardBody: { gap: vs(12) },
-  quoteBox: { backgroundColor: COLORS.primary + '08', padding: hs(16), borderRadius: ms(12), position: 'relative' },
+  quoteBox: { backgroundColor: COLORS.primary + '08', padding: hs(16), borderRadius: ms(6), position: 'relative' },
   quoteIcon: { position: 'absolute', top: vs(8), left: hs(8), opacity: 0.2 },
   quoteText: { fontSize: ms(15), fontWeight: '700', color: COLORS.onSurface, lineHeight: vs(22), fontStyle: 'italic', textAlign: 'center', paddingHorizontal: hs(10) },
   bodyText: { fontSize: ms(14), color: COLORS.onSurfaceVariant, lineHeight: vs(22), fontWeight: '500' },
   
   infoGrid: { flexDirection: 'row', gap: hs(12) },
-  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(12), borderLeftWidth: 4, borderLeftColor: COLORS.primary },
+  infoBox: { flex: 1, backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(6), borderLeftWidth: 4, borderLeftColor: COLORS.primary },
   infoLabel: { fontSize: ms(9), fontWeight: '800', color: COLORS.outline, letterSpacing: 1 },
   infoValue: { fontSize: ms(13), fontWeight: '800', color: COLORS.onSurface, marginTop: vs(4) },
 
-  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(12), borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: vs(12) },
+  registryBox: { backgroundColor: COLORS.surfaceContainerLow, padding: hs(12), borderRadius: ms(6), borderLeftWidth: 4, borderLeftColor: COLORS.primary, marginTop: vs(12) },
 
   checklist: { gap: vs(12) },
   checkItem: { flexDirection: 'row', alignItems: 'center', gap: hs(12) },
@@ -460,11 +460,11 @@ const styles = StyleSheet.create({
   divider: { height: vs(12) },
 
   metricGrid: { flexDirection: 'row', gap: hs(10) },
-  metricItem: { flex: 1, backgroundColor: COLORS.background, padding: hs(12), borderRadius: ms(12), alignItems: 'center' },
+  metricItem: { flex: 1, backgroundColor: COLORS.background, padding: hs(12), borderRadius: ms(6), alignItems: 'center' },
   metricLabel: { fontSize: ms(10), fontWeight: '700', color: COLORS.outline, marginBottom: vs(4) },
   metricValue: { fontSize: ms(16), fontWeight: '900', color: COLORS.onSurface },
   
-  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: hs(12), padding: hs(16), backgroundColor: COLORS.secondary + '08', borderRadius: ms(12), marginTop: vs(10) },
+  securityBanner: { flexDirection: 'row', alignItems: 'center', gap: hs(12), padding: hs(16), backgroundColor: COLORS.secondary + '08', borderRadius: ms(6), marginTop: vs(10) },
   securityText: { flex: 1, fontSize: ms(11), color: COLORS.onSurfaceVariant, fontWeight: '600', lineHeight: vs(16) },
 });
 

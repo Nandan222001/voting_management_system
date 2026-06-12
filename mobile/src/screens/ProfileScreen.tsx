@@ -114,7 +114,7 @@ const ProfileScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header title="Member Profile" />
       <ScrollView 
         style={styles.content} 
@@ -321,7 +321,7 @@ const ProfileScreen = ({ navigation }: any) => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: hs(10),
     paddingVertical: vs(4),
-    borderRadius: ms(8),
+    borderRadius: ms(4),
   },
   metaBadgeText: {
     color: '#fff',
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   editProfileBtn: {
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   
   membershipCard: {
-    borderRadius: ms(28),
+    borderRadius: ms(14),
     overflow: 'hidden',
     marginBottom: vs(24),
     borderWidth: 1,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   membershipIconBg: {
     width: ms(48),
     height: ms(48),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   statusPill: {
     paddingHorizontal: hs(12),
     paddingVertical: vs(6),
-    borderRadius: ms(10),
+    borderRadius: ms(5),
   },
   statusPillText: {
     fontSize: ms(10),
@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
 
   sectionContainer: {
     backgroundColor: '#fff',
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     padding: hs(20),
     marginBottom: vs(20),
     borderWidth: 1,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   sectionIconBox: {
     width: ms(36),
     height: ms(36),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   detailIconBg: {
     width: ms(34),
     height: ms(34),
-    borderRadius: ms(10),
+    borderRadius: ms(5),
     backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: hs(16),
     padding: hs(16),
-    borderRadius: ms(18),
+    borderRadius: ms(8),
   },
   supportActionText: {
     flex: 1,
@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
   },
 
   logoutButton: {
-    borderRadius: ms(24),
+    borderRadius: ms(8),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.error + '40',
@@ -671,8 +671,8 @@ const styles = StyleSheet.create({
   modalPopup: {
     width: '100%',
     backgroundColor: '#fff',
-    borderTopLeftRadius: ms(32),
-    borderTopRightRadius: ms(32),
+    borderTopLeftRadius: ms(16),
+    borderTopRightRadius: ms(16),
     padding: hs(32),
     paddingTop: vs(8),
     alignItems: 'center',
@@ -693,7 +693,7 @@ const styles = StyleSheet.create({
   modalIconBg: {
     width: ms(72),
     height: ms(72),
-    borderRadius: ms(24),
+    borderRadius: ms(8),
     backgroundColor: COLORS.error + '10',
     justifyContent: 'center',
     alignItems: 'center',
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     height: vs(56),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
   confirmBtn: {
     flex: 1,
     height: vs(56),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     overflow: 'hidden',
   },
   confirmBtnGradient: {

@@ -989,10 +989,6 @@ const VotingScreen = ({ navigation, route }: any) => {
 
       {selectedElection && !existingVote && (
         <View style={styles.floatingVoteBar}>
-          <LinearGradient
-            colors={['rgba(244,245,247,0)', 'rgba(244,245,247,1)']}
-            style={styles.floatingBarFade}
-          />
           <TouchableOpacity 
             onPress={() => {
               if (!isVotingActive) {
@@ -1246,7 +1242,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     height: vs(54),
     paddingHorizontal: hs(16),
     borderWidth: 1,
@@ -1265,7 +1261,7 @@ const styles = StyleSheet.create({
   premiumFilterContainer: {
     flexDirection: 'row',
     backgroundColor: COLORS.surfaceContainerLow,
-    borderRadius: ms(18),
+    borderRadius: ms(8),
     padding: ms(6),
     marginBottom: vs(24),
     gap: hs(6),
@@ -1277,7 +1273,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: hs(8),
     paddingVertical: vs(12),
-    borderRadius: ms(14),
+    borderRadius: ms(6),
   },
   premiumFilterTabActive: {
     backgroundColor: COLORS.primary,
@@ -1301,7 +1297,7 @@ const styles = StyleSheet.create({
   },
   premiumElecCard: {
     backgroundColor: '#fff',
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     padding: hs(14),
     marginBottom: vs(16),
     borderWidth: 1,
@@ -1323,7 +1319,7 @@ const styles = StyleSheet.create({
   premiumDateBlock: {
     width: hs(60),
     height: vs(68),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1436,7 +1432,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     padding: ms(6),
-    borderRadius: ms(30),
+    borderRadius: ms(8),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
@@ -1448,7 +1444,7 @@ const styles = StyleSheet.create({
   pageBtn: {
     width: ms(44),
     height: ms(44),
-    borderRadius: ms(22),
+    borderRadius: ms(8),
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.surfaceContainerLow,
@@ -1462,7 +1458,7 @@ const styles = StyleSheet.create({
   pageNumberBtn: {
     minWidth: ms(44),
     height: ms(44),
-    borderRadius: ms(22),
+    borderRadius: ms(8),
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: hs(12),
@@ -1486,8 +1482,8 @@ const styles = StyleSheet.create({
     paddingTop: vs(20),
     paddingBottom: vs(40),
     paddingHorizontal: hs(20),
-    borderBottomLeftRadius: ms(32),
-    borderBottomRightRadius: ms(32),
+    borderBottomLeftRadius: ms(16),
+    borderBottomRightRadius: ms(16),
     marginBottom: vs(24),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
@@ -1498,7 +1494,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.15)',
-    borderRadius: ms(20),
+    borderRadius: ms(10),
     padding: hs(16),
     marginTop: vs(20),
     gap: hs(12),
@@ -1530,7 +1526,7 @@ const styles = StyleSheet.create({
   detailBodyContainer: { paddingHorizontal: hs(16) },
   infoCard: {
     backgroundColor: '#fff',
-    borderRadius: ms(20),
+    borderRadius: ms(10),
     padding: hs(16),
     marginBottom: vs(20),
     borderWidth: 1,
@@ -1551,7 +1547,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   nominationActionBtn: {
-    borderRadius: ms(20),
+    borderRadius: ms(10),
     overflow: 'hidden',
     marginBottom: vs(12),
     ...Platform.select({
@@ -1571,7 +1567,7 @@ const styles = StyleSheet.create({
   nominationActionSub: { color: 'rgba(255,255,255,0.7)', fontSize: ms(12), fontWeight: '600', marginTop: vs(2) },
   nominationStatusCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: ms(18),
+    borderRadius: ms(9),
     padding: hs(16),
     marginBottom: vs(32),
     borderWidth: 1,
@@ -1585,7 +1581,7 @@ const styles = StyleSheet.create({
   nominationStatusIcon: {
     width: ms(40),
     height: ms(40),
-    borderRadius: ms(20),
+    borderRadius: ms(8),
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1602,7 +1598,7 @@ const styles = StyleSheet.create({
   withdrawNominationBtn: {
     marginTop: vs(14),
     minHeight: vs(44),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     borderWidth: 1,
     borderColor: '#fecaca',
     backgroundColor: '#fff5f5',
@@ -1621,13 +1617,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: hs(4),
   },
   sectionTitleLabel: { fontSize: ms(11), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 1 },
-  candidateCountBadge: { backgroundColor: COLORS.primary, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(10) },
+  candidateCountBadge: { backgroundColor: COLORS.primary, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(5) },
   candidateCountText: { color: '#fff', fontSize: ms(10), fontWeight: '800' },
 
   premiumCandidatesList: { gap: vs(12), marginTop: vs(8) },
   candRowCard: {
     backgroundColor: '#fff',
-    borderRadius: ms(20),
+    borderRadius: ms(10),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     overflow: 'hidden',
@@ -1658,7 +1654,7 @@ const styles = StyleSheet.create({
   candRowInfo: { flex: 1, gap: vs(2) },
   rowCandName: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface },
   rowCandNameSelected: { color: COLORS.primary },
-  rowPartyBadge: { backgroundColor: COLORS.surfaceContainerHighest, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(6), alignSelf: 'flex-start' },
+  rowPartyBadge: { backgroundColor: COLORS.surfaceContainerHighest, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(4), alignSelf: 'flex-start' },
   rowPartyText: { fontSize: ms(8), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 0.5 },
   candRowRight: { flexDirection: 'row', alignItems: 'center', gap: hs(8) },
   rowVoteBtn: {
@@ -1668,16 +1664,16 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '10',
     paddingVertical: vs(6),
     paddingHorizontal: hs(12),
-    borderRadius: ms(10),
+    borderRadius: ms(5),
   },
   rowVoteBtnActive: { backgroundColor: COLORS.primary },
   rowVoteBtnText: { fontSize: ms(11), fontWeight: '900', color: COLORS.primary },
   rowVoteBtnTextActive: { color: '#fff' },
-  rowStatusBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingVertical: vs(6), paddingHorizontal: hs(12), borderRadius: ms(10) },
+  rowStatusBadge: { backgroundColor: COLORS.surfaceContainerLow, paddingVertical: vs(6), paddingHorizontal: hs(12), borderRadius: ms(5) },
   rowStatusBadgeVoted: { backgroundColor: COLORS.secondary + '15' },
   rowStatusText: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, opacity: 0.5 },
   rowStatusTextVoted: { color: COLORS.secondary, opacity: 1, fontWeight: '900' },
-  rowInfoBtn: { width: ms(32), height: ms(32), borderRadius: ms(16), backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
+  rowInfoBtn: { width: ms(32), height: ms(32), borderRadius: ms(8), backgroundColor: COLORS.surfaceContainerLow, justifyContent: 'center', alignItems: 'center' },
 
   secureFooterNote: {
     flexDirection: 'row',
@@ -1695,9 +1691,8 @@ const styles = StyleSheet.create({
     padding: hs(20),
     paddingBottom: Platform.OS === 'ios' ? vs(36) : vs(20),
   },
-  floatingBarFade: { position: 'absolute', top: vs(-40), left: 0, right: 0, height: vs(40) },
   actionCastBtn: {
-    borderRadius: ms(20),
+    borderRadius: ms(8),
     overflow: 'hidden',
     ...Platform.select({
       ios: { shadowColor: '#4f46e5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
@@ -1710,7 +1705,7 @@ const styles = StyleSheet.create({
 
   premiumTimerContainer: { flexDirection: 'row', alignItems: 'center', gap: hs(8), marginTop: vs(8) },
   timerSegment: { alignItems: 'center', gap: vs(4) },
-  timerValueBox: { width: ms(42), height: ms(42), borderRadius: ms(12), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  timerValueBox: { width: ms(42), height: ms(42), borderRadius: ms(6), justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   timerValueText: { color: '#fff', fontSize: ms(18), fontWeight: '900', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
   timerLabelText: { color: 'rgba(255,255,255,0.5)', fontSize: ms(8), fontWeight: '800', letterSpacing: 0.5 },
   timerSeparator: { paddingBottom: vs(14) },
@@ -1721,8 +1716,8 @@ const styles = StyleSheet.create({
   modalPopup: { 
     backgroundColor: '#fff', 
     width: '100%', 
-    borderTopLeftRadius: ms(32), 
-    borderTopRightRadius: ms(32), 
+    borderTopLeftRadius: ms(16), 
+    borderTopRightRadius: ms(16), 
     padding: hs(24), 
     paddingTop: vs(8),
     alignItems: 'center',
@@ -1732,20 +1727,20 @@ const styles = StyleSheet.create({
     })
   },
   modalHandle: { width: hs(40), height: vs(5), backgroundColor: '#e2e8f0', borderRadius: ms(3), alignSelf: 'center', marginVertical: vs(12), marginBottom: vs(20) },
-  modalIconBg: { width: ms(72), height: ms(72), borderRadius: ms(24), justifyContent: 'center', alignItems: 'center', marginBottom: vs(20) },
+  modalIconBg: { width: ms(72), height: ms(72), borderRadius: ms(8), justifyContent: 'center', alignItems: 'center', marginBottom: vs(20) },
   modalTitle: { fontSize: ms(22), fontWeight: '900', color: COLORS.onSurface, marginBottom: vs(10), letterSpacing: -0.5 },
   modalMessage: { fontSize: ms(15), color: COLORS.onSurfaceVariant, textAlign: 'center', lineHeight: vs(22), marginBottom: vs(24), opacity: 0.8 },
-  receiptCard: { backgroundColor: '#f8fafc', width: '100%', padding: hs(16), borderRadius: ms(16), borderWidth: 1, borderColor: '#e2e8f0', marginBottom: vs(24), alignItems: 'center' },
+  receiptCard: { backgroundColor: '#f8fafc', width: '100%', padding: hs(16), borderRadius: ms(8), borderWidth: 1, borderColor: '#e2e8f0', marginBottom: vs(24), alignItems: 'center' },
   receiptLabel: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, letterSpacing: 1, marginBottom: vs(6) },
   receiptValue: { fontSize: ms(13), fontWeight: '700', color: COLORS.primary, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace', textAlign: 'center' },
-  modalPrimaryBtn: { width: '100%', height: vs(56), borderRadius: ms(16), overflow: 'hidden' },
+  modalPrimaryBtn: { width: '100%', height: vs(56), borderRadius: ms(8), overflow: 'hidden' },
   modalPrimaryBtnGradient: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   modalPrimaryBtnText: { color: '#fff', fontSize: ms(16), fontWeight: '800', letterSpacing: 0.5 },
-  modalSecondaryBtn: { flex: 1, height: vs(56), borderRadius: ms(16), backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
+  modalSecondaryBtn: { flex: 1, height: vs(56), borderRadius: ms(8), backgroundColor: '#f1f5f9', alignItems: 'center', justifyContent: 'center' },
   modalSecondaryBtnText: { fontSize: ms(15), fontWeight: '800', color: COLORS.onSurfaceVariant },
   modalActions: { flexDirection: 'row', gap: hs(12), width: '100%', marginTop: vs(8), marginBottom: vs(12) },
   planScrollContainer: { width: '100%', maxHeight: vs(300), marginBottom: vs(20) },
-  planSelectCard: { width: '100%', padding: hs(16), borderRadius: ms(20), backgroundColor: '#f8fafc', marginBottom: vs(10), borderWidth: 1.5, borderColor: '#e2e8f0' },
+  planSelectCard: { width: '100%', padding: hs(16), borderRadius: ms(10), backgroundColor: '#f8fafc', marginBottom: vs(10), borderWidth: 1.5, borderColor: '#e2e8f0' },
   planSelectCardActive: {
     backgroundColor: COLORS.primary,
     borderColor: COLORS.primary,
@@ -1756,7 +1751,7 @@ const styles = StyleSheet.create({
   },
   planCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: hs(10) },
-  planIconCircle: { width: ms(36), height: ms(36), borderRadius: ms(10), backgroundColor: COLORS.primary + '10', justifyContent: 'center', alignItems: 'center', marginRight: hs(12) },
+  planIconCircle: { width: ms(36), height: ms(36), borderRadius: ms(5), backgroundColor: COLORS.primary + '10', justifyContent: 'center', alignItems: 'center', marginRight: hs(12) },
   planIconCircleActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
   planCardInfo: { flex: 1 },
   planSelectName: { fontSize: ms(16), fontWeight: '800', color: COLORS.onSurface, letterSpacing: -0.2 },
@@ -1764,7 +1759,7 @@ const styles = StyleSheet.create({
   planSelectPrice: { fontSize: ms(18), fontWeight: '900', color: COLORS.onSurface, letterSpacing: -0.5 },
   planSelectTextActive: { color: '#fff' },
   planCardRight: { alignItems: 'flex-end', gap: vs(6) },
-  selectionCheckCircle: { width: ms(24), height: ms(24), borderRadius: ms(12), backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
+  selectionCheckCircle: { width: ms(24), height: ms(24), borderRadius: ms(6), backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1' },
   selectionCheckCircleActive: { backgroundColor: '#fff', borderColor: '#fff' },
   modalLoaderContainer: { paddingVertical: vs(40), alignItems: 'center' },
   loadingPlansText: { marginTop: vs(12), fontSize: ms(14), color: COLORS.onSurfaceVariant, fontWeight: '600' },

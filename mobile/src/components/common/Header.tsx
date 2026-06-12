@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: ms(8),
-    borderRadius: ms(20),
+    borderRadius: ms(8),
   },
   notificationButton: {
     position: 'relative',
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   initialsContainer: {
     width: ms(32),
     height: ms(32),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     backgroundColor: '#dae2ff',
     justifyContent: 'center',
     alignItems: 'center',

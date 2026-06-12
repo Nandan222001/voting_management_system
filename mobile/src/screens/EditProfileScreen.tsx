@@ -551,7 +551,7 @@ const EditProfileScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header 
         title="Edit Profile" 
         showBack 
@@ -698,7 +698,7 @@ const EditProfileScreen = ({ navigation }: any) => {
         </ScrollView>
       </KeyboardAvoidingView>
       <Modal visible={!!modalType} animationType="fade" transparent={true}>{renderModalContent()}</Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -706,8 +706,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: vs(40) },
-  formSection: { 
-    padding: hs(24), backgroundColor: COLORS.white, margin: hs(16), borderRadius: ms(16), 
+  formSection: {
+    padding: hs(24), backgroundColor: COLORS.white, margin: hs(16), borderRadius: ms(8),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
       android: { elevation: 2 },
@@ -715,7 +715,7 @@ const styles = StyleSheet.create({
     })
   },
   sectionHeaderContainer: { marginBottom: vs(24) },
-  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(12), marginBottom: vs(8) },
+  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(6), marginBottom: vs(8) },
   stepBadgeText: { color: COLORS.primary, fontSize: ms(12), fontWeight: '700' },
   sectionTitle: { fontSize: ms(24), fontWeight: '700', color: COLORS.text },
   sectionSubtitle: { fontSize: ms(14), color: COLORS.textSecondary, marginTop: vs(4) },
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   progressBarFilled: { height: vs(4), backgroundColor: COLORS.primary, borderRadius: ms(2) },
   inputGroup: { marginBottom: vs(20) },
   label: { fontSize: ms(14), fontWeight: '600', color: COLORS.text, marginBottom: vs(8) },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: ms(12), paddingHorizontal: hs(16), height: vs(52) },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: ms(6), paddingHorizontal: hs(16), height: vs(52) },
   inputWrapperFocused: { borderColor: COLORS.primary, backgroundColor: COLORS.white },
   inputWrapperError: { borderColor: COLORS.error },
   inputIcon: { marginRight: hs(12) },
@@ -734,8 +734,8 @@ const styles = StyleSheet.create({
   subSectionTitle: { fontSize: ms(18), fontWeight: '700', color: COLORS.text, marginVertical: vs(16) },
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: vs(16) },
   checkboxLabel: { marginLeft: hs(12), fontSize: ms(14), color: COLORS.textSecondary },
-  planCard: { 
-    padding: hs(16), borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: ms(20), marginBottom: vs(12), backgroundColor: COLORS.white,
+  planCard: {
+    padding: hs(16), borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: ms(10), marginBottom: vs(12), backgroundColor: COLORS.white,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
       android: { elevation: 2 }
@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
   planCardSelected: { borderColor: COLORS.primary, backgroundColor: COLORS.primaryContainer },
   planCardContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   planCardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: hs(12) },
-  planIconCircle: { width: ms(40), height: ms(40), borderRadius: ms(12), backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: hs(14) },
+  planIconCircle: { width: ms(40), height: ms(40), borderRadius: ms(6), backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: hs(14) },
   planIconCircleActive: { backgroundColor: COLORS.primary },
   planCardInfo: { flex: 1 },
   planName: { fontSize: ms(16), fontWeight: '800', color: COLORS.text, letterSpacing: -0.3 },
@@ -753,20 +753,20 @@ const styles = StyleSheet.create({
   planPriceSelected: { color: COLORS.primary },
   planDesc: { fontSize: ms(12), color: COLORS.textSecondary, marginTop: vs(2), lineHeight: vs(16) },
   planCardRight: { alignItems: 'flex-end', gap: vs(8) },
-  planSelectionCircle: { width: ms(24), height: ms(24), borderRadius: ms(12), borderWidth: 1.5, borderColor: '#cbd5e1', justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
+  planSelectionCircle: { width: ms(24), height: ms(24), borderRadius: ms(6), borderWidth: 1.5, borderColor: '#cbd5e1', justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
   planSelectionCircleActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary },
   emptyPlans: { padding: hs(40), alignItems: 'center' },
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: vs(22) },
   footerActions: { flexDirection: 'row', paddingHorizontal: hs(16), marginTop: vs(8), gap: hs(12) },
-  backBtn: { flex: 1, height: vs(56), borderRadius: ms(16), borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
+  backBtn: { flex: 1, height: vs(56), borderRadius: ms(8), borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
   backBtnText: { fontSize: ms(16), fontWeight: '600', color: COLORS.textSecondary },
-  nextBtn: { flex: 2, height: vs(56), borderRadius: ms(16), backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(8) },
+  nextBtn: { flex: 2, height: vs(56), borderRadius: ms(8), backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(8) },
   nextBtnText: { fontSize: ms(16), fontWeight: '700', color: COLORS.white },
   btnDisabled: { opacity: 0.6 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.6)', justifyContent: 'flex-end' },
   modalDismissArea: { flex: 1 },
   modalContent: { 
-    backgroundColor: COLORS.white, borderTopLeftRadius: ms(32), borderTopRightRadius: ms(32), padding: hs(24), paddingTop: vs(8), maxHeight: '80%',
+    backgroundColor: COLORS.white, borderTopLeftRadius: ms(16), borderTopRightRadius: ms(16), padding: hs(24), paddingTop: vs(8), maxHeight: '80%',
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
       android: { elevation: 20 },
@@ -776,26 +776,26 @@ const styles = StyleSheet.create({
   modalHandle: { width: hs(40), height: vs(5), backgroundColor: '#e2e8f0', borderRadius: ms(3), alignSelf: 'center', marginVertical: vs(12) },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(20) },
   modalTitle: { fontSize: ms(20), fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
-  modalCloseBtn: { padding: ms(8), backgroundColor: COLORS.bg, borderRadius: ms(12) },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: ms(16), paddingHorizontal: hs(16), marginBottom: vs(16), height: vs(52), borderWidth: 1, borderColor: '#e2e8f0' },
+  modalCloseBtn: { padding: ms(8), backgroundColor: COLORS.bg, borderRadius: ms(6) },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: ms(8), paddingHorizontal: hs(16), marginBottom: vs(16), height: vs(52), borderWidth: 1, borderColor: '#e2e8f0' },
   searchIcon: { marginRight: hs(12) },
   searchInput: { flex: 1, height: vs(48), fontSize: ms(15), color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
   emptySearchState: { paddingVertical: vs(40), alignItems: 'center' },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: vs(14), paddingHorizontal: hs(16), borderRadius: ms(16), marginBottom: vs(4) },
+  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: vs(14), paddingHorizontal: hs(16), borderRadius: ms(8), marginBottom: vs(4) },
   listItemActive: { backgroundColor: COLORS.primaryContainer },
-  listIconBox: { width: ms(36), height: ms(36), borderRadius: ms(10), backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: hs(16) },
+  listIconBox: { width: ms(36), height: ms(36), borderRadius: ms(5), backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: hs(16) },
   listIconBoxActive: { backgroundColor: COLORS.white },
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
   listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
   heroHeader: {
-    paddingTop: vs(20), paddingBottom: vs(40), paddingHorizontal: hs(20), borderBottomLeftRadius: ms(32), borderBottomRightRadius: ms(32), marginBottom: vs(8),
+    paddingTop: vs(20), paddingBottom: vs(40), paddingHorizontal: hs(20), borderBottomLeftRadius: ms(16), borderBottomRightRadius: ms(16), marginBottom: vs(8),
     ...Platform.select({
       ios: { shadowColor: '#003d9b', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 15 },
       android: { elevation: 8 }
     })
   },
   heroContent: { gap: vs(8) },
-  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: hs(6), backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', paddingHorizontal: hs(10), paddingVertical: vs(4), borderRadius: ms(8), borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: hs(6), backgroundColor: 'rgba(255,255,255,0.15)', alignSelf: 'flex-start', paddingHorizontal: hs(10), paddingVertical: vs(4), borderRadius: ms(4), borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   heroBadgeText: { color: '#fff', fontSize: ms(10), fontWeight: '900', letterSpacing: 1 },
   heroTitle: { fontSize: ms(32), fontWeight: '900', color: '#fff', letterSpacing: -1 },
   heroSub: { fontSize: ms(14), color: 'rgba(255,255,255,0.8)', lineHeight: vs(20), fontWeight: '500', marginBottom: vs(12) },

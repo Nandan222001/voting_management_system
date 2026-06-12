@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#fff',
     padding: hs(16),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     marginBottom: vs(24),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
@@ -329,14 +329,14 @@ const styles = StyleSheet.create({
       android: { elevation: 4 },
     })
   },
-  galleryImage: { width: hs(220), height: vs(140), borderRadius: ms(20), backgroundColor: '#ddd' },
+  galleryImage: { width: hs(220), height: vs(140), borderRadius: ms(10), backgroundColor: '#ddd' },
 
   attachmentList: { gap: vs(12) },
   attachmentCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: ms(18),
+    borderRadius: ms(9),
     padding: hs(12),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   attachmentIconBox: {
     width: ms(48),
     height: ms(48),
-    borderRadius: ms(14),
+    borderRadius: ms(7),
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',

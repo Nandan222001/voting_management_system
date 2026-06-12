@@ -778,7 +778,7 @@ const RegisterScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header 
         showBack 
         onBack={() => navigation.goBack()} 
@@ -1247,7 +1247,7 @@ const RegisterScreen = ({ navigation }: any) => {
       <Modal visible={!!modalType} animationType="fade" transparent={true}>
         {renderModalContent()}
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -1255,11 +1255,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: vs(40) },
-  formSection: { 
-    padding: hs(24), 
-    backgroundColor: COLORS.white, 
-    margin: hs(16), 
-    borderRadius: ms(16), 
+  formSection: {
+    padding: hs(24),
+    backgroundColor: COLORS.white,
+    margin: hs(16),
+    borderRadius: ms(8),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
       android: { elevation: 2 },
@@ -1267,48 +1267,48 @@ const styles = StyleSheet.create({
     })
   },
   sectionHeaderContainer: { marginBottom: vs(24) },
-  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(12), marginBottom: vs(8) },
+  stepBadge: { backgroundColor: COLORS.primaryContainer, alignSelf: 'flex-start', paddingHorizontal: hs(12), paddingVertical: vs(4), borderRadius: ms(6), marginBottom: vs(8) },
   stepBadgeText: { color: COLORS.primary, fontSize: ms(12), fontWeight: '700' },
   sectionTitle: { fontSize: ms(22), fontWeight: '700', color: COLORS.text, lineHeight: vs(28) },
   sectionSubtitle: { fontSize: ms(13), color: COLORS.textSecondary, marginTop: vs(4), lineHeight: vs(18) },
   progressBarBg: { height: vs(4), backgroundColor: '#e2e8f0', borderRadius: ms(2), marginTop: vs(12) },
   progressBarFilled: { height: vs(4), backgroundColor: COLORS.primary, borderRadius: ms(2) },
-  
+
   inputGroup: { marginBottom: vs(16) },
   label: { fontSize: ms(13), fontWeight: '600', color: COLORS.text, marginBottom: vs(6) },
-  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: ms(12), paddingHorizontal: hs(16), height: vs(50) },
+  inputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border, borderRadius: ms(6), paddingHorizontal: hs(16), height: vs(50) },
   inputWrapperFocused: { borderColor: COLORS.primary, backgroundColor: COLORS.white },
   inputWrapperError: { borderColor: COLORS.error },
   inputIcon: { marginRight: hs(12) },
   input: { flex: 1, fontSize: ms(15), color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
   errorText: { color: COLORS.error, fontSize: ms(11), marginTop: vs(2) },
-  
+
   pickerText: { flex: 1, fontSize: ms(15), color: COLORS.text },
-  
-  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: ms(12), padding: ms(20), alignItems: 'center', marginBottom: vs(16), backgroundColor: COLORS.primaryContainer },
+
+  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: ms(6), padding: ms(20), alignItems: 'center', marginBottom: vs(16), backgroundColor: COLORS.primaryContainer },
   uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
   uploadBoxError: { borderColor: COLORS.error, backgroundColor: '#fef2f2' },
   uploadTitle: { fontSize: ms(15), fontWeight: '600', color: COLORS.text, marginTop: vs(10) },
   uploadSubtitle: { fontSize: ms(11), color: COLORS.textSecondary, marginTop: vs(2) },
-  
+
   row: { flexDirection: 'row' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   subSectionTitle: { fontSize: ms(16), fontWeight: '700', color: COLORS.text, marginVertical: vs(12) },
-  skipBtn: { paddingVertical: vs(6), paddingHorizontal: hs(12), backgroundColor: COLORS.primaryContainer, borderRadius: ms(8) },
+  skipBtn: { paddingVertical: vs(6), paddingHorizontal: hs(12), backgroundColor: COLORS.primaryContainer, borderRadius: ms(4) },
   skipText: { color: COLORS.primary, fontWeight: '700', fontSize: ms(12), textTransform: 'uppercase' },
-  
+
   checkboxRow: { flexDirection: 'row', alignItems: 'center', marginVertical: vs(16) },
   checkboxLabel: { marginLeft: hs(12), fontSize: ms(14), color: COLORS.textSecondary },
-  
-  infoBox: { flexDirection: 'row', backgroundColor: COLORS.primaryContainer, padding: hs(16), borderRadius: ms(12), marginTop: vs(8) },
+
+  infoBox: { flexDirection: 'row', backgroundColor: COLORS.primaryContainer, padding: hs(16), borderRadius: ms(6), marginTop: vs(8) },
   infoBoxText: { flex: 1, marginLeft: hs(12), fontSize: ms(12), color: COLORS.primary, lineHeight: vs(18) },
-  
-  planCard: { 
-    padding: hs(16), 
-    borderWidth: 1.5, 
-    borderColor: '#e2e8f0', 
-    borderRadius: ms(20), 
-    marginBottom: vs(12), 
+
+  planCard: {
+    padding: hs(16),
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    borderRadius: ms(10),
+    marginBottom: vs(12),
     backgroundColor: COLORS.white,
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   planIconCircle: {
     width: ms(40),
     height: ms(40),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1357,7 +1357,7 @@ const styles = StyleSheet.create({
   planSelectionCircle: {
     width: ms(24),
     height: ms(24),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     borderWidth: 1.5,
     borderColor: '#cbd5e1',
     justifyContent: 'center',
@@ -1372,9 +1372,9 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: vs(22), marginTop: vs(12) },
 
   footerActions: { flexDirection: 'row', paddingHorizontal: hs(16), marginTop: vs(8), gap: hs(12) },
-  backBtn: { flex: 1, height: vs(56), borderRadius: ms(16), borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
+  backBtn: { flex: 1, height: vs(56), borderRadius: ms(8), borderWidth: 1, borderColor: COLORS.border, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.white },
   backBtnText: { fontSize: ms(16), fontWeight: '600', color: COLORS.textSecondary },
-  nextBtn: { flex: 2, height: vs(56), borderRadius: ms(16), backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(8) },
+  nextBtn: { flex: 2, height: vs(56), borderRadius: ms(8), backgroundColor: COLORS.primary, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: hs(8) },
   nextBtnText: { fontSize: ms(16), fontWeight: '700', color: COLORS.white },
   btnDisabled: { opacity: 0.6 },
   
@@ -1386,8 +1386,8 @@ const styles = StyleSheet.create({
   modalDismissArea: { flex: 1 },
   modalContent: { 
     backgroundColor: COLORS.white, 
-    borderTopLeftRadius: ms(32), 
-    borderTopRightRadius: ms(32), 
+    borderTopLeftRadius: ms(16), 
+    borderTopRightRadius: ms(16), 
     padding: hs(24), 
     paddingTop: vs(8),
     maxHeight: hp(80),
@@ -1407,12 +1407,12 @@ const styles = StyleSheet.create({
   },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(20) },
   modalTitle: { fontSize: ms(20), fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
-  modalCloseBtn: { padding: ms(8), backgroundColor: COLORS.bg, borderRadius: ms(12) },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: ms(16), paddingHorizontal: hs(16), marginBottom: vs(16), height: vs(52), borderWidth: 1, borderColor: '#e2e8f0' },
+  modalCloseBtn: { padding: ms(8), backgroundColor: COLORS.bg, borderRadius: ms(6) },
+  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.bg, borderRadius: ms(8), paddingHorizontal: hs(16), marginBottom: vs(16), height: vs(52), borderWidth: 1, borderColor: '#e2e8f0' },
   searchIcon: { marginRight: hs(12) },
   searchInput: { flex: 1, height: vs(48), fontSize: ms(15), color: COLORS.text, ...Platform.select({ web: { outlineStyle: 'none' } }) },
   emptySearchState: { paddingVertical: vs(40), alignItems: 'center' },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: vs(14), paddingHorizontal: hs(16), borderRadius: ms(16), marginBottom: vs(4) },
+  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: vs(14), paddingHorizontal: hs(16), borderRadius: ms(8), marginBottom: vs(4) },
   listItemActive: { backgroundColor: COLORS.primaryContainer },
   listIconBox: { width: ms(36), height: ms(36), borderRadius: ms(10), backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center', marginRight: hs(16) },
   listIconBoxActive: { backgroundColor: COLORS.white },

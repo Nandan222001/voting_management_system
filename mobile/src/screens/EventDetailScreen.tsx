@@ -26,7 +26,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
   const { event } = route.params;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header title="Event Details" showBack onBack={() => navigation.goBack()} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
@@ -87,7 +87,7 @@ const EventDetailScreen = ({ navigation, route }: any) => {
           <Text style={styles.backButtonText}>Back to List</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   content: { padding: hs(20) },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: ms(24),
+    borderRadius: ms(12),
     padding: hs(24),
     gap: vs(20),
     borderWidth: 1,
@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: hs(16) },
   iconBox: {
-    width: ms(64),
-    height: ms(64),
-    borderRadius: ms(20),
+    width: ms(56),
+    height: ms(56),
+    borderRadius: ms(8),
     backgroundColor: COLORS.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   backButton: {
     marginTop: vs(30),
     paddingVertical: vs(18),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,

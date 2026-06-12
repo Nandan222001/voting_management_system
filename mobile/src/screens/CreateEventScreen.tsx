@@ -69,7 +69,7 @@ const CreateEventScreen = ({ navigation }: any) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header title="Create Event" showBack onBack={() => navigation.goBack()} />
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.form}>
@@ -175,7 +175,7 @@ const CreateEventScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.outline,
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     padding: hs(16),
     fontSize: ms(16),
     color: COLORS.onSurface,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   typeButton: {
     paddingHorizontal: hs(16),
     paddingVertical: vs(10),
-    borderRadius: ms(20),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: hs(8),
     paddingVertical: vs(14),
-    borderRadius: ms(12),
+    borderRadius: ms(6),
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: COLORS.outline,
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: COLORS.primary,
     paddingVertical: vs(18),
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: vs(20),

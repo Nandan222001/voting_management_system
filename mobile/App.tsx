@@ -21,7 +21,7 @@ const toastConfig = {
       style={{
         borderLeftColor: '#10b981',
         backgroundColor: '#ffffff',
-        borderRadius: ms(16),
+        borderRadius: ms(8),
         height: vs(80),
         width: '94%',
         marginHorizontal: '3%',
@@ -55,7 +55,7 @@ const toastConfig = {
       }}
       renderLeadingIcon={() => (
         <View style={{ justifyContent: 'center', paddingLeft: hs(20) }}>
-          <View style={{ backgroundColor: '#d1fae5', padding: ms(8), borderRadius: ms(12) }}>
+          <View style={{ backgroundColor: '#d1fae5', padding: ms(6), borderRadius: ms(6) }}>
             <MaterialIcons name="check-circle" size={ms(24)} color="#10b981" />
           </View>
         </View>
@@ -68,7 +68,7 @@ const toastConfig = {
       style={{
         borderLeftColor: '#ef4444',
         backgroundColor: '#ffffff',
-        borderRadius: ms(16),
+        borderRadius: ms(8),
         height: vs(80),
         width: '94%',
         marginHorizontal: '3%',
@@ -102,7 +102,7 @@ const toastConfig = {
       }}
       renderLeadingIcon={() => (
         <View style={{ justifyContent: 'center', paddingLeft: hs(20) }}>
-          <View style={{ backgroundColor: '#fee2e2', padding: ms(8), borderRadius: ms(12) }}>
+          <View style={{ backgroundColor: '#fee2e2', padding: ms(6), borderRadius: ms(6) }}>
             <MaterialIcons name="error-outline" size={ms(24)} color="#ef4444" />
           </View>
         </View>
@@ -115,7 +115,7 @@ const toastConfig = {
       style={{
         borderLeftColor: '#003d9b',
         backgroundColor: '#ffffff',
-        borderRadius: ms(16),
+        borderRadius: ms(8),
         height: vs(80),
         width: '94%',
         marginHorizontal: '3%',
@@ -149,7 +149,7 @@ const toastConfig = {
       }}
       renderLeadingIcon={() => (
         <View style={{ justifyContent: 'center', paddingLeft: hs(20) }}>
-          <View style={{ backgroundColor: '#dbeafe', padding: ms(8), borderRadius: ms(12) }}>
+          <View style={{ backgroundColor: '#dbeafe', padding: ms(6), borderRadius: ms(6) }}>
             <MaterialIcons name="info-outline" size={ms(24)} color="#003d9b" />
           </View>
         </View>

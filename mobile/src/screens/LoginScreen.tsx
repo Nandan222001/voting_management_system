@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
   ScrollView,
   Platform,
@@ -89,7 +88,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -190,7 +189,7 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
            <Text style={styles.brandingText}>Powered by VBA Bharat Integrity Engine</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   formBorderCard: {
     backgroundColor: "#fff",
     width: "100%",
-    borderRadius: ms(16),
+    borderRadius: ms(8),
     borderWidth: 1,
     borderColor: "#e2e8f0",
     padding: ms(24),
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    borderRadius: ms(10),
+    borderRadius: ms(6),
     paddingHorizontal: hs(14),
     height: vs(52),
   },
@@ -263,7 +262,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: "#003d9b",
     height: vs(56),
-    borderRadius: ms(10),
+    borderRadius: ms(6),
     justifyContent: "center",
     alignItems: "center",
     marginTop: vs(8),
