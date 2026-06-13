@@ -14,6 +14,10 @@ import NominationScreen from '../screens/NominationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import FollowersListScreen from '../screens/FollowersListScreen';
+import FollowingListScreen from '../screens/FollowingListScreen';
+import UserDetailScreen from '../screens/UserDetailScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import EventListScreen from '../screens/EventListScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
@@ -54,6 +58,10 @@ const ProfileStack = () => (
   <Stack.Navigator screenOptions={{ headerShown: false }}>
     <Stack.Screen name="ProfileMain" component={ProfileScreen} />
     <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+    <Stack.Screen name="FollowersList" component={FollowersListScreen} />
+    <Stack.Screen name="FollowingList" component={FollowingListScreen} />
+    <Stack.Screen name="UserDetail" component={UserDetailScreen} />
     <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
     <Stack.Screen name="EventList" component={EventListScreen} />
     <Stack.Screen name="EventDetail" component={EventDetailScreen} />

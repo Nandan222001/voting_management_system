@@ -44,8 +44,33 @@ export const candidateService = {
     return response.data.data;
   },
 
+  unfollowCandidate: async (id: number) => {
+    const response = await api.delete(`/candidates/${id}/follow`);
+    return response.data.data;
+  },
+
   getFollowStatus: async (id: number) => {
     const response = await api.get(`/candidates/${id}/follow-status`);
     return response.data.data; // Expected { is_following: boolean }
+  },
+
+  getFollowersCount: async () => {
+    const response = await api.get('/candidates/me/followers-count');
+    return response.data.data; // Expected { count: number }
+  },
+
+  getFollowers: async () => {
+    const response = await api.get('/candidates/me/followers');
+    return response.data.data; // Expected array of users
+  },
+
+  getFollowingCount: async () => {
+    const response = await api.get('/candidates/me/following-count');
+    return response.data.data; // Expected { count: number }
+  },
+
+  getFollowing: async () => {
+    const response = await api.get('/candidates/me/following');
+    return response.data.data; // Expected array of users
   },
 };

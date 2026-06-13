@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import { candidateService } from '../services/candidateService';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
@@ -68,10 +69,12 @@ const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
 );
 
 const ProfileScreen = ({ navigation }: any) => {
-  const { user, logout, isLoading, updateProfile } = useAuth();
+  const { user, logout, isLoading, updateProfile, refreshUser } = useAuth();
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   // KYC States
   const [isKycModalVisible, setIsKycModalVisible] = useState(false);
@@ -82,7 +85,26 @@ const ProfileScreen = ({ navigation }: any) => {
   const [isSubmittingKyc, setIsSubmittingKyc] = useState(false);
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
 
-  const isCandidate = user?.is_candidate;
+  // Robust check for candidate status using both flag and role
+  const isCandidate = user?.is_candidate || user?.role === 'candidate' || user?.role === 'representative';
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (isCandidate) {
+        try {
+          const [fRes, flRes] = await Promise.all([
+            candidateService.getFollowersCount(),
+            candidateService.getFollowingCount()
+          ]);
+          setFollowersCount(fRes.count || 0);
+          setFollowingCount(flRes.count || 0);
+        } catch (error) {
+          console.error('Failed to fetch profile stats:', error);
+        }
+      }
+    };
+    fetchStats();
+  }, [user, isCandidate]);
 
   const handleProfileImageUpload = async () => {
     const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
@@ -126,7 +148,11 @@ const ProfileScreen = ({ navigation }: any) => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await updateProfile({}); // Calling updateProfile with empty object forces a refresh from token/backend
+      if (refreshUser) {
+        await refreshUser();
+      } else {
+        await updateProfile({});
+      }
     } catch (e) {
       console.error("Refresh failed", e);
     }
@@ -286,6 +312,26 @@ const ProfileScreen = ({ navigation }: any) => {
                 <Text style={styles.userEmail}>{user?.email}</Text>
               </View>
 
+              {isCandidate && (
+                <View style={styles.statsRow}>
+                  <TouchableOpacity 
+                    style={styles.followersStat}
+                    onPress={() => navigation.navigate('FollowersList')}
+                  >
+                    <Text style={styles.followersCountText}>{followersCount}</Text>
+                    <Text style={styles.followersLabelText}>Followers</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.followersStat}
+                    onPress={() => navigation.navigate('FollowingList')}
+                  >
+                    <Text style={styles.followersCountText}>{followingCount}</Text>
+                    <Text style={styles.followersLabelText}>Following</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <TouchableOpacity 
                 style={styles.editProfileBtn}
                 onPress={() => navigation.navigate('EditProfile')}
@@ -378,6 +424,18 @@ const ProfileScreen = ({ navigation }: any) => {
             >
               <MaterialIcons name="edit-location" size={ms(20)} color={COLORS.primary} />
               <Text style={styles.uploadKycBtnText}>Update Location Details</Text>
+            </TouchableOpacity>
+          </ProfileSection>
+
+          {/* Security Section */}
+          <ProfileSection title="Account Security" icon="security">
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('ChangePassword')}
+            >
+              <MaterialIcons name="lock-reset" size={ms(22)} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Change Account Password</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
             </TouchableOpacity>
           </ProfileSection>
 
@@ -720,6 +778,30 @@ const styles = StyleSheet.create({
     fontSize: ms(13),
     color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: hs(12),
+    marginBottom: vs(16),
+  },
+  followersStat: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: hs(20),
+    paddingVertical: vs(8),
+    borderRadius: ms(12),
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: hs(8),
+  },
+  followersCountText: {
+    color: '#fff',
+    fontSize: ms(18),
+    fontWeight: '900',
+  },
+  followersLabelText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: ms(13),
+    fontWeight: '700',
   },
   editProfileBtn: {
     borderRadius: ms(8),

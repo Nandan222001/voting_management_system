@@ -80,4 +80,19 @@ export const authService = {
     await setTenantID(updatedUser?.tenant_id);
     return updatedUser;
   },
+
+  forgotPassword: async (email: string) => {
+    const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  resetPassword: async (resetData: any) => {
+    const response = await api.post('/auth/reset-password', resetData);
+    return response.data;
+  },
+
+  changePassword: async (passwordData: any) => {
+    const response = await api.put('/auth/me/password', passwordData);
+    return response.data;
+  },
 };

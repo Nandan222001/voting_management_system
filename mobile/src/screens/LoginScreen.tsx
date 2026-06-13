@@ -130,6 +130,9 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.inputGroup}>
             <View style={styles.passwordLabelRow}>
               <Text style={styles.label}>Password</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.inputWrapper}>
               <MaterialIcons
@@ -258,6 +261,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  forgotPasswordText: {
+    fontSize: ms(12),
+    color: "#003d9b",
+    fontWeight: '700',
+    marginBottom: vs(8),
   },
   primaryButton: {
     backgroundColor: "#003d9b",

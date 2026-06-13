@@ -67,6 +67,10 @@ interface AuthContextType {
   createRegistrationOrder: (tenantId: number, planId: number) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   updateProfile: (userData: any) => Promise<void>;
+  forgotPassword: (email: string) => Promise<any>;
+  resetPassword: (resetData: any) => Promise<any>;
+  changePassword: (passwordData: any) => Promise<any>;
+  refreshUser: () => Promise<void>;
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
 }
@@ -182,6 +186,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    return await authService.forgotPassword(email);
+  };
+
+  const resetPassword = async (resetData: any) => {
+    return await authService.resetPassword(resetData);
+  };
+
+  const changePassword = async (passwordData: any) => {
+    return await authService.changePassword(passwordData);
+  };
+
+  const refreshUser = async () => {
+    try {
+      const freshUser = await authService.getProfile();
+      if (freshUser) {
+        setUser(parseUser(freshUser));
+      }
+    } catch (e) {
+      console.error('Failed to refresh user profile', e);
+      throw e;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -193,6 +221,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         verifyOtp,
         updateProfile,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        refreshUser,
         setToken,
         setUser
       }}
