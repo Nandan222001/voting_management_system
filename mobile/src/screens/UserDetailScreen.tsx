@@ -11,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -93,7 +94,7 @@ const UserDetailScreen = ({ navigation, route }: any) => {
 
   const coverSource = getRandomLocalImage(user.id || 0, 7);
 
-  const bioText = user.bio || "This member is part of the VBA Bharat organizational network, committed to democratic values and community progress.";
+  const bioText = user.bio || "This member is part of the VBA Connect organizational network, committed to democratic values and community progress.";
 
   useEffect(() => {
     if (user.id) {
@@ -124,6 +125,7 @@ const UserDetailScreen = ({ navigation, route }: any) => {
         result = await candidateService.followCandidate(user.id);
       }
       setIsFollowing(result.is_following);
+      DeviceEventEmitter.emit('REFRESH_PROFILE_STATS');
     } catch (error) {
       setIsFollowing(previousState);
       showToast.error('Action Failed', 'Could not update follow status.');
@@ -143,7 +145,7 @@ const UserDetailScreen = ({ navigation, route }: any) => {
               <View style={styles.quoteBox}>
                 <MaterialIcons name="format-quote" size={ms(24)} color={COLORS.primary} style={styles.quoteIcon} />
                 <Text style={styles.quoteText}>
-                   "Dedicated to the vision of a stronger, more inclusive Bharat."
+                   "Dedicated to the vision of a stronger, more inclusive Connect."
                 </Text>
               </View>
               <Text style={styles.bodyText}>{bioText}</Text>

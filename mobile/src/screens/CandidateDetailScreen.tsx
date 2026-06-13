@@ -11,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -125,6 +126,7 @@ const CandidateDetailScreen = ({ navigation, route }: any) => {
     try {
       const result = await candidateService.followCandidate(candidate.id);
       setIsFollowing(result.is_following);
+      DeviceEventEmitter.emit('REFRESH_PROFILE_STATS');
     } catch (error) {
       setIsFollowing(previousState); // Revert on failure
       showToast.error('Action Failed', 'Could not update follow status.');

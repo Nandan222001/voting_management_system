@@ -5,7 +5,7 @@ const AppLogo = ({ className = "w-12 h-12", size }) => {
   return (
     <img 
       src={logo} 
-      alt="VBA Bharat" 
+      alt="VBA Connect" 
       className={`block p-0 ${className}`} 
       style={style} 
     />

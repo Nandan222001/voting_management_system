@@ -14,7 +14,7 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'vbabharat' do
+target 'vbaConnect' do
   config = use_native_modules!
 
   use_react_native!(
@@ -23,7 +23,7 @@ target 'vbabharat' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  target 'vbabharatTests' do
+  target 'vbaConnectTests' do
     inherit! :complete
     # Pods for testing
   end

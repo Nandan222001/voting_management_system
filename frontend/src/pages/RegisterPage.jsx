@@ -130,7 +130,7 @@ export default function RegisterPage() {
           key: order.key_id,
           amount: order.amount,
           currency: order.currency,
-          name: 'VBA Bharat',
+          name: 'VBA Connect',
           description: `Registration for ${plan.name}`,
           order_id: order.razorpay_order_id,
           handler: async (response) => {
@@ -211,7 +211,7 @@ export default function RegisterPage() {
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <AppLogo className="w-8 h-8" />
-          <span className="font-bold text-[#1a337e] text-base">VBA Bharat</span>
+          <span className="font-bold text-[#1a337e] text-base">VBA Connect</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-[#1a337e] flex items-center justify-center">
           <span className="text-white text-sm font-bold">CV</span>

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -13,6 +14,7 @@ import {
   Dimensions,
   Modal,
   RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
@@ -70,6 +72,29 @@ const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
 
 const ProfileScreen = ({ navigation }: any) => {
   const { user, logout, isLoading, updateProfile, refreshUser } = useAuth();
+  const lastRefreshRef = React.useRef<number>(0);
+  
+  // Listen for follow/unfollow events
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener('REFRESH_PROFILE_STATS', () => {
+      if (refreshUser) {
+        refreshUser();
+      }
+    });
+    return () => listener.remove();
+  }, [refreshUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      // Only refresh if more than 5 minutes have passed since the last refresh
+      if (refreshUser && (now - lastRefreshRef.current > 5 * 60 * 1000)) {
+        refreshUser();
+        lastRefreshRef.current = now;
+      }
+    }, [refreshUser])
+  );
+
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,6 +112,12 @@ const ProfileScreen = ({ navigation }: any) => {
 
   // Robust check for candidate status using both flag and role
   const isCandidate = user?.is_candidate || user?.role === 'candidate' || user?.role === 'representative';
+  
+  // DEBUG
+  useEffect(() => {
+    console.log('[DEBUG] Current User:', user);
+    console.log('[DEBUG] isCandidate:', isCandidate);
+  }, [user, isCandidate]);
 
   useEffect(() => {
     const fetchStats = async () => {

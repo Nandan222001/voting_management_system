@@ -45,7 +45,7 @@ export const candidateService = {
   },
 
   unfollowCandidate: async (id: number) => {
-    const response = await api.delete(`/candidates/${id}/follow`);
+    const response = await api.post(`/candidates/${id}/follow`);
     return response.data.data;
   },
 

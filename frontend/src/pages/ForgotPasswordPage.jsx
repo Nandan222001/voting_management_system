@@ -36,7 +36,7 @@ export default function ForgotPasswordPage() {
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 shadow-none">
             <AppLogo className="w-20 h-20 object-contain" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">VBA Bharat</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">VBA Connect</h1>
           <p className="text-gray-500 mt-2 font-medium">Reset your account password</p>
         </div>
 
@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all font-medium"
-                  placeholder="admin@vbabharat.com"
+                  placeholder="admin@vbaConnect.com"
                 />
               </div>
             </div>

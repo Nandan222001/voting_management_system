@@ -69,7 +69,6 @@ export default function AnnouncementDetailScreen({ route, navigation }: any) {
     <View style={styles.container}>
       <Header 
         title="Details" 
-        transparent 
         showBack 
         onBack={() => navigation.goBack()}
       />

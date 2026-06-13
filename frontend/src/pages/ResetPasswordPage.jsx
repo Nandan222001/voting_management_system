@@ -57,7 +57,7 @@ export default function ResetPasswordPage() {
           <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 shadow-none">
             <AppLogo className="w-20 h-20 object-contain" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">VBA Bharat</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">VBA Connect</h1>
           <p className="text-gray-500 mt-2 font-medium">Create your new password</p>
         </div>
 

@@ -19,12 +19,12 @@
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>Pods-vbabharat-vbabharatTests.xcscheme</key>
+		<key>Pods-vbaConnect-vbaConnectTests.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>
 		</dict>
-		<key>Pods-vbabharat.xcscheme</key>
+		<key>Pods-vbaConnect.xcscheme</key>
 		<dict>
 			<key>isShown</key>
 			<false/>

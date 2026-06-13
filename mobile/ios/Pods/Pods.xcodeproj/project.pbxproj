@@ -2312,8 +2312,8 @@
 		46EB2E00015930 /* RNCSafeAreaViewManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E00008D50 /* RNCSafeAreaViewManager.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		46EB2E00015940 /* RNCSafeAreaViewMode.h in Headers */ = {isa = PBXBuildFile; fileRef = 46EB2E00008D70 /* RNCSafeAreaViewMode.h */; settings = {ATTRIBUTES = (Project, ); }; };
 		46EB2E000159A0 /* react-native-safe-area-context-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00015990 /* react-native-safe-area-context-dummy.m */; };
-		46EB2E00015AB0 /* Pods-vbabharat-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00015AA0 /* Pods-vbabharat-dummy.m */; };
-		46EB2E00015BC0 /* Pods-vbabharat-vbabharatTests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00015BB0 /* Pods-vbabharat-vbabharatTests-dummy.m */; };
+		46EB2E00015AB0 /* Pods-vbaConnect-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00015AA0 /* Pods-vbaConnect-dummy.m */; };
+		46EB2E00015BC0 /* Pods-vbaConnect-vbaConnectTests-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 46EB2E00015BB0 /* Pods-vbaConnect-vbaConnectTests-dummy.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -6557,7 +6557,6 @@
 /* Begin PBXFileReference section */
 		08D1FFC2980C1ED72AE9A4C44A0544C3 /* react-native-document-picker */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "react-native-document-picker"; path = "libreact-native-document-picker.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0B748C1350B592BB03D470EE01D46105 /* react-native-razorpay */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "react-native-razorpay"; path = "libreact-native-razorpay.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		0DED1DD17E86139B4179E4AA906B34DA /* Pods-vbabharat */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "Pods-vbabharat"; path = "libPods-vbabharat.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1381503C42FFF460E946860A32A6F981 /* React-RuntimeApple */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-RuntimeApple"; path = "libReact-RuntimeApple.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1936453FF2A7E3A13063C4917C4D5598 /* RCT-Folly */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "RCT-Folly"; path = "libRCT-Folly.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1E04881EDF02715BD6AC2C6ED3FBB37E /* React-rendererdebug */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-rendererdebug"; path = "libReact-rendererdebug.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -6569,6 +6568,7 @@
 		37592FDAD45752511010F4B06AC57355 /* React-cxxreact */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-cxxreact"; path = "libReact-cxxreact.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		39D0105B481E5FB78C661496BD63B8A5 /* React-RCTAppDelegate */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-RCTAppDelegate"; path = "libReact-RCTAppDelegate.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CA7A9404CCDD6BA22C97F8348CE3209 /* glog */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = glog; path = libglog.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		420E4EA3AC209F9287DD15545A55085B /* Pods-vbaConnect-vbaConnectTests */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "Pods-vbaConnect-vbaConnectTests"; path = "libPods-vbaConnect-vbaConnectTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		46EB2E000004F0 /* Podfile */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; lastKnownFileType = text; name = Podfile; path = ../Podfile; sourceTree = SOURCE_ROOT; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		46EB2E00000500 /* BVLinearGradient.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = BVLinearGradient.h; path = ios/BVLinearGradient.h; sourceTree = "<group>"; };
 		46EB2E00000510 /* BVLinearGradient.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = BVLinearGradient.m; path = ios/BVLinearGradient.m; sourceTree = "<group>"; };
@@ -9047,20 +9047,20 @@
 		46EB2E00015970 /* react-native-safe-area-context.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "react-native-safe-area-context.release.xcconfig"; sourceTree = "<group>"; };
 		46EB2E00015980 /* react-native-safe-area-context-prefix.pch */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "react-native-safe-area-context-prefix.pch"; sourceTree = "<group>"; };
 		46EB2E00015990 /* react-native-safe-area-context-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "react-native-safe-area-context-dummy.m"; sourceTree = "<group>"; };
-		46EB2E00015A40 /* Pods-vbabharat.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbabharat.release.xcconfig"; sourceTree = "<group>"; };
-		46EB2E00015A50 /* Pods-vbabharat.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbabharat.debug.xcconfig"; sourceTree = "<group>"; };
-		46EB2E00015A60 /* Pods-vbabharat-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbabharat-frameworks.sh"; sourceTree = "<group>"; };
-		46EB2E00015A70 /* Pods-vbabharat-resources.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbabharat-resources.sh"; sourceTree = "<group>"; };
-		46EB2E00015A80 /* Pods-vbabharat-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-vbabharat-acknowledgements.plist"; sourceTree = "<group>"; };
-		46EB2E00015A90 /* Pods-vbabharat-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-vbabharat-acknowledgements.markdown"; sourceTree = "<group>"; };
-		46EB2E00015AA0 /* Pods-vbabharat-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-vbabharat-dummy.m"; sourceTree = "<group>"; };
-		46EB2E00015B50 /* Pods-vbabharat-vbabharatTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbabharat-vbabharatTests.release.xcconfig"; sourceTree = "<group>"; };
-		46EB2E00015B60 /* Pods-vbabharat-vbabharatTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbabharat-vbabharatTests.debug.xcconfig"; sourceTree = "<group>"; };
-		46EB2E00015B70 /* Pods-vbabharat-vbabharatTests-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbabharat-vbabharatTests-frameworks.sh"; sourceTree = "<group>"; };
-		46EB2E00015B80 /* Pods-vbabharat-vbabharatTests-resources.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbabharat-vbabharatTests-resources.sh"; sourceTree = "<group>"; };
-		46EB2E00015B90 /* Pods-vbabharat-vbabharatTests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-vbabharat-vbabharatTests-acknowledgements.plist"; sourceTree = "<group>"; };
-		46EB2E00015BA0 /* Pods-vbabharat-vbabharatTests-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-vbabharat-vbabharatTests-acknowledgements.markdown"; sourceTree = "<group>"; };
-		46EB2E00015BB0 /* Pods-vbabharat-vbabharatTests-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-vbabharat-vbabharatTests-dummy.m"; sourceTree = "<group>"; };
+		46EB2E00015A40 /* Pods-vbaConnect.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbaConnect.release.xcconfig"; sourceTree = "<group>"; };
+		46EB2E00015A50 /* Pods-vbaConnect.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbaConnect.debug.xcconfig"; sourceTree = "<group>"; };
+		46EB2E00015A60 /* Pods-vbaConnect-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbaConnect-frameworks.sh"; sourceTree = "<group>"; };
+		46EB2E00015A70 /* Pods-vbaConnect-resources.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbaConnect-resources.sh"; sourceTree = "<group>"; };
+		46EB2E00015A80 /* Pods-vbaConnect-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-vbaConnect-acknowledgements.plist"; sourceTree = "<group>"; };
+		46EB2E00015A90 /* Pods-vbaConnect-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-vbaConnect-acknowledgements.markdown"; sourceTree = "<group>"; };
+		46EB2E00015AA0 /* Pods-vbaConnect-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-vbaConnect-dummy.m"; sourceTree = "<group>"; };
+		46EB2E00015B50 /* Pods-vbaConnect-vbaConnectTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbaConnect-vbaConnectTests.release.xcconfig"; sourceTree = "<group>"; };
+		46EB2E00015B60 /* Pods-vbaConnect-vbaConnectTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-vbaConnect-vbaConnectTests.debug.xcconfig"; sourceTree = "<group>"; };
+		46EB2E00015B70 /* Pods-vbaConnect-vbaConnectTests-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbaConnect-vbaConnectTests-frameworks.sh"; sourceTree = "<group>"; };
+		46EB2E00015B80 /* Pods-vbaConnect-vbaConnectTests-resources.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-vbaConnect-vbaConnectTests-resources.sh"; sourceTree = "<group>"; };
+		46EB2E00015B90 /* Pods-vbaConnect-vbaConnectTests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-vbaConnect-vbaConnectTests-acknowledgements.plist"; sourceTree = "<group>"; };
+		46EB2E00015BA0 /* Pods-vbaConnect-vbaConnectTests-acknowledgements.markdown */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = "Pods-vbaConnect-vbaConnectTests-acknowledgements.markdown"; sourceTree = "<group>"; };
+		46EB2E00015BB0 /* Pods-vbaConnect-vbaConnectTests-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-vbaConnect-vbaConnectTests-dummy.m"; sourceTree = "<group>"; };
 		4F3E9C98444FA55E416B857143C48013 /* React-RuntimeHermes */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-RuntimeHermes"; path = "libReact-RuntimeHermes.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		50B5347C9A6E93B7D4CFC3673BA6FB7E /* RNScreens */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = RNScreens; path = libRNScreens.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		52FCF98CEFF94C742080B6965D537AD0 /* react-native-safe-area-context */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "react-native-safe-area-context"; path = "libreact-native-safe-area-context.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -9076,12 +9076,12 @@
 		72DE4BF3FB9CE0858E90F96FEF8A53AE /* RNDateTimePicker */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = RNDateTimePicker; path = libRNDateTimePicker.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		7894B46E6C7FA2545BF0AD11EFC6F44E /* RNCAsyncStorage-RNCAsyncStorage_resources */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "RNCAsyncStorage-RNCAsyncStorage_resources"; path = RNCAsyncStorage_resources.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		802121F5B756ACBFDD6D08C36246DADD /* React-RCTLinking */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-RCTLinking"; path = "libReact-RCTLinking.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		81AC134B4E4B11B9C5E3FA761F440B16 /* Pods-vbaConnect */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "Pods-vbaConnect"; path = "libPods-vbaConnect.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		85A01882ED06DFEA2E0CE78BCDB204A7 /* SocketRocket */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = SocketRocket; path = libSocketRocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		8998273719FDD789E6F9C7541AFD0B33 /* RNVectorIcons */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = RNVectorIcons; path = libRNVectorIcons.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		8F65F9361F2069CF9E9D751272968DE4 /* RNGestureHandler */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = RNGestureHandler; path = libRNGestureHandler.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		93321B8A1C6441553EACB77C23BF2E9F /* react-native-image-picker-RNImagePickerPrivacyInfo */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; name = "react-native-image-picker-RNImagePickerPrivacyInfo"; path = RNImagePickerPrivacyInfo.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		971F6C319DDD4BD078954A5EF77B5BA7 /* React-featureflags */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-featureflags"; path = "libReact-featureflags.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		A4648914496F9B5229309656801E408E /* Pods-vbabharat-vbabharatTests */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "Pods-vbabharat-vbabharatTests"; path = "libPods-vbabharat-vbabharatTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5B49761F8D1EB12585DD45CAA2E489F /* React-logger */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-logger"; path = "libReact-logger.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A67E85E5F06FDA406D3A1B378BDF0C5C /* React-runtimescheduler */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-runtimescheduler"; path = "libReact-runtimescheduler.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A68E5A9B69A3BA0FD52CAF7A354EC93B /* React-RCTNetwork */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; name = "React-RCTNetwork"; path = "libReact-RCTNetwork.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -9560,8 +9560,8 @@
 				6FFB7B2992BB53405E6B771A5BA1E97D /* DoubleConversion */,
 				F4BDA69E3BCB0166D49FB679ABADCA00 /* fmt */,
 				3CA7A9404CCDD6BA22C97F8348CE3209 /* glog */,
-				0DED1DD17E86139B4179E4AA906B34DA /* Pods-vbabharat */,
-				A4648914496F9B5229309656801E408E /* Pods-vbabharat-vbabharatTests */,
+				81AC134B4E4B11B9C5E3FA761F440B16 /* Pods-vbaConnect */,
+				420E4EA3AC209F9287DD15545A55085B /* Pods-vbaConnect-vbaConnectTests */,
 				1936453FF2A7E3A13063C4917C4D5598 /* RCT-Folly */,
 				33EEBF1D210254B5452CE560F81C9D38 /* RCTDeprecation */,
 				F958876A082BF810B342435CE3FB5AF6 /* RCTTypeSafety */,
@@ -9631,8 +9631,8 @@
 		46EB2E00000070 /* Targets Support Files */ = {
 			isa = PBXGroup;
 			children = (
-				46EB2E00015A30 /* Pods-vbabharat */,
-				46EB2E00015B40 /* Pods-vbabharat-vbabharatTests */,
+				46EB2E00015A30 /* Pods-vbaConnect */,
+				46EB2E00015B40 /* Pods-vbaConnect-vbaConnectTests */,
 			);
 			name = "Targets Support Files";
 			sourceTree = "<group>";
@@ -15139,34 +15139,34 @@
 			path = "../../ios/Pods/Target Support Files/react-native-safe-area-context";
 			sourceTree = "<group>";
 		};
-		46EB2E00015A30 /* Pods-vbabharat */ = {
+		46EB2E00015A30 /* Pods-vbaConnect */ = {
 			isa = PBXGroup;
 			children = (
-				46EB2E00015A90 /* Pods-vbabharat-acknowledgements.markdown */,
-				46EB2E00015A80 /* Pods-vbabharat-acknowledgements.plist */,
-				46EB2E00015AA0 /* Pods-vbabharat-dummy.m */,
-				46EB2E00015A60 /* Pods-vbabharat-frameworks.sh */,
-				46EB2E00015A70 /* Pods-vbabharat-resources.sh */,
-				46EB2E00015A50 /* Pods-vbabharat.debug.xcconfig */,
-				46EB2E00015A40 /* Pods-vbabharat.release.xcconfig */,
+				46EB2E00015A90 /* Pods-vbaConnect-acknowledgements.markdown */,
+				46EB2E00015A80 /* Pods-vbaConnect-acknowledgements.plist */,
+				46EB2E00015AA0 /* Pods-vbaConnect-dummy.m */,
+				46EB2E00015A60 /* Pods-vbaConnect-frameworks.sh */,
+				46EB2E00015A70 /* Pods-vbaConnect-resources.sh */,
+				46EB2E00015A50 /* Pods-vbaConnect.debug.xcconfig */,
+				46EB2E00015A40 /* Pods-vbaConnect.release.xcconfig */,
 			);
-			name = "Pods-vbabharat";
-			path = "Target Support Files/Pods-vbabharat";
+			name = "Pods-vbaConnect";
+			path = "Target Support Files/Pods-vbaConnect";
 			sourceTree = "<group>";
 		};
-		46EB2E00015B40 /* Pods-vbabharat-vbabharatTests */ = {
+		46EB2E00015B40 /* Pods-vbaConnect-vbaConnectTests */ = {
 			isa = PBXGroup;
 			children = (
-				46EB2E00015BA0 /* Pods-vbabharat-vbabharatTests-acknowledgements.markdown */,
-				46EB2E00015B90 /* Pods-vbabharat-vbabharatTests-acknowledgements.plist */,
-				46EB2E00015BB0 /* Pods-vbabharat-vbabharatTests-dummy.m */,
-				46EB2E00015B70 /* Pods-vbabharat-vbabharatTests-frameworks.sh */,
-				46EB2E00015B80 /* Pods-vbabharat-vbabharatTests-resources.sh */,
-				46EB2E00015B60 /* Pods-vbabharat-vbabharatTests.debug.xcconfig */,
-				46EB2E00015B50 /* Pods-vbabharat-vbabharatTests.release.xcconfig */,
+				46EB2E00015BA0 /* Pods-vbaConnect-vbaConnectTests-acknowledgements.markdown */,
+				46EB2E00015B90 /* Pods-vbaConnect-vbaConnectTests-acknowledgements.plist */,
+				46EB2E00015BB0 /* Pods-vbaConnect-vbaConnectTests-dummy.m */,
+				46EB2E00015B70 /* Pods-vbaConnect-vbaConnectTests-frameworks.sh */,
+				46EB2E00015B80 /* Pods-vbaConnect-vbaConnectTests-resources.sh */,
+				46EB2E00015B60 /* Pods-vbaConnect-vbaConnectTests.debug.xcconfig */,
+				46EB2E00015B50 /* Pods-vbaConnect-vbaConnectTests.release.xcconfig */,
 			);
-			name = "Pods-vbabharat-vbabharatTests";
-			path = "Target Support Files/Pods-vbabharat-vbabharatTests";
+			name = "Pods-vbaConnect-vbaConnectTests";
+			path = "Target Support Files/Pods-vbaConnect-vbaConnectTests";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -17049,91 +17049,6 @@
 			productReference = 4F3E9C98444FA55E416B857143C48013 /* React-RuntimeHermes */;
 			productType = "com.apple.product-type.library.static";
 		};
-		1485087FDE036DDAF14722FDFF238558 /* Pods-vbabharat-vbabharatTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 46EB2E00015AD0 /* Build configuration list for PBXNativeTarget "Pods-vbabharat-vbabharatTests" */;
-			buildPhases = (
-				46EB2E00015B10 /* Headers */,
-				46EB2E00015B20 /* Sources */,
-				46EB2E00015B30 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				46EB2E000164C0 /* PBXTargetDependency */,
-				46EB2E000164E0 /* PBXTargetDependency */,
-				46EB2E00016500 /* PBXTargetDependency */,
-				46EB2E00016520 /* PBXTargetDependency */,
-				46EB2E00016540 /* PBXTargetDependency */,
-				46EB2E00016560 /* PBXTargetDependency */,
-				46EB2E00016580 /* PBXTargetDependency */,
-				46EB2E000165A0 /* PBXTargetDependency */,
-				46EB2E000165C0 /* PBXTargetDependency */,
-				46EB2E000165E0 /* PBXTargetDependency */,
-				46EB2E00016600 /* PBXTargetDependency */,
-				46EB2E00016620 /* PBXTargetDependency */,
-				46EB2E00016640 /* PBXTargetDependency */,
-				46EB2E00016660 /* PBXTargetDependency */,
-				46EB2E00016680 /* PBXTargetDependency */,
-				46EB2E000166A0 /* PBXTargetDependency */,
-				46EB2E000166C0 /* PBXTargetDependency */,
-				46EB2E000166E0 /* PBXTargetDependency */,
-				46EB2E00016700 /* PBXTargetDependency */,
-				46EB2E00016720 /* PBXTargetDependency */,
-				46EB2E00016740 /* PBXTargetDependency */,
-				46EB2E00016760 /* PBXTargetDependency */,
-				46EB2E00016780 /* PBXTargetDependency */,
-				46EB2E000167A0 /* PBXTargetDependency */,
-				46EB2E000167C0 /* PBXTargetDependency */,
-				46EB2E000167E0 /* PBXTargetDependency */,
-				46EB2E00016800 /* PBXTargetDependency */,
-				46EB2E00016820 /* PBXTargetDependency */,
-				46EB2E00016840 /* PBXTargetDependency */,
-				46EB2E00016860 /* PBXTargetDependency */,
-				46EB2E00016880 /* PBXTargetDependency */,
-				46EB2E000168A0 /* PBXTargetDependency */,
-				46EB2E000168C0 /* PBXTargetDependency */,
-				46EB2E000168E0 /* PBXTargetDependency */,
-				46EB2E00016900 /* PBXTargetDependency */,
-				46EB2E00016920 /* PBXTargetDependency */,
-				46EB2E00016940 /* PBXTargetDependency */,
-				46EB2E00016960 /* PBXTargetDependency */,
-				46EB2E00016980 /* PBXTargetDependency */,
-				46EB2E000169A0 /* PBXTargetDependency */,
-				46EB2E000169C0 /* PBXTargetDependency */,
-				46EB2E000169E0 /* PBXTargetDependency */,
-				46EB2E00016A00 /* PBXTargetDependency */,
-				46EB2E00016A20 /* PBXTargetDependency */,
-				46EB2E00016A40 /* PBXTargetDependency */,
-				46EB2E00016A60 /* PBXTargetDependency */,
-				46EB2E00016A80 /* PBXTargetDependency */,
-				46EB2E00016AA0 /* PBXTargetDependency */,
-				46EB2E00016AC0 /* PBXTargetDependency */,
-				46EB2E00016AE0 /* PBXTargetDependency */,
-				46EB2E00016B00 /* PBXTargetDependency */,
-				46EB2E00016B20 /* PBXTargetDependency */,
-				46EB2E00016B40 /* PBXTargetDependency */,
-				46EB2E00016B60 /* PBXTargetDependency */,
-				46EB2E00016B80 /* PBXTargetDependency */,
-				46EB2E00016BA0 /* PBXTargetDependency */,
-				46EB2E00016BC0 /* PBXTargetDependency */,
-				46EB2E00016BE0 /* PBXTargetDependency */,
-				46EB2E00016C00 /* PBXTargetDependency */,
-				46EB2E00016C20 /* PBXTargetDependency */,
-				46EB2E00016C40 /* PBXTargetDependency */,
-				46EB2E00016C60 /* PBXTargetDependency */,
-				46EB2E00016C80 /* PBXTargetDependency */,
-				46EB2E00016CA0 /* PBXTargetDependency */,
-				46EB2E00016CC0 /* PBXTargetDependency */,
-				46EB2E00016CE0 /* PBXTargetDependency */,
-				46EB2E00016D00 /* PBXTargetDependency */,
-				46EB2E00016D20 /* PBXTargetDependency */,
-			);
-			name = "Pods-vbabharat-vbabharatTests";
-			productName = "Pods-vbabharat-vbabharatTests";
-			productReference = A4648914496F9B5229309656801E408E /* Pods-vbabharat-vbabharatTests */;
-			productType = "com.apple.product-type.library.static";
-		};
 		1948D0B63D2CF6A48E18B0B292BC6091 /* SocketRocket */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46EB2E000143A0 /* Build configuration list for PBXNativeTarget "SocketRocket" */;
@@ -17692,6 +17607,91 @@
 			productReference = BD71E2539823621820F84384064C253A /* React-Core */;
 			productType = "com.apple.product-type.library.static";
 		};
+		7E3939A4202C850AD282CD6210DA6D3E /* Pods-vbaConnect-vbaConnectTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 46EB2E00015AD0 /* Build configuration list for PBXNativeTarget "Pods-vbaConnect-vbaConnectTests" */;
+			buildPhases = (
+				46EB2E00015B10 /* Headers */,
+				46EB2E00015B20 /* Sources */,
+				46EB2E00015B30 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				46EB2E000164C0 /* PBXTargetDependency */,
+				46EB2E000164E0 /* PBXTargetDependency */,
+				46EB2E00016500 /* PBXTargetDependency */,
+				46EB2E00016520 /* PBXTargetDependency */,
+				46EB2E00016540 /* PBXTargetDependency */,
+				46EB2E00016560 /* PBXTargetDependency */,
+				46EB2E00016580 /* PBXTargetDependency */,
+				46EB2E000165A0 /* PBXTargetDependency */,
+				46EB2E000165C0 /* PBXTargetDependency */,
+				46EB2E000165E0 /* PBXTargetDependency */,
+				46EB2E00016600 /* PBXTargetDependency */,
+				46EB2E00016620 /* PBXTargetDependency */,
+				46EB2E00016640 /* PBXTargetDependency */,
+				46EB2E00016660 /* PBXTargetDependency */,
+				46EB2E00016680 /* PBXTargetDependency */,
+				46EB2E000166A0 /* PBXTargetDependency */,
+				46EB2E000166C0 /* PBXTargetDependency */,
+				46EB2E000166E0 /* PBXTargetDependency */,
+				46EB2E00016700 /* PBXTargetDependency */,
+				46EB2E00016720 /* PBXTargetDependency */,
+				46EB2E00016740 /* PBXTargetDependency */,
+				46EB2E00016760 /* PBXTargetDependency */,
+				46EB2E00016780 /* PBXTargetDependency */,
+				46EB2E000167A0 /* PBXTargetDependency */,
+				46EB2E000167C0 /* PBXTargetDependency */,
+				46EB2E000167E0 /* PBXTargetDependency */,
+				46EB2E00016800 /* PBXTargetDependency */,
+				46EB2E00016820 /* PBXTargetDependency */,
+				46EB2E00016840 /* PBXTargetDependency */,
+				46EB2E00016860 /* PBXTargetDependency */,
+				46EB2E00016880 /* PBXTargetDependency */,
+				46EB2E000168A0 /* PBXTargetDependency */,
+				46EB2E000168C0 /* PBXTargetDependency */,
+				46EB2E000168E0 /* PBXTargetDependency */,
+				46EB2E00016900 /* PBXTargetDependency */,
+				46EB2E00016920 /* PBXTargetDependency */,
+				46EB2E00016940 /* PBXTargetDependency */,
+				46EB2E00016960 /* PBXTargetDependency */,
+				46EB2E00016980 /* PBXTargetDependency */,
+				46EB2E000169A0 /* PBXTargetDependency */,
+				46EB2E000169C0 /* PBXTargetDependency */,
+				46EB2E000169E0 /* PBXTargetDependency */,
+				46EB2E00016A00 /* PBXTargetDependency */,
+				46EB2E00016A20 /* PBXTargetDependency */,
+				46EB2E00016A40 /* PBXTargetDependency */,
+				46EB2E00016A60 /* PBXTargetDependency */,
+				46EB2E00016A80 /* PBXTargetDependency */,
+				46EB2E00016AA0 /* PBXTargetDependency */,
+				46EB2E00016AC0 /* PBXTargetDependency */,
+				46EB2E00016AE0 /* PBXTargetDependency */,
+				46EB2E00016B00 /* PBXTargetDependency */,
+				46EB2E00016B20 /* PBXTargetDependency */,
+				46EB2E00016B40 /* PBXTargetDependency */,
+				46EB2E00016B60 /* PBXTargetDependency */,
+				46EB2E00016B80 /* PBXTargetDependency */,
+				46EB2E00016BA0 /* PBXTargetDependency */,
+				46EB2E00016BC0 /* PBXTargetDependency */,
+				46EB2E00016BE0 /* PBXTargetDependency */,
+				46EB2E00016C00 /* PBXTargetDependency */,
+				46EB2E00016C20 /* PBXTargetDependency */,
+				46EB2E00016C40 /* PBXTargetDependency */,
+				46EB2E00016C60 /* PBXTargetDependency */,
+				46EB2E00016C80 /* PBXTargetDependency */,
+				46EB2E00016CA0 /* PBXTargetDependency */,
+				46EB2E00016CC0 /* PBXTargetDependency */,
+				46EB2E00016CE0 /* PBXTargetDependency */,
+				46EB2E00016D00 /* PBXTargetDependency */,
+				46EB2E00016D20 /* PBXTargetDependency */,
+			);
+			name = "Pods-vbaConnect-vbaConnectTests";
+			productName = "Pods-vbaConnect-vbaConnectTests";
+			productReference = 420E4EA3AC209F9287DD15545A55085B /* Pods-vbaConnect-vbaConnectTests */;
+			productType = "com.apple.product-type.library.static";
+		};
 		7F5C619B7AF69366DE35F2742D20F0B1 /* react-native-date-picker */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46EB2E00015220 /* Build configuration list for PBXNativeTarget "react-native-date-picker" */;
@@ -18016,6 +18016,91 @@
 			productReference = 61A80F68AE163B384B7D7A9E76B6046C /* React-FabricImage */;
 			productType = "com.apple.product-type.library.static";
 		};
+		AFCB2FB631D72A25ADBB2BFBBF2FB555 /* Pods-vbaConnect */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 46EB2E000159C0 /* Build configuration list for PBXNativeTarget "Pods-vbaConnect" */;
+			buildPhases = (
+				46EB2E00015A00 /* Headers */,
+				46EB2E00015A10 /* Sources */,
+				46EB2E00015A20 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				46EB2E00015C40 /* PBXTargetDependency */,
+				46EB2E00015C60 /* PBXTargetDependency */,
+				46EB2E00015C80 /* PBXTargetDependency */,
+				46EB2E00015CA0 /* PBXTargetDependency */,
+				46EB2E00015CC0 /* PBXTargetDependency */,
+				46EB2E00015CE0 /* PBXTargetDependency */,
+				46EB2E00015D00 /* PBXTargetDependency */,
+				46EB2E00015D20 /* PBXTargetDependency */,
+				46EB2E00015D40 /* PBXTargetDependency */,
+				46EB2E00015D60 /* PBXTargetDependency */,
+				46EB2E00015D80 /* PBXTargetDependency */,
+				46EB2E00015DA0 /* PBXTargetDependency */,
+				46EB2E00015DC0 /* PBXTargetDependency */,
+				46EB2E00015DE0 /* PBXTargetDependency */,
+				46EB2E00015E00 /* PBXTargetDependency */,
+				46EB2E00015E20 /* PBXTargetDependency */,
+				46EB2E00015E40 /* PBXTargetDependency */,
+				46EB2E00015E60 /* PBXTargetDependency */,
+				46EB2E00015E80 /* PBXTargetDependency */,
+				46EB2E00015EA0 /* PBXTargetDependency */,
+				46EB2E00015EC0 /* PBXTargetDependency */,
+				46EB2E00015EE0 /* PBXTargetDependency */,
+				46EB2E00015F00 /* PBXTargetDependency */,
+				46EB2E00015F20 /* PBXTargetDependency */,
+				46EB2E00015F40 /* PBXTargetDependency */,
+				46EB2E00015F60 /* PBXTargetDependency */,
+				46EB2E00015F80 /* PBXTargetDependency */,
+				46EB2E00015FA0 /* PBXTargetDependency */,
+				46EB2E00015FC0 /* PBXTargetDependency */,
+				46EB2E00015FE0 /* PBXTargetDependency */,
+				46EB2E00016000 /* PBXTargetDependency */,
+				46EB2E00016020 /* PBXTargetDependency */,
+				46EB2E00016040 /* PBXTargetDependency */,
+				46EB2E00016060 /* PBXTargetDependency */,
+				46EB2E00016080 /* PBXTargetDependency */,
+				46EB2E000160A0 /* PBXTargetDependency */,
+				46EB2E000160C0 /* PBXTargetDependency */,
+				46EB2E000160E0 /* PBXTargetDependency */,
+				46EB2E00016100 /* PBXTargetDependency */,
+				46EB2E00016120 /* PBXTargetDependency */,
+				46EB2E00016140 /* PBXTargetDependency */,
+				46EB2E00016160 /* PBXTargetDependency */,
+				46EB2E00016180 /* PBXTargetDependency */,
+				46EB2E000161A0 /* PBXTargetDependency */,
+				46EB2E000161C0 /* PBXTargetDependency */,
+				46EB2E000161E0 /* PBXTargetDependency */,
+				46EB2E00016200 /* PBXTargetDependency */,
+				46EB2E00016220 /* PBXTargetDependency */,
+				46EB2E00016240 /* PBXTargetDependency */,
+				46EB2E00016260 /* PBXTargetDependency */,
+				46EB2E00016280 /* PBXTargetDependency */,
+				46EB2E000162A0 /* PBXTargetDependency */,
+				46EB2E000162C0 /* PBXTargetDependency */,
+				46EB2E000162E0 /* PBXTargetDependency */,
+				46EB2E00016300 /* PBXTargetDependency */,
+				46EB2E00016320 /* PBXTargetDependency */,
+				46EB2E00016340 /* PBXTargetDependency */,
+				46EB2E00016360 /* PBXTargetDependency */,
+				46EB2E00016380 /* PBXTargetDependency */,
+				46EB2E000163A0 /* PBXTargetDependency */,
+				46EB2E000163C0 /* PBXTargetDependency */,
+				46EB2E000163E0 /* PBXTargetDependency */,
+				46EB2E00016400 /* PBXTargetDependency */,
+				46EB2E00016420 /* PBXTargetDependency */,
+				46EB2E00016440 /* PBXTargetDependency */,
+				46EB2E00016460 /* PBXTargetDependency */,
+				46EB2E00016480 /* PBXTargetDependency */,
+				46EB2E000164A0 /* PBXTargetDependency */,
+			);
+			name = "Pods-vbaConnect";
+			productName = "Pods-vbaConnect";
+			productReference = 81AC134B4E4B11B9C5E3FA761F440B16 /* Pods-vbaConnect */;
+			productType = "com.apple.product-type.library.static";
+		};
 		B5E1D7706FCB7EC5FF39F8CDA49A5653 /* React-ImageManager */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 46EB2E00010390 /* Build configuration list for PBXNativeTarget "React-ImageManager" */;
@@ -18208,91 +18293,6 @@
 			name = "React-RuntimeCore";
 			productName = "React-RuntimeCore";
 			productReference = D22EED118A762A7D7BC88A4ADBB7026E /* React-RuntimeCore */;
-			productType = "com.apple.product-type.library.static";
-		};
-		CCFF60080A737BE50C2F2BB65545078B /* Pods-vbabharat */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 46EB2E000159C0 /* Build configuration list for PBXNativeTarget "Pods-vbabharat" */;
-			buildPhases = (
-				46EB2E00015A00 /* Headers */,
-				46EB2E00015A10 /* Sources */,
-				46EB2E00015A20 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				46EB2E00015C40 /* PBXTargetDependency */,
-				46EB2E00015C60 /* PBXTargetDependency */,
-				46EB2E00015C80 /* PBXTargetDependency */,
-				46EB2E00015CA0 /* PBXTargetDependency */,
-				46EB2E00015CC0 /* PBXTargetDependency */,
-				46EB2E00015CE0 /* PBXTargetDependency */,
-				46EB2E00015D00 /* PBXTargetDependency */,
-				46EB2E00015D20 /* PBXTargetDependency */,
-				46EB2E00015D40 /* PBXTargetDependency */,
-				46EB2E00015D60 /* PBXTargetDependency */,
-				46EB2E00015D80 /* PBXTargetDependency */,
-				46EB2E00015DA0 /* PBXTargetDependency */,
-				46EB2E00015DC0 /* PBXTargetDependency */,
-				46EB2E00015DE0 /* PBXTargetDependency */,
-				46EB2E00015E00 /* PBXTargetDependency */,
-				46EB2E00015E20 /* PBXTargetDependency */,
-				46EB2E00015E40 /* PBXTargetDependency */,
-				46EB2E00015E60 /* PBXTargetDependency */,
-				46EB2E00015E80 /* PBXTargetDependency */,
-				46EB2E00015EA0 /* PBXTargetDependency */,
-				46EB2E00015EC0 /* PBXTargetDependency */,
-				46EB2E00015EE0 /* PBXTargetDependency */,
-				46EB2E00015F00 /* PBXTargetDependency */,
-				46EB2E00015F20 /* PBXTargetDependency */,
-				46EB2E00015F40 /* PBXTargetDependency */,
-				46EB2E00015F60 /* PBXTargetDependency */,
-				46EB2E00015F80 /* PBXTargetDependency */,
-				46EB2E00015FA0 /* PBXTargetDependency */,
-				46EB2E00015FC0 /* PBXTargetDependency */,
-				46EB2E00015FE0 /* PBXTargetDependency */,
-				46EB2E00016000 /* PBXTargetDependency */,
-				46EB2E00016020 /* PBXTargetDependency */,
-				46EB2E00016040 /* PBXTargetDependency */,
-				46EB2E00016060 /* PBXTargetDependency */,
-				46EB2E00016080 /* PBXTargetDependency */,
-				46EB2E000160A0 /* PBXTargetDependency */,
-				46EB2E000160C0 /* PBXTargetDependency */,
-				46EB2E000160E0 /* PBXTargetDependency */,
-				46EB2E00016100 /* PBXTargetDependency */,
-				46EB2E00016120 /* PBXTargetDependency */,
-				46EB2E00016140 /* PBXTargetDependency */,
-				46EB2E00016160 /* PBXTargetDependency */,
-				46EB2E00016180 /* PBXTargetDependency */,
-				46EB2E000161A0 /* PBXTargetDependency */,
-				46EB2E000161C0 /* PBXTargetDependency */,
-				46EB2E000161E0 /* PBXTargetDependency */,
-				46EB2E00016200 /* PBXTargetDependency */,
-				46EB2E00016220 /* PBXTargetDependency */,
-				46EB2E00016240 /* PBXTargetDependency */,
-				46EB2E00016260 /* PBXTargetDependency */,
-				46EB2E00016280 /* PBXTargetDependency */,
-				46EB2E000162A0 /* PBXTargetDependency */,
-				46EB2E000162C0 /* PBXTargetDependency */,
-				46EB2E000162E0 /* PBXTargetDependency */,
-				46EB2E00016300 /* PBXTargetDependency */,
-				46EB2E00016320 /* PBXTargetDependency */,
-				46EB2E00016340 /* PBXTargetDependency */,
-				46EB2E00016360 /* PBXTargetDependency */,
-				46EB2E00016380 /* PBXTargetDependency */,
-				46EB2E000163A0 /* PBXTargetDependency */,
-				46EB2E000163C0 /* PBXTargetDependency */,
-				46EB2E000163E0 /* PBXTargetDependency */,
-				46EB2E00016400 /* PBXTargetDependency */,
-				46EB2E00016420 /* PBXTargetDependency */,
-				46EB2E00016440 /* PBXTargetDependency */,
-				46EB2E00016460 /* PBXTargetDependency */,
-				46EB2E00016480 /* PBXTargetDependency */,
-				46EB2E000164A0 /* PBXTargetDependency */,
-			);
-			name = "Pods-vbabharat";
-			productName = "Pods-vbabharat";
-			productReference = 0DED1DD17E86139B4179E4AA906B34DA /* Pods-vbabharat */;
 			productType = "com.apple.product-type.library.static";
 		};
 		D0DD0961119C95E188122B13F3BF4380 /* React-Core-RCTI18nStrings */ = {
@@ -18648,8 +18648,8 @@
 				02B79DFED924FA19CA90EC69614733E1 /* fmt */,
 				D0EFEFB685D97280256C559792236873 /* glog */,
 				985FEA01F314F3C00F0C1E1181E6C4A5 /* hermes-engine */,
-				CCFF60080A737BE50C2F2BB65545078B /* Pods-vbabharat */,
-				1485087FDE036DDAF14722FDFF238558 /* Pods-vbabharat-vbabharatTests */,
+				AFCB2FB631D72A25ADBB2BFBBF2FB555 /* Pods-vbaConnect */,
+				7E3939A4202C850AD282CD6210DA6D3E /* Pods-vbaConnect-vbaConnectTests */,
 				0A1CC38B57BF7987D9DDA7A1CE4F117E /* razorpay-core-pod */,
 				84CA3424E172CD651235AF0783D01D39 /* razorpay-pod */,
 				EC55D52694092A9D0E6A78EB01207EB5 /* RCT-Folly */,
@@ -20055,7 +20055,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				46EB2E00015AB0 /* Pods-vbabharat-dummy.m in Sources */,
+				46EB2E00015AB0 /* Pods-vbaConnect-dummy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -20063,7 +20063,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				46EB2E00015BC0 /* Pods-vbabharat-vbabharatTests-dummy.m in Sources */,
+				46EB2E00015BC0 /* Pods-vbaConnect-vbaConnectTests-dummy.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -28211,7 +28211,7 @@
 		};
 		46EB2E000159D0 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 46EB2E00015A40 /* Pods-vbabharat.release.xcconfig */;
+			baseConfigurationReference = 46EB2E00015A40 /* Pods-vbaConnect.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -28235,7 +28235,7 @@
 		};
 		46EB2E000159E0 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 46EB2E00015A50 /* Pods-vbabharat.debug.xcconfig */;
+			baseConfigurationReference = 46EB2E00015A50 /* Pods-vbaConnect.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -28258,7 +28258,7 @@
 		};
 		46EB2E00015AE0 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 46EB2E00015B50 /* Pods-vbabharat-vbabharatTests.release.xcconfig */;
+			baseConfigurationReference = 46EB2E00015B50 /* Pods-vbaConnect-vbaConnectTests.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -28282,7 +28282,7 @@
 		};
 		46EB2E00015AF0 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 46EB2E00015B60 /* Pods-vbabharat-vbabharatTests.debug.xcconfig */;
+			baseConfigurationReference = 46EB2E00015B60 /* Pods-vbaConnect-vbaConnectTests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = NO;
 				CLANG_ENABLE_OBJC_WEAK = NO;
@@ -28954,7 +28954,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		46EB2E000159C0 /* Build configuration list for PBXNativeTarget "Pods-vbabharat" */ = {
+		46EB2E000159C0 /* Build configuration list for PBXNativeTarget "Pods-vbaConnect" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				46EB2E000159E0 /* Debug */,
@@ -28963,7 +28963,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		46EB2E00015AD0 /* Build configuration list for PBXNativeTarget "Pods-vbabharat-vbabharatTests" */ = {
+		46EB2E00015AD0 /* Build configuration list for PBXNativeTarget "Pods-vbaConnect-vbaConnectTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				46EB2E00015AF0 /* Debug */,
