@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaEnvelope, FaLock, FaShieldAlt, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
+import AppLogo from '../components/common/AppLogo';
 import toast from 'react-hot-toast';
 import { loginUser, clearError } from '../store/slices/authSlice';
 
@@ -45,10 +46,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#1a337e] text-white mb-4 shadow-lg shadow-indigo-200">
-            <FaShieldAlt size={32} />
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl mb-4 shadow-none">
+            <AppLogo className="w-20 h-20 object-contain" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">SecureVote</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">VBA Bharat</h1>
           <p className="text-gray-500 mt-2 font-medium">Digital Voting Management System</p>
         </div>
 
@@ -63,7 +64,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#1a337e]/5 focus:border-[#1a337e] transition-all font-medium"
-                  placeholder="admin@securevote.com"
+                  placeholder="admin@vbabharat.com"
                 />
               </div>
             </div>

@@ -479,7 +479,7 @@ export default function TargetsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
            <div className="lg:col-span-8 space-y-6">
-              <div className="flex items-center justify-between p-6 bg-white border border-gray-200 rounded-3xl shadow-sm">
+              <div className="flex flex-col sm:flex-row items-center justify-between p-6 bg-white border border-gray-200 rounded-3xl shadow-sm gap-4">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-[#1a337e] border border-indigo-100 shadow-inner">
                     <Globe className="h-7 w-7" />
@@ -495,7 +495,7 @@ export default function TargetsPage() {
                 </div>
               </div>
 
-              <div className="p-6 bg-gray-50/30 rounded-3xl border border-gray-200 shadow-sm min-h-[500px]">
+              <div className="p-4 sm:p-6 bg-gray-50/30 rounded-3xl border border-gray-200 shadow-sm min-h-[500px] w-full overflow-x-auto">
                 <OrganizationTree
                   data={targets}
                   onEdit={openEdit}
@@ -559,7 +559,7 @@ export default function TargetsPage() {
         <form onSubmit={handleAddSubmit} className="space-y-0" autoComplete="off">
           <div className="grid grid-cols-1 md:grid-cols-12 overflow-hidden">
             {/* Left Column: Classification */}
-            <div className="md:col-span-6 p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
+            <div className="md:col-span-6 p-4 md:p-8 space-y-6 bg-gray-50/50 rounded-tl-2xl">
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                    <div className="w-1 h-4 bg-[#1a337e] rounded-full" />
@@ -592,7 +592,7 @@ export default function TargetsPage() {
             </div>
 
             {/* Right Column: Deployment */}
-            <div className="md:col-span-6 p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
+            <div className="md:col-span-6 p-4 md:p-8 space-y-6 bg-white rounded-tr-2xl border-l border-gray-100">
                <div className="space-y-4">
                 <div className="flex items-center gap-2">
                    <div className="w-1 h-4 bg-[#1a337e] rounded-full" />

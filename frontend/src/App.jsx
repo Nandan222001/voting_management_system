@@ -130,7 +130,7 @@ export default function App() {
         <Route path="/tenants" element={<PrivateRoute roles={['superadmin']}><TenantsPage /></PrivateRoute>} />
         <Route path="/audit-logs" element={<PrivateRoute roles={['superadmin', 'admin']}><AuditLogsPage /></PrivateRoute>} />
         <Route path="/revenue" element={<PrivateRoute roles={['admin']}><RevenuePage /></PrivateRoute>} />
-        <Route path="/targets" element={<PrivateRoute roles={['admin', 'superadmin']}><TargetsPage /></PrivateRoute>} />
+        <Route path="/targets" element={<PrivateRoute roles={['admin']}><TargetsPage /></PrivateRoute>} />
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

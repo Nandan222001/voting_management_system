@@ -38,6 +38,7 @@ import Badge from '../components/common/Badge';
 import { fetchElections, fetchElectionStats } from '../store/slices/electionSlice';
 import { fetchUserStats } from '../store/slices/userSlice';
 import { fetchAuditLogs, selectAuditLogs } from '../store/slices/voteSlice';
+import SuperAdminDashboard from './SuperAdminDashboard';
 
 function numberFormat(value) {
   return new Intl.NumberFormat('en-US').format(Number(value || 0));
@@ -92,16 +93,21 @@ function MetricCard({ title, value, children, icon: Icon, tone = 'blue' }) {
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   const { elections, stats: electionStatsRaw, loading: electionsLoading } = useSelector((state) => state.elections);
   const { stats: userStatsRaw, loading: userLoading } = useSelector((state) => state.users);
   const auditLogs = useSelector(selectAuditLogs);
 
+  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+
   useEffect(() => {
-    dispatch(fetchElections({ limit: 5 }));
-    dispatch(fetchElectionStats());
-    dispatch(fetchUserStats());
-    dispatch(fetchAuditLogs({ limit: 10 }));
-  }, [dispatch]);
+    if (!isSuperAdmin) {
+      dispatch(fetchElections({ limit: 5 }));
+      dispatch(fetchElectionStats());
+      dispatch(fetchUserStats());
+      dispatch(fetchAuditLogs({ limit: 10 }));
+    }
+  }, [dispatch, isSuperAdmin]);
 
   const electionStats = electionStatsRaw?.data || electionStatsRaw || {};
   const userStats = userStatsRaw?.data || userStatsRaw || {};
@@ -124,6 +130,10 @@ export default function DashboardPage() {
   const pendingUsers = userStats.pending_users || 0;
   
   const turnoutRate = totalVoters ? Math.round((activeVoters / totalVoters) * 100) : 0;
+
+  if (isSuperAdmin) {
+    return <SuperAdminDashboard />;
+  }
 
   if (electionsLoading || userLoading) {
     return (

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, A
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
+import { dashboardService } from '../services/dashboardService';
 import { electionService } from '../services/electionService';
 import { tenantService } from '../services/tenantService';
 import { Announcement, announcementService } from '../services/announcementService';
@@ -43,12 +44,40 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const { width } = useWindowDimensions();
   const [activeElections, setActiveElections] = useState<any[]>([]);
   const [upcomingElections, setUpcomingElections] = useState<any[]>([]);
-  const [stats, setStats] = useState({ activeElections: 0, totalElections: 0, completedElections: 0 });
+  const [stats, setStats] = useState({
+    activeMembers: 0,
+    activeElections: 0,
+    totalVotes: 0,
+    pendingNominations: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'Standard Member');
+  const planName = user?.membership_plan?.name || 'Standard Member';
   const [tenantName, setTenantName] = useState<string>('VOTE2026');
+
+  const loadStats = async () => {
+    try {
+      setStatsLoading(true);
+      setStatsError(null);
+
+      const response = await dashboardService.getStats();
+
+      setStats({
+        activeMembers: response.total_users, // Mapping total_users as Active Members for now based on previous UI
+        activeElections: response.active_elections,
+        totalVotes: response.total_votes,
+        pendingNominations: response.pending_users // Mapping pending_users as Pending Nominations for now
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats', error);
+      setStatsError('Failed to load statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     const latestPromise = announcementService.getLatest().catch((announcementError) => {
@@ -90,51 +119,13 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
         return start > now.getTime() && e.status !== 'completed' && e.status !== 'cancelled';
       }).sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
-      const completed = elections.filter((e: any) => e.status === 'completed');
-
       setActiveElections(active);
       setUpcomingElections(upcoming);
-      const formatNumber = (num: number): string => {
-        if (num >= 1_000_000_000) {
-          return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
-        }
-
-        if (num >= 1_000_000) {
-          return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-        }
-
-        if (num >= 1_000) {
-          return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
-        }
-
-        return num.toString();
-      };
-      setStats({
-        activeElections: active.length,
-        totalElections: elections.length,
-        completedElections: completed.length,
-
-        // Community statistics
-        activeMembers: formatNumber(elections.length * 12 + 840),
-
-        proposalsPassed: completed.length,
-
-        volunteerHours: formatNumber(completed.length * 45 + 120) + 'h',
-
-        impactLevel:
-          completed.length >= 20
-            ? 'A+'
-            : completed.length >= 10
-              ? 'A'
-              : completed.length >= 5
-                ? 'B+'
-                : 'B',
-      });
     } catch (error) {
       console.error('Failed to load dashboard data', error);
       showToast.error('Load Error', 'Could not refresh dashboard data.');
     } finally {
-      await Promise.all([latestPromise.then(setLatestAnnouncement), tenantPromise]);
+      await Promise.all([latestPromise.then(setLatestAnnouncement), tenantPromise, loadStats()]);
       setLoading(false);
     }
   };
@@ -402,25 +393,33 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
         </TouchableOpacity>
 
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Active Members</Text>
-            <Text style={styles.statValue}>{stats.activeMembers}</Text>
-          </View>
+          {statsLoading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          ) : statsError ? (
+            <Text style={styles.errorText}>{statsError}</Text>
+          ) : (
+            <>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Active Members</Text>
+                <Text style={styles.statValue}>{stats.activeMembers}</Text>
+              </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Proposals Passed</Text>
-            <Text style={styles.statValue}>{stats.proposalsPassed}</Text>
-          </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Active Elections</Text>
+                <Text style={styles.statValue}>{stats.activeElections}</Text>
+              </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Volunteer Hours</Text>
-            <Text style={styles.statValue}>{stats.volunteerHours}</Text>
-          </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Votes</Text>
+                <Text style={styles.statValue}>{stats.totalVotes}</Text>
+              </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Impact Level</Text>
-            <Text style={styles.statValue}>{stats.impactLevel}</Text>
-          </View>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Pending Nominations</Text>
+                <Text style={styles.statValue}>{stats.pendingNominations}</Text>
+              </View>
+            </>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -728,6 +727,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: hs(2),
     marginTop: vs(4),
+  },
+  errorText: {
+    fontSize: ms(14),
+    color: COLORS.error,
+    textAlign: 'center',
+    width: '100%',
+    marginVertical: vs(20),
   },
 });
 

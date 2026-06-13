@@ -2,31 +2,33 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  FaShieldAlt,
-  FaCheckCircle,
-  FaChevronRight,
-  FaKey,
-  FaFingerprint,
-  FaMobileAlt,
-  FaSignOutAlt,
-  FaInfoCircle,
-  FaLock,
-  FaTh,
-  FaVoteYea,
-  FaChartBar,
-  FaUser,
-} from 'react-icons/fa';
+  Shield,
+  CheckCircle2,
+  ChevronRight,
+  Key,
+  Fingerprint,
+  Smartphone,
+  LogOut,
+  Info,
+  Lock,
+  User,
+  BadgeCheck,
+  Mail,
+  Briefcase,
+} from 'lucide-react';
 import { logoutUser } from '../store/slices/authSlice';
+import MainLayout from '../components/layout/MainLayout';
+import toast from 'react-hot-toast';
 
 function SettingRow({ icon: Icon, iconBg, title, subtitle, right }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 last:border-0">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}>
-        <Icon className="text-gray-600 text-base" />
+    <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 border border-gray-100 shadow-sm ${iconBg}`}>
+        <Icon className="text-[#1a337e] h-5 w-5" strokeWidth={2.4} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800">{title}</p>
-        {subtitle && <p className="text-xs mt-0.5">{subtitle}</p>}
+        <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{title}</p>
+        {subtitle && <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">{subtitle}</p>}
       </div>
       {right}
     </div>
@@ -38,200 +40,140 @@ function Toggle({ on, onToggle }) {
     <button
       type="button"
       onClick={onToggle}
-      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${on ? 'bg-[#1a337e]' : 'bg-gray-300'}`}
+      className={`relative w-11 h-6 rounded-full transition-all duration-300 flex-shrink-0 ${on ? 'bg-[#1a337e]' : 'bg-gray-200'}`}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0'}`}
+        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${on ? 'translate-x-5' : 'translate-x-0'}`}
       />
     </button>
   );
 }
 
-function DocRow({ title, date }) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 last:border-0">
-      <div className="w-1 h-12 bg-green-500 rounded-full flex-shrink-0" />
-      <div className="flex-1">
-        <p className="text-sm font-semibold text-gray-800">{title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">Verified: {date}</p>
-      </div>
-      <FaCheckCircle className="text-green-500 text-xl flex-shrink-0" />
-    </div>
-  );
-}
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: FaTh, path: '/dashboard' },
-  { label: 'Elections', icon: FaVoteYea, path: '/elections' },
-  { label: 'Analytics', icon: FaChartBar, path: '/results' },
-  { label: 'Account', icon: FaUser, path: '/account' },
-];
-
 export default function AccountPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const [biometric, setBiometric] = useState(true);
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    toast.success('Logged out successfully');
     navigate('/login');
   };
 
-  const initials = user?.full_name
-    ? user.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
-    : 'EV';
+  const initials = (user?.full_name || user?.email || 'User')
+    .split(/[.\s@_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
 
   return (
-    <div className="min-h-screen bg-[#F0F2F7] flex flex-col pb-20">
-
-      {/* Top Nav */}
-      <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[#1a337e] text-lg" />
-          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
-        </div>
-        <div className="w-9 h-9 rounded-full bg-teal-600 flex items-center justify-center overflow-hidden">
-          <span className="text-white text-sm font-bold">{initials}</span>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <div className="flex-1 px-5 py-6 max-w-lg mx-auto w-full space-y-5">
-
-        {/* Profile hero */}
-        <div className="flex flex-col items-center gap-3 pt-2">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full bg-teal-600 flex items-center justify-center text-white text-3xl font-bold shadow-md">
-              {initials}
-            </div>
-            <div className="absolute bottom-0 right-0 w-7 h-7 bg-[#1a337e] rounded-full flex items-center justify-center border-2 border-white">
-              <FaCheckCircle className="text-white text-sm" />
-            </div>
+    <MainLayout title="Account Settings">
+      <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        
+        {/* Profile Hero Card */}
+        <div className="relative overflow-hidden rounded-[2.5rem] border border-gray-100 bg-white p-8 shadow-xl shadow-gray-200/50">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+             <User size={120} className="text-[#1a337e]" />
           </div>
-          <div className="text-center">
-            <h2 className="text-xl font-bold text-[#1a337e]">
-              {user?.full_name ?? 'Verified Voter'}
-            </h2>
-            <div className="inline-flex items-center gap-1.5 mt-1.5 bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
-              <FaShieldAlt className="text-gray-400 text-xs" />
-              SECURE ID: ****-4209
-            </div>
-          </div>
-        </div>
-
-        {/* Identity Details */}
-        <section>
-          <div className="flex items-center justify-between mb-2 px-1">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Identity Details</p>
-            <FaInfoCircle className="text-gray-400 text-sm" />
-          </div>
-          <div className="bg-white rounded-2xl shadow-sm divide-y divide-gray-100">
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div>
-                <p className="text-xs text-gray-400">Full Legal Name</p>
-                <p className="text-sm font-bold text-[#1a337e] mt-0.5">
-                  {user?.full_name ?? 'Eleanor J. Sterling'}
-                </p>
+          
+          <div className="relative flex flex-col md:flex-row items-center gap-8">
+            <div className="relative group">
+              <div className="w-32 h-32 rounded-[2rem] bg-[#1a337e] flex items-center justify-center text-white text-4xl font-black shadow-2xl transition-transform group-hover:scale-105 duration-300">
+                {initials}
               </div>
-              <FaLock className="text-gray-300 text-base" />
-            </div>
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div>
-                <p className="text-xs text-gray-400">Date of Birth</p>
-                <p className="text-sm font-bold text-[#1a337e] mt-0.5">October 14, 1982</p>
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center border-4 border-white shadow-lg">
+                <BadgeCheck className="text-white h-5 w-5" />
               </div>
-              <FaLock className="text-gray-300 text-base" />
             </div>
-            <div className="flex items-center justify-between px-4 py-3.5">
-              <div>
-                <p className="text-xs text-gray-400">Voter Registration ID</p>
-                <p className="text-sm font-bold text-[#1a337e] mt-0.5">VTR-990-221-X8</p>
+
+            <div className="text-center md:text-left space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[#1a337e] text-[10px] font-black uppercase tracking-widest">
+                <Shield className="h-3 w-3" />
+                Verified {user?.role || 'Admin'}
               </div>
-              <span className="text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-lg">
-                ACTIVE
-              </span>
+              <h2 className="text-4xl font-black text-gray-900 tracking-tight">
+                {user?.full_name ?? 'Account User'}
+              </h2>
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center md:justify-start gap-2 mb-4">
+                <Mail className="h-4 w-4" />
+                {user?.email}
+              </p>
+              
+              <button
+                onClick={() => navigate('/settings')}
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#1a337e] text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-[#1a337e]/20 hover:brightness-110 active:scale-95 transition-all"
+              >
+                Edit Profile
+              </button>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* Security Settings */}
-        <section>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
-            Security Settings
-          </p>
-          <div className="bg-white rounded-2xl shadow-sm">
-            <SettingRow
-              icon={FaKey}
-              iconBg="bg-gray-100"
-              title="Change Password"
-              subtitle={<span className="text-gray-400">Last changed 4 months ago</span>}
-              right={<FaChevronRight className="text-gray-300 text-sm" />}
-            />
-            <SettingRow
-              icon={FaFingerprint}
-              iconBg="bg-gray-100"
-              title="Biometric Auth"
-              subtitle={<span className="text-gray-400">Use FaceID or Fingerprint</span>}
-              right={<Toggle on={biometric} onToggle={() => setBiometric((v) => !v)} />}
-            />
-            <SettingRow
-              icon={FaMobileAlt}
-              iconBg="bg-gray-100"
-              title="Two-Factor Auth"
-              subtitle={<span className="text-green-600 font-medium">Enabled via SMS</span>}
-              right={<FaChevronRight className="text-gray-300 text-sm" />}
-            />
-          </div>
-        </section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Account Information */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 px-2">
+              <div className="h-1.5 w-6 rounded-full bg-[#1a337e]" />
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Identity Details</h3>
+            </div>
+            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Full Legal Name</label>
+                  <p className="text-sm font-black text-[#1a337e] mt-1 uppercase">{user?.full_name || 'Not Provided'}</p>
+                </div>
+                <div className="pt-6 border-t border-gray-50">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Access Role</label>
+                  <p className="text-sm font-black text-[#1a337e] mt-1 uppercase">{user?.role || 'User'}</p>
+                </div>
+                <div className="pt-6 border-t border-gray-50">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Organization / Tenant</label>
+                  <p className="text-sm font-black text-[#1a337e] mt-1 uppercase">{user?.tenant_name || 'Global System'}</p>
+                </div>
+              </div>
+            </div>
+          </section>
 
-        {/* Verification Documents */}
-        <section>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">
-            Verification Documents
-          </p>
-          <div className="bg-white rounded-2xl shadow-sm">
-            <DocRow title="Driver's License" date="01/20/2024" />
-            <DocRow title="Passport Scan" date="01/20/2024" />
-          </div>
-        </section>
+          {/* Security & Access */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 px-2">
+              <div className="h-1.5 w-6 rounded-full bg-[#1a337e]" />
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400">Security Control</h3>
+            </div>
+            <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm divide-y divide-gray-50">
+              <button 
+                onClick={() => navigate('/settings?tab=security')}
+                className="w-full text-left focus:outline-none"
+              >
+                <SettingRow
+                  icon={Key}
+                  iconBg="bg-blue-50"
+                  title="Update Password"
+                  subtitle="Secure your access credentials"
+                  right={<ChevronRight className="text-gray-300 h-5 w-5" />}
+                />
+              </button>
+            </div>
+          </section>
+        </div>
 
-        {/* Logout */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-red-400 text-red-500 font-semibold rounded-xl hover:bg-red-50 transition-colors text-sm"
-        >
-          <FaSignOutAlt />
-          Log out of SecureVote
-        </button>
+        {/* Danger Zone */}
+        <div className="pt-8">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="group flex items-center justify-center gap-3 w-full py-5 rounded-3xl border-2 border-dashed border-red-100 text-red-500 font-black uppercase tracking-widest text-xs transition-all hover:bg-red-50 hover:border-red-200"
+          >
+            <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
+            Logout
+          </button>
+        </div>
 
-        <p className="text-center text-xs text-gray-400">
-          Version 4.2.0-secure | Built for Civic Integrity
+        <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-gray-300 pb-12">
+          Infrastructure Control v4.2.0 • System Secure
         </p>
       </div>
-
-      {/* Bottom Nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex z-20">
-        {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
-          const active = path === '/account';
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => navigate(path)}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-3 text-xs font-medium transition-colors ${
-                active ? 'text-white' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className={`w-10 h-8 flex items-center justify-center rounded-xl ${active ? 'bg-[#1a337e]' : ''}`}>
-                <Icon className={`text-lg ${active ? 'text-white' : 'text-gray-400'}`} />
-              </div>
-              <span className={active ? 'text-[#1a337e] font-semibold' : ''}>{label}</span>
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+    </MainLayout>
   );
 }

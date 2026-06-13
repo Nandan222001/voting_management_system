@@ -18,12 +18,13 @@ import toast from 'react-hot-toast';
 import authService from '../services/authService';
 import planService from '../services/planService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import AppLogo from '../components/common/AppLogo';
 
 const getPlanIcon = (name = '') => {
   const n = name.toLowerCase();
   if (n.includes('elite') || n.includes('gold') || n.includes('premium')) return FaGem;
   if (n.includes('active') || n.includes('pro') || n.includes('silver')) return FaRocket;
-  return FaShieldAlt;
+  return AppLogo;
 };
 
 export default function RegisterPage() {
@@ -129,7 +130,7 @@ export default function RegisterPage() {
           key: order.key_id,
           amount: order.amount,
           currency: order.currency,
-          name: 'SecureVote',
+          name: 'VBA Bharat',
           description: `Registration for ${plan.name}`,
           order_id: order.razorpay_order_id,
           handler: async (response) => {
@@ -209,8 +210,8 @@ export default function RegisterPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[#1a337e] text-lg" />
-          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
+          <AppLogo className="w-8 h-8" />
+          <span className="font-bold text-[#1a337e] text-base">VBA Bharat</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-[#1a337e] flex items-center justify-center">
           <span className="text-white text-sm font-bold">CV</span>

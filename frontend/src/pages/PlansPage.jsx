@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaCheckCircle, FaShieldAlt, FaRocket, FaGem, FaUser } from 'react-icons/fa';
+import AppLogo from '../components/common/AppLogo';
 import toast from 'react-hot-toast';
 import MainLayout from '../components/layout/MainLayout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -11,7 +12,7 @@ const getPlanIcon = (name = '') => {
   const n = name.toLowerCase();
   if (n.includes('elite') || n.includes('gold') || n.includes('premium')) return FaGem;
   if (n.includes('active') || n.includes('pro') || n.includes('silver')) return FaRocket;
-  if (n.includes('basic') || n.includes('standard')) return FaShieldAlt;
+  if (n.includes('basic') || n.includes('standard')) return AppLogo;
   return FaUser;
 };
 
@@ -142,7 +143,7 @@ export default function PlansPage() {
           </div>
         ) : plans.length === 0 ? (
           <div className="mt-16 rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
-             <FaShieldAlt size={48} className="mx-auto mb-4 text-slate-300" />
+             <AppLogo size={48} className="mx-auto mb-4" />
              <p className="text-lg font-medium text-slate-500">No membership plans are currently active in your jurisdiction.</p>
           </div>
         ) : (

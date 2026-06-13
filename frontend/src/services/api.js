@@ -5,13 +5,19 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// Attach token from localStorage on every request
+// Attach token and handle content-type
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Automatically set content-type for FormData if necessary
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data';
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
