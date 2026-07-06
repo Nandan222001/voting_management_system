@@ -6,8 +6,8 @@ import { Platform } from 'react-native';
 console.log('[DEBUG API] process.env.EXPO_PUBLIC_API_URL:', process.env.EXPO_PUBLIC_API_URL);
 
 const RAW_API_URL =
-  // process.env.EXPO_PUBLIC_API_URL || 'http://13.200.172.115/api/v1'; // Live Endpoint
-  process.env.EXPO_PUBLIC_API_URL || 'http://13.200.172.115/api/v1'; // Local Endpoint
+  process.env.EXPO_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'; // Fallback
+
 
 console.log(`[API] Initializing with baseURL: ${RAW_API_URL} (Platform: ${Platform.OS})`);
 

@@ -1,5 +1,5 @@
 export function getApiOrigin() {
-  const apiBase = import.meta.env.VITE_API_URL || 'http://13.200.172.115/api/v1'
+  const apiBase = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1'
   return apiBase.replace(/\/api\/v\d+\/?$/, '').replace(/\/$/, '')
 }
 
