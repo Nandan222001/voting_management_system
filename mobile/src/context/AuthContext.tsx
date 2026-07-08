@@ -8,6 +8,7 @@ interface User {
   full_name: string;
   email: string;
   phone?: string;
+  image_url?: string;
   role: string;
   status: string;
   is_verified: boolean;
@@ -48,6 +49,7 @@ interface User {
   target_id?: number | null;
   committee_id?: number | null;
   membership_plan_id?: number | null;
+  is_candidate?: boolean;
   membership_plan?: {
     id: number;
     name: string;
@@ -65,11 +67,27 @@ interface AuthContextType {
   createRegistrationOrder: (tenantId: number, planId: number) => Promise<any>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
   updateProfile: (userData: any) => Promise<void>;
+  forgotPassword: (email: string) => Promise<any>;
+  resetPassword: (resetData: any) => Promise<any>;
+  changePassword: (passwordData: any) => Promise<any>;
+  refreshUser: () => Promise<void>;
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const parseUser = (user: User | null): User | null => {
+  if (!user) return null;
+  const newUser = { ...user };
+  // Check if parent_name contains the hijacked image URL
+  if (newUser.parent_name && newUser.parent_name.includes('|||')) {
+    const [realParentName, hijackedImageUrl] = newUser.parent_name.split('|||');
+    newUser.parent_name = realParentName;
+    newUser.image_url = hijackedImageUrl;
+  }
+  return newUser;
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -90,7 +108,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const storedUser = await AsyncStorage.getItem('user');
 
         if (storedToken && storedUser) {
-          const parsedUser = JSON.parse(storedUser);
+          const parsedUser = parseUser(JSON.parse(storedUser));
           setToken(storedToken);
           setUser(parsedUser);
           
@@ -102,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           try {
             const freshUser = await authService.getProfile();
             if (freshUser) {
-              setUser(freshUser);
+              setUser(parseUser(freshUser));
             }
           } catch (error: any) {
             console.error('Token validation failed', error);
@@ -121,8 +139,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const result = await authService.login(email, password);
-    // We return the result but don't automatically set the state here
-    // to allow the Login screen to check the user's status first.
+    // Note: authService.login sets storage, but we still need to parse when setting state
+    if (result.user) {
+      setUser(parseUser(result.user));
+    }
     return result;
   };
 
@@ -145,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (result.token) {
       setToken(result.token);
       if (result.user) {
-        setUser(result.user);
+        setUser(parseUser(result.user));
       }
     }
   };
@@ -154,14 +174,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const updatedUser = await authService.updateProfile(userData);
       if (updatedUser) {
-        setUser(updatedUser);
+        setUser(parseUser(updatedUser));
       } else {
         // Fallback: reload from storage if service returned nothing but presumably updated it
         const storedUser = await AsyncStorage.getItem('user');
-        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedUser) setUser(parseUser(JSON.parse(storedUser)));
       }
     } catch (e) {
       console.error('Failed to update profile state', e);
+      throw e;
+    }
+  };
+
+  const forgotPassword = async (email: string) => {
+    return await authService.forgotPassword(email);
+  };
+
+  const resetPassword = async (resetData: any) => {
+    return await authService.resetPassword(resetData);
+  };
+
+  const changePassword = async (passwordData: any) => {
+    return await authService.changePassword(passwordData);
+  };
+
+  const refreshUser = async () => {
+    try {
+      const freshUser = await authService.getProfile();
+      if (freshUser) {
+        setUser(parseUser(freshUser));
+      }
+    } catch (e) {
+      console.error('Failed to refresh user profile', e);
       throw e;
     }
   };
@@ -177,6 +221,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register,
         verifyOtp,
         updateProfile,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        refreshUser,
         setToken,
         setUser
       }}

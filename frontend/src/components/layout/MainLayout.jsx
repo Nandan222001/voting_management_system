@@ -9,7 +9,11 @@ import {
   FileBarChart,
   Home,
   MapPinned,
+  Megaphone,
   Settings,
+  TrendingUp,
+  UserCog,
+  Users,
   UsersRound,
   Vote,
 } from 'lucide-react';
@@ -17,9 +21,7 @@ import {
 const superAdminBottomNav = [
   { to: '/dashboard', icon: BarChart3, label: 'Dashboard' },
   { to: '/tenants', icon: Building2, label: 'Tenants' },
-  { to: '/targets', icon: MapPinned, label: 'Targets' },
   { to: '/audit-logs', icon: FileBarChart, label: 'Logs' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
   { to: '/account', icon: CircleUserRound, label: 'Account' },
 ];
 
@@ -27,8 +29,11 @@ const adminBottomNav = [
   { to: '/dashboard', icon: Home, label: 'Dashboard' },
   { to: '/elections', icon: Vote, label: 'Elections' },
   { to: '/candidates', icon: UsersRound, label: 'Candidates' },
-  { to: '/results', icon: FileBarChart, label: 'Results' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+  { to: '/nominations', icon: UserCog, label: 'Nominations' },
+  { to: '/announcements', icon: Megaphone, label: 'Announcements' },
+  { to: '/targets', icon: MapPinned, label: 'Committee' },
+  { to: '/users', icon: Users, label: 'Users' },
+  { to: '/revenue', icon: TrendingUp, label: 'Revenue' },
 ];
 
 function BottomNav({ links, activeClass = 'scale-110 bg-[#1a337e] text-white' }) {

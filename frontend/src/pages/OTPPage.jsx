@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaShieldAlt, FaClock, FaArrowRight } from 'react-icons/fa';
+import AppLogo from '../components/common/AppLogo';
 import toast from 'react-hot-toast';
 import { verifyOTP, clearError } from '../store/slices/authSlice';
 
@@ -92,8 +93,8 @@ export default function OTPPage() {
       {/* Top Nav */}
       <nav className="bg-white border-b border-gray-100 px-5 py-3.5 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <FaShieldAlt className="text-[#1a337e] text-lg" />
-          <span className="font-bold text-[#1a337e] text-base">SecureVote</span>
+          <AppLogo className="w-8 h-8" />
+          <span className="font-bold text-[#1a337e] text-base">VBA Connect</span>
         </div>
         <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
           <span className="text-gray-700 text-sm font-bold">JD</span>

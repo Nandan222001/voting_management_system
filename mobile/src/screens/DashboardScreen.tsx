@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator, Image, Platform, Alert, useWindowDimensions, Dimensions } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialIcons } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../context/AuthContext';
+import { dashboardService } from '../services/dashboardService';
 import { electionService } from '../services/electionService';
 import { tenantService } from '../services/tenantService';
 import { Announcement, announcementService } from '../services/announcementService';
+import { mediaService } from '../services/mediaService';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
+import { hs, vs, ms } from '../utils/responsive';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -41,11 +44,40 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const { width } = useWindowDimensions();
   const [activeElections, setActiveElections] = useState<any[]>([]);
   const [upcomingElections, setUpcomingElections] = useState<any[]>([]);
-  const [stats, setStats] = useState({ activeElections: 0, totalElections: 0, completedElections: 0 });
+  const [stats, setStats] = useState({
+    activeMembers: 0,
+    activeElections: 0,
+    totalVotes: 0,
+    pendingNominations: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [planName, setPlanName] = useState(user?.membership_plan?.name || 'Standard Member');
+  const planName = user?.membership_plan?.name || 'Standard Member';
+  const [tenantName, setTenantName] = useState<string>('VOTE2026');
+
+  const loadStats = async () => {
+    try {
+      setStatsLoading(true);
+      setStatsError(null);
+
+      const response = await dashboardService.getStats();
+
+      setStats({
+        activeMembers: response.total_users, // Mapping total_users as Active Members for now based on previous UI
+        activeElections: response.active_elections,
+        totalVotes: response.total_votes,
+        pendingNominations: response.pending_users // Mapping pending_users as Pending Nominations for now
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats', error);
+      setStatsError('Failed to load statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   const loadData = async () => {
     const latestPromise = announcementService.getLatest().catch((announcementError) => {
@@ -53,27 +85,32 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
       return null;
     });
 
+    const tenantPromise = tenantService.getCurrentTenant().then(data => {
+      if (data?.name) {
+        setTenantName(data.name.toUpperCase());
+      }
+    }).catch(err => {
+      console.log('No current tenant info available');
+    });
+
     try {
       let response;
       try {
         response = await electionService.getElections(false, 1, 100);
       } catch (err: any) {
-        // If 401, try the public endpoint as a fallback for the dashboard
         if (err.response?.status === 401) {
           response = await electionService.getPublicElections();
         } else {
           throw err;
         }
       }
-      
+
       const elections = Array.isArray(response) ? response : (response.data || []);
       const now = new Date();
-      
+
       const active = elections.filter((e: any) => {
         const start = new Date(e.start_date).getTime();
         const end = new Date(e.end_date).getTime();
-        // Backend 'active' status means it's published. 
-        // We also check dates for the "Live" hero.
         return e.status === 'active' && start <= now.getTime() && end >= now.getTime();
       });
 
@@ -82,20 +119,13 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
         return start > now.getTime() && e.status !== 'completed' && e.status !== 'cancelled';
       }).sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
-      const completed = elections.filter((e: any) => e.status === 'completed');
-
       setActiveElections(active);
       setUpcomingElections(upcoming);
-      setStats({
-        activeElections: active.length,
-        totalElections: elections.length,
-        completedElections: completed.length,
-      });
     } catch (error) {
       console.error('Failed to load dashboard data', error);
       showToast.error('Load Error', 'Could not refresh dashboard data.');
     } finally {
-      setLatestAnnouncement(await latestPromise);
+      await Promise.all([latestPromise.then(setLatestAnnouncement), tenantPromise, loadStats()]);
       setLoading(false);
     }
   };
@@ -121,9 +151,9 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView 
+      <ScrollView
         style={styles.content}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: vs(40) }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
@@ -144,7 +174,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
           style={styles.membershipCard}
         >
           <View style={styles.abstractCircle2} />
-          
+
           <View style={styles.cardTop}>
             <View>
               <Text style={styles.cardLabel}>OFFICIAL MEMBER CARD</Text>
@@ -152,24 +182,24 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               <Text style={styles.cardUserId}>ID: #FED-992-{(user?.id || 4).toString().padStart(3, '0')}</Text>
             </View>
           </View>
-          
+
           <View style={styles.cardBottom}>
             <View>
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{planName.toUpperCase()} TIER</Text>
               </View>
-              <Text style={styles.expiresText}>Expires: 12/2026</Text>
+              <Text style={styles.expiresText}>Expires: 06/2027</Text>
             </View>
-            <Text style={styles.voteText}>VOTE2026</Text>
+            <Text style={styles.voteText}>VBA</Text>
           </View>
         </LinearGradient>
 
         {/* Latest Announcement */}
         <View style={styles.sectionHeader}>
-           <View style={styles.sectionTitleRow}>
-              <View style={[styles.titleIndicator, { backgroundColor: COLORS.accent }]} />
-              <Text style={styles.sectionTitle}>Latest Announcement</Text>
-           </View>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.titleIndicator, { backgroundColor: COLORS.accent }]} />
+            <Text style={styles.sectionTitle}>Latest Announcement</Text>
+          </View>
         </View>
 
         {latestAnnouncement ? (
@@ -180,12 +210,12 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               onPress={() => navigation.navigate('AnnouncementDetail', { id: latestAnnouncement.id, announcement: latestAnnouncement })}
             >
               {latestAnnouncement.image_urls?.[0] ? (
-                <Image source={{ uri: latestAnnouncement.image_urls[0] }} style={styles.announcementImage} />
+                <Image source={{ uri: mediaService.getFileUrl(latestAnnouncement.image_urls[0]) }} style={styles.announcementImage} />
               ) : (
                 <View style={styles.announcementFallback}>
-                  <Image 
-                    source={{ uri: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?auto=format&fit=crop&q=80&w=800' }} 
-                    style={styles.announcementImage} 
+                  <Image
+                    source={{ uri: 'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?auto=format&fit=crop&q=80&w=800' }}
+                    style={styles.announcementImage}
                   />
                 </View>
               )}
@@ -196,7 +226,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
                   </Text>
                   {latestAnnouncement.is_featured && (
                     <View style={styles.announcementFeatured}>
-                      <MaterialIcons name="star" size={12} color={COLORS.primary} />
+                      <MaterialIcons name="star" size={ms(12)} color={COLORS.primary} />
                       <Text style={styles.announcementFeaturedText}>Featured</Text>
                     </View>
                   )}
@@ -206,14 +236,14 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               </View>
             </TouchableOpacity>
             <TouchableOpacity style={styles.viewAnnouncementsBtn} onPress={() => navigation.navigate('AnnouncementsList')}>
-              <MaterialIcons name="campaign" size={18} color={COLORS.primary} />
+              <MaterialIcons name="campaign" size={ms(18)} color={COLORS.primary} />
               <Text style={styles.viewAnnouncementsText}>View All Announcements</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.emptyAnnouncementCard}>
-             <MaterialIcons name="campaign" size={26} color={COLORS.outline} />
-             <Text style={styles.emptyActiveText}>No published announcements.</Text>
+            <MaterialIcons name="campaign" size={ms(26)} color={COLORS.outline} />
+            <Text style={styles.emptyActiveText}>No published announcements.</Text>
           </View>
         )}
 
@@ -221,60 +251,60 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
         {activeElections.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-               <View style={styles.sectionTitleRow}>
-                  <View style={[styles.titleIndicator, { backgroundColor: COLORS.secondary }]} />
-                  <Text style={styles.sectionTitle}>Live Voting</Text>
-               </View>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.titleIndicator, { backgroundColor: COLORS.secondary }]} />
+                <Text style={styles.sectionTitle}>Live Voting</Text>
+              </View>
             </View>
 
             <View style={styles.activeHeroContainer}>
               {activeElections.slice(0, 1).map((election, index) => (
-                <TouchableOpacity 
+                <TouchableOpacity
                   key={election.id || index}
                   style={styles.heroPremiumCard}
                   onPress={() => navigation.navigate('Elections', { screen: 'Voting', params: { election } })}
                   activeOpacity={0.9}
                 >
                   <View style={[styles.premiumCardDateCol, { backgroundColor: COLORS.secondary + '05', borderRightColor: COLORS.secondary + '10' }]}>
-                     <View style={[styles.premiumDateBlock, { backgroundColor: COLORS.secondary + '15' }]}>
-                        <Text style={[styles.premiumDateMonth, { color: COLORS.secondary }]}>
-                           {new Date(election.start_date).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}
-                        </Text>
-                        <Text style={[styles.premiumDateDay, { color: COLORS.onSurface }]}>
-                           {new Date(election.start_date).getDate()}
-                        </Text>
-                     </View>
-                     <View style={[styles.premiumStatusBadgeMini, { backgroundColor: COLORS.secondary + '15' }]}>
-                        <View style={[styles.statusDot, { backgroundColor: COLORS.secondary }]} />
-                        <Text style={[styles.statusTextMini, { color: COLORS.secondary }]}>LIVE NOW</Text>
-                     </View>
+                    <View style={[styles.premiumDateBlock, { backgroundColor: COLORS.secondary + '15' }]}>
+                      <Text style={[styles.premiumDateMonth, { color: COLORS.secondary }]}>
+                        {new Date(election.start_date).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}
+                      </Text>
+                      <Text style={[styles.premiumDateDay, { color: COLORS.onSurface }]}>
+                        {new Date(election.start_date).getDate()}
+                      </Text>
+                    </View>
+                    <View style={[styles.premiumStatusBadgeMini, { backgroundColor: COLORS.secondary + '15' }]}>
+                      <View style={[styles.statusDot, { backgroundColor: COLORS.secondary }]} />
+                      <Text style={[styles.statusTextMini, { color: COLORS.secondary }]}>LIVE NOW</Text>
+                    </View>
                   </View>
 
                   <View style={styles.minimalCardContent}>
                     <View style={styles.minimalCardTopRow}>
-                       <View style={[styles.minimalTypeBadge, { backgroundColor: COLORS.secondary + '10' }]}>
-                          <Text style={[styles.minimalTypeBadgeText, { color: COLORS.secondary }]}>{election.election_type || 'GENERAL'}</Text>
-                       </View>
-                       <View style={styles.liveIndicator}>
-                          <View style={styles.livePulse} />
-                          <Text style={styles.liveIndicatorText}>ACTIVE</Text>
-                       </View>
+                      <View style={[styles.minimalTypeBadge, { backgroundColor: COLORS.secondary + '10' }]}>
+                        <Text style={[styles.minimalTypeBadgeText, { color: COLORS.secondary }]}>{election.election_type || 'GENERAL'}</Text>
+                      </View>
+                      <View style={styles.liveIndicator}>
+                        <View style={styles.livePulse} />
+                        <Text style={styles.liveIndicatorText}>ACTIVE</Text>
+                      </View>
                     </View>
-                    
+
                     <View style={styles.minimalCardBody}>
-                       <Text style={styles.minimalEventTitle} numberOfLines={2}>{election.title}</Text>
+                      <Text style={styles.minimalEventTitle} numberOfLines={2}>{election.title}</Text>
                     </View>
 
                     <View style={styles.minimalCardFooter}>
-                       <View style={styles.minimalInfoRow}>
-                          <MaterialIcons name="how-to-vote" size={14} color={COLORS.secondary} />
-                          <Text style={[styles.minimalInfoText, { color: COLORS.secondary }]}>
-                             Eligible to Vote
-                          </Text>
-                       </View>
-                       <View style={[styles.footerCircleBtn, { backgroundColor: COLORS.secondary }]}>
-                          <MaterialIcons name="chevron-right" size={14} color="#fff" />
-                       </View>
+                      <View style={styles.minimalInfoRow}>
+                        <MaterialIcons name="how-to-vote" size={ms(14)} color={COLORS.secondary} />
+                        <Text style={[styles.minimalInfoText, { color: COLORS.secondary }]}>
+                          Eligible to Vote
+                        </Text>
+                      </View>
+                      <View style={[styles.footerCircleBtn, { backgroundColor: COLORS.secondary }]}>
+                        <MaterialIcons name="chevron-right" size={ms(14)} color="#fff" />
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -285,86 +315,112 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
 
         {activeElections.length === 0 && (
           <View style={styles.emptyActiveCard}>
-             <MaterialIcons name="event-busy" size={32} color={COLORS.outline} />
-             <Text style={styles.emptyActiveText}>No active elections for today.</Text>
+            <MaterialIcons name="event-busy" size={ms(32)} color={COLORS.outline} />
+            <Text style={styles.emptyActiveText}>No active elections for today.</Text>
           </View>
         )}
 
         {/* Upcoming Elections */}
         <View style={styles.sectionHeader}>
-           <View style={styles.sectionTitleRow}>
-              <View style={[styles.titleIndicator, { backgroundColor: '#6366f1' }]} />
-              <Text style={styles.sectionTitle}>Upcoming Elections</Text>
-           </View>
+          <View style={styles.sectionTitleRow}>
+            <View style={[styles.titleIndicator, { backgroundColor: '#6366f1' }]} />
+            <Text style={styles.sectionTitle}>Upcoming Elections</Text>
+          </View>
         </View>
 
         <View style={styles.upcomingListContainer}>
-           {upcomingElections.length === 0 ? (
-             <View style={styles.emptyUpcomingCard}>
-                <MaterialIcons name="event-note" size={24} color={COLORS.outline} />
-                <Text style={styles.noUpcomingText}>No upcoming elections scheduled.</Text>
-             </View>
-           ) : (
-             <View style={styles.verticalList}>
-               {upcomingElections.slice(0, 3).map((election, index) => (
-                 <TouchableOpacity 
-                   key={election.id || index} 
-                   style={styles.minimalPremiumCard}
-                   activeOpacity={0.9}
-                   onPress={() => navigation.navigate('Elections')}
-                 >
-                    <View style={styles.premiumCardDateCol}>
-                       <View style={[styles.premiumDateBlock, { backgroundColor: '#6366f115' }]}>
-                          <Text style={[styles.premiumDateMonth, { color: '#4f46e5' }]}>
-                             {new Date(election.start_date).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}
-                          </Text>
-                          <Text style={[styles.premiumDateDay, { color: COLORS.onSurface }]}>
-                             {new Date(election.start_date).getDate()}
-                          </Text>
-                       </View>
-                       <View style={styles.premiumStatusBadgeMini}>
-                          <View style={[styles.statusDot, { backgroundColor: '#6366f1' }]} />
-                          <Text style={styles.statusTextMini}>UPCOMING</Text>
-                       </View>
+          {upcomingElections.length === 0 ? (
+            <View style={styles.emptyUpcomingCard}>
+              <MaterialIcons name="event-note" size={ms(24)} color={COLORS.outline} />
+              <Text style={styles.noUpcomingText}>No upcoming elections scheduled.</Text>
+            </View>
+          ) : (
+            <View style={styles.verticalList}>
+              {upcomingElections.slice(0, 3).map((election, index) => (
+                <TouchableOpacity
+                  key={election.id || index}
+                  style={styles.minimalPremiumCard}
+                  activeOpacity={0.9}
+                  onPress={() => navigation.navigate('Elections')}
+                >
+                  <View style={styles.premiumCardDateCol}>
+                    <View style={[styles.premiumDateBlock, { backgroundColor: '#6366f115' }]}>
+                      <Text style={[styles.premiumDateMonth, { color: '#4f46e5' }]}>
+                        {new Date(election.start_date).toLocaleDateString('en-GB', { month: 'short' }).toUpperCase()}
+                      </Text>
+                      <Text style={[styles.premiumDateDay, { color: COLORS.onSurface }]}>
+                        {new Date(election.start_date).getDate()}
+                      </Text>
+                    </View>
+                    <View style={styles.premiumStatusBadgeMini}>
+                      <View style={[styles.statusDot, { backgroundColor: '#6366f1' }]} />
+                      <Text style={styles.statusTextMini}>UPCOMING</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.minimalCardContent}>
+                    <View style={styles.minimalCardTopRow}>
+                      <View style={styles.minimalTypeBadge}>
+                        <Text style={styles.minimalTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
+                      </View>
                     </View>
 
-                    <View style={styles.minimalCardContent}>
-                      <View style={styles.minimalCardTopRow}>
-                         <View style={styles.minimalTypeBadge}>
-                            <Text style={styles.minimalTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
-                         </View>
-                         <TouchableOpacity style={styles.infoBtnMini}>
-                            <MaterialIcons name="info-outline" size={14} color={COLORS.primary} />
-                         </TouchableOpacity>
-                      </View>
-                      
-                      <View style={styles.minimalCardBody}>
-                         <Text style={styles.minimalEventTitle} numberOfLines={2}>{election.title}</Text>
-                      </View>
+                    <View style={styles.minimalCardBody}>
+                      <Text style={styles.minimalEventTitle} numberOfLines={2}>{election.title}</Text>
+                    </View>
 
-                      <View style={styles.minimalCardFooter}>
-                         <View style={styles.minimalInfoRow}>
-                            <MaterialIcons name="schedule" size={14} color="#6366f1" />
-                            <Text style={styles.minimalInfoText}>
-                               {new Date(election.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </Text>
-                         </View>
-                         <View style={[styles.footerCircleBtn, { backgroundColor: '#6366f1' }]}>
-                            <MaterialIcons name="chevron-right" size={14} color="#fff" />
-                         </View>
+                    <View style={styles.minimalCardFooter}>
+                      <View style={styles.minimalInfoRow}>
+                        <MaterialIcons name="schedule" size={ms(14)} color="#6366f1" />
+                        <Text style={styles.minimalInfoText}>
+                          {new Date(election.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                      <View style={[styles.footerCircleBtn, { backgroundColor: '#6366f1' }]}>
+                        <MaterialIcons name="chevron-right" size={ms(14)} color="#fff" />
                       </View>
                     </View>
-                 </TouchableOpacity>
-               ))}
-             </View>
-           )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
-        
+
         <TouchableOpacity style={styles.viewCalendarBtn} onPress={() => navigation.navigate('Elections')}>
-           <MaterialIcons name="event-note" size={18} color="#fff" />
-           <Text style={styles.viewCalendarText}>View All Elections</Text>
+          <MaterialIcons name="event-note" size={ms(18)} color="#fff" />
+          <Text style={styles.viewCalendarText}>View All Elections</Text>
         </TouchableOpacity>
 
+        <View style={styles.statsGrid}>
+          {statsLoading ? (
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          ) : statsError ? (
+            <Text style={styles.errorText}>{statsError}</Text>
+          ) : (
+            <>
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Active Members</Text>
+                <Text style={styles.statValue}>{stats.activeMembers}</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Active Elections</Text>
+                <Text style={styles.statValue}>{stats.activeElections}</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Total Votes</Text>
+                <Text style={styles.statValue}>{stats.totalVotes}</Text>
+              </View>
+
+              <View style={styles.statCard}>
+                <Text style={styles.statLabel}>Pending Nominations</Text>
+                <Text style={styles.statValue}>{stats.pendingNominations}</Text>
+              </View>
+            </>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -373,52 +429,52 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
-  content: { flex: 1, paddingHorizontal: 16 },
-  
-  welcomeSection: { marginTop: 24, marginBottom: 24 },
-  welcomeTitle: { fontSize: 32, fontWeight: '700', color: COLORS.primary, letterSpacing: -1 },
-  delegateName: { fontSize: 32, fontWeight: '700', color: COLORS.primary, letterSpacing: -1, marginTop: -4 },
-  welcomeSubtext: { fontSize: 16, color: COLORS.onSurfaceVariant, marginTop: 8, lineHeight: 22 },
-  
+  content: { flex: 1, paddingHorizontal: hs(16) },
+
+  welcomeSection: { marginTop: vs(24), marginBottom: vs(24) },
+  welcomeTitle: { fontSize: ms(32), fontWeight: '700', color: COLORS.primary, letterSpacing: -1 },
+  delegateName: { fontSize: ms(32), fontWeight: '700', color: COLORS.primary, letterSpacing: -1, marginTop: vs(-4) },
+  welcomeSubtext: { fontSize: ms(16), color: COLORS.onSurfaceVariant, marginTop: vs(8), lineHeight: vs(22) },
+
   membershipCard: {
-    borderRadius: 16,
-    padding: 24,
-    height: 200,
+    borderRadius: ms(12),
+    padding: ms(20),
+    minHeight: vs(180),
     justifyContent: 'space-between',
     overflow: 'hidden',
-    marginBottom: 32,
+    marginBottom: vs(24),
     ...Platform.select({
-      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
-      android: { elevation: 10 },
-      web: { 
+      ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 12 },
+      android: { elevation: 6 },
+      web: {
         // @ts-ignore
-        boxShadow: `0px 10px 15px ${COLORS.primary}4D` 
+        boxShadow: `0px 8px 15px ${COLORS.primary}4D`
       }
     })
   },
   abstractCircle2: {
     position: 'absolute',
-    bottom: -24,
-    left: -24,
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    bottom: vs(-24),
+    left: hs(-24),
+    width: ms(120),
+    height: ms(120),
+    borderRadius: ms(60),
     backgroundColor: 'rgba(141, 252, 117, 0.1)',
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
-  cardUserName: { color: '#fff', fontSize: 18, fontWeight: '600', marginTop: 4 },
-  cardUserId: { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2 },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  tierBadge: { backgroundColor: COLORS.tertiary, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
-  tierBadgeText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  expiresText: { color: COLORS.onPrimaryContainer, fontSize: 12, marginTop: 8 },
-  voteText: { color: '#fff', fontSize: 24, fontWeight: '700', fontStyle: 'italic', letterSpacing: -1 },
+  cardLabel: { color: 'rgba(255,255,255,0.8)', fontSize: ms(11), fontWeight: '700', letterSpacing: 0.5 },
+  cardUserName: { color: '#fff', fontSize: ms(20), fontWeight: '800', marginTop: vs(4) },
+  cardUserId: { color: 'rgba(255,255,255,0.7)', fontSize: ms(12), marginTop: vs(2) },
+  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: vs(20) },
+  tierBadge: { backgroundColor: COLORS.tertiary, paddingHorizontal: hs(8), paddingVertical: vs(4), borderRadius: ms(4) },
+  tierBadgeText: { color: '#fff', fontSize: ms(9), fontWeight: '800' },
+  expiresText: { color: COLORS.onPrimaryContainer, fontSize: ms(11), marginTop: vs(6) },
+  voteText: { color: '#fff', fontSize: ms(22), fontWeight: '900', fontStyle: 'italic', letterSpacing: -1 },
 
-  announcementBlock: { marginBottom: 28 },
+  announcementBlock: { marginBottom: vs(28) },
   announcementCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 24,
+    borderRadius: ms(12),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
@@ -427,38 +483,38 @@ const styles = StyleSheet.create({
       android: { elevation: 3 }
     })
   },
-  announcementImage: { width: '100%', height: 160, backgroundColor: COLORS.surfaceContainerLow },
-  announcementFallback: { height: 120, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary + '10' },
-  announcementContent: { padding: 16 },
-  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 25 },
-  announcementDate: { fontSize: 11, fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
-  announcementFeatured: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.primary + '12', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
-  announcementFeaturedText: { fontSize: 9, fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },
-  announcementTitle: { fontSize: 19, fontWeight: '900', color: COLORS.onSurface, lineHeight: 24 },
-  announcementDescription: { marginTop: 6, fontSize: 13, fontWeight: '600', color: COLORS.onSurfaceVariant, lineHeight: 19 },
+  announcementImage: { width: '100%', height: vs(150), backgroundColor: COLORS.surfaceContainerLow },
+  announcementFallback: { height: vs(120), alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.primary + '10' },
+  announcementContent: { padding: ms(16) },
+  announcementMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: vs(8) },
+  announcementDate: { fontSize: ms(10), fontWeight: '800', color: COLORS.onSurfaceVariant, textTransform: 'uppercase' },
+  announcementFeatured: { flexDirection: 'row', alignItems: 'center', gap: hs(4), backgroundColor: COLORS.primary + '12', paddingHorizontal: hs(8), paddingVertical: vs(4), borderRadius: ms(8) },
+  announcementFeaturedText: { fontSize: ms(8), fontWeight: '900', color: COLORS.primary, textTransform: 'uppercase' },
+  announcementTitle: { fontSize: ms(18), fontWeight: '800', color: COLORS.onSurface, lineHeight: vs(22) },
+  announcementDescription: { marginTop: vs(6), fontSize: ms(13), fontWeight: '500', color: COLORS.onSurfaceVariant, lineHeight: vs(18) },
   viewAnnouncementsBtn: {
-    marginTop: 12,
+    marginTop: vs(12),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
+    gap: hs(8),
+    paddingVertical: vs(14),
+    borderRadius: ms(12),
     borderWidth: 1,
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primary + '08',
   },
-  viewAnnouncementsText: { color: COLORS.primary, fontSize: 13, fontWeight: '900' },
-  emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: 20, padding: 28, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: 28 },
+  viewAnnouncementsText: { color: COLORS.primary, fontSize: ms(13), fontWeight: '900' },
+  emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(10), padding: ms(28), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: vs(28) },
 
   heroPremiumCard: {
-    borderRadius: 24,
+    borderRadius: ms(12),
     backgroundColor: '#fff',
     flexDirection: 'row',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
-    marginBottom: 16,
+    marginBottom: vs(16),
     ...Platform.select({
       ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 10 },
       android: { elevation: 3 }
@@ -467,75 +523,71 @@ const styles = StyleSheet.create({
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: hs(6),
     backgroundColor: COLORS.secondary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(4),
+    borderRadius: ms(8),
   },
   livePulse: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: COLORS.secondary,
   },
   liveIndicatorText: {
-    fontSize: 8,
+    fontSize: ms(8),
     fontWeight: '900',
     color: COLORS.secondary,
     letterSpacing: 0.5,
   },
 
-  emptyActiveCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: 24, padding: 40, alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, marginBottom: 32 },
-  emptyActiveText: { marginTop: 12, fontSize: 14, fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.7 },
+  emptyActiveCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(12), padding: ms(40), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 2, borderColor: COLORS.outlineVariant, marginBottom: vs(32) },
+  emptyActiveText: { marginTop: vs(12), fontSize: ms(14), fontWeight: '600', color: COLORS.onSurfaceVariant, opacity: 0.7 },
 
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, marginTop: 8 },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  titleIndicator: { width: 6, height: 24, borderRadius: 3 },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: COLORS.onSurface },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: vs(16), marginTop: vs(8) },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: hs(8) },
+  titleIndicator: { width: hs(6), height: vs(24), borderRadius: ms(3) },
+  sectionTitle: { fontSize: ms(18), fontWeight: '600', color: COLORS.onSurface },
 
-  viewCalendarBtn: { 
+  viewCalendarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16, 
+    paddingVertical: vs(16),
     backgroundColor: COLORS.primary,
-    borderRadius: 16, 
-    marginBottom: 40,
-    gap: 10,
+    borderRadius: ms(8),
+    marginBottom: vs(40),
+    gap: hs(10),
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
       android: { elevation: 4 }
     })
   },
-  viewCalendarText: { color: '#fff', fontWeight: '800', fontSize: 14, letterSpacing: 0.5 },
-  noUpcomingText: { fontSize: 14, color: COLORS.onSurfaceVariant, fontStyle: 'italic', textAlign: 'center', marginTop: 8 },
-  emptyUpcomingCard: { padding: 32, alignItems: 'center', justifyContent: 'center' },
+  viewCalendarText: { color: '#fff', fontWeight: '800', fontSize: ms(14), letterSpacing: 0.5 },
+  noUpcomingText: { fontSize: ms(14), color: COLORS.onSurfaceVariant, fontStyle: 'italic', textAlign: 'center', marginTop: vs(8) },
+  emptyUpcomingCard: { padding: ms(32), alignItems: 'center', justifyContent: 'center' },
 
   upcomingListContainer: {
-    marginBottom: 24,
-  },
-  horizontalScrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 8, // For shadow visibility
+    marginBottom: vs(24),
   },
   footerCircleBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   verticalList: {
-    gap: 12,
+    gap: vs(12),
     alignItems: 'center',
   },
   minimalPremiumCard: {
     width: '100%',
-    height: 130,
-    borderRadius: 24,
+    minHeight: vs(100),
+    borderRadius: ms(12),
     backgroundColor: '#fff',
     flexDirection: 'row',
     overflow: 'hidden',
@@ -547,7 +599,7 @@ const styles = StyleSheet.create({
     })
   },
   premiumCardDateCol: {
-    width: 80,
+    width: hs(80),
     alignItems: 'center',
     justifyContent: 'center',
     borderRightWidth: 1,
@@ -557,43 +609,43 @@ const styles = StyleSheet.create({
   premiumDateBlock: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 8,
-    borderRadius: 14,
+    padding: ms(8),
+    borderRadius: ms(8),
   },
   premiumDateMonth: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   premiumDateDay: {
-    fontSize: 22,
+    fontSize: ms(22),
     fontWeight: '900',
-    marginTop: -2,
+    marginTop: vs(-2),
   },
   premiumStatusBadgeMini: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
+    gap: hs(4),
+    marginTop: vs(8),
     backgroundColor: COLORS.surfaceContainerLow,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: hs(6),
+    paddingVertical: vs(2),
+    borderRadius: ms(4),
   },
   statusDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: ms(4),
+    height: ms(4),
+    borderRadius: ms(2),
   },
   statusTextMini: {
-    fontSize: 7,
+    fontSize: ms(7),
     fontWeight: '900',
     color: COLORS.onSurfaceVariant,
     letterSpacing: 0.5,
   },
   minimalCardContent: {
     flex: 1,
-    padding: 12,
+    padding: ms(12),
     justifyContent: 'space-between',
   },
   minimalCardTopRow: {
@@ -601,30 +653,22 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  infoBtnMini: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.surfaceContainerLow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   minimalTypeBadge: {
     backgroundColor: COLORS.surfaceContainerLow,
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
+    paddingHorizontal: hs(8), paddingVertical: vs(3), borderRadius: ms(4),
   },
   minimalTypeBadgeText: {
-    color: COLORS.onSurfaceVariant, fontSize: 9, fontWeight: '800', letterSpacing: 0.3,
+    color: COLORS.onSurfaceVariant, fontSize: ms(9), fontWeight: '800', letterSpacing: 0.3,
   },
   minimalCardBody: {
     flex: 1,
     justifyContent: 'center',
   },
   minimalEventTitle: {
-    fontSize: 16,
+    fontSize: ms(16),
     fontWeight: '800',
     color: COLORS.onSurface,
-    lineHeight: 22,
+    lineHeight: vs(22),
     letterSpacing: -0.3,
   },
   minimalCardFooter: {
@@ -635,13 +679,61 @@ const styles = StyleSheet.create({
   minimalInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: hs(4),
   },
   minimalInfoText: {
-    fontSize: 12,
+    fontSize: ms(12),
     color: COLORS.onSurfaceVariant,
     fontWeight: '700',
     opacity: 0.8,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: vs(24),
+  },
+  statCard: {
+    width: '48.5%',
+    backgroundColor: COLORS.surfaceContainerLow,
+    paddingVertical: vs(20),
+    paddingHorizontal: hs(12),
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: COLORS.outlineVariant,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(12),
+  },
+  statLabel: {
+    fontSize: ms(10),
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    textTransform: 'uppercase',
+    marginBottom: vs(4),
+  },
+  statValue: {
+    fontSize: ms(24),
+    fontWeight: '900',
+    color: COLORS.primary,
+  },
+  statSubtext: {
+    fontSize: ms(10),
+    fontWeight: '700',
+    color: COLORS.secondary,
+    marginTop: vs(4),
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: hs(2),
+    marginTop: vs(4),
+  },
+  errorText: {
+    fontSize: ms(14),
+    color: COLORS.error,
+    textAlign: 'center',
+    width: '100%',
+    marginVertical: vs(20),
   },
 });
 

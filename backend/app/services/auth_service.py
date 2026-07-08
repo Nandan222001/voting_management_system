@@ -8,6 +8,7 @@ Dependency Inversion: Depends on ``UserRepository`` (an abstraction) and the
 security utilities rather than on raw SQLAlchemy or Jose calls.
 """
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -34,6 +35,8 @@ from app.utils.email import send_otp_email, send_registration_otp_email
 
 # OTP is valid for 10 minutes by default.
 _OTP_TTL_MINUTES: int = 10
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -77,6 +80,7 @@ class AuthService:
             HTTPException 402: If the tenant's voter limit has been exceeded.
             HTTPException 409: If the e-mail address is already registered.
         """
+        print(f"DEBUG: Registering new user: {register_data.email}")
         repo = UserRepository(db)
 
         # Normalize email to lowercase for consistent storage and lookup
@@ -89,9 +93,11 @@ class AuthService:
         )
 
         if resolved_tenant_id is not None:
+            print(f"DEBUG: Resolving tenant_id: {resolved_tenant_id}")
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(resolved_tenant_id)
             if tenant is None:
+                print(f"DEBUG: Tenant {resolved_tenant_id} not found")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Tenant with id={resolved_tenant_id} not found.",
@@ -104,6 +110,7 @@ class AuthService:
                 .filter(User.tenant_id == resolved_tenant_id, User.role == _Role.voter)
                 .count()
             )
+            print(f"DEBUG: Current voter count for tenant {resolved_tenant_id}: {current_voter_count} / {tenant.max_voters}")
             if current_voter_count >= tenant.max_voters:
                 raise HTTPException(
                     status_code=status.HTTP_402_PAYMENT_REQUIRED,
@@ -114,13 +121,24 @@ class AuthService:
                 )
 
         if repo.get_by_email(normalized_email):
+            print(f"DEBUG: User with email {normalized_email} already exists")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="A user with this email address already exists.",
             )
 
+        if register_data.voter_id:
+            existing_voter = db.query(User).filter(User.voter_id == register_data.voter_id).first()
+            if existing_voter:
+                print(f"DEBUG: User with voter_id {register_data.voter_id} already exists")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="A user with this Voter ID already exists.",
+                )
+
         # Secure Payment Verification for Paid Membership Plans
         if register_data.membership_plan_id:
+            print(f"DEBUG: Verifying payment for plan: {register_data.membership_plan_id}")
             plan = db.query(Plan).filter(Plan.id == register_data.membership_plan_id).first()
             if plan and plan.price > 0:
                 # Require payment details
@@ -148,7 +166,8 @@ class AuthService:
                             'razorpay_payment_id': register_data.razorpay_payment_id,
                             'razorpay_signature': register_data.razorpay_signature
                         })
-                    except Exception:
+                    except Exception as e:
+                        print(f"DEBUG: Payment signature verification failed: {str(e)}")
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
                             detail="Payment signature verification failed. Please try again or contact support."
@@ -157,58 +176,76 @@ class AuthService:
         otp = generate_otp()
         otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
 
-        user = User(
-            full_name=register_data.full_name,
-            email=normalized_email,
-            phone=register_data.phone,
-            date_of_birth=register_data.date_of_birth,
-            gender=register_data.gender,
-            parent_name=register_data.parent_name,
-            voter_id=register_data.voter_id,
-            designation=register_data.designation,
-            
-            # KYC
-            kyc_type=register_data.kyc_type,
-            kyc_front_url=register_data.kyc_front_url,
-            kyc_back_url=register_data.kyc_back_url,
+        # Normalize empty strings to None for optional unique fields
+        voter_id = register_data.voter_id if register_data.voter_id and register_data.voter_id.strip() != "" else None
 
-            # Address (Permanent)
-            house_number=register_data.house_number,
-            street_address=register_data.street_address,
-            village=register_data.village,
-            landmark=register_data.landmark,
-            pincode=register_data.pincode,
-            city=register_data.city,
-            taluka=register_data.taluka,
-            district=register_data.district,
-            state=register_data.state,
-            country=register_data.country,
+        print(f"DEBUG: Creating User object for {normalized_email}")
+        try:
+            user = User(
+                full_name=register_data.full_name,
+                email=normalized_email,
+                phone=register_data.phone,
+                date_of_birth=register_data.date_of_birth,
+                gender=register_data.gender,
+                parent_name=register_data.parent_name,
+                voter_id=voter_id,
+                designation=register_data.designation,
+                
+                # KYC
+                kyc_type=register_data.kyc_type,
+                kyc_front_url=register_data.kyc_front_url,
+                kyc_back_url=register_data.kyc_back_url,
 
-            # Current Address
-            current_street_address=register_data.current_street_address,
-            current_city=register_data.current_city,
-            current_district=register_data.current_district,
-            current_state=register_data.current_state,
-            current_pincode=register_data.current_pincode,
+                # Address (Permanent)
+                house_number=register_data.house_number,
+                street_address=register_data.street_address,
+                village=register_data.village,
+                landmark=register_data.landmark,
+                pincode=register_data.pincode,
+                city=register_data.city,
+                taluka=register_data.taluka,
+                district=register_data.district,
+                state=register_data.state,
+                country=register_data.country,
 
-            # Mapping
-            target_id=register_data.target_id,
-            committee_id=register_data.committee_id,
-            membership_plan_id=register_data.membership_plan_id,
+                # Current Address
+                current_street_address=register_data.current_street_address,
+                current_city=register_data.current_city,
+                current_district=register_data.current_district,
+                current_state=register_data.current_state,
+                current_pincode=register_data.current_pincode,
 
-            hashed_password=hash_password(register_data.password),
-            role=UserRole.voter,
-            status=UserStatus.pending,
-            is_verified=False,
-            otp_code=otp,
-            otp_expires_at=otp_expires,
-            tenant_id=resolved_tenant_id,
-        )
+                # Mapping
+                target_id=register_data.target_id,
+                committee_id=register_data.committee_id,
+                membership_plan_id=register_data.membership_plan_id,
+
+                hashed_password=hash_password(register_data.password),
+                role=UserRole.voter,
+                status=UserStatus.pending,
+                is_verified=False,
+                otp_code=otp,
+                otp_expires_at=otp_expires,
+                tenant_id=resolved_tenant_id,
+            )
+            print("DEBUG: User object instantiated successfully")
+        except Exception as e:
+            print(f"DEBUG: Failed to instantiate User object: {str(e)}")
+            raise e
+
+        print("DEBUG: Adding user to session and flushing...")
         db.add(user)
-        db.flush() # Get user.id
+        try:
+            db.flush() # Get user.id
+            print(f"DEBUG: User flushed successfully. ID: {user.id}")
+        except Exception as e:
+            print(f"DEBUG: Database flush failed: {str(e)}")
+            db.rollback()
+            raise e
 
         # Create or update payment record to 'captured' and link to user
         if register_data.membership_plan_id and register_data.razorpay_order_id:
+            print(f"DEBUG: Linking payment record for order: {register_data.razorpay_order_id}")
             payment_repo = PaymentRepository(db)
             payment = payment_repo.get_by_order_for_registration(resolved_tenant_id, register_data.razorpay_order_id)
             if payment:
@@ -219,24 +256,23 @@ class AuthService:
                     "razorpay_signature": register_data.razorpay_signature
                 })
 
+        print("DEBUG: Committing transaction...")
         db.commit()
         db.refresh(user)
+        print("DEBUG: Transaction committed successfully")
 
         # Send verification email
         try:
+            print(f"DEBUG: Sending registration OTP email to {user.email}")
             send_registration_otp_email(user.email, otp)
+            print("DEBUG: Registration email sent successfully")
         except Exception as e:
-            # If email fails, we should still have the user record, 
-            # but maybe we should warn or handle it. 
-            # For registration, we'll log it and let it pass or raise?
-            # User might need a 'resend' feature if it fails here.
+            # If email fails, we allow registration to complete but log the error.
+            # This prevents 500 errors when SMTP is not configured or misconfigured.
             logger.error(f"Failed to send registration email: {str(e)}")
-            # We allow registration to complete but the user might be stuck without OTP.
-            # Best practice: raise error so they know it failed and can try again.
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Registration successful but failed to send verification email: {str(e)}"
-            )
+            print(f"DEBUG: !!! EMAIL SENDING FAILED: {str(e)}")
+            print(f"DEBUG: !!! USER CREATED SUCCESSFULLY. OTP IS: {otp}")
+            # We don't raise an exception here so the user can still proceed.
 
         return user
 
@@ -250,7 +286,7 @@ class AuthService:
         email: str, 
         password: str,
         header_tenant_id: Optional[int] = None
-    ) -> TokenResponse:
+    ) - > TokenResponse:
         """
         Authenticate a user and issue JWT tokens.
 

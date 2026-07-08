@@ -1,4 +1,10 @@
+import hashlib
+import hmac
+import json
+import secrets
+from datetime import datetime
 from typing import Optional, Tuple
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -9,8 +15,18 @@ from app.repositories.audit_log_repository import AuditLogRepository
 from app.repositories.payment_repository import PaymentRepository
 from app.repositories.plan_repository import PlanRepository
 from app.repositories.tenant_repository import TenantRepository
-from app.schemas.payment import PaymentUpdate, RevenueSummary, RazorpayPaymentVerify, PaymentFailure
+from app.schemas.payment import (
+    PaymentAnalytics,
+    PaymentUpdate,
+    RefundRequest,
+    RevenueSummary,
+    RazorpayPaymentVerify,
+    PaymentFailure,
+)
 from app.schemas.tenant import TenantPaymentSettings
+
+# 18% GST applied on top of plan price
+GST_RATE = 0.18
 
 
 class PaymentService:
@@ -134,6 +150,7 @@ class PaymentService:
     ) -> dict:
         """
         Create a Razorpay order for the current user's selected membership plan.
+        Applies 18% GST on top of the plan price.
         """
         if current_user.tenant_id is None:
             raise HTTPException(
@@ -170,7 +187,10 @@ class PaymentService:
                 detail="Razorpay credentials not configured for this organization.",
             )
 
-        amount_paise = int(round(plan.price * 100))
+        gst_amount = round(plan.price * GST_RATE, 2)
+        total_amount = plan.price + gst_amount
+        amount_paise = int(round(total_amount * 100))
+
         if tenant.razorpay_key_id == "rzp_test_dummy":
             import secrets
             razorpay_order = {"id": f"order_sim_{secrets.token_hex(8)}"}
@@ -198,11 +218,13 @@ class PaymentService:
             "tenant_id": current_user.tenant_id,
             "user_id": current_user.id,
             "membership_plan_id": plan.id,
-            "amount": plan.price,
+            "amount": total_amount,
             "currency": plan.currency or "INR",
             "description": f"{plan.name} Membership Payment",
             "status": PaymentStatus.pending,
             "razorpay_order_id": razorpay_order["id"],
+            "gst_rate": GST_RATE,
+            "gst_amount": gst_amount,
         })
 
         try:
@@ -215,7 +237,8 @@ class PaymentService:
                 details={
                     "razorpay_order_id": razorpay_order["id"],
                     "membership_plan_id": plan.id,
-                    "amount": plan.price,
+                    "amount": total_amount,
+                    "gst_amount": gst_amount,
                     "currency": plan.currency or "INR",
                 },
             )
@@ -239,6 +262,7 @@ class PaymentService:
     ) -> dict:
         """
         Create a Razorpay order for a new user registration (before user record exists).
+        Applies 18% GST on top of the plan price.
         """
         plan = PlanRepository(db).get_by_id_and_tenant(membership_plan_id, tenant_id)
         if not plan or not plan.is_active:
@@ -259,8 +283,10 @@ class PaymentService:
                 detail="Razorpay credentials not configured for this organization.",
             )
 
-        amount_paise = int(round(plan.price * 100))
-        
+        gst_amount = round(plan.price * GST_RATE, 2)
+        total_amount = plan.price + gst_amount
+        amount_paise = int(round(total_amount * 100))
+
         # Simulation Bypass
         if tenant.razorpay_key_id == "rzp_test_dummy":
             import secrets
@@ -289,11 +315,13 @@ class PaymentService:
         payment = PaymentRepository(db).create({
             "tenant_id": tenant_id,
             "membership_plan_id": plan.id,
-            "amount": plan.price,
+            "amount": total_amount,
             "currency": plan.currency or "INR",
             "description": f"Registration: {plan.name}",
             "status": PaymentStatus.pending,
             "razorpay_order_id": razorpay_order["id"],
+            "gst_rate": GST_RATE,
+            "gst_amount": gst_amount,
         })
 
         return {
@@ -331,6 +359,10 @@ class PaymentService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Payment record not found.",
             )
+
+        # Idempotency: if already captured, return success without re-verifying
+        if payment.status == PaymentStatus.captured:
+            return {"success": True, "message": "Payment already verified successfully."}
 
         tenant = TenantRepository(db).get_by_id(current_user.tenant_id)
         if not tenant or not (tenant.razorpay_key_id and tenant.razorpay_key_secret):
@@ -558,6 +590,188 @@ class PaymentService:
                     )
 
         return repo.update(payment, data.model_dump(exclude_unset=True))
+
+    def refund_payment(
+        self,
+        db: Session,
+        current_user: User,
+        payment_id: int,
+        payload: "RefundRequest",
+    ) -> Payment:
+        """
+        Initiate a refund for a captured payment.
+        Admin must belong to the same tenant as the payment.
+        """
+        repo = PaymentRepository(db)
+        payment = repo.get_by_id(payment_id)
+
+        if payment is None or payment.tenant_id != current_user.tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payment record not found.",
+            )
+        if payment.status != PaymentStatus.captured:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only captured payments can be refunded.",
+            )
+        if payment.refund_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payment has already been refunded.",
+            )
+
+        tenant = TenantRepository(db).get_by_id(current_user.tenant_id)
+        if not tenant or not (tenant.razorpay_key_id and tenant.razorpay_key_secret):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Razorpay credentials not configured for this organization.",
+            )
+
+        refund_amount = payload.amount if payload.amount else payment.amount
+        reason = payload.reason or "Admin initiated refund"
+        amount_paise = int(round(refund_amount * 100))
+
+        if tenant.razorpay_key_id == "rzp_test_dummy":
+            refund_id = f"rfnd_sim_{secrets.token_hex(8)}"
+        else:
+            import razorpay
+            client = razorpay.Client(auth=(tenant.razorpay_key_id, tenant.razorpay_key_secret))
+            try:
+                refund_resp = client.payment.refund(payment.razorpay_payment_id, {
+                    "amount": amount_paise,
+                    "notes": {"reason": reason},
+                })
+                refund_id = refund_resp["id"]
+            except Exception as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Razorpay refund failed: {str(exc)}",
+                ) from exc
+
+        updated = repo.update(payment, {
+            "status": PaymentStatus.refunded,
+            "refund_id": refund_id,
+            "refund_amount": refund_amount,
+            "refunded_at": datetime.utcnow(),
+            "refund_reason": reason,
+        })
+
+        try:
+            AuditLogRepository(db).log_action(
+                user_id=current_user.id,
+                tenant_id=current_user.tenant_id,
+                action="payment.refunded",
+                entity_type="payment",
+                entity_id=payment.id,
+                details={
+                    "refund_id": refund_id,
+                    "refund_amount": refund_amount,
+                    "reason": reason,
+                },
+            )
+        except Exception:
+            pass
+
+        return updated
+
+    def handle_webhook(
+        self,
+        db: Session,
+        raw_body: bytes,
+        signature: str,
+    ) -> dict:
+        """
+        Verify Razorpay webhook signature and process payment events.
+        """
+        from app.config.settings import settings as app_settings
+
+        if app_settings.RAZORPAY_WEBHOOK_SECRET:
+            expected = hmac.new(
+                app_settings.RAZORPAY_WEBHOOK_SECRET.encode(),
+                raw_body,
+                hashlib.sha256,
+            ).hexdigest()
+            if not hmac.compare_digest(expected, signature):
+                from fastapi import HTTPException as _HTTPException
+                raise _HTTPException(status_code=400, detail="Invalid webhook signature")
+
+        try:
+            event = json.loads(raw_body)
+        except Exception:
+            return {"received": True}
+
+        event_type = event.get("event")
+        repo = PaymentRepository(db)
+
+        if event_type == "payment.captured":
+            payload_data = event.get("payload", {}).get("payment", {}).get("entity", {})
+            order_id = payload_data.get("order_id")
+            razorpay_payment_id = payload_data.get("id")
+            if order_id:
+                payment = repo.get_by_razorpay_order_id_any_tenant(order_id)
+                if payment and payment.status != PaymentStatus.captured:
+                    repo.update(payment, {
+                        "status": PaymentStatus.captured,
+                        "razorpay_payment_id": razorpay_payment_id,
+                    })
+
+        elif event_type == "payment.failed":
+            payload_data = event.get("payload", {}).get("payment", {}).get("entity", {})
+            order_id = payload_data.get("order_id")
+            if order_id:
+                payment = repo.get_by_razorpay_order_id_any_tenant(order_id)
+                if payment and payment.status == PaymentStatus.pending:
+                    repo.update(payment, {"status": PaymentStatus.failed})
+
+        elif event_type == "refund.created":
+            payload_data = event.get("payload", {}).get("refund", {}).get("entity", {})
+            razorpay_payment_id = payload_data.get("payment_id")
+            refund_id = payload_data.get("id")
+            refund_amount_paise = payload_data.get("amount", 0)
+            if razorpay_payment_id:
+                payment = repo.get_by_razorpay_payment_id_any_tenant(razorpay_payment_id)
+                if payment:
+                    repo.update(payment, {
+                        "refund_id": refund_id,
+                        "refund_amount": refund_amount_paise / 100,
+                        "status": PaymentStatus.refunded,
+                        "refunded_at": datetime.utcnow(),
+                    })
+
+        return {"received": True}
+
+    def cleanup_expired_payments(self, db: Session, tenant_id: int) -> int:
+        """
+        Mark stale pending payments as failed. Returns count of updated records.
+        """
+        return PaymentRepository(db).cleanup_expired_pending(tenant_id)
+
+    def get_payment_analytics(self, db: Session, tenant_id: int) -> "PaymentAnalytics":
+        """
+        Return enhanced analytics for a tenant's payment dashboard.
+        """
+        data = PaymentRepository(db).get_analytics(tenant_id)
+        return PaymentAnalytics(**data)
+
+    def get_user_payment_history(
+        self,
+        db: Session,
+        current_user: User,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> Tuple[list, int]:
+        """
+        Return a paginated list of the current user's own payment records.
+        """
+        skip = (page - 1) * page_size
+        items, total = PaymentRepository(db).get_by_user_paginated(
+            current_user.tenant_id,
+            current_user.id,
+            skip=skip,
+            limit=page_size,
+        )
+        return items, total
 
     def record_payment_failure(
         self,

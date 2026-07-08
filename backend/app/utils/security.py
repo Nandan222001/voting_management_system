@@ -10,6 +10,11 @@ import string
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
+# Workaround for passlib 1.7.4 compatibility with bcrypt 4.0+
+if not hasattr(bcrypt, "__about__"):
+    bcrypt.__about__ = type("about", (object,), {"__version__": bcrypt.__version__})
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 

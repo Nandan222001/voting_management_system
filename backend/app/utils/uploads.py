@@ -8,10 +8,10 @@ from fastapi import HTTPException, UploadFile, status
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 STATIC_ROOT = BACKEND_ROOT / "static"
 UPLOADS_ROOT = STATIC_ROOT / "uploads"
-ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg"}
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
 ALLOWED_DOCUMENT_TYPES = {*ALLOWED_IMAGE_TYPES, "application/pdf"}
-MAX_IMAGE_SIZE = 2 * 1024 * 1024
-MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
+MAX_IMAGE_SIZE = 10 * 1024 * 1024
+MAX_DOCUMENT_SIZE = 10 * 1024 * 1024
 PROJECT_ROOT = BACKEND_ROOT.parent
 MOBILE_ASSETS_IMAGES_ROOT = PROJECT_ROOT / "mobile" / "assets" / "images"
 
@@ -33,7 +33,7 @@ async def save_uploaded_image(
         logger.error(f"Invalid content type: {content_type}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only PNG/JPEG images are allowed.",
+            detail="Only PNG, JPEG, or WEBP images are allowed.",
         )
 
     original_name = Path(upload.filename or "image.jpg").name
@@ -59,7 +59,7 @@ async def save_uploaded_image(
                 if total > MAX_IMAGE_SIZE:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Image exceeds 2 MB size limit.",
+                        detail="Image exceeds 10 MB size limit.",
                     )
                 buffer.write(chunk)
         
@@ -113,7 +113,7 @@ async def save_uploaded_file(
                 if total > MAX_DOCUMENT_SIZE:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="File exceeds 5 MB size limit.",
+                        detail="File exceeds 10 MB size limit.",
                     )
                 buffer.write(chunk)
     except Exception as e:
@@ -182,7 +182,7 @@ async def save_uploaded_document_to_mobile_assets(
                 if total > MAX_DOCUMENT_SIZE:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Document exceeds 5 MB size limit.",
+                        detail="Document exceeds 10 MB size limit.",
                     )
                 buffer.write(chunk)
 

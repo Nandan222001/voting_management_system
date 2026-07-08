@@ -32,6 +32,9 @@ from app.utils.response import success_response
 from app.schemas.payment import RazorpayOrderResponse, RegistrationOrderCreate
 from app.services.payment_service import payment_service
 
+import logging
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
@@ -89,12 +92,21 @@ def register(
     - **Mobile clients** supply the tenant via the ``X-Tenant-ID`` header;
       ``payload.tenant_id`` (if set) takes precedence.
     """
-    user: User = auth_service.register(db, payload, tenant_id=header_tenant_id)
-    return success_response(
-        data=UserResponse.model_validate(user).model_dump(mode="json"),
-        message="Registration successful. Please verify your email with the OTP.",
-        status_code=status.HTTP_201_CREATED
-    )
+    try:
+        user: User = auth_service.register(db, payload, tenant_id=header_tenant_id)
+        return success_response(
+            data=UserResponse.model_validate(user).model_dump(mode="json"),
+            message="Registration successful. Please verify your email with the OTP.",
+            status_code=status.HTTP_201_CREATED
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration failed: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration failed due to an internal error: {str(e)}"
+        )
 
 
 # ---------------------------------------------------------------------------
