@@ -22,6 +22,7 @@ class UserBase(BaseModel):
         max_length=20,
         examples=["+1-800-555-0199"],
     )
+    image_url: Optional[str] = Field(default=None, max_length=500)
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     parent_name: Optional[str] = None
@@ -75,6 +76,7 @@ class UserUpdate(BaseModel):
 
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     phone: Optional[str] = Field(default=None, max_length=20)
+    image_url: Optional[str] = None
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     parent_name: Optional[str] = None
@@ -107,6 +109,7 @@ class UserSettingsUpdate(BaseModel):
 
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=150)
     phone: Optional[str] = Field(default=None, max_length=20)
+    image_url: Optional[str] = None
     date_of_birth: Optional[str] = None
     gender: Optional[str] = None
     parent_name: Optional[str] = None
@@ -168,6 +171,7 @@ class UserResponse(UserBase):
     membership_plan: Optional[PlanResponse] = None
     created_at: datetime
     updated_at: datetime
+    is_candidate: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

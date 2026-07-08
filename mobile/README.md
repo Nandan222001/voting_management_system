@@ -11,15 +11,14 @@ React Native mobile application for voters.
 - View election results
 
 ## Tech Stack
-- React Native (Expo)
+- React Native CLI
 - Redux Toolkit
 - React Navigation
 - Axios
 
-## Setup (Coming Soon)
+## Setup
 ```bash
 cd mobile
-npx create-expo-app .
 npm install
-npx expo start
+npx react-native run-android
 ```

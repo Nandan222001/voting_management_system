@@ -101,19 +101,22 @@ class ElectionService:
         data: ElectionCreate,
         created_by: int,
         tenant_id: Optional[int] = None,
+        bypass_limit: bool = False,
     ) -> Election:
         """
         Persist a new election, scoped to *tenant_id*.
 
         When *tenant_id* is provided the tenant's ``max_elections`` limit is
-        checked before creation.  Superadmin callers may pass ``None`` to
-        create platform-level elections (no limit check performed).
+        checked before creation unless ``bypass_limit`` is True.  
+        Superadmin callers may pass ``None`` to create platform-level elections 
+        (no limit check performed).
 
         Args:
-            db:         Active database session.
-            data:       Validated creation payload.
-            created_by: Primary key of the admin creating the election.
-            tenant_id:  Tenant to assign the election to, or ``None``.
+            db:           Active database session.
+            data:         Validated creation payload.
+            created_by:   Primary key of the admin creating the election.
+            tenant_id:    Tenant to assign the election to, or ``None``.
+            bypass_limit: If True, skips the election quota check.
 
         Returns:
             The freshly-created ``Election`` ORM instance.
@@ -121,7 +124,7 @@ class ElectionService:
         Raises:
             HTTPException 402: If the tenant's election limit has been reached.
         """
-        if tenant_id is not None:
+        if tenant_id is not None and not bypass_limit:
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(tenant_id)
             if tenant is not None:

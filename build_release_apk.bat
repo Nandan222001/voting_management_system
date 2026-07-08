@@ -1,0 +1,6 @@
+@echo off
+set JAVA_HOME=C:\Program Files\Microsoft\jdk-17.0.19.10-hotspot
+set ANDROID_HOME=C:\Android\Sdk
+set PATH=%JAVA_HOME%\bin;%PATH%
+cd mobile\android
+.\gradlew.bat assembleRelease

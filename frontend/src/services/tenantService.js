@@ -2,15 +2,10 @@ import api from './api';
 
 const toTenantFormData = (data = {}) => {
   if (data instanceof FormData) return data
-  const form = new FormData()
-  const fields = ['name', 'slug', 'contact_email', 'plan', 'admin_full_name', 'admin_email', 'admin_password']
-  fields.forEach((key) => {
-    const value = data[key]
-    if (value !== undefined && value !== null && value !== '') {
-      form.append(key, String(value))
-    }
-  })
-  return form
+  
+  // If no file, return data as is, or convert to FormData if the API strictly expects it.
+  // Given the backend expects "body" fields for validation, let's try sending as plain JSON if not FormData.
+  return data
 }
 
 const tenantService = {

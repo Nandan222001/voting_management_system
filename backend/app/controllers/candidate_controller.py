@@ -20,6 +20,7 @@ from app.schemas.candidate import (
     CandidateUpdate,
     FollowStatusResponse,
 )
+from app.schemas.user import UserResponse
 from app.schemas.nomination import NominationCreate, NominationResponse
 from app.services.candidate_service import candidate_service
 from app.services.nomination_service import nomination_service
@@ -50,6 +51,80 @@ def get_candidates_by_election(
     return success_response(
         data=data,
         message="Candidates retrieved for election."
+    )
+
+
+@router.get(
+    "/me/followers-count",
+    summary="Get followers count for current candidate",
+)
+def get_my_followers_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Returns the total number of followers for the currently logged-in candidate.
+    """
+    count = candidate_service.get_followers_count(db, current_user.email)
+    return success_response(
+        data={"count": count},
+        message="Followers count retrieved."
+    )
+
+
+@router.get(
+    "/me/followers",
+    summary="List followers for current candidate",
+)
+def get_my_followers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Returns the list of users following the currently logged-in candidate.
+    """
+    followers = candidate_service.get_followers(db, current_user.email)
+    data = [UserResponse.model_validate(f).model_dump(mode="json") for f in followers]
+    return success_response(
+        data=data,
+        message="Followers retrieved."
+    )
+
+
+@router.get(
+    "/me/following-count",
+    summary="Get count of candidates followed by current user",
+)
+def get_my_following_count(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Returns the total number of candidates the currently logged-in user is following.
+    """
+    count = candidate_service.get_following_count(db, current_user.id)
+    return success_response(
+        data={"count": count},
+        message="Following count retrieved."
+    )
+
+
+@router.get(
+    "/me/following",
+    summary="List candidates followed by current user",
+)
+def get_my_following(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Returns the list of candidates the currently logged-in user is following.
+    """
+    following = candidate_service.get_following(db, current_user.id)
+    data = [CandidateResponse.model_validate(c).model_dump(mode="json") for c in following]
+    return success_response(
+        data=data,
+        message="Following list retrieved."
     )
 
 

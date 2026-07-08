@@ -159,10 +159,12 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
   const [form, setForm] = useState(EMPTY_FORM);
   const [slugManual, setSlugManual] = useState(false);
   const [errors, setErrors] = useState({});
+  const [imageError, setImageError] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return;
     setErrors({});
+    setImageError(null);
     if (isEdit) {
       setForm({
         name: editTenant.name || '',
@@ -206,21 +208,36 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
 
   const validate = () => {
     const errs = {};
-    if (!form.name.trim()) errs.name = 'Required.';
-    if (!form.slug.trim()) errs.slug = 'Required.';
-    if (!form.contact_email.trim()) errs.contact_email = 'Required.';
-    if (!form.contact_phone.trim()) errs.contact_phone = 'Required.';
+    if (!form.name.trim()) errs.name = 'Name is required';
+    else if (form.name.trim().length < 3) errs.name = 'Name must be at least 3 characters';
+    
+    if (!form.slug.trim()) errs.slug = 'Slug is required';
+    else if (!/^[a-z0-9-]+$/.test(form.slug.trim())) errs.slug = 'Slug can only contain lowercase letters, numbers, and dashes';
+
+    if (form.contact_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contact_email)) errs.contact_email = 'Invalid email format';
+    
+    if (form.contact_phone && !/^\+?[0-9\s-]{7,}$/.test(form.contact_phone)) errs.contact_phone = 'Invalid phone format';
+
     if (!isEdit) {
-      if (!form.admin_name.trim()) errs.admin_name = 'Required.';
-      if (!form.admin_email.trim()) errs.admin_email = 'Required.';
-      if (!form.admin_password) errs.admin_password = 'Required.';
-      else if (form.admin_password.length < 8) errs.admin_password = 'Min. 8 chars.';
+        if (!form.admin_name.trim()) errs.admin_name = 'Admin name is required';
+        else if (form.admin_name.trim().length < 3) errs.admin_name = 'Admin name must be at least 3 characters';
+
+        if (!form.admin_email.trim()) errs.admin_email = 'Admin email is required';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.admin_email)) errs.admin_email = 'Invalid email format';
+
+        if (!form.admin_password) errs.admin_password = 'Password is required';
+        else if (form.admin_password.length < 8) errs.admin_password = 'Password must be at least 8 characters';
     }
+    
     return errs;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (imageError) {
+      toast.error(imageError);
+      return;
+    }
     const errs = validate();
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -292,25 +309,23 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                     onChange={set('name')}
                     placeholder="e.g. Acme Regional"
                     autoComplete="off"
-                    required
                     hasError={!!errors.name}
                   />
                 </Field>
-                <Field label="Slug" required hint="Auto-sync" error={errors.slug}>
+                <Field label="Slug" hint="Auto-sync" error={errors.slug}>
                   <Input
                     name="tenant_slug_field"
                     value={form.slug}
                     onChange={handleSlugChange}
                     placeholder="acme-reg"
                     autoComplete="off"
-                    required
                     hasError={!!errors.slug}
                   />
                 </Field>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Contact Email" required error={errors.contact_email}>
+                <Field label="Contact Email" error={errors.contact_email}>
                   <Input
                     type="email"
                     name="tenant_contact_email_field"
@@ -318,11 +333,10 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                     onChange={set('contact_email')}
                     placeholder="admin@acme.com"
                     autoComplete="off"
-                    required
                     hasError={!!errors.contact_email}
                   />
                 </Field>
-                <Field label="Contact Phone" required error={errors.contact_phone}>
+                <Field label="Contact Phone" error={errors.contact_phone}>
                   <Input
                     type="tel"
                     name="tenant_contact_phone_field"
@@ -330,7 +344,6 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                     onChange={set('contact_phone')}
                     placeholder="+91 XXXXX XXXXX"
                     autoComplete="off"
-                    required
                     hasError={!!errors.contact_phone}
                   />
                 </Field>
@@ -380,6 +393,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                   file={form.logo_file}
                   existingUrl={form.logo_url}
                   onFileChange={(file) => setForm((prev) => ({ ...prev, logo_file: file }))}
+                  onError={setImageError}
                   id={`tenant-logo-input-${isEdit ? getTenantId(editTenant) : 'new'}`}
                   helperText="High-res PNG/JPEG (Max 2MB)"
                 />
@@ -396,7 +410,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                    <span className="text-[10px] font-black uppercase tracking-widest text-[#1a337e]">Admin Details</span>
                 </div>
                 <div className="space-y-4">
-                  <Field label="Admin Name" required error={errors.admin_name}>
+                  <Field label="Admin Name" error={errors.admin_name}>
                     <Input
                       name="new_tenant_admin_fullname"
                       value={form.admin_name}
@@ -406,7 +420,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                       hasError={!!errors.admin_name}
                     />
                   </Field>
-                  <Field label="Email" required error={errors.admin_email}>
+                  <Field label="Email" error={errors.admin_email}>
                     <Input
                       type="email"
                       name="new_tenant_admin_email_field"
@@ -417,7 +431,7 @@ function TenantFormModal({ isOpen, onClose, editTenant, onSave, actionLoading })
                       hasError={!!errors.admin_email}
                     />
                   </Field>
-                  <Field label="Password" required hint="Min. 8 chars" error={errors.admin_password}>
+                  <Field label="Password" hint="Min. 8 chars" error={errors.admin_password}>
                     <Input
                       type="password"
                       name="new_tenant_admin_password_field"
@@ -737,11 +751,31 @@ export default function TenantsPage() {
   );
 
   const handleCreate = async (data) => {
-    const result = await dispatch(createTenant(data));
-    if (createTenant.fulfilled.match(result)) {
+    try {
+      const result = await dispatch(createTenant(data)).unwrap();
       toast.success('Tenant created successfully!');
       setCreateOpen(false);
       dispatch(fetchPlatformStats());
+    } catch (error) {
+      console.error('Tenant creation failed full object:', error);
+      
+      // Access the response data from the error object
+      const errorData = error.response?.data || error;
+
+      // Handle structured validation errors from backend (e.g., FastAPI)
+      if (errorData && typeof errorData === 'object' && errorData.detail && Array.isArray(errorData.detail)) {
+        const newErrors = {};
+        errorData.detail.forEach((err) => {
+          if (err.loc && err.loc.length > 1) {
+            const field = err.loc[1]; // Usually ['body', 'field_name']
+            newErrors[field] = err.msg;
+          }
+        });
+        setErrors(newErrors);
+        toast.error('Please fix the validation errors.');
+      } else {
+        toast.error(typeof error === 'string' ? error : (errorData.message || 'Failed to create tenant.'));
+      }
     }
   };
 

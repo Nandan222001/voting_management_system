@@ -1,10 +1,12 @@
+import os
 import requests
 
 # Test script to check login responsiveness
+# Set TEST_USERNAME and TEST_PASSWORD env vars before running
 url = "http://localhost:8000/api/v1/auth/login"
 data = {
-    "username": "admin@voting.com",
-    "password": "Admin@123"
+    "username": os.environ.get("TEST_USERNAME", ""),
+    "password": os.environ.get("TEST_PASSWORD", ""),
 }
 
 print(f"Sending POST to {url}...")

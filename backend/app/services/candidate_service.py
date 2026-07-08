@@ -37,39 +37,41 @@ class CandidateService:
 
     def get_follow_status(self, db: Session, candidate_id: int, user_id: int) -> bool:
         """
-        Check if a user is following a candidate using the junction table.
+        Check if a user is following a candidate.
         """
-        return db.query(CandidateFollower).filter(
-            CandidateFollower.candidate_id == candidate_id,
-            CandidateFollower.user_id == user_id
-        ).first() is not None
+        return CandidateRepository(db).get_follow_status(candidate_id, user_id)
+
+    def get_followers_count(self, db: Session, email: str) -> int:
+        """
+        Returns the count of unique followers for a candidate identified by email.
+        """
+        return CandidateRepository(db).get_followers_count(email)
+
+    def get_followers(self, db: Session, email: str) -> list:
+        """
+        Returns the list of users following a candidate identified by email.
+        """
+        return CandidateRepository(db).get_followers(email)
+
+    def get_following_count(self, db: Session, user_id: int) -> int:
+        """
+        Returns the count of candidates followed by the user.
+        """
+        return CandidateRepository(db).get_following_count(user_id)
+
+    def get_following(self, db: Session, user_id: int) -> list[Candidate]:
+        """
+        Returns the list of candidates followed by the user.
+        """
+        return CandidateRepository(db).get_following(user_id)
 
     def follow_candidate(self, db: Session, candidate_id: int, user_id: int, tenant_id: int) -> bool:
         """
-        Toggle follow status for a candidate (creates if not exists, deletes if exists).
-        Returns the new follow status.
+        Toggle follow status for a candidate.
         """
         # Ensure the candidate existence is validated
         self.get_by_id(db, candidate_id)
-
-        existing = db.query(CandidateFollower).filter(
-            CandidateFollower.candidate_id == candidate_id,
-            CandidateFollower.user_id == user_id
-        ).first()
-
-        if existing:
-            db.delete(existing)
-            db.commit()
-            return False
-        else:
-            new_follow = CandidateFollower(
-                candidate_id=candidate_id,
-                user_id=user_id,
-                tenant_id=tenant_id
-            )
-            db.add(new_follow)
-            db.commit()
-            return True
+        return CandidateRepository(db).toggle_follow(candidate_id, user_id, tenant_id)
 
     # ------------------------------------------------------------------
     # Create

@@ -191,6 +191,51 @@ In the latest update, I fixed email handling:
 This means email lookups are now case-insensitive, so:
 - `Admin@Example.com` and `admin@example.com` are treated as the same user
 
+## Mobile API Connectivity
+
+If the mobile app shows "Network Error", check the following:
+
+### 1. Backend Binding (0.0.0.0)
+
+For mobile devices (including emulators) to reach the backend, it MUST listen on all interfaces, not just `127.0.0.1`.
+
+**Incorrect:**
+```
+INFO:     Uvicorn running on http://127.0.0.1:8000
+```
+
+**Correct:**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+**How to fix:**
+Always start the backend using the `main.py` script:
+```bash
+python main.py
+```
+Or if using `uvicorn` directly:
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 2. Emulator Base URL (10.0.2.2)
+
+Android emulators use `10.0.2.2` to refer to the host machine's `localhost`.
+iOS simulators can use `127.0.0.1` or `localhost`.
+
+The mobile app in `mobile/src/services/api.ts` is configured to handle this automatically:
+- **Android:** `http://10.0.2.2:8000/api/v1`
+- **iOS/Other:** `http://127.0.0.1:8000/api/v1`
+
+### 3. Firewall / Local Network
+
+If using a physical device:
+1. Ensure the phone and computer are on the same Wi-Fi network.
+2. Find your computer's local IP (e.g., `192.168.1.5`).
+3. Update `mobile/.env` with `EXPO_PUBLIC_API_URL=http://<YOUR_IP>:8000/api/v1`.
+4. Ensure your computer's firewall allows incoming connections on port 8000.
+
 ## Still Having Issues?
 
 1. **Check debug output:**

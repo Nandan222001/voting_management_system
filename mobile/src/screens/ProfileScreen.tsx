@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -12,12 +13,20 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
+  RefreshControl,
+  DeviceEventEmitter,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { candidateService } from '../services/candidateService';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { showToast } from '../utils/toast';
 import Header from '../components/common/Header';
+import { mediaService } from '../services/mediaService';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { hs, vs, ms } from '../utils/responsive';
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +48,7 @@ const ProfileSection = ({ title, icon, children }: any) => (
   <View style={styles.sectionContainer}>
     <View style={styles.sectionHeader}>
       <View style={styles.sectionIconBox}>
-        <MaterialIcons name={icon} size={20} color={COLORS.primary} />
+        <MaterialIcons name={icon} size={ms(20)} color={COLORS.primary} />
       </View>
       <Text style={styles.sectionTitle}>{title}</Text>
     </View>
@@ -52,7 +61,7 @@ const ProfileSection = ({ title, icon, children }: any) => (
 const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
   <View style={[styles.detailRow, isLast && { borderBottomWidth: 0 }]}>
     <View style={styles.detailIconBg}>
-      <MaterialIcons name={icon} size={18} color={color || COLORS.onSurfaceVariant} />
+      <MaterialIcons name={icon} size={ms(18)} color={color || COLORS.onSurfaceVariant} />
     </View>
     <View style={styles.detailTextContent}>
       <Text style={styles.detailLabel}>{label}</Text>
@@ -62,9 +71,185 @@ const DetailRow = ({ icon, label, value, isLast = false, color }: any) => (
 );
 
 const ProfileScreen = ({ navigation }: any) => {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, updateProfile, refreshUser } = useAuth();
+  const lastRefreshRef = React.useRef<number>(0);
+  
+  // Listen for follow/unfollow events
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener('REFRESH_PROFILE_STATS', () => {
+      if (refreshUser) {
+        refreshUser();
+      }
+    });
+    return () => listener.remove();
+  }, [refreshUser]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      // Only refresh if more than 5 minutes have passed since the last refresh
+      if (refreshUser && (now - lastRefreshRef.current > 5 * 60 * 1000)) {
+        refreshUser();
+        lastRefreshRef.current = now;
+      }
+    }, [refreshUser])
+  );
+
   const [planName, setPlanName] = useState(user?.membership_plan?.name || 'No Member Plan');
   const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+
+  // KYC States
+  const [isKycModalVisible, setIsKycModalVisible] = useState(false);
+  const [kycType, setKycType] = useState(user?.kyc_type || 'Aadhaar');
+  const [kycFrontUrl, setKycFrontUrl] = useState(user?.kyc_front_url || '');
+  const [kycBackUrl, setKycBackUrl] = useState(user?.kyc_back_url || '');
+  const [uploadingKyc, setUploadingKyc] = useState<'front' | 'back' | null>(null);
+  const [isSubmittingKyc, setIsSubmittingKyc] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
+
+  // Robust check for candidate status using both flag and role
+  const isCandidate = user?.is_candidate || user?.role === 'candidate' || user?.role === 'representative';
+  
+  // DEBUG
+  useEffect(() => {
+    console.log('[DEBUG] Current User:', user);
+    console.log('[DEBUG] isCandidate:', isCandidate);
+  }, [user, isCandidate]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (isCandidate) {
+        try {
+          const [fRes, flRes] = await Promise.all([
+            candidateService.getFollowersCount(),
+            candidateService.getFollowingCount()
+          ]);
+          setFollowersCount(fRes.count || 0);
+          setFollowingCount(flRes.count || 0);
+        } catch (error) {
+          console.error('Failed to fetch profile stats:', error);
+        }
+      }
+    };
+    fetchStats();
+  }, [user, isCandidate]);
+
+  const handleProfileImageUpload = async () => {
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      
+      // Client-side size validation (2MB limit)
+      if (asset.fileSize && asset.fileSize > 2 * 1024 * 1024) {
+        showToast.error('File Too Large', 'Please upload an image under 2MB.');
+        return;
+      }
+
+      setIsUploadingProfile(true);
+      try {
+        const uri = asset.uri;
+        if (!uri) return;
+        const fileName = asset.fileName || `profile_${user?.id}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+        
+        const uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        
+        // Hijack parent_name to store profile image URL
+        const currentParentName = user?.parent_name || '';
+        const hijackedParentName = `${currentParentName}|||${uploadedUrl}`;
+        
+        await updateProfile({
+          ...user,
+          parent_name: hijackedParentName,
+        });
+        
+        showToast.success('Success', 'Profile image updated successfully.');
+      } catch (error: any) {
+        console.error('Profile upload failed:', error);
+        showToast.error('Upload Failed', error.message || 'Could not update profile image.');
+      } finally {
+        setIsUploadingProfile(false);
+      }
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      if (refreshUser) {
+        await refreshUser();
+      } else {
+        await updateProfile({});
+      }
+    } catch (e) {
+      console.error("Refresh failed", e);
+    }
+    setRefreshing(false);
+  };
+
+  const handleKycUpload = async (side: 'front' | 'back') => {
+    const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+
+      // Client-side size validation (2MB limit)
+      if (asset.fileSize && asset.fileSize > 2 * 1024 * 1024) {
+        showToast.error('File Too Large', 'Please upload an image under 2MB.');
+        return;
+      }
+
+      setUploadingKyc(side);
+      try {
+        const uri = asset.uri;
+        if (!uri) return;
+        const fileName = asset.fileName || `kyc_${side}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+        let uploadedUrl = '';
+        try {
+          uploadedUrl = await mediaService.uploadFile(uri, fileName, fileType);
+        } catch (firstError: any) {
+          console.warn('Primary upload failed, trying fallback...', firstError);
+          // If the first error was already "too large", don't even try fallback
+          if (firstError.message?.includes('too large')) {
+            throw firstError;
+          }
+          uploadedUrl = await mediaService.uploadNominationDocument(uri, fileName, fileType);
+        }
+        if (side === 'front') setKycFrontUrl(uploadedUrl);
+        else setKycBackUrl(uploadedUrl);
+      } catch (error: any) {
+        console.error('KYC upload failed:', error);
+        showToast.error('Upload Failed', error.message || 'Could not upload document.');
+      } finally {
+        setUploadingKyc(null);
+      }
+    }
+  };
+
+  const submitKyc = async () => {
+    if (!kycFrontUrl) {
+      showToast.error('Validation Error', 'Front document is required.');
+      return;
+    }
+    setIsSubmittingKyc(true);
+    try {
+      await updateProfile({
+        ...user,
+        kyc_type: kycType,
+        kyc_front_url: kycFrontUrl,
+        kyc_back_url: kycBackUrl,
+      });
+      showToast.success('KYC Submitted', 'Your documents have been uploaded successfully.');
+      setIsKycModalVisible(false);
+    } catch (error) {
+      showToast.error('Submission Failed', 'Failed to update KYC details.');
+    } finally {
+      setIsSubmittingKyc(false);
+    }
+  };
 
   useEffect(() => {
     if (user?.membership_plan?.name) {
@@ -87,7 +272,7 @@ const ProfileScreen = ({ navigation }: any) => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !refreshing) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -96,14 +281,17 @@ const ProfileScreen = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <Header title="Member Profile" />
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: vs(40) }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />
+        }
       >
-        {/* ... Cinematic Header ... */}
+        {/* Cinematic Header */}
         <View style={styles.heroContainer}>
           <LinearGradient
             colors={[COLORS.primary, '#1e40af']}
@@ -115,15 +303,36 @@ const ProfileScreen = ({ navigation }: any) => {
             <View style={styles.heroDecorativeCircle2} />
             
             <View style={styles.heroContent}>
-              <View style={styles.avatarContainer}>
-                <Image 
-                  source={{ uri: user?.image || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.full_name || 'User') + '&background=0D8ABC&color=fff&size=200' }} 
-                  style={styles.avatar} 
-                />
+              <TouchableOpacity 
+                style={styles.avatarContainer} 
+                onPress={handleProfileImageUpload}
+                disabled={isUploadingProfile}
+              >
+                {user?.image_url ? (
+                  <Image 
+                    source={{ uri: mediaService.getFileUrl(user.image_url) }} 
+                    style={styles.avatar} 
+                  />
+                ) : (
+                  <View style={[styles.avatar, styles.defaultAvatar]}>
+                    <Ionicons name="person" size={ms(60)} color="rgba(255,255,255,0.6)" />
+                  </View>
+                )}
+                
+                {isUploadingProfile ? (
+                  <View style={[styles.avatar, styles.uploadOverlay]}>
+                    <ActivityIndicator color="#fff" size="small" />
+                  </View>
+                ) : (
+                  <View style={styles.editIconBadge}>
+                    <MaterialIcons name="camera-alt" size={ms(16)} color="#fff" />
+                  </View>
+                )}
+
                 <View style={styles.verifiedBadge}>
-                  <MaterialIcons name="verified" size={20} color="#fff" />
+                  <MaterialIcons name="verified" size={ms(20)} color="#fff" />
                 </View>
-              </View>
+              </TouchableOpacity>
               
               <Text style={styles.userName}>{user?.full_name || "Member Name"}</Text>
               <View style={styles.userMetaRow}>
@@ -134,6 +343,26 @@ const ProfileScreen = ({ navigation }: any) => {
                 <Text style={styles.userEmail}>{user?.email}</Text>
               </View>
 
+              {isCandidate && (
+                <View style={styles.statsRow}>
+                  <TouchableOpacity 
+                    style={styles.followersStat}
+                    onPress={() => navigation.navigate('FollowersList')}
+                  >
+                    <Text style={styles.followersCountText}>{followersCount}</Text>
+                    <Text style={styles.followersLabelText}>Followers</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.followersStat}
+                    onPress={() => navigation.navigate('FollowingList')}
+                  >
+                    <Text style={styles.followersCountText}>{followingCount}</Text>
+                    <Text style={styles.followersLabelText}>Following</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <TouchableOpacity 
                 style={styles.editProfileBtn}
                 onPress={() => navigation.navigate('EditProfile')}
@@ -142,7 +371,7 @@ const ProfileScreen = ({ navigation }: any) => {
                   colors={['rgba(255,255,255,0.2)', 'rgba(255,255,255,0.1)']}
                   style={styles.editProfileGradient}
                 >
-                  <MaterialIcons name="edit" size={16} color="#fff" />
+                  <MaterialIcons name="edit" size={ms(16)} color="#fff" />
                   <Text style={styles.editProfileText}>Edit Profile</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -151,7 +380,7 @@ const ProfileScreen = ({ navigation }: any) => {
         </View>
 
         <View style={styles.bodyWrapper}>
-          {/* ... Premium Membership Card ... */}
+          {/* Premium Membership Card */}
           <View style={styles.membershipCard}>
             <LinearGradient
               colors={['#ffffff', '#f8fafc']}
@@ -159,7 +388,7 @@ const ProfileScreen = ({ navigation }: any) => {
             >
               <View style={styles.membershipHeader}>
                 <View style={styles.membershipIconBg}>
-                  <FontAwesome5 name="crown" size={20} color={COLORS.accent} />
+                  <FontAwesome5 name="crown" size={ms(20)} color={COLORS.accent} />
                 </View>
                 <View style={styles.membershipTitleGroup}>
                   <Text style={styles.membershipLabel}>MEMBERSHIP TIER</Text>
@@ -196,28 +425,73 @@ const ProfileScreen = ({ navigation }: any) => {
 
           <ProfileSection title="KYC & Verification" icon="verified-user">
             <DetailRow icon="assignment-ind" label="Identity Type" value={user?.kyc_type} />
-            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={true} />
+            <DetailRow icon="fingerprint" label="Verified ID Number" value={user?.voter_id} isLast={!!user?.kyc_front_url} />
+            {!user?.kyc_front_url && (
+              <TouchableOpacity 
+                style={styles.uploadKycBtn}
+                onPress={() => setIsKycModalVisible(true)}
+              >
+                <MaterialIcons name="cloud-upload" size={ms(20)} color={COLORS.primary} />
+                <Text style={styles.uploadKycBtnText}>Upload KYC Documents</Text>
+              </TouchableOpacity>
+            )}
           </ProfileSection>
 
           <ProfileSection title="Location Ledger" icon="location-on">
-            <DetailRow icon="home" label="Primary Residence" value={user?.street_address} />
-            <DetailRow icon="map" label="Region / State" value={`${user?.city || ''}, ${user?.state || ''}`} isLast={true} />
+            <DetailRow 
+              icon="home" 
+              label="Primary Residence" 
+              value={[user?.house_number, user?.street_address, user?.village].filter(Boolean).join(', ')} 
+            />
+            <DetailRow 
+              icon="map" 
+              label="Region / State" 
+              value={[user?.district || user?.city, user?.state].filter(Boolean).join(', ')} 
+              isLast={false} 
+            />
+            <TouchableOpacity 
+              style={styles.uploadKycBtn}
+              onPress={() => navigation.navigate('EditProfile')}
+            >
+              <MaterialIcons name="edit-location" size={ms(20)} color={COLORS.primary} />
+              <Text style={styles.uploadKycBtnText}>Update Location Details</Text>
+            </TouchableOpacity>
           </ProfileSection>
 
-          {/* Support Actions */}
-          <View style={styles.supportContainer}>
-            <TouchableOpacity style={styles.supportAction}>
-              <MaterialIcons name="help-center" size={22} color={COLORS.primary} />
-              <Text style={styles.supportActionText}>Help & Documentation</Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+          {/* Security Section */}
+          <ProfileSection title="Account Security" icon="security">
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('ChangePassword')}
+            >
+              <MaterialIcons name="lock-reset" size={ms(22)} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Change Account Password</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
             </TouchableOpacity>
+          </ProfileSection>
+
+          {/* Event Management Section */}
+          <ProfileSection title="Event Management" icon="event">
+            {isCandidate && (
+              <TouchableOpacity 
+                style={styles.supportAction}
+                onPress={() => navigation.navigate('CreateEvent')}
+              >
+                <MaterialIcons name="add-circle-outline" size={ms(22)} color={COLORS.primary} />
+                <Text style={styles.supportActionText}>Create New Event</Text>
+                <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
+              </TouchableOpacity>
+            )}
             
-            <TouchableOpacity style={styles.supportAction}>
-              <MaterialIcons name="security" size={22} color={COLORS.primary} />
-              <Text style={styles.supportActionText}>Security & Privacy</Text>
-              <MaterialIcons name="chevron-right" size={20} color={COLORS.outlineVariant} />
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('EventList', { mode: 'my' })}
+            >
+              <MaterialIcons name="event-note" size={ms(22)} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>My Scheduled Events</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
             </TouchableOpacity>
-          </View>
+          </ProfileSection>
 
           {/* Logout Action */}
           <TouchableOpacity 
@@ -229,7 +503,7 @@ const ProfileScreen = ({ navigation }: any) => {
               colors={['#fff', '#fff']}
               style={styles.logoutGradient}
             >
-              <MaterialIcons name="logout" size={20} color={COLORS.error} />
+              <MaterialIcons name="logout" size={ms(20)} color={COLORS.error} />
               <Text style={styles.logoutButtonText}>Sign Out</Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -250,32 +524,148 @@ const ProfileScreen = ({ navigation }: any) => {
         onRequestClose={() => setIsLogoutModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => setIsLogoutModalVisible(false)} 
+          />
           <View style={styles.modalPopup}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalIconBg}>
-              <MaterialIcons name="logout" size={28} color={COLORS.error} />
+              <MaterialIcons name="logout" size={ms(32)} color={COLORS.error} />
             </View>
             <Text style={styles.modalTitle}>Sign Out</Text>
-            <Text style={styles.modalMessage}>Are you sure you want to sign out of your account?</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to exit your secure voting session?</Text>
             
             <View style={styles.modalActions}>
               <TouchableOpacity 
                 style={styles.cancelBtn} 
                 onPress={() => setIsLogoutModalVisible(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={styles.cancelBtnText}>Keep Session</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.confirmBtn} 
                 onPress={confirmLogout}
               >
-                <Text style={styles.confirmBtnText}>Sign Out</Text>
+                <LinearGradient
+                  colors={[COLORS.error, '#dc2626']}
+                  style={styles.confirmBtnGradient}
+                >
+                  <Text style={styles.confirmBtnText}>Sign Out</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+
+      {/* KYC Upload Modal */}
+      <Modal
+        visible={isKycModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setIsKycModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalDismissArea} 
+            activeOpacity={1} 
+            onPress={() => setIsKycModalVisible(false)} 
+          />
+          <View style={[styles.modalPopup, { paddingTop: vs(20), paddingHorizontal: hs(20) }]}>
+            <View style={styles.modalHandle} />
+            <Text style={[styles.modalTitle, { alignSelf: 'flex-start', marginBottom: vs(16) }]}>Upload KYC Documents</Text>
+            
+            <ScrollView style={{ width: '100%', maxHeight: Dimensions.get('window').height * 0.6, marginBottom: vs(20) }} showsVerticalScrollIndicator={false}>
+              <Text style={styles.kycLabel}>Select Identity Proof</Text>
+              <View style={styles.kycTypeContainer}>
+                {['Aadhaar', 'Voter ID', 'Driving License'].map(type => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[styles.kycTypeBtn, kycType === type && styles.kycTypeBtnActive]}
+                    onPress={() => setKycType(type)}
+                  >
+                    <Text style={[styles.kycTypeText, kycType === type && styles.kycTypeTextActive]}>{type}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.kycLabel}>Front Side Document</Text>
+              <TouchableOpacity 
+                style={[styles.uploadBox, kycFrontUrl ? styles.uploadBoxSuccess : null]} 
+                onPress={() => handleKycUpload('front')}
+                disabled={!!uploadingKyc}
+              >
+                {uploadingKyc === 'front' ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name={kycFrontUrl ? "checkmark-circle" : "cloud-upload-outline"} 
+                      size={ms(32)} 
+                      color={kycFrontUrl ? "#059669" : COLORS.primary} 
+                    />
+                    <Text style={styles.uploadTitle}>
+                      {kycFrontUrl ? "Front Document Uploaded" : "Tap to Upload Front Side"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <Text style={styles.kycLabel}>Back Side Document (Optional)</Text>
+              <TouchableOpacity 
+                style={[styles.uploadBox, kycBackUrl ? styles.uploadBoxSuccess : null]} 
+                onPress={() => handleKycUpload('back')}
+                disabled={!!uploadingKyc}
+              >
+                {uploadingKyc === 'back' ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : (
+                  <>
+                    <Ionicons 
+                      name={kycBackUrl ? "checkmark-circle" : "cloud-upload-outline"} 
+                      size={ms(32)} 
+                      color={kycBackUrl ? "#059669" : COLORS.primary} 
+                    />
+                    <Text style={styles.uploadTitle}>
+                      {kycBackUrl ? "Back Document Uploaded" : "Tap to Upload Back Side"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => setIsKycModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.confirmBtn, isSubmittingKyc && { opacity: 0.7 }]} 
+                onPress={submitKyc}
+                disabled={isSubmittingKyc}
+              >
+                <LinearGradient
+                  colors={[COLORS.primary, COLORS.primaryContainer]}
+                  style={styles.confirmBtnGradient}
+                >
+                  {isSubmittingKyc ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmBtnText}>Submit KYC</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -284,12 +674,11 @@ const styles = StyleSheet.create({
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   content: { flex: 1 },
 
-  // Hero Header Styles
   heroContainer: {
     width: '100%',
     backgroundColor: COLORS.primary,
-    borderBottomLeftRadius: 40,
-    borderBottomRightRadius: 40,
+    // borderBottomLeftRadius: ms(32),
+    // borderBottomRightRadius: ms(32),
     overflow: 'hidden',
     ...Platform.select({
       ios: { shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 15 },
@@ -297,28 +686,29 @@ const styles = StyleSheet.create({
     })
   },
   heroGradient: {
-    paddingTop: 40,
-    paddingBottom: 50,
-    paddingHorizontal: 24,
+    paddingTop: vs(20),
+    paddingBottom: vs(35),
+    minHeight: vs(240),
+    paddingHorizontal: hs(24),
     alignItems: 'center',
     position: 'relative',
   },
   heroDecorativeCircle1: {
     position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    top: vs(-50),
+    right: hs(-50),
+    width: ms(180),
+    height: ms(180),
+    borderRadius: ms(90),
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
   heroDecorativeCircle2: {
     position: 'absolute',
-    bottom: -30,
-    left: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    bottom: vs(-30),
+    left: hs(-40),
+    width: ms(100),
+    height: ms(100),
+    borderRadius: ms(50),
     backgroundColor: 'rgba(255,255,255,0.03)',
   },
   heroContent: {
@@ -327,66 +717,125 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: vs(16),
   },
   avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 35,
+    width: ms(100),
+    height: ms(100),
+    borderRadius: ms(32),
     borderWidth: 4,
     borderColor: 'rgba(255,255,255,0.2)',
   },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: ms(100),
+    height: ms(100),
+    borderRadius: ms(32),
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0,
+  },
+  editIconBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+    zIndex: 2,
+  },
+  defaultAvatar: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   verifiedBadge: {
     position: 'absolute',
-    bottom: -5,
-    right: -5,
+    bottom: vs(-5),
+    right: hs(-5),
     backgroundColor: COLORS.success,
-    width: 32,
-    height: 32,
-    borderRadius: 12,
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(10),
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     borderColor: COLORS.primary,
   },
   userName: {
-    fontSize: 26,
+    fontSize: ms(24),
     fontWeight: '900',
     color: '#fff',
     letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: vs(6),
+    textAlign: 'center',
   },
   userMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 24,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: hs(8),
+    marginBottom: vs(20),
+    paddingHorizontal: hs(20),
   },
   metaBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(4),
   },
   metaBadgeText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: ms(9),
     fontWeight: '800',
     letterSpacing: 1,
   },
   dotSeparator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: ms(4),
+    height: ms(4),
+    borderRadius: ms(2),
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: ms(13),
     color: 'rgba(255,255,255,0.7)',
     fontWeight: '600',
   },
+  statsRow: {
+    flexDirection: 'row',
+    gap: hs(12),
+    marginBottom: vs(16),
+  },
+  followersStat: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: hs(20),
+    paddingVertical: vs(8),
+    borderRadius: ms(12),
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: hs(8),
+  },
+  followersCountText: {
+    color: '#fff',
+    fontSize: ms(18),
+    fontWeight: '900',
+  },
+  followersLabelText: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
   editProfileBtn: {
-    borderRadius: 16,
+    borderRadius: ms(8),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
@@ -394,28 +843,26 @@ const styles = StyleSheet.create({
   editProfileGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    gap: hs(8),
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(10),
   },
   editProfileText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: ms(13),
     fontWeight: '800',
   },
 
-  // Body Layout
   bodyWrapper: {
-    paddingHorizontal: 20,
-    marginTop: -25,
+    paddingHorizontal: hs(16),
+    marginTop: vs(-20),
     zIndex: 2,
   },
   
-  // Membership Card Styles
   membershipCard: {
-    borderRadius: 28,
+    borderRadius: ms(12),
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: vs(20),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
     ...Platform.select({
@@ -424,17 +871,17 @@ const styles = StyleSheet.create({
     })
   },
   membershipGradient: {
-    padding: 24,
+    padding: hs(20),
   },
   membershipHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: hs(12),
   },
   membershipIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: ms(44),
+    height: ms(44),
+    borderRadius: ms(8),
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
@@ -447,80 +894,79 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   membershipLabel: {
-    fontSize: 10,
+    fontSize: ms(9),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     letterSpacing: 1,
   },
   membershipName: {
-    fontSize: 20,
-    fontWeight: '900',
+    fontSize: ms(18),
+    fontWeight: '800',
     color: COLORS.onSurface,
-    marginTop: 2,
+    marginTop: vs(2),
   },
   statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: hs(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(5),
   },
   statusPillText: {
-    fontSize: 10,
+    fontSize: ms(9),
     fontWeight: '900',
     letterSpacing: 0.5,
   },
   membershipDivider: {
     height: 1,
     backgroundColor: COLORS.outlineVariant,
-    marginVertical: 20,
+    marginVertical: vs(16),
     opacity: 0.5,
   },
   membershipMetaGrid: {
     flexDirection: 'row',
-    gap: 24,
+    gap: hs(20),
   },
   membershipMetaItem: {
     flex: 1,
   },
   metaLabel: {
-    fontSize: 9,
+    fontSize: ms(8),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: vs(2),
   },
   metaValue: {
-    fontSize: 15,
+    fontSize: ms(14),
     fontWeight: '800',
     color: COLORS.onSurface,
   },
 
-  // Section Styles
   sectionContainer: {
     backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: ms(12),
+    padding: hs(16),
+    marginBottom: vs(16),
     borderWidth: 1,
     borderColor: COLORS.outlineVariant,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 20,
+    gap: hs(12),
+    marginBottom: vs(16),
   },
   sectionIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(6),
     backgroundColor: COLORS.primaryContainer,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: ms(15),
     fontWeight: '800',
     color: COLORS.onSurface,
     letterSpacing: -0.2,
@@ -531,15 +977,15 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 14,
+    gap: hs(12),
+    paddingVertical: vs(12),
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   detailIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(5),
     backgroundColor: '#f8fafc',
     justifyContent: 'center',
     alignItems: 'center',
@@ -550,46 +996,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 10,
+    fontSize: ms(9),
     fontWeight: '700',
     color: COLORS.onSurfaceVariant,
     opacity: 0.5,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: vs(2),
   },
   detailValue: {
-    fontSize: 15,
+    fontSize: ms(14),
     fontWeight: '700',
     color: COLORS.onSurface,
   },
 
-  // Support Styles
-  supportContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 8,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.outlineVariant,
-  },
   supportAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
-    padding: 16,
-    borderRadius: 18,
+    gap: hs(12),
+    padding: hs(12),
+    borderRadius: ms(8),
   },
   supportActionText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: ms(14),
     fontWeight: '700',
     color: COLORS.onSurface,
   },
 
-  // Logout Button Styles
   logoutButton: {
-    borderRadius: 24,
+    borderRadius: ms(8),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.error + '40',
@@ -602,103 +1038,142 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 18,
+    gap: hs(12),
+    paddingVertical: vs(16),
   },
   logoutButtonText: {
-    fontSize: 16,
+    fontSize: ms(15),
     fontWeight: '800',
     color: COLORS.error,
     letterSpacing: 0.2,
   },
 
-  // System Footer
   systemFooter: {
-    marginTop: 32,
+    marginTop: vs(24),
     alignItems: 'center',
-    gap: 4,
+    gap: vs(4),
   },
   systemFooterText: {
-    fontSize: 10,
+    fontSize: ms(10),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
     opacity: 0.3,
     letterSpacing: 1,
   },
 
-  // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    justifyContent: 'flex-end',
   },
+  modalDismissArea: { flex: 1 },
   modalPopup: {
     width: '100%',
     backgroundColor: '#fff',
-    borderRadius: 32,
-    padding: 32,
+    borderTopLeftRadius: ms(16),
+    borderTopRightRadius: ms(16),
+    padding: hs(32),
+    paddingTop: vs(8),
     alignItems: 'center',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.2, shadowRadius: 16 },
-      android: { elevation: 24 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 20 },
     })
   },
+  modalHandle: {
+    width: hs(40),
+    height: vs(5),
+    backgroundColor: '#e2e8f0',
+    borderRadius: ms(3),
+    alignSelf: 'center',
+    marginVertical: vs(12),
+    marginBottom: vs(24),
+  },
   modalIconBg: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(8),
     backgroundColor: COLORS.error + '10',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: vs(20),
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: ms(24),
     fontWeight: '900',
-    color: COLORS.primary,
-    marginBottom: 12,
+    color: COLORS.onSurface,
+    marginBottom: vs(12),
+    letterSpacing: -0.5,
   },
   modalMessage: {
-    fontSize: 16,
+    fontSize: ms(16),
     color: COLORS.onSurfaceVariant,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
+    lineHeight: vs(24),
+    marginBottom: vs(32),
     fontWeight: '500',
+    paddingHorizontal: hs(10),
   },
   modalActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: hs(12),
     width: '100%',
+    marginBottom: vs(10),
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 16,
+    height: vs(56),
+    borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
   },
   cancelBtnText: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
     color: COLORS.onSurfaceVariant,
   },
   confirmBtn: {
     flex: 1,
-    paddingVertical: 16,
-    borderRadius: 16,
+    height: vs(56),
+    borderRadius: ms(8),
+    overflow: 'hidden',
+  },
+  confirmBtnGradient: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fee2e2',
   },
   confirmBtnText: {
-    fontSize: 15,
+    fontSize: ms(15),
     fontWeight: '800',
-    color: COLORS.error,
+    color: '#fff',
   },
+  uploadKycBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(8),
+    paddingVertical: vs(12),
+    paddingHorizontal: hs(16),
+    marginTop: vs(12),
+    borderRadius: ms(8),
+    backgroundColor: COLORS.primaryContainer,
+    alignSelf: 'flex-start',
+  },
+  uploadKycBtnText: {
+    color: COLORS.primary,
+    fontSize: ms(13),
+    fontWeight: '800',
+  },
+  kycLabel: { fontSize: ms(14), fontWeight: '700', color: COLORS.onSurface, marginBottom: vs(8), marginTop: vs(12) },
+  kycTypeContainer: { flexDirection: 'row', gap: hs(8), marginBottom: vs(8), flexWrap: 'wrap' },
+  kycTypeBtn: { paddingHorizontal: hs(14), paddingVertical: vs(8), borderRadius: ms(20), backgroundColor: '#f1f5f9', borderWidth: 1, borderColor: '#e2e8f0' },
+  kycTypeBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  kycTypeText: { fontSize: ms(13), fontWeight: '600', color: COLORS.onSurfaceVariant },
+  kycTypeTextActive: { color: '#fff' },
+  uploadBox: { borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.primary, borderRadius: ms(8), padding: ms(20), alignItems: 'center', backgroundColor: COLORS.primaryContainer, marginBottom: vs(8) },
+  uploadBoxSuccess: { borderStyle: 'solid', borderColor: '#10b981', backgroundColor: '#f0fdf4' },
+  uploadTitle: { fontSize: ms(14), fontWeight: '600', color: COLORS.onSurface, marginTop: vs(8) },
 });
 
 export default ProfileScreen;

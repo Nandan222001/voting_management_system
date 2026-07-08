@@ -86,3 +86,99 @@ class CandidateRepository(BaseRepository[Candidate]):
         self.db.commit()
         self.db.refresh(candidate)
         return candidate
+
+    # ------------------------------------------------------------------
+    # Following / Followers
+    # ------------------------------------------------------------------
+
+    def get_followers_count(self, email: str) -> int:
+        """
+        Returns the count of unique followers for a candidate identified by email.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        return (
+            self.db.query(CandidateFollower.user_id)
+            .join(Candidate, Candidate.id == CandidateFollower.candidate_id)
+            .filter(Candidate.email == email)
+            .distinct()
+            .count()
+        )
+
+    def get_followers(self, email: str) -> list:
+        """
+        Returns the list of users following a candidate identified by email.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        from app.models.user import User
+        return (
+            self.db.query(User)
+            .join(CandidateFollower, User.id == CandidateFollower.user_id)
+            .join(Candidate, Candidate.id == CandidateFollower.candidate_id)
+            .filter(Candidate.email == email)
+            .distinct()
+            .all()
+        )
+
+    def get_following_count(self, user_id: int) -> int:
+        """
+        Returns the count of candidates followed by the user.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        return (
+            self.db.query(CandidateFollower)
+            .filter(CandidateFollower.user_id == user_id)
+            .count()
+        )
+
+    def get_following(self, user_id: int) -> list[Candidate]:
+        """
+        Returns the list of candidates followed by the user.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        return (
+            self.db.query(Candidate)
+            .join(CandidateFollower, Candidate.id == CandidateFollower.candidate_id)
+            .filter(CandidateFollower.user_id == user_id)
+            .all()
+        )
+
+    def get_follow_status(self, candidate_id: int, user_id: int) -> bool:
+        """
+        Check if a user is following a candidate.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        return (
+            self.db.query(CandidateFollower)
+            .filter(
+                CandidateFollower.candidate_id == candidate_id,
+                CandidateFollower.user_id == user_id,
+            )
+            .first()
+            is not None
+        )
+
+    def toggle_follow(self, candidate_id: int, user_id: int, tenant_id: int) -> bool:
+        """
+        Toggle follow status. Returns True if now following, False if unfollowed.
+        """
+        from app.models.candidate_follower import CandidateFollower
+        existing = (
+            self.db.query(CandidateFollower)
+            .filter(
+                CandidateFollower.candidate_id == candidate_id,
+                CandidateFollower.user_id == user_id,
+            )
+            .first()
+        )
+
+        if existing:
+            self.db.delete(existing)
+            self.db.commit()
+            return False
+        else:
+            new_follow = CandidateFollower(
+                candidate_id=candidate_id, user_id=user_id, tenant_id=tenant_id
+            )
+            self.db.add(new_follow)
+            self.db.commit()
+            return True

@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react'
 import { resolveMediaUrl } from '../../utils/images'
 
-export default function ImageUpload({ file, onFileChange, id = 'image-upload', helperText = 'Upload a PNG/JPEG image (optional) up to 2 MB', existingUrl = null }) {
+export default function ImageUpload({ file, onFileChange, id = 'image-upload', helperText = 'Upload a PNG/JPEG image (optional) up to 2 MB', existingUrl = null, onError }) {
   const inputRef = useRef(null)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState(null)
@@ -20,13 +20,19 @@ export default function ImageUpload({ file, onFileChange, id = 'image-upload', h
     const f = files && files[0]
     if (!f) return
     setError(null)
+    if (onError) onError(null)
+    
     if (f.size > 2 * 1024 * 1024) {
-      setError('File is too large. Maximum 2 MB allowed.')
+      const msg = 'File is too large. Maximum 2 MB allowed.'
+      setError(msg)
+      if (onError) onError(msg)
       onFileChange(null)
       return
     }
     if (!['image/png', 'image/jpeg', 'image/jpg'].includes(f.type)) {
-      setError('Only PNG/JPEG images are allowed.')
+      const msg = 'Only PNG/JPEG images are allowed.'
+      setError(msg)
+      if (onError) onError(msg)
       onFileChange(null)
       return
     }

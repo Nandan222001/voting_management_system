@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useLocation } from 'react-router-dom'
 import { 
   CheckCircle2, 
   Gavel, 
@@ -99,11 +100,20 @@ const emptyPassword = {
 
 export default function SettingsPage() {
   const dispatch = useDispatch()
+  const location = useLocation()
   const user = useSelector(selectCurrentUser)
   const loading = useSelector(selectAuthLoading)
   const [profileForm, setProfileForm] = useState(emptyProfile)
   const [passwordForm, setPasswordForm] = useState(emptyPassword)
   const [activeTab, setActiveTab] = useState('profile')
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tab = params.get('tab')
+    if (tab === 'security') {
+      setActiveTab('security')
+    }
+  }, [location])
 
   useEffect(() => {
     if (!user) return
@@ -138,22 +148,38 @@ export default function SettingsPage() {
   }
 
   const handlePasswordSubmit = async (event) => {
-    event.preventDefault()
-    if (passwordForm.new_password !== passwordForm.confirm_password) {
-      toast.error('New password and confirmation do not match')
-      return
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Password form submitted, event prevented');
+
+    if (!passwordForm.current_password || !passwordForm.new_password || !passwordForm.confirm_password) {
+      toast.error('All password fields are required');
+      return;
     }
+    
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      toast.error('New password and confirmation do not match');
+      return;
+    }
+    
     try {
+      console.log('Dispatching changePassword...');
       await dispatch(changePassword({
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
-      })).unwrap()
-      setPasswordForm(emptyPassword)
-      toast.success('Password updated')
+      })).unwrap();
+      
+      console.log('changePassword successful');
+      setPasswordForm(emptyPassword);
+      toast.success('Password updated');
     } catch (error) {
-      toast.error(error || 'Failed to change password')
+      console.error('changePassword failed:', error);
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : (error?.message || error?.detail || 'Failed to change password');
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const TABS = [
     { id: 'profile', label: 'My Profile', icon: User, description: 'Personal details and contact info' },
