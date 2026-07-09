@@ -31,6 +31,11 @@ export const authService = {
     await clearTenantID();
   },
 
+  sendOtp: async (email: string) => {
+    const response = await api.post('/auth/send-otp', { email });
+    return response.data;
+  },
+
   register: async (userData: any) => {
     const response = await api.post('/auth/register', userData);
     return response.data.data || response.data;

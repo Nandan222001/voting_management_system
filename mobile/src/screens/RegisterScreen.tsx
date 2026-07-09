@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { tenantService } from '../services/tenantService';
 import { mediaService } from '../services/mediaService';
+import { authService } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -157,6 +158,15 @@ const RegisterScreen = ({ navigation }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Email OTP Verification States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [otpTimerInterval, setOtpTimerInterval] = useState<ReturnType<typeof setInterval> | null>(null);
 
   // Data States
   const [formData, setFormData] = useState({
@@ -417,7 +427,114 @@ const RegisterScreen = ({ navigation }: any) => {
     }
   };
 
+  // ─── Email OTP Handlers ──────────────────────────────────────────────
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+      }
+    };
+  }, [otpTimerInterval]);
+
+  // Start the 60-second resend timer
+  const startOtpTimer = () => {
+    setOtpTimer(60);
+    if (otpTimerInterval) {
+      clearInterval(otpTimerInterval);
+    }
+    const interval = setInterval(() => {
+      setOtpTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    setOtpTimerInterval(interval);
+  };
+
+  const handleSendOtp = async () => {
+    // Validate email first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email?.trim()) {
+      showToast.error('Validation Error', 'Please enter your email address first.');
+      return;
+    }
+    if (!emailRegex.test(formData.email.trim())) {
+      showToast.error('Validation Error', 'Please enter a valid email address.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError('');
+    // Clear email error when sending OTP
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.email;
+      return newErrors;
+    });
+    try {
+      await authService.sendOtp(formData.email.trim());
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtpCode('');
+      startOtpTimer();
+      showToast.success('OTP Sent', 'A verification code has been sent to your email.');
+    } catch (error: any) {
+      const detail = error.response?.data?.detail || error.message || 'Failed to send OTP. Please try again.';
+      setOtpError(detail);
+      showToast.error('Failed', detail);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode.trim() || otpCode.trim().length < 4) {
+      setOtpError('Please enter the OTP code sent to your email.');
+      return;
+    }
+
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      await authService.verifyOtp(formData.email.trim(), otpCode.trim());
+      setOtpVerified(true);
+      setOtpSent(false);
+      setOtpCode('');
+      // Clear email error on successful verification
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        return newErrors;
+      });
+      if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+      }
+      setOtpTimer(0);
+      showToast.success('Email Verified', 'Your email has been verified successfully.');
+    } catch (error: any) {
+      const detail = error.response?.data?.detail || error.message || 'Invalid OTP. Please try again.';
+      setOtpError(detail);
+      showToast.error('Verification Failed', detail);
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = () => {
+    if (otpTimer > 0) return; // Timer still running
+    handleSendOtp();
+  };
+
   const handleChange = (name: string, value: any) => {
+    // If email is verified, prevent changing the email
+    if (name === 'email' && otpVerified) {
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => {
@@ -425,6 +542,17 @@ const RegisterScreen = ({ navigation }: any) => {
         delete newErrors[name];
         return newErrors;
       });
+    }
+    // Reset OTP state when email changes
+    if (name === 'email') {
+      setOtpSent(false);
+      setOtpVerified(false);
+      setOtpCode('');
+      setOtpError('');
+      if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+      }
+      setOtpTimer(0);
     }
   };
 
@@ -448,6 +576,8 @@ const RegisterScreen = ({ navigation }: any) => {
       newErrors.email = 'Email Address is required';
     } else if (!emailRegex.test(formData.email.trim())) {
       newErrors.email = 'Enter a valid email address';
+    } else if (!otpVerified) {
+      newErrors.email = 'Please verify your email by clicking "Verify Email" and entering the OTP.';
     }
 
     if (!formData.date_of_birth?.trim()) newErrors.date_of_birth = 'Date of Birth is required';
@@ -822,18 +952,102 @@ const RegisterScreen = ({ navigation }: any) => {
                 setFocusedField={setFocusedField}
                 keyboardType="phone-pad"
               />
-              <InputField
-                name="email"
-                icon="mail-outline"
-                label="Email Id"
-                placeholder="name@example.com"
-                value={formData.email}
-                onChangeText={(val: string) => handleChange('email', val)}
-                errors={errors}
-                focusedField={focusedField}
-                setFocusedField={setFocusedField}
-                keyboardType="email-address"
-              />
+              {/* Email with OTP Verification */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email Id</Text>
+                <View style={[
+                  styles.emailRow,
+                  focusedField === 'email' ? styles.inputWrapperFocused : null,
+                  errors.email ? styles.inputWrapperError : null,
+                  otpVerified ? styles.emailVerifiedWrapper : null,
+                ]}>
+                  <Ionicons name="mail-outline" size={ms(18)} color={COLORS.textSecondary} style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, otpVerified && styles.inputDisabled]}
+                    placeholder="name@example.com"
+                    placeholderTextColor="#9ca3af"
+                    value={formData.email}
+                    onChangeText={(val: string) => handleChange('email', val)}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!otpVerified}
+                  />
+                  {otpVerified ? (
+                    <Ionicons name="checkmark-circle" size={ms(22)} color="#059669" />
+                  ) : !otpSent ? (
+                    <TouchableOpacity
+                      style={[styles.verifyEmailBtn, otpLoading && styles.btnDisabled]}
+                      onPress={handleSendOtp}
+                      disabled={otpLoading}
+                    >
+                      {otpLoading ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Text style={styles.verifyEmailBtnText}>
+                          Verify Email
+                        </Text>
+                      )}
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+                {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+                {otpVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons name="checkmark-circle" size={ms(16)} color="#059669" />
+                    <Text style={styles.verifiedText}>Email verified successfully</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* OTP Input Section - shown after OTP is sent */}
+              {otpSent && !otpVerified && (
+                <View style={styles.otpSection}>
+                  <View style={styles.otpInputRow}>
+                    <View style={[styles.otpInputWrapper, otpError ? styles.inputWrapperError : null]}>
+                      <Ionicons name="key-outline" size={ms(18)} color={COLORS.textSecondary} style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Enter OTP"
+                        placeholderTextColor="#9ca3af"
+                        value={otpCode}
+                        onChangeText={(val) => {
+                          setOtpCode(val);
+                          setOtpError('');
+                        }}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      style={[styles.verifyOtpBtn, otpLoading && styles.btnDisabled]}
+                      onPress={handleVerifyOtp}
+                      disabled={otpLoading}
+                    >
+                      {otpLoading ? (
+                        <ActivityIndicator size="small" color={COLORS.white} />
+                      ) : (
+                        <Text style={styles.verifyOtpBtnText}>Verify OTP</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  {otpError ? <Text style={styles.errorText}>{otpError}</Text> : null}
+                  
+                  {/* Resend Timer */}
+                  <View style={styles.resendRow}>
+                    {otpTimer > 0 ? (
+                      <Text style={styles.timerText}>
+                        Resend OTP in <Text style={styles.timerBold}>{otpTimer}s</Text>
+                      </Text>
+                    ) : (
+                      <TouchableOpacity onPress={handleResendOtp}>
+                        <Text style={styles.resendLink}>Resend OTP</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              )}
               <PickerField
                 label="Date of Birth"
                 icon="calendar-outline"
@@ -1368,6 +1582,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primary,
   },
+  plansContainer: { marginTop: vs(4) },
   emptyPlans: { padding: hs(40), alignItems: 'center' },
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: vs(22), marginTop: vs(12) },
 
@@ -1418,6 +1633,105 @@ const styles = StyleSheet.create({
   listIconBoxActive: { backgroundColor: COLORS.white },
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
   listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
+
+  // ─── Email OTP Styles ──────────────────────────────────────────────
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: ms(6),
+    paddingLeft: hs(16),
+    height: vs(50),
+  } as const,
+  emailVerifiedWrapper: {
+    borderColor: '#059669',
+    backgroundColor: '#f0fdf4',
+  } as const,
+  inputDisabled: {
+    color: '#059669',
+  },
+  verifyEmailBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: hs(14),
+    paddingVertical: vs(10),
+    borderRadius: ms(6),
+    marginRight: hs(4),
+    minWidth: hs(100),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyEmailBtnText: {
+    color: COLORS.white,
+    fontSize: ms(12),
+    fontWeight: '700',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: vs(6),
+  },
+  verifiedText: {
+    color: '#059669',
+    fontSize: ms(12),
+    fontWeight: '600',
+    marginLeft: hs(6),
+  },
+  otpSection: {
+    marginTop: vs(-8),
+    marginBottom: vs(16),
+    paddingHorizontal: hs(4),
+  },
+  otpInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(8),
+  },
+  otpInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: ms(6),
+    paddingLeft: hs(16),
+    height: vs(50),
+  },
+  verifyOtpBtn: {
+    backgroundColor: '#059669',
+    paddingHorizontal: hs(16),
+    paddingVertical: vs(14),
+    borderRadius: ms(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: hs(100),
+  },
+  verifyOtpBtnText: {
+    color: COLORS.white,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
+  resendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: vs(10),
+  },
+  timerText: {
+    fontSize: ms(13),
+    color: COLORS.textSecondary,
+  },
+  timerBold: {
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  resendLink: {
+    fontSize: ms(13),
+    fontWeight: '700',
+    color: COLORS.primary,
+    textDecorationLine: 'underline',
+  },
 });
 
 export default RegisterScreen;

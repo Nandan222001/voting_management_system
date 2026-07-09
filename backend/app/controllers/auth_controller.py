@@ -7,7 +7,7 @@ OTP verification, token refresh, and current-user profile retrieval.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status , Header
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -22,6 +22,7 @@ from app.schemas.auth import (
     OTPVerifyRequest,
     RegisterRequest,
     ResetPasswordRequest,
+    SendOTPRequest,
     TokenResponse,
 )
 from app.schemas.user import ChangePasswordRequest, UserResponse, UserSettingsUpdate
@@ -113,31 +114,48 @@ def register(
 # POST /login
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-    summary="Log in and receive a JWT access token",
-)
+@router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+    client_type: Optional[str] = Header(default="mobile", alias="X-Client-Type"),
     db: Session = Depends(get_db),
-) -> JSONResponse:
-    """
-    Authenticate with email (``username`` field) and password.
-
-    Returns a JWT access token and basic user information on success.
-    Raises 401 for invalid credentials, 403 if the account is pending.
-    """
+):
     token_data = auth_service.login(
-        db, 
-        form_data.username, 
+        db,
+        form_data.username,
         form_data.password,
         header_tenant_id=header_tenant_id
     )
+
     return success_response(
         data=token_data.model_dump(mode="json"),
         message="Login successful"
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /send-otp
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/send-otp",
+    response_model=MessageResponse,
+    summary="Send an OTP to an email for pre-registration verification",
+)
+def send_otp(
+    payload: SendOTPRequest,
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    """
+    Generate and send a one-time password to the given email address
+    for pre-registration email verification.
+
+    The email must NOT already be registered. The OTP is valid for 10 minutes.
+    """
+    auth_service.send_otp(db, payload.email)
+    return MessageResponse(
+        message="A verification OTP has been sent to your email."
     )
 
 

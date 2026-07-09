@@ -77,6 +77,14 @@ class OTPVerifyRequest(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class SendOTPRequest(BaseModel):
+    """Payload to request an OTP for email verification during registration."""
+
+    email: EmailStr = Field(..., examples=["jane@example.com"])
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ForgotPasswordRequest(BaseModel):
     """Payload to request a password reset OTP."""
 
