@@ -37,6 +37,14 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const openPrivacyPolicy = () => {
+    navigation.navigate('PrivacyPolicy');
+  };
+
+  const openTerms = () => {
+    navigation.navigate('Terms');
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       showToast.error("Incomplete Fields", "Please enter your ID/email and password.");
@@ -191,6 +199,16 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
         <View style={styles.bottomBranding}>
            <Text style={styles.brandingText}>Powered by VBA Connect Integrity Engine</Text>
         </View>
+
+        <View style={styles.legalLinksRow}>
+          <TouchableOpacity onPress={openPrivacyPolicy}>
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalLinkSeparator}>|</Text>
+          <TouchableOpacity onPress={openTerms}>
+            <Text style={styles.legalLinkText}>Terms & Conditions</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -322,6 +340,22 @@ const styles = StyleSheet.create({
     fontSize: ms(11),
     color: '#94a3b8',
     fontWeight: '600',
+  },
+  legalLinksRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: vs(16),
+    gap: hs(10),
+  },
+  legalLinkText: {
+    fontSize: ms(12),
+    color: '#003d9b',
+    fontWeight: '700',
+  },
+  legalLinkSeparator: {
+    fontSize: ms(12),
+    color: '#94a3b8',
   },
 });
 

@@ -21,6 +21,8 @@ import UserDetailScreen from '../screens/UserDetailScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import EventListScreen from '../screens/EventListScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
+import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
+import { TermsScreen } from '../screens/TermsScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -67,6 +69,8 @@ const ProfileStack = () => (
     <Stack.Screen name="EventDetail" component={EventDetailScreen} />
     <Stack.Screen name="Notifications" component={NotificationScreen} />
     <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+    <Stack.Screen name="Terms" component={TermsScreen} />
   </Stack.Navigator>
 );
 

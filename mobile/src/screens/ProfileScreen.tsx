@@ -470,6 +470,27 @@ const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </ProfileSection>
 
+          {/* Legal Section */}
+          <ProfileSection title="Legal" icon="gavel">
+            <TouchableOpacity
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+            >
+              <MaterialIcons name="privacy-tip" size={ms(22)} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Privacy Policy</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('Terms')}
+            >
+              <MaterialIcons name="description" size={ms(22)} color={COLORS.primary} />
+              <Text style={styles.supportActionText}>Terms & Conditions</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+          </ProfileSection>
+
           {/* Event Management Section */}
           <ProfileSection title="Event Management" icon="event">
             {isCandidate && (
