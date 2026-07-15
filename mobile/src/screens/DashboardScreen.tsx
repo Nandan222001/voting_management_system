@@ -58,6 +58,62 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const planName = user?.membership_plan?.name || 'Standard Member';
   const [tenantName, setTenantName] = useState<string>('VOTE2026');
 
+  // Format membership expiry as mm/yyyy with urgency indicator
+  const getFormattedExpiry = (): string => {
+    const now = new Date();
+
+    const getLabel = (expiryDate: Date): string => {
+      const diffMs = expiryDate.getTime() - now.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const month = (expiryDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = expiryDate.getFullYear();
+      const formatted = `${month}/${year}`;
+
+      if (diffDays <= 0) {
+        return `Expired (${formatted})`;
+      }
+      if (diffDays <= 30) {
+        return `Expiring soon (${formatted})`;
+      }
+      return formatted;
+    };
+
+    // Use explicit expiry if available
+    if (user?.membership_expires_at) {
+      return getLabel(new Date(user.membership_expires_at));
+    }
+
+    // Fallback: calculate expiry from created_at + plan period
+    const period = user?.membership_plan?.period?.toLowerCase();
+    if (period && user?.created_at) {
+      const created = new Date(user.created_at);
+      const expiry = new Date(created);
+
+      if (period.includes('life')) {
+        return 'Lifetime';
+      }
+
+      const yearMatch = period.match(/(\d+)-?year/);
+      const monthMatch = period.match(/(\d+)-?month/);
+
+      if (yearMatch) {
+        expiry.setFullYear(expiry.getFullYear() + parseInt(yearMatch[1], 10));
+      } else if (monthMatch) {
+        expiry.setMonth(expiry.getMonth() + parseInt(monthMatch[1], 10));
+      } else if (period === 'year') {
+        expiry.setFullYear(expiry.getFullYear() + 1);
+      } else if (period === 'month') {
+        expiry.setMonth(expiry.getMonth() + 1);
+      } else {
+        return 'N/A';
+      }
+
+      return getLabel(expiry);
+    }
+
+    return 'N/A';
+  };
+
   const loadStats = async () => {
     try {
       setStatsLoading(true);
@@ -188,7 +244,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{planName.toUpperCase()} TIER</Text>
               </View>
-              <Text style={styles.expiresText}>Expires: 06/2027</Text>
+              <Text style={styles.expiresText}>Expire: {getFormattedExpiry()}</Text>
             </View>
             <Text style={styles.voteText}>VBA</Text>
           </View>
@@ -392,7 +448,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.viewCalendarText}>View All Elections</Text>
         </TouchableOpacity>
 
-        <View style={styles.statsGrid}>
+        {/* <View style={styles.statsGrid}>
           {statsLoading ? (
             <ActivityIndicator size="large" color={COLORS.primary} />
           ) : statsError ? (
@@ -420,7 +476,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               </View>
             </>
           )}
-        </View>
+        </View> */}
       </ScrollView>
     </View>
   );

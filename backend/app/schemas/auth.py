@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
@@ -151,6 +152,7 @@ class AuthUserInfo(BaseModel):
     committee_id: Optional[int] = None
     membership_plan_id: Optional[int] = None
     membership_plan: Optional[PlanResponse] = None
+    membership_expires_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 

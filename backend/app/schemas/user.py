@@ -169,6 +169,7 @@ class UserResponse(UserBase):
     tenant_id: Optional[int] = None
     target: Optional[TargetResponse] = None
     membership_plan: Optional[PlanResponse] = None
+    membership_expires_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     is_candidate: bool = False

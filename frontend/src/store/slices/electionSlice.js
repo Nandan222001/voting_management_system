@@ -70,7 +70,8 @@ export const activateElection = createAsyncThunk(
       const response = await electionService.activateElection(id)
       return response.data
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to activate election.')
+      const errData = error.response?.data
+      return rejectWithValue(errData?.message || errData?.detail || 'Failed to activate election.')
     }
   }
 )

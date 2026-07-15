@@ -55,6 +55,7 @@ interface User {
     name: string;
     [key: string]: any;
   } | null;
+  membership_expires_at?: string | null;
 }
 
 interface AuthContextType {

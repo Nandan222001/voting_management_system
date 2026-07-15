@@ -121,14 +121,24 @@ function InlineAddModal({ isOpen, onClose, type, onSave, loading, initialName, a
           />
         </Field>
 
-        <Field label="Committee President" hint="Exclusive leadership assignment.">
-          <SearchableSelect
-            placeholder="Select President..."
-            options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
-            value={presidentId}
-            onChange={setPresidentId}
-          />
-        </Field>
+        {availablePresidents.length > 0 ? (
+          <Field label="Committee President" hint="Only active users can be assigned as committee president.">
+            <SearchableSelect
+              placeholder="Select President..."
+              options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+              value={presidentId}
+              onChange={setPresidentId}
+            />
+          </Field>
+        ) : (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+            <AlertTriangle className="shrink-0 w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">No Users Available</p>
+              <p className="text-xs font-medium text-amber-600 mt-1">There are no active users available to assign as president. Please add users first before assigning leadership.</p>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
@@ -172,14 +182,24 @@ function EditCommitteeModal({ isOpen, onClose, target, onSave, loading, availabl
           />
         </Field>
 
-        <Field label="Committee President" hint="Exclusive leadership assignment.">
-          <SearchableSelect
-            placeholder="Select President..."
-            options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
-            value={presidentId}
-            onChange={setPresidentId}
-          />
-        </Field>
+        {availablePresidents.length > 0 ? (
+          <Field label="Committee President" hint="Only active users can be assigned as committee president.">
+            <SearchableSelect
+              placeholder="Select President..."
+              options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+              value={presidentId}
+              onChange={setPresidentId}
+            />
+          </Field>
+        ) : (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+            <AlertTriangle className="shrink-0 w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">No Users Available</p>
+              <p className="text-xs font-medium text-amber-600 mt-1">There are no active users available to assign as president. Please add users first before assigning leadership.</p>
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <button type="button" onClick={onClose} className="px-6 py-2.5 text-xs font-black uppercase text-gray-400 hover:text-gray-700 transition-all">Cancel</button>
@@ -670,16 +690,27 @@ export default function TargetsPage() {
                   </div>
                 )}
 
-                {/* <div className="pt-4 mt-2 border-t border-gray-50">
-                  <Field label="Committee President 1S" hint="Assign leadership to this new unit.">
-                    <SearchableSelect
-                      placeholder="Select President..."
-                      options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
-                      value={selections.president_id}
-                      onChange={(v) => setSelections(s => ({ ...s, president_id: v }))}
-                    />
-                  </Field>
-                </div> */}
+                {/* President Assignment Section */}
+                <div className="pt-4 mt-2 border-t border-gray-50">
+                  {availablePresidents.length > 0 ? (
+                    <Field label="Committee President" hint="Only active users can be assigned as committee president.">
+                      <SearchableSelect
+                        placeholder="Select President..."
+                        options={availablePresidents.map(u => ({ id: u.id, name: `${u.full_name} (${u.email})` }))}
+                        value={selections.president_id}
+                        onChange={(v) => setSelections(s => ({ ...s, president_id: v }))}
+                      />
+                    </Field>
+                  ) : (
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                      <AlertTriangle className="shrink-0 w-5 h-5 text-amber-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-amber-800">No Users Available</p>
+                        <p className="text-xs font-medium text-amber-600 mt-1">There are no active users available to assign as president. Please add users first before assigning leadership.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
                </div>
             </div>
           </div>
@@ -690,7 +721,18 @@ export default function TargetsPage() {
               onClick={() => { setShowAddModal(false); setEditTarget(null); }}
               className="px-10 py-2.5 text-xs font-black uppercase tracking-widest text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
             >
-              Close Protocol
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-[#1a337e] text-white px-10 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:brightness-110 shadow-lg shadow-[#1a337e]/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {submitting ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                'Confirm Add'
+              )}
             </button>
           </div>
         </form>

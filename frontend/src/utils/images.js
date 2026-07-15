@@ -1,5 +1,5 @@
 export function getApiOrigin() {
-  const apiBase = import.meta.env.VITE_API_URL || 'https://api.vbaconnect.in/api/v1'
+  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
   return apiBase.replace(/\/api\/v\d+\/?$/, '').replace(/\/$/, '')
 }
 

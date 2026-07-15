@@ -32,6 +32,7 @@ from app.utils.security import (
     verify_password,
 )
 from app.utils.email import send_otp_email, send_registration_otp_email
+from app.utils.helpers import get_plan_expiry, calculate_expiry_from_period
 
 # OTP is valid for 10 minutes by default.
 _OTP_TTL_MINUTES: int = 10
@@ -290,6 +291,7 @@ class AuthService:
                 raise e
 
         # Create or update payment record to 'captured' and link to user
+        is_payment_captured = False
         if register_data.membership_plan_id and register_data.razorpay_order_id:
             print(f"DEBUG: Linking payment record for order: {register_data.razorpay_order_id}")
             payment_repo = PaymentRepository(db)
@@ -301,6 +303,21 @@ class AuthService:
                     "razorpay_payment_id": register_data.razorpay_payment_id,
                     "razorpay_signature": register_data.razorpay_signature
                 })
+                is_payment_captured = True
+
+        # Set membership_expires_at based on plan period
+        if register_data.membership_plan_id and is_payment_captured:
+            expiry = get_plan_expiry(db, register_data.membership_plan_id)
+            if expiry:
+                user.membership_expires_at = expiry
+                print(f"DEBUG: Set membership_expires_at to {expiry}")
+        elif register_data.membership_plan_id:
+            # Free plan: set expiry as well
+            plan = db.query(Plan).filter(Plan.id == register_data.membership_plan_id).first()
+            if plan and plan.price <= 0:
+                from app.utils.helpers import calculate_expiry_from_period
+                user.membership_expires_at = calculate_expiry_from_period(plan.period)
+                print(f"DEBUG: Set membership_expires_at for free plan to {user.membership_expires_at}")
 
         print("DEBUG: Committing transaction...")
         db.commit()

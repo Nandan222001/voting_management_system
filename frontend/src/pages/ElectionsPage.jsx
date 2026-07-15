@@ -350,10 +350,10 @@ export default function ElectionsPage() {
     const payload = {
       title: form.title,
       description: form.description,
-      nomination_start_date: `${form.nomination_start_date}T00:00:00`,
-      nomination_end_date: `${form.nomination_end_date}T23:59:59`,
-      start_date: `${form.voting_start_date}T00:00:00`,
-      end_date: `${form.voting_end_date}T23:59:59`,
+      nomination_start_date: `${form.nomination_start_date}:00`,
+      nomination_end_date: `${form.nomination_end_date}:00`,
+      start_date: `${form.voting_start_date}:00`,
+      end_date: `${form.voting_end_date}:00`,
       committee_level: form.jurisdiction_type,
       target_ids: targetIds.map(id => parseInt(id)),
       status: 'draft'
@@ -461,14 +461,16 @@ export default function ElectionsPage() {
               <FileText className="h-4 w-4" />
               View Results
             </button>
-            <button
-              onClick={openCreateModal}
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
-              type="button"
-            >
-              <Plus size={16} />
-              Initialize Election
-            </button>
+            {!isSuperAdmin && (
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#1a337e] px-8 py-3.5 text-sm font-black uppercase tracking-widest text-white transition-all hover:bg-[#1a337e] shadow-xl shadow-[#1a337e]/20 active:scale-95"
+                type="button"
+              >
+                <Plus size={16} />
+                Initialize Election
+              </button>
+            )}
           </div>
         </section>
 
@@ -811,7 +813,7 @@ export default function ElectionsPage() {
                      <div className="grid grid-cols-2 gap-4">
                         <Field label="Nomination Start" required error={formErrors.nomination_start_date}>
                           <Input 
-                            type="date" 
+                            type="datetime-local" 
                             value={form.nomination_start_date} 
                             onChange={e => setForm(f => ({ ...f, nomination_start_date: e.target.value }))}
                             hasError={!!formErrors.nomination_start_date}
@@ -819,7 +821,7 @@ export default function ElectionsPage() {
                         </Field>
                         <Field label="Nomination End" required error={formErrors.nomination_end_date}>
                           <Input 
-                            type="date" 
+                            type="datetime-local" 
                             value={form.nomination_end_date} 
                             onChange={e => setForm(f => ({ ...f, nomination_end_date: e.target.value }))}
                             hasError={!!formErrors.nomination_end_date}
@@ -829,7 +831,7 @@ export default function ElectionsPage() {
                      <div className="grid grid-cols-2 gap-4">
                         <Field label="Voting Start" required error={formErrors.voting_start_date}>
                           <Input 
-                            type="date" 
+                            type="datetime-local" 
                             value={form.voting_start_date} 
                             onChange={e => setForm(f => ({ ...f, voting_start_date: e.target.value }))}
                             hasError={!!formErrors.voting_start_date}
@@ -837,7 +839,7 @@ export default function ElectionsPage() {
                         </Field>
                         <Field label="Voting End" required error={formErrors.voting_end_date}>
                           <Input 
-                            type="date" 
+                            type="datetime-local" 
                             value={form.voting_end_date} 
                             onChange={e => setForm(f => ({ ...f, voting_end_date: e.target.value }))}
                             hasError={!!formErrors.voting_end_date}

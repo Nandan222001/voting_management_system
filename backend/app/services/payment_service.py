@@ -24,6 +24,7 @@ from app.schemas.payment import (
     PaymentFailure,
 )
 from app.schemas.tenant import TenantPaymentSettings
+from app.utils.helpers import get_plan_expiry, calculate_expiry_from_period
 
 # 18% GST applied on top of plan price
 GST_RATE = 0.18
@@ -392,6 +393,13 @@ class PaymentService:
             "razorpay_payment_id": payload.razorpay_payment_id,
             "razorpay_signature": payload.razorpay_signature,
         })
+
+        # Set membership_expires_at on the user based on the plan period
+        if current_user.membership_plan_id:
+            expires_at = get_plan_expiry(db, current_user.membership_plan_id)
+            if expires_at:
+                current_user.membership_expires_at = expires_at
+                db.flush()
 
         try:
             AuditLogRepository(db).log_action(

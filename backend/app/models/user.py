@@ -98,6 +98,7 @@ class User(Base):
         nullable=True,
         index=True,
     )
+    membership_expires_at = Column(DateTime, nullable=True)
 
     # Authentication
     hashed_password = Column(String(255), nullable=False)
