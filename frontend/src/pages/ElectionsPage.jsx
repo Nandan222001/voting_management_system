@@ -375,6 +375,11 @@ export default function ElectionsPage() {
   const handleRowAction = (election) => {
     const status = election.status?.toLowerCase();
     if (status === 'draft') {
+      const candidateCount = getCandidateCount(election);
+      if (candidateCount === 0) {
+        toast.error('Election must have at least one candidate before it can be activated.');
+        return;
+      }
       setActivateDialog({ open: true, target: election });
     } else if (status === 'active') {
       setCloseDialog({ open: true, target: election });
@@ -978,9 +983,15 @@ export default function ElectionsPage() {
           onClose={() => setDeleteDialog({ open: false, target: null })}
           onConfirm={async () => {
             const id = deleteDialog.target?.id;
-            await dispatch(deleteElection(id));
-            setDeleteDialog({ open: false, target: null });
-            loadElections();
+            const result = await dispatch(deleteElection(id));
+            if (result.meta.requestStatus === 'fulfilled') {
+              toast.success('Election deleted');
+              setDeleteDialog({ open: false, target: null });
+              loadElections();
+            } else {
+              toast.error(result.payload || 'Failed to delete election');
+              setDeleteDialog({ open: false, target: null });
+            }
           }}
           title="Delete Election"
           message={`Are you sure you want to delete "${deleteDialog.target?.title}"? This will remove all associated results.`}

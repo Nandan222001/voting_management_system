@@ -58,7 +58,8 @@ export const deleteElection = createAsyncThunk(
       await electionService.deleteElection(id)
       return id
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete election.')
+      const data = error.response?.data
+      return rejectWithValue(data?.detail || data?.message || 'Failed to delete election.')
     }
   }
 )
