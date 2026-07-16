@@ -432,7 +432,15 @@ export default function ElectionDetailPage() {
            <aside className="lg:col-span-4 space-y-8">
               <InfoPanel title="Election Detail" badge={currentElection?.status}>
                  <div className="space-y-4">
-                    <InfoRow icon={Globe} label="Jurisdiction" value={currentElection?.target ? `${currentElection.target.name} (${currentElection.target.type})` : 'National Level'} />
+                     <InfoRow icon={Globe} label="Jurisdiction" value={
+                       currentElection?.targets?.length > 0
+                         ? currentElection.targets.length === 1
+                           ? `${currentElection.targets[0].name} (${currentElection.targets[0].type})`
+                           : `${currentElection.targets.length} Jurisdictions`
+                         : currentElection?.target
+                           ? `${currentElection.target.name} (${currentElection.target.type})`
+                           : 'National Level'
+                     } />
                     <InfoRow icon={CalendarDays} label="Start Date" value={safeFormat(currentElection?.start_date)} />
                     <InfoRow icon={Clock3} label="Created At" value={safeFormat(currentElection?.created_at)} />
                  </div>

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from fastapi import Header
 
 from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user, get_header_tenant_id, verify_tenant_header
@@ -113,33 +114,51 @@ def register(
 # POST /login
 # ---------------------------------------------------------------------------
 
-@router.post(
-    "/login",
-    response_model=TokenResponse,
-    summary="Log in and receive a JWT access token",
-)
+# @router.post(
+#     "/login",
+#     response_model=TokenResponse,
+#     summary="Log in and receive a JWT access token",
+# )
+# def login(
+#     form_data: OAuth2PasswordRequestForm = Depends(),
+#     header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+#     db: Session = Depends(get_db),
+# ) -> JSONResponse:
+#     """
+#     Authenticate with email (``username`` field) and password.
+
+#     Returns a JWT access token and basic user information on success.
+#     Raises 401 for invalid credentials, 403 if the account is pending.
+#     """
+#     token_data = auth_service.login(
+#         db, 
+#         form_data.username, 
+#         form_data.password,
+#         header_tenant_id=header_tenant_id
+#     )
+#     return success_response(
+#         data=token_data.model_dump(mode="json"),
+#         message="Login successful"
+#     )
+
+@router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     header_tenant_id: Optional[int] = Depends(get_header_tenant_id),
+    client_type: Optional[str] = Header(default="mobile", alias="X-Client-Type"),
     db: Session = Depends(get_db),
-) -> JSONResponse:
-    """
-    Authenticate with email (``username`` field) and password.
-
-    Returns a JWT access token and basic user information on success.
-    Raises 401 for invalid credentials, 403 if the account is pending.
-    """
+):
     token_data = auth_service.login(
-        db, 
-        form_data.username, 
+        db,
+        form_data.username,
         form_data.password,
         header_tenant_id=header_tenant_id
     )
+
     return success_response(
         data=token_data.model_dump(mode="json"),
         message="Login successful"
     )
-
 
 # ---------------------------------------------------------------------------
 # POST /verify-otp

@@ -16,6 +16,7 @@ import {
   Building,
   MapPin,
   TrendingUp,
+  Calendar,
 } from 'lucide-react';
 import {
   fetchTenants,
@@ -1032,6 +1033,7 @@ export default function TenantsPage() {
                     <th className="px-6 py-5 text-left">Protocol / Slug</th>
                     <th className="px-6 py-5 text-left">Contact Channel</th>
                     <th className="px-6 py-5 text-left">Network Status</th>
+                    <th className="px-6 py-5 text-left">Created At</th>
                     <th className="px-6 py-5 text-left">Usage</th>
                     <th className="px-6 py-5 text-right">Actions</th>
                   </tr>
@@ -1083,6 +1085,14 @@ export default function TenantsPage() {
                         </td>
                         <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
                           <Badge status={tenant.status} />
+                        </td>
+                        <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">
+                              {safeFormat(tenant.created_at || tenant.createdAt)}
+                            </span>
+                          </div>
                         </td>
                         <td className="bg-white border-y border-gray-100 px-6 py-5 group-hover:bg-gray-50 transition-colors">
                           <div className="flex items-center gap-2">

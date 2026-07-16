@@ -15,6 +15,7 @@ raw SQLAlchemy.
 from typing import Any, Optional
 
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.user import User, UserRole, UserStatus
@@ -37,6 +38,7 @@ class UserService:
         db: Session,
         skip: int = 0,
         limit: int = 20,
+        search: Optional[str] = None,
         role: Optional[UserRole] = None,
         status_filter: Optional[UserStatus] = None,
         tenant_id: Optional[int] = None,
@@ -44,13 +46,15 @@ class UserService:
         district: Optional[str] = None,
     ) -> tuple[list[User], int]:
         """
-        Return a paginated list of users, optionally filtered by role, status,
-        and tenant.
+        Return a paginated list of users, optionally filtered by search term,
+        role, status, and tenant.
 
         Args:
             db:            Active database session.
             skip:          Row offset.
             limit:         Maximum rows to return.
+            search:        When supplied, filter users whose name, email, or
+                           phone contains the search term (case-insensitive).
             role:          When supplied, restrict to users with this role.
             status_filter: When supplied, restrict to users with this status.
             tenant_id:     When supplied, restrict to users belonging to that
@@ -66,6 +70,16 @@ class UserService:
         # Scope to tenant when the caller is not a superadmin.
         if tenant_id is not None:
             query = query.filter(User.tenant_id == tenant_id)
+
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    User.full_name.ilike(search_term),
+                    User.email.ilike(search_term),
+                    User.phone.ilike(search_term),
+                )
+            )
 
         if role is not None:
             query = query.filter(User.role == role)

@@ -34,7 +34,8 @@ const adminNavLinks = [
 const superAdminNavLinks = [
   { to: '/dashboard', icon: BarChart3, label: 'Dashboard' },
   { to: '/tenants', icon: Building2, label: 'Tenant Management' },
-  { to: '/elections?superadmin=true', icon: Monitor, label: 'Election Monitoring' },
+  { to: '/elections', icon: Monitor, label: 'Election Monitoring' },
+  { to: '/targets', icon: MapPinned, label: 'Committee Management' },
   { to: '/audit-logs', icon: Shield, label: 'Security Logs' },
   // { to: '/settings', icon: SettingsIcon, label: 'Settings' },
 ];
