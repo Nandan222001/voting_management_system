@@ -280,84 +280,207 @@ class AuthService:
     # Login
     # ------------------------------------------------------------------
 
+    # def login(
+    #     self, 
+    #     db: Session, 
+    #     email: str, 
+    #     password: str,
+    #     header_tenant_id: Optional[int] = None
+    # ) -> TokenResponse:
+    #     """
+    #     Authenticate a user and issue JWT tokens.
+
+    #     Args:
+    #         db:               Active database session.
+    #         email:            Submitted e-mail address.
+    #         password:         Plain-text password.
+    #         header_tenant_id: Optional tenant ID from X-Tenant-ID header.
+
+    #     Returns:
+    #         A :class:`~app.schemas.auth.TokenResponse` containing the
+    #         access token and basic user info.
+
+    #     Raises:
+    #         HTTPException 401: If credentials are invalid or account is blocked.
+    #         HTTPException 403: If the account is pending admin approval,
+    #                            tenant is suspended, or tenant mismatch.
+    #     """
+    #     repo = UserRepository(db)
+    #     # Email is normalized to lowercase in get_by_email for case-insensitive lookup
+    #     print(f"DEBUG: Attempting login for email: {email}")
+    #     user: Optional[User] = repo.get_by_email(email)
+
+    #     if user is None or not verify_password(password, user.hashed_password):
+    #         print(f"DEBUG: Login failed for {email} - invalid credentials")
+    #         raise HTTPException(
+    #             status_code=status.HTTP_401_UNAUTHORIZED,
+    #             detail="Invalid email or password.",
+    #         )
+
+    #     print(f"DEBUG: User found: {user.id}, role: {user.role}, tenant_id: {user.tenant_id}")
+
+    #     if user.status == UserStatus.blocked:
+    #         print(f"DEBUG: Login blocked for {email} - status: blocked")
+    #         raise HTTPException(
+    #             status_code=status.HTTP_401_UNAUTHORIZED,
+    #             detail="Your account has been blocked. Contact an administrator.",
+    #         )
+
+    #     # Removed is_verified and pending checks to allow frontend to evaluate status.
+
+
+    #     # Tenant Validation: If X-Tenant-ID was provided (mobile), ensure user belongs to it.
+    #     # Superadmins are exempt as they are global.
+    #     if header_tenant_id is not None and user.role != UserRole.superadmin:
+    #         if user.tenant_id != header_tenant_id:
+    #             print(f"DEBUG: Login blocked for {email} - tenant mismatch (User: {user.tenant_id}, Header: {header_tenant_id})")
+    #             raise HTTPException(
+    #                 status_code=status.HTTP_403_FORBIDDEN,
+    #                 detail="You do not have access to this organisation.",
+    #             )
+
+    #     # Check whether the user's tenant is active.
+    #     if user.tenant_id is not None:
+    #         tenant_repo = TenantRepository(db)
+    #         tenant = tenant_repo.get_by_id(user.tenant_id)
+    #         if tenant is not None:
+    #             if tenant.status.value == "suspended":
+    #                 print(f"DEBUG: Login blocked for {email} - tenant suspended")
+    #                 raise HTTPException(
+    #                     status_code=status.HTTP_403_FORBIDDEN,
+    #                     detail="Your organisation's account has been suspended.",
+    #                 )
+    #             if tenant.status.value in ("draft", "cancelled"):
+    #                 print(f"DEBUG: Login blocked for {email} - tenant status: {tenant.status.value}")
+    #                 raise HTTPException(
+    #                     status_code=status.HTTP_403_FORBIDDEN,
+    #                     detail=f"Your organisation's account is {tenant.status.value}.",
+    #                 )
+
+    #     print(f"DEBUG: Creating tokens for user {user.id}")
+    #     token_payload = {
+    #         "sub": str(user.id),
+    #         "role": user.role.value,
+    #         "tenant_id": user.tenant_id,
+    #         "district": user.district,
+    #         "designation": user.designation,
+    #     }
+    #     access_token = create_access_token(token_payload)
+    #     refresh_token = create_refresh_token(token_payload)
+
+    #     print(f"DEBUG: Tokens created. Validating user schema...")
+    #     try:
+    #         auth_user_info = AuthUserInfo.model_validate(user)
+    #         print(f"DEBUG: Schema validation successful for user {user.id}")
+    #     except Exception as e:
+    #         print(f"DEBUG: Schema validation FAILED for user {user.id}: {str(e)}")
+    #         raise e
+
+    #     return TokenResponse(
+    #         access_token=access_token,
+    #         token_type="bearer",
+    #         user=auth_user_info,
+    #     )
+
     def login(
-        self, 
-        db: Session, 
-        email: str, 
+        self,
+        db: Session,
+        email: str,
         password: str,
-        header_tenant_id: Optional[int] = None
-    ) - > TokenResponse:
+        header_tenant_id: Optional[int] = None,
+    ) -> TokenResponse:
         """
-        Authenticate a user and issue JWT tokens.
+        Authenticate user and issue JWT token.
 
-        Args:
-            db:               Active database session.
-            email:            Submitted e-mail address.
-            password:         Plain-text password.
-            header_tenant_id: Optional tenant ID from X-Tenant-ID header.
+        Web Login:
+            - Only admin & superadmin.
 
-        Returns:
-            A :class:`~app.schemas.auth.TokenResponse` containing the
-            access token and basic user info.
-
-        Raises:
-            HTTPException 401: If credentials are invalid or account is blocked.
-            HTTPException 403: If the account is pending admin approval,
-                               tenant is suspended, or tenant mismatch.
+        Mobile Login:
+            - Only voter.
         """
+
         repo = UserRepository(db)
-        # Email is normalized to lowercase in get_by_email for case-insensitive lookup
+
         print(f"DEBUG: Attempting login for email: {email}")
+
+        # Find user
         user: Optional[User] = repo.get_by_email(email)
 
+        # Validate credentials
         if user is None or not verify_password(password, user.hashed_password):
-            print(f"DEBUG: Login failed for {email} - invalid credentials")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password.",
             )
 
-        print(f"DEBUG: User found: {user.id}, role: {user.role}, tenant_id: {user.tenant_id}")
+        print(
+            f"DEBUG: User found -> "
+            f"ID={user.id}, "
+            f"Role={user.role}, "
+            f"Tenant={user.tenant_id}"
+        )
 
+        # Blocked account
         if user.status == UserStatus.blocked:
-            print(f"DEBUG: Login blocked for {email} - status: blocked")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Your account has been blocked. Contact an administrator.",
+                detail="Your account has been blocked. Contact administrator.",
             )
 
-        # Removed is_verified and pending checks to allow frontend to evaluate status.
+        # ---------------------------------------------------------
+        # ROLE VALIDATION
+        # ---------------------------------------------------------
 
+        # WEB LOGIN
+        if header_tenant_id is None:
 
-        # Tenant Validation: If X-Tenant-ID was provided (mobile), ensure user belongs to it.
-        # Superadmins are exempt as they are global.
-        if header_tenant_id is not None and user.role != UserRole.superadmin:
+            if user.role not in [UserRole.admin, UserRole.superadmin]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only Admin and Super Admin can login.",
+                )
+
+        # MOBILE LOGIN
+        else:
+
+            if user.role != UserRole.voter:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only Voters can login.",
+                )
+
+            # Tenant Validation
             if user.tenant_id != header_tenant_id:
-                print(f"DEBUG: Login blocked for {email} - tenant mismatch (User: {user.tenant_id}, Header: {header_tenant_id})")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You do not have access to this organisation.",
                 )
 
-        # Check whether the user's tenant is active.
+        # ---------------------------------------------------------
+        # Tenant Status
+        # ---------------------------------------------------------
         if user.tenant_id is not None:
+
             tenant_repo = TenantRepository(db)
             tenant = tenant_repo.get_by_id(user.tenant_id)
-            if tenant is not None:
+
+            if tenant:
+
                 if tenant.status.value == "suspended":
-                    print(f"DEBUG: Login blocked for {email} - tenant suspended")
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Your organisation's account has been suspended.",
                     )
+
                 if tenant.status.value in ("draft", "cancelled"):
-                    print(f"DEBUG: Login blocked for {email} - tenant status: {tenant.status.value}")
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Your organisation's account is {tenant.status.value}.",
                     )
 
-        print(f"DEBUG: Creating tokens for user {user.id}")
+        # ---------------------------------------------------------
+        # Create JWT
+        # ---------------------------------------------------------
         token_payload = {
             "sub": str(user.id),
             "role": user.role.value,
@@ -365,23 +488,17 @@ class AuthService:
             "district": user.district,
             "designation": user.designation,
         }
+
         access_token = create_access_token(token_payload)
         refresh_token = create_refresh_token(token_payload)
 
-        print(f"DEBUG: Tokens created. Validating user schema...")
-        try:
-            auth_user_info = AuthUserInfo.model_validate(user)
-            print(f"DEBUG: Schema validation successful for user {user.id}")
-        except Exception as e:
-            print(f"DEBUG: Schema validation FAILED for user {user.id}: {str(e)}")
-            raise e
+        auth_user_info = AuthUserInfo.model_validate(user)
 
         return TokenResponse(
             access_token=access_token,
             token_type="bearer",
             user=auth_user_info,
         )
-
     # ------------------------------------------------------------------
     # OTP verification
     # ------------------------------------------------------------------
