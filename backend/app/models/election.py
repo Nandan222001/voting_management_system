@@ -25,6 +25,13 @@ class ElectionStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class VotingType(str, enum.Enum):
+    """Defines how votes are counted for an election."""
+
+    SINGLE_CANDIDATE = "SINGLE_CANDIDATE"
+    MULTIPLE_MEMBER = "MULTIPLE_MEMBER"
+
+
 # Association table for multi-target elections
 # (e.g. one election covering multiple Districts or Blocks)
 from sqlalchemy import Table
@@ -58,6 +65,20 @@ class Election(Base):
     # Scoping
     committee_level = Column(String(50), nullable=True) # country, state, district, block, booth
     target_district = Column(String(100), nullable=True, index=True)
+
+    # Voting configuration
+    voting_type = Column(
+        Enum(VotingType, name="voting_type_enum"),
+        nullable=False,
+        default=VotingType.SINGLE_CANDIDATE,
+        server_default="SINGLE_CANDIDATE",
+    )
+    votes_allowed_per_voter = Column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
 
     # Scoping – legacy single link (kept for compatibility)
     target_id = Column(

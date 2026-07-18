@@ -140,8 +140,48 @@ export default function ElectionDetailPage() {
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
   
+  // Derive election jurisdiction for auto-population & locking
+  const electionJurisdiction = useMemo(() => {
+    if (!currentElection) return null
+    const cl = currentElection.committee_level
+    if (!cl) return null
+
+    // Collect all targets linked to this election (from multi-target or single legacy)
+    const electionTargets = currentElection.targets?.length
+      ? currentElection.targets
+      : currentElection.target
+        ? [currentElection.target]
+        : []
+
+    // Filter to only targets at the committee level (leaf level for candidate)
+    const leafTargets = electionTargets.filter(t => t.type === cl)
+
+    // Build full path for each leaf target by tracing parent_ids
+    const leafPaths = leafTargets.map(t => {
+      const path = { [cl]: t.id }
+      let current = t
+      // Walk up the parent chain
+      while (current.parent_id) {
+        const parent = electionTargets.find(pt => pt.id === current.parent_id)
+        if (!parent) break
+        path[parent.type] = parent.id
+        current = parent
+      }
+      return path
+    })
+
+    return {
+      committeeLevel: cl,
+      leafTargets,
+      leafPaths,
+      // If exactly one leaf target exists, we can auto-resolve the complete path
+      singleResolved: leafPaths.length === 1 ? leafPaths[0] : null,
+      label: COMMITTEE_TYPES.find(ct => ct.value === cl)?.label || cl,
+    }
+  }, [currentElection])
+
   // Hierarchy State
-  const [committeeType, setCommitteeType] = useState('state')
+  const [committeeType, setCommitteeType] = useState('')
   const [selections, setSelections] = useState({
     state: '',
     district: '',
@@ -162,8 +202,24 @@ export default function ElectionDetailPage() {
   const openCreate = () => {
     setEditCandidateTarget(null)
     setForm(emptyForm)
-    setCommitteeType('state')
-    setSelections({ state: '', district: '', block: '', booth: '' })
+    
+    // Auto-populate jurisdiction from election if available
+    if (electionJurisdiction) {
+      setCommitteeType(electionJurisdiction.committeeLevel)
+      if (electionJurisdiction.singleResolved) {
+        setSelections({
+          state: electionJurisdiction.singleResolved.state || '',
+          district: electionJurisdiction.singleResolved.district || '',
+          block: electionJurisdiction.singleResolved.block || '',
+          booth: electionJurisdiction.singleResolved.booth || '',
+        })
+      } else {
+        setSelections({ state: '', district: '', block: '', booth: '' })
+      }
+    } else {
+      setCommitteeType('state')
+      setSelections({ state: '', district: '', block: '', booth: '' })
+    }
     setShowModal(true)
   }
 
@@ -430,20 +486,26 @@ export default function ElectionDetailPage() {
 
            {/* Sidebar: Context & Actions */}
            <aside className="lg:col-span-4 space-y-8">
-              <InfoPanel title="Election Detail" badge={currentElection?.status}>
-                 <div className="space-y-4">
-                     <InfoRow icon={Globe} label="Jurisdiction" value={
-                       currentElection?.targets?.length > 0
-                         ? currentElection.targets.length === 1
-                           ? `${currentElection.targets[0].name} (${currentElection.targets[0].type})`
-                           : `${currentElection.targets.length} Jurisdictions`
-                         : currentElection?.target
-                           ? `${currentElection.target.name} (${currentElection.target.type})`
-                           : 'National Level'
-                     } />
-                    <InfoRow icon={CalendarDays} label="Start Date" value={safeFormat(currentElection?.start_date)} />
-                    <InfoRow icon={Clock3} label="Created At" value={safeFormat(currentElection?.created_at)} />
-                 </div>
+               <InfoPanel title="Election Detail" badge={currentElection?.status}>
+                  <div className="space-y-4">
+                      <InfoRow icon={Globe} label="Jurisdiction" value={
+                        currentElection?.targets?.length > 0
+                          ? currentElection.targets.length === 1
+                            ? `${currentElection.targets[0].name} (${currentElection.targets[0].type})`
+                            : `${currentElection.targets.length} Jurisdictions`
+                          : currentElection?.target
+                            ? `${currentElection.target.name} (${currentElection.target.type})`
+                            : 'National Level'
+                      } />
+                     <InfoRow icon={Vote} label="Voting Type" value={
+                        currentElection?.voting_type === 'MULTIPLE_MEMBER' ? 'Multiple Member' : 'Single Candidate'
+                      } />
+                      <InfoRow icon={Check} label="Votes Allowed Per Voter" value={
+                        currentElection?.votes_allowed_per_voter != null ? String(currentElection.votes_allowed_per_voter) : '—'
+                      } />
+                     <InfoRow icon={CalendarDays} label="Start Date" value={safeFormat(currentElection?.start_date)} />
+                     <InfoRow icon={Clock3} label="Created At" value={safeFormat(currentElection?.created_at)} />
+                  </div>
                  <div className="mt-8 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Description</p>
                     <p className="text-sm font-medium text-gray-600 leading-relaxed italic">
@@ -570,32 +632,166 @@ export default function ElectionDetailPage() {
               </div>
               
               <div className="space-y-5">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Level</label>
-                  <div className="grid grid-cols-1 gap-1.5 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
-                    {COMMITTEE_TYPES.map(ct => (
-                      <button
-                        key={ct.value}
-                        type="button"
-                        onClick={() => {
-                          setCommitteeType(ct.value)
-                          setSelections({ state: '', district: '', block: '', booth: '' })
-                        }}
-                        className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
-                          committeeType === ct.value 
-                            ? 'bg-[#1a337e] text-white font-bold shadow-md ring-1 ring-[#1a337e]' 
-                            : 'text-gray-500 hover:bg-white hover:text-[#1a337e]'
-                        }`}
-                      >
-                        <span className="text-[11px] uppercase tracking-wider">{ct.label}</span>
-                        {committeeType === ct.value ? <Check size={12} /> : <ChevronRight size={10} className="opacity-30" />}
-                      </button>
-                    ))}
+                {/* ── Locked committee level (create mode / inherited) ── */}
+                {electionJurisdiction && !editCandidateTarget ? (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Level</label>
+                    <div className="bg-[#f0f4ff] rounded-xl border border-[#d6e4ff] p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-[#1a337e] animate-pulse" />
+                          <span className="text-[12px] font-bold text-[#1a337e] uppercase tracking-wider">
+                            {electionJurisdiction.label}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#1a337e]/50 bg-white px-2 py-0.5 rounded border border-[#d6e4ff]">
+                          From Election
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-gray-500 italic">
+                        Inherited from parent election — locked for consistency.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Committee Level</label>
+                    <div className="grid grid-cols-1 gap-1.5 bg-gray-50/50 p-1.5 rounded-xl border border-gray-100">
+                      {COMMITTEE_TYPES.map(ct => (
+                        <button
+                          key={ct.value}
+                          type="button"
+                          onClick={() => {
+                            setCommitteeType(ct.value)
+                            setSelections({ state: '', district: '', block: '', booth: '' })
+                          }}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all ${
+                            committeeType === ct.value 
+                              ? 'bg-[#1a337e] text-white font-bold shadow-md ring-1 ring-[#1a337e]' 
+                              : 'text-gray-500 hover:bg-white hover:text-[#1a337e]'
+                          }`}
+                        >
+                          <span className="text-[11px] uppercase tracking-wider">{ct.label}</span>
+                          {committeeType === ct.value ? <Check size={12} /> : <ChevronRight size={10} className="opacity-30" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-4 pt-1 border-t border-gray-50 mt-2">
-                  {committeeType === 'country' ? (
+                  {/* ── Locked geographic path (create mode / inherited) ── */}
+                  {electionJurisdiction && !editCandidateTarget ? (
+                    electionJurisdiction.committeeLevel === 'country' ? (
+                      <div className="py-6 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100">
+                        <Globe className="text-[#1a337e] w-8 h-8 mx-auto" />
+                        <p className="text-xs font-black uppercase text-[#1a337e] tracking-widest">National Level (India)</p>
+                        <p className="text-[10px] text-[#1a337e]/70 font-medium">Inherited from election</p>
+                      </div>
+                    ) : electionJurisdiction.leafPaths.length > 1 ? (
+                      <div className="space-y-3">
+                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-2 items-start">
+                          <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+                          <div>
+                            <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider leading-relaxed">
+                              This election covers {electionJurisdiction.leafPaths.length} {electionJurisdiction.committeeLevel} jurisdictions.
+                            </p>
+                            <p className="text-[10px] text-amber-600 mt-1">
+                              Please select the specific geographic path for this candidate.
+                            </p>
+                          </div>
+                        </div>
+                        {activeConfig && activeConfig.levels.includes('state') && (
+                          <SearchableSelect
+                            label="Pradesh / State"
+                            placeholder="Search state..."
+                            options={targets.filter(t => t.type === 'state')}
+                            value={selections.state}
+                            onChange={(v) => handleLevelChange('state', v)}
+                          />
+                        )}
+                        {activeConfig && activeConfig.levels.includes('district') && selections.state && (
+                          <SearchableSelect
+                            label="District"
+                            placeholder="Search district..."
+                            options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
+                            value={selections.district}
+                            onChange={(v) => handleLevelChange('district', v)}
+                          />
+                        )}
+                        {activeConfig && activeConfig.levels.includes('block') && selections.district && (
+                          <SearchableSelect
+                            label="Block"
+                            placeholder="Search block..."
+                            options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
+                            value={selections.block}
+                            onChange={(v) => handleLevelChange('block', v)}
+                          />
+                        )}
+                        {activeConfig && activeConfig.levels.includes('booth') && selections.block && (
+                          <SearchableSelect
+                            label="Booth"
+                            placeholder="Search booth..."
+                            options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
+                            value={selections.booth}
+                            onChange={(v) => handleLevelChange('booth', v)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Geographic Path</label>
+                        <div className="bg-gray-50/70 rounded-xl border border-gray-100 p-4 space-y-3">
+                          {(() => {
+                            // Build display rows for each level in the path
+                            const config = COMMITTEE_TYPES.find(ct => ct.value === electionJurisdiction.committeeLevel)
+                            if (!config) return null
+                            const levels = config.levels
+                            return (
+                              <>
+                                {levels.includes('state') && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Pradesh / State</span>
+                                    <span className="text-xs font-bold text-gray-800">
+                                      {targets.find(t => t.id === electionJurisdiction.singleResolved.state)?.name || '—'}
+                                    </span>
+                                  </div>
+                                )}
+                                {levels.includes('district') && (
+                                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">District</span>
+                                    <span className="text-xs font-bold text-gray-800">
+                                      {targets.find(t => t.id === electionJurisdiction.singleResolved.district)?.name || '—'}
+                                    </span>
+                                  </div>
+                                )}
+                                {levels.includes('block') && (
+                                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Block</span>
+                                    <span className="text-xs font-bold text-gray-800">
+                                      {targets.find(t => t.id === electionJurisdiction.singleResolved.block)?.name || '—'}
+                                    </span>
+                                  </div>
+                                )}
+                                {levels.includes('booth') && (
+                                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Booth</span>
+                                    <span className="text-xs font-bold text-gray-800">
+                                      {targets.find(t => t.id === electionJurisdiction.singleResolved.booth)?.name || '—'}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )
+                          })()}
+                          <div className="pt-2 border-t border-gray-100 flex items-center gap-1.5">
+                            <Globe size={12} className="text-[#1a337e]" />
+                            <p className="text-[9px] font-bold text-[#1a337e]/60 uppercase tracking-widest">Inherited from election — read-only</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ) : committeeType === 'country' ? (
                     <div className="py-8 text-center space-y-3 bg-blue-50/50 rounded-2xl border border-blue-100">
                        <Globe className="text-[#1a337e] w-8 h-8 mx-auto animate-pulse" />
                        <p className="text-xs font-black uppercase text-[#1a337e] tracking-widest">National Level (India)</p>

@@ -34,6 +34,7 @@ import {
   ArrowUpRight,
   Shield,
   Hash,
+  Lock,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import MainLayout from '../components/layout/MainLayout'
@@ -198,6 +199,8 @@ export default function CandidatesPage() {
   const [viewCandidateTarget, setViewCandidateTarget] = useState(null)
   const [deleteCandidateTarget, setDeleteCandidateTarget] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  // When true, the Jurisdictional Path is locked (auto-filled from election context)
+  const [jurisdictionLocked, setJurisdictionLocked] = useState(false)
   
   // Hierarchy State
   const [committeeType, setCommitteeType] = useState('state')
@@ -220,13 +223,65 @@ export default function CandidatesPage() {
     }
   }, [selectedElectionId, dispatch])
 
+  const selectedElection = elections.find(e => String(e.id) === String(selectedElectionId))
+
   const country = useMemo(() => targets.find(t => t.type === 'country'), [targets])
+
+  // ─── Derive jurisdiction from the selected election ──────────────────────
+  const electionJurisdiction = useMemo(() => {
+    if (!selectedElection) return null
+    const level = selectedElection.committee_level
+    if (!level || level === 'country') return { committeeType: level || 'country', selections: { state: '', district: '', block: '', booth: '' } }
+
+    // Collect all targets linked to this election
+    const electionTargets = selectedElection.targets || []
+    if (selectedElection.target_id) {
+      const single = targets.find(t => t.id === selectedElection.target_id)
+      if (single && !electionTargets.find(t => t.id === single.id)) {
+        electionTargets.push(single)
+      }
+    }
+
+    // Use the first leaf target to build the hierarchy chain
+    const leafTypes = { state: 'state', district: 'district', block: 'block', booth: 'booth' }
+    const leafTarget = electionTargets.find(t => t.type === leafTypes[level]) || electionTargets[0]
+    if (!leafTarget) return { committeeType: level, selections: { state: '', district: '', block: '', booth: '' } }
+
+    const sels = { state: '', district: '', block: '', booth: '' }
+
+    // Walk up the parent chain to populate all levels
+    const chain = [leafTarget]
+    let current = leafTarget
+    while (current.parent_id) {
+      const parent = targets.find(t => t.id === current.parent_id)
+      if (parent) {
+        chain.unshift(parent)
+        current = parent
+      } else break
+    }
+
+    chain.forEach(t => {
+      if (t.type === 'state') sels.state = t.id
+      else if (t.type === 'district') sels.district = t.id
+      else if (t.type === 'block') sels.block = t.id
+      else if (t.type === 'booth') sels.booth = t.id
+    })
+
+    return { committeeType: level, selections: sels }
+  }, [selectedElection, targets])
 
   const openCreate = () => {
     setEditCandidateTarget(null)
     setForm(emptyForm)
-    setCommitteeType('state')
-    setSelections({ state: '', district: '', block: '', booth: '' })
+    if (electionJurisdiction) {
+      setCommitteeType(electionJurisdiction.committeeType)
+      setSelections(electionJurisdiction.selections)
+      setJurisdictionLocked(true)
+    } else {
+      setCommitteeType('state')
+      setSelections({ state: '', district: '', block: '', booth: '' })
+      setJurisdictionLocked(false)
+    }
     setShowModal(true)
   }
 
@@ -341,8 +396,6 @@ export default function CandidatesPage() {
       toast.error(err || 'Delete failed')
     }
   }
-
-  const selectedElection = elections.find(e => String(e.id) === String(selectedElectionId))
 
   const rows = useMemo(() => candidates.map(c => ({
     ...c,
@@ -583,21 +636,30 @@ export default function CandidatesPage() {
                     <button
                       key={ct.value}
                       type="button"
+                      disabled={jurisdictionLocked}
                       onClick={() => {
-                        setCommitteeType(ct.value)
-                        setSelections({ state: '', district: '', block: '', booth: '' })
+                        if (!jurisdictionLocked) {
+                          setCommitteeType(ct.value)
+                          setSelections({ state: '', district: '', block: '', booth: '' })
+                        }
                       }}
                       className={`flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 ${
                         committeeType === ct.value 
                           ? 'bg-[#1a337e] text-white font-bold shadow-lg shadow-[#1a337e]/20' 
                           : 'text-gray-500 hover:bg-indigo-50 hover:text-[#1a337e]'
-                      }`}
+                      } ${jurisdictionLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                     >
                       <div className="flex items-center gap-3">
                          <ct.icon size={14} />
                          <span className="text-[11px] uppercase tracking-wider">{ct.label.split(' ')[0]} Tier</span>
                       </div>
-                      {committeeType === ct.value ? <Check size={14} strokeWidth={3} /> : <ChevronRight size={10} className="opacity-20" />}
+                      {jurisdictionLocked ? (
+                        <Lock size={12} strokeWidth={3} className="opacity-60" />
+                      ) : committeeType === ct.value ? (
+                        <Check size={14} strokeWidth={3} />
+                      ) : (
+                        <ChevronRight size={10} className="opacity-20" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -617,6 +679,7 @@ export default function CandidatesPage() {
                             options={targets.filter(t => t.type === 'state')}
                             value={selections.state}
                             onChange={(v) => handleLevelChange('state', v)}
+                            disabled={jurisdictionLocked}
                           />
                         </Field>
                       )}
@@ -628,6 +691,7 @@ export default function CandidatesPage() {
                             options={targets.filter(t => t.type === 'district' && t.parent_id === selections.state)}
                             value={selections.district}
                             onChange={(v) => handleLevelChange('district', v)}
+                            disabled={jurisdictionLocked}
                           />
                         </Field>
                       )}
@@ -639,6 +703,7 @@ export default function CandidatesPage() {
                             options={targets.filter(t => t.type === 'block' && t.parent_id === selections.district)}
                             value={selections.block}
                             onChange={(v) => handleLevelChange('block', v)}
+                            disabled={jurisdictionLocked}
                           />
                         </Field>
                       )}
@@ -650,6 +715,7 @@ export default function CandidatesPage() {
                             options={targets.filter(t => t.type === 'booth' && t.parent_id === selections.block)}
                             value={selections.booth}
                             onChange={(v) => handleLevelChange('booth', v)}
+                            disabled={jurisdictionLocked}
                           />
                         </Field>
                       )}
