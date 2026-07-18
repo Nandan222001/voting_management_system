@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.election import ElectionStatus
+from app.models.election import ElectionStatus, VotingType
 from app.schemas.target import TargetResponse
 
 
@@ -34,6 +34,17 @@ class ElectionBase(BaseModel):
         default=None,
         examples=[1],
         description="Link to a structured geographical target.",
+    )
+
+    # Voting configuration
+    voting_type: VotingType = Field(
+        default=VotingType.SINGLE_CANDIDATE,
+        description="SINGLE_CANDIDATE or MULTIPLE_MEMBER",
+    )
+    votes_allowed_per_voter: int = Field(
+        default=1,
+        ge=1,
+        description="Number of votes each voter can cast (1 for single-candidate, >1 for multi-member).",
     )
 
     model_config = ConfigDict(from_attributes=True)
@@ -88,6 +99,17 @@ class ElectionUpdate(BaseModel):
     target_district: Optional[str] = Field(default=None, max_length=100)
     target_id: Optional[int] = None
     status: Optional[ElectionStatus] = None
+
+    # Voting configuration
+    voting_type: Optional[VotingType] = Field(
+        default=None,
+        description="SINGLE_CANDIDATE or MULTIPLE_MEMBER",
+    )
+    votes_allowed_per_voter: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description="Number of votes each voter can cast.",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

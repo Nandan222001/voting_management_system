@@ -148,6 +148,8 @@ const emptyForm = {
   title: '',
   description: '',
   election_type: 'internal',
+  voting_type: 'single',
+  votes_per_voter: 1,
   nomination_start_date: '',
   nomination_end_date: '',
   voting_start_date: '',
@@ -297,6 +299,15 @@ export default function ElectionsPage() {
       errs.tenant_id = 'Tenant is required';
     }
 
+    if (form.voting_type === 'multiple') {
+      const vpv = parseInt(form.votes_per_voter);
+      if (!vpv || vpv < 1) {
+        errs.votes_per_voter = 'Minimum value is 1';
+      } else if (vpv > 10) {
+        errs.votes_per_voter = 'Maximum value is 10';
+      }
+    }
+
     if (form.nomination_start_date && form.nomination_end_date) {
       if (new Date(form.nomination_end_date) < new Date(form.nomination_start_date)) {
         errs.nomination_end_date = 'Must be after start';
@@ -356,7 +367,9 @@ export default function ElectionsPage() {
       end_date: `${form.voting_end_date}:00`,
       committee_level: form.jurisdiction_type,
       target_ids: targetIds.map(id => parseInt(id)),
-      status: 'draft'
+      status: 'draft',
+      voting_type: form.voting_type === 'multiple' ? 'MULTIPLE_MEMBER' : 'SINGLE_CANDIDATE',
+      votes_allowed_per_voter: form.voting_type === 'multiple' ? parseInt(form.votes_per_voter) : 1
     };
 
     const result = await dispatch(createElection({ 
@@ -683,6 +696,20 @@ export default function ElectionsPage() {
                               <Users className="h-3.5 w-3.5" />
                               {candidateCount} Candidates
                             </div>
+                            <div className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-wider ${
+                              election.voting_type === 'MULTIPLE_MEMBER'
+                                ? 'bg-purple-50 border-purple-100 text-purple-700'
+                                : 'bg-blue-50 border-blue-100 text-blue-700'
+                            }`}>
+                              <Vote className="h-3.5 w-3.5" />
+                              {election.voting_type === 'MULTIPLE_MEMBER' ? 'Multi-Member' : 'Single Candidate'}
+                            </div>
+                            {(election.votes_allowed_per_voter != null && election.votes_allowed_per_voter > 0) && (
+                              <div className="inline-flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-700">
+                                <Check className="h-3.5 w-3.5" />
+                                {election.votes_allowed_per_voter} Vote{election.votes_allowed_per_voter > 1 ? 's' : ''} Allowed
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -804,6 +831,62 @@ export default function ElectionsPage() {
                        options={ELECTION_TYPE_OPTIONS}
                        disabled
                     />
+
+                    <Field label="Voting Type" required>
+                      <div className="grid grid-cols-1 gap-1 bg-gray-50/50 p-1 rounded-xl border border-gray-100">
+                        {[
+                          { value: 'single', label: 'Single Candidate Voting', desc: 'Each voter selects one candidate' },
+                          { value: 'multiple', label: 'Multiple Member Voting', desc: 'Each voter selects multiple candidates' },
+                        ].map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setForm(f => ({ ...f, voting_type: opt.value }));
+                              if (opt.value === 'single') {
+                                setForm(f => ({ ...f, votes_per_voter: 1 }));
+                              }
+                            }}
+                            className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-left ${
+                              form.voting_type === opt.value 
+                                ? 'bg-[#1a337e] text-white font-bold shadow-md' 
+                                : 'text-gray-500 hover:bg-white hover:text-[#1a337e]'
+                            }`}
+                          >
+                            <div>
+                              <div className="text-[11px] font-bold uppercase tracking-wider">{opt.label}</div>
+                              <div className={`text-[9px] mt-0.5 ${form.voting_type === opt.value ? 'text-white/70' : 'text-gray-400'}`}>
+                                {opt.desc}
+                              </div>
+                            </div>
+                            {form.voting_type === opt.value && <Check size={14} />}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+
+                    {form.voting_type === 'multiple' && (
+                      <Field 
+                        label="Votes Allowed Per Voter" 
+                        required 
+                        error={formErrors.votes_per_voter}
+                        hint="Between 1 and 10"
+                      >
+                        <Input
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={form.votes_per_voter}
+                          onChange={e => {
+                            const val = parseInt(e.target.value) || '';
+                            setForm(f => ({ ...f, votes_per_voter: val }));
+                            if (formErrors.votes_per_voter) setFormErrors(prev => ({ ...prev, votes_per_voter: undefined }));
+                          }}
+                          placeholder="e.g. 3"
+                          hasError={!!formErrors.votes_per_voter}
+                        />
+                      </Field>
+                    )}
                   </div>
 
                   <div className="space-y-4 pt-6 border-t border-gray-100">
