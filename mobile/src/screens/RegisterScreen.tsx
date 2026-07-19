@@ -158,6 +158,7 @@ const RegisterScreen = ({ navigation }: any) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+<<<<<<< HEAD
 
   // Email OTP Verification States
   const [otpSent, setOtpSent] = useState(false);
@@ -167,6 +168,8 @@ const RegisterScreen = ({ navigation }: any) => {
   const [otpError, setOtpError] = useState('');
   const [otpTimer, setOtpTimer] = useState(0);
   const [otpTimerInterval, setOtpTimerInterval] = useState<ReturnType<typeof setInterval> | null>(null);
+=======
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
 
   // Data States
   const [formData, setFormData] = useState({
@@ -952,6 +955,7 @@ const RegisterScreen = ({ navigation }: any) => {
                 setFocusedField={setFocusedField}
                 keyboardType="phone-pad"
               />
+<<<<<<< HEAD
               {/* Email with OTP Verification */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email Id</Text>
@@ -1048,6 +1052,20 @@ const RegisterScreen = ({ navigation }: any) => {
                   </View>
                 </View>
               )}
+=======
+              <InputField
+                name="email"
+                icon="mail-outline"
+                label="Email Id"
+                placeholder="name@example.com"
+                value={formData.email}
+                onChangeText={(val: string) => handleChange('email', val)}
+                errors={errors}
+                focusedField={focusedField}
+                setFocusedField={setFocusedField}
+                keyboardType="email-address"
+              />
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
               <PickerField
                 label="Date of Birth"
                 icon="calendar-outline"
@@ -1582,7 +1600,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primary,
     backgroundColor: COLORS.primary,
   },
+<<<<<<< HEAD
   plansContainer: { marginTop: vs(4) },
+=======
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
   emptyPlans: { padding: hs(40), alignItems: 'center' },
   emptyText: { textAlign: 'center', color: COLORS.textSecondary, lineHeight: vs(22), marginTop: vs(12) },
 
@@ -1633,6 +1654,7 @@ const styles = StyleSheet.create({
   listIconBoxActive: { backgroundColor: COLORS.white },
   listItemText: { flex: 1, fontSize: ms(16), color: COLORS.text, fontWeight: '500' },
   listItemTextActive: { color: COLORS.primary, fontWeight: '700' },
+<<<<<<< HEAD
 
   // ─── Email OTP Styles ──────────────────────────────────────────────
   emailRow: {
@@ -1732,6 +1754,8 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     textDecorationLine: 'underline',
   },
+=======
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
 });
 
 export default RegisterScreen;

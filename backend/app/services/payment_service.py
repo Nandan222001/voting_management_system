@@ -29,6 +29,9 @@ from app.utils.helpers import get_plan_expiry, calculate_expiry_from_period
 # 18% GST applied on top of plan price
 GST_RATE = 0.18
 
+# 18% GST applied on top of plan price
+GST_RATE = 0.18
+
 
 class PaymentService:
     """

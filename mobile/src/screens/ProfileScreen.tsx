@@ -470,6 +470,7 @@ const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </ProfileSection>
 
+<<<<<<< HEAD
           {/* Legal Section */}
           <ProfileSection title="Legal" icon="gavel">
             <TouchableOpacity
@@ -491,6 +492,8 @@ const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </ProfileSection>
 
+=======
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
           {/* Event Management Section */}
           <ProfileSection title="Event Management" icon="event">
             {isCandidate && (

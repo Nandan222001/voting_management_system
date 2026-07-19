@@ -21,8 +21,11 @@ import UserDetailScreen from '../screens/UserDetailScreen';
 import CreateEventScreen from '../screens/CreateEventScreen';
 import EventListScreen from '../screens/EventListScreen';
 import EventDetailScreen from '../screens/EventDetailScreen';
+<<<<<<< HEAD
 import { PrivacyPolicyScreen } from '../screens/PrivacyPolicyScreen';
 import { TermsScreen } from '../screens/TermsScreen';
+=======
+>>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
 import { useAuth } from '../context/AuthContext';
 
 const Tab = createBottomTabNavigator();

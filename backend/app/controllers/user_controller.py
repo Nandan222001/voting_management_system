@@ -40,6 +40,7 @@ router = APIRouter(
 def list_users(
     page: int = Query(default=1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(default=20, ge=1, le=100, description="Items per page"),
+    search: Optional[str] = Query(default=None, description="Search term to filter by name, email, or phone"),
     role: Optional[UserRole] = Query(default=None, description="Filter by role"),
     status: Optional[UserStatus] = Query(default=None, description="Filter by status"),
     designation: Optional[str] = Query(default=None, description="Filter by member designation"),
@@ -53,6 +54,7 @@ def list_users(
     Query parameters:
     - **page**: 1-indexed page number.
     - **per_page**: Number of users per page (max 100).
+    - **search**: Search term to filter by name, email, or phone.
     - **role**: Optional ``admin`` or ``voter`` filter.
     - **status**: Optional ``active``, ``pending``, or ``blocked`` filter.
     - **designation**: Optional member designation filter.
@@ -65,6 +67,7 @@ def list_users(
         db,
         skip=skip,
         limit=per_page,
+        search=search,
         role=role,
         status_filter=status,
         tenant_id=current_user.tenant_id,
