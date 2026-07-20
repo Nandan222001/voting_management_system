@@ -372,12 +372,8 @@ class ElectionService:
 
         Raises:
             HTTPException 404: If the election does not exist or is not in tenant.
-<<<<<<< HEAD
-            HTTPException 400: If the election is not in ``draft`` status or has no candidates.
-=======
             HTTPException 400: If the election is not in ``draft`` status or
                                has zero registered candidates.
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -391,13 +387,6 @@ class ElectionService:
                 ),
             )
 
-<<<<<<< HEAD
-        candidate_count = len(election.candidates) if election.candidates else 0
-        if candidate_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Election must have at least one candidate before it can be activated.",
-=======
         # ── Guard: at least one candidate must be registered ──────────────────
         candidate_count: int = (
             db.query(Candidate)
@@ -411,7 +400,6 @@ class ElectionService:
                     "Cannot activate an election with zero candidates. "
                     "Please register at least one candidate first."
                 ),
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
             )
 
         updated = repo.update_status(election_id, ElectionStatus.active)

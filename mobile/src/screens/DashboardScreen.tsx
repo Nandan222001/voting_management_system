@@ -58,7 +58,6 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
   const planName = user?.membership_plan?.name || 'Standard Member';
   const [tenantName, setTenantName] = useState<string>('VOTE2026');
 
-<<<<<<< HEAD
   // Format membership expiry as mm/yyyy with urgency indicator
   const getFormattedExpiry = (): string => {
     const now = new Date();
@@ -115,8 +114,6 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
     return 'N/A';
   };
 
-=======
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
   const loadStats = async () => {
     try {
       setStatsLoading(true);
@@ -247,11 +244,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               <View style={styles.tierBadge}>
                 <Text style={styles.tierBadgeText}>{planName.toUpperCase()} TIER</Text>
               </View>
-<<<<<<< HEAD
               <Text style={styles.expiresText}>Expire: {getFormattedExpiry()}</Text>
-=======
-              <Text style={styles.expiresText}>Expires: 06/2027</Text>
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
             </View>
             <Text style={styles.voteText}>VBA</Text>
           </View>
@@ -455,11 +448,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
           <Text style={styles.viewCalendarText}>View All Elections</Text>
         </TouchableOpacity>
 
-<<<<<<< HEAD
         {/* <View style={styles.statsGrid}>
-=======
-        <View style={styles.statsGrid}>
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
           {statsLoading ? (
             <ActivityIndicator size="large" color={COLORS.primary} />
           ) : statsError ? (
@@ -487,11 +476,7 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
               </View>
             </>
           )}
-<<<<<<< HEAD
         </View> */}
-=======
-        </View>
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
       </ScrollView>
     </View>
   );

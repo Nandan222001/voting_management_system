@@ -30,11 +30,7 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-<<<<<<< HEAD
 			<key>13.200.172.115</key>
-=======
-			<key>localhost:8000</key>
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>

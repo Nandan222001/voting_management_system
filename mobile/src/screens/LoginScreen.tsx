@@ -198,7 +198,6 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
 
         <View style={styles.bottomBranding}>
            <Text style={styles.brandingText}>Powered by VBA Connect Integrity Engine</Text>
-<<<<<<< HEAD
         </View>
 
         <View style={styles.legalLinksRow}>
@@ -209,8 +208,6 @@ const LoginScreen = ({ navigation }: { navigation: any }) => {
           <TouchableOpacity onPress={openTerms}>
             <Text style={styles.legalLinkText}>Terms & Conditions</Text>
           </TouchableOpacity>
-=======
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
         </View>
       </ScrollView>
     </View>

@@ -7,11 +7,7 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-<<<<<<< HEAD
         <domain includeSubdomains="true">13.200.172.115</domain>
-=======
-        <domain includeSubdomains="true">localhost:8000</domain>
->>>>>>> fa346d3c9268015db5f8ecd6de67a3eff14d52ab
         <trust-anchors>
             <certificates src="system"/>
             <certificates src="user"/>
