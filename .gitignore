@@ -34,3 +34,7 @@ yarn-debug.log*
 
 # Alembic
 migrations/versions/*.pyc
+*.zip
+*.tar.gz
+*.rar
+*.7z
