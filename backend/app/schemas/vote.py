@@ -17,6 +17,18 @@ class VoteCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class VoteBatchCreate(BaseModel):
+    """Payload for batch voting in a MULTIPLE_MEMBER election."""
+
+    election_id: int = Field(..., gt=0, examples=[1])
+    candidate_ids: List[int] = Field(
+        ..., min_length=1, examples=[[3, 5, 7]],
+        description="List of candidate IDs the voter wants to vote for.",
+    )
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ---------------------------------------------------------------------------
 # Response schemas
 # ---------------------------------------------------------------------------

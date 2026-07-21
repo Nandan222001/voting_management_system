@@ -16,7 +16,7 @@ from typing import Any, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.election import Election, ElectionStatus
+from app.models.election import Election, ElectionStatus, VotingType
 from app.models.user import User
 from app.models.vote import Vote
 from app.repositories.audit_log_repository import AuditLogRepository
@@ -147,12 +147,25 @@ class VoteService:
                 ),
             )
 
-        # 4. Duplicate vote check.
-        if vote_repo.has_user_voted(user_id, election_id):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already cast your vote in this election.",
+        # 4. Duplicate vote check — depends on voting type.
+        if election.voting_type == VotingType.MULTIPLE_MEMBER:
+            current_vote_count = vote_repo.get_user_vote_count_in_election(
+                user_id, election_id
             )
+            if current_vote_count >= election.votes_allowed_per_voter:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        f"You have already cast all {election.votes_allowed_per_voter} "
+                        "votes allowed for this election."
+                    ),
+                )
+        else:
+            if vote_repo.has_user_voted(user_id, election_id):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="You have already cast your vote in this election.",
+                )
 
         # Persist the vote — tenant_id is required on the Vote model.
         vote = Vote(

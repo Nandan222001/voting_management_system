@@ -106,7 +106,9 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
   const [candidates, setCandidates] = useState<any[]>([]);
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([]);
+  const [allowedVotes, setAllowedVotes] = useState<number>(1);
+  const [votingType, setVotingType] = useState<'SINGLE_CANDIDATE' | 'MULTIPLE_MEMBER'>('SINGLE_CANDIDATE');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -219,12 +221,18 @@ const VotingScreen = ({ navigation, route }: any) => {
       setCandidates(cands);
       setMyNomination(nominationResponse);
       
+      // Set voting configuration from election details
+      if (selectedElection) {
+        setVotingType(selectedElection.voting_type || 'SINGLE_CANDIDATE');
+        setAllowedVotes(selectedElection.votes_allowed_per_voter || 1);
+      }
+
       if (voteResponse && voteResponse.has_voted) {
         setExistingVote(voteResponse.vote);
-        setSelectedCandidateId(voteResponse.vote.candidate_id);
+        setSelectedCandidateIds([voteResponse.vote.candidate_id]);
       } else {
         setExistingVote(null);
-        setSelectedCandidateId(null);
+        setSelectedCandidateIds([]);
       }
     } catch (error) {
       console.error("Failed to load election data", error);
@@ -404,7 +412,7 @@ const VotingScreen = ({ navigation, route }: any) => {
   };
 
   const handleCastVote = async () => {
-    if (!selectedCandidateId || !selectedElection) return;
+    if (selectedCandidateIds.length === 0 || !selectedElection) return;
     
     setSubmitting(true);
     try {
@@ -418,7 +426,11 @@ const VotingScreen = ({ navigation, route }: any) => {
         return;
       }
 
-      await electionService.castVote(selectedElection.id, selectedCandidateId);
+      if (votingType === 'MULTIPLE_MEMBER') {
+        await electionService.castVoteBatch(selectedElection.id, selectedCandidateIds);
+      } else {
+        await electionService.castVote(selectedElection.id, selectedCandidateIds[0]);
+      }
       setShowConfirmModal(false);
       setShowSuccessModal(true);
       fetchElectionDetails(selectedElection.id);
@@ -891,25 +903,39 @@ const VotingScreen = ({ navigation, route }: any) => {
                   </View>
                 ) : (
                   candidates.map(candidate => {
-                    const isSelected = selectedCandidateId === candidate.id;
+                    const isSelected = selectedCandidateIds.includes(candidate.id);
                     const hasVoted = existingVote && existingVote.candidate_id === candidate.id;
+                    const isMaxReached = votingType === 'MULTIPLE_MEMBER' && selectedCandidateIds.length >= allowedVotes && !isSelected;
                     
                     return (
                       <TouchableOpacity 
                         key={candidate.id}
-                        activeOpacity={existingVote || !isVotingActive ? 1 : 0.7}
+                        activeOpacity={existingVote || !isVotingActive || isMaxReached ? 1 : 0.7}
                         onPress={() => {
                           if (!isVotingActive && !hasVoted) {
                             handleDisabledVotePress();
                             return;
                           }
-                          if (!existingVote) setSelectedCandidateId(candidate.id);
+                          if (!existingVote) {
+                            if (votingType === 'MULTIPLE_MEMBER') {
+                              if (isSelected) {
+                                setSelectedCandidateIds(prev => prev.filter(id => id !== candidate.id));
+                              } else if (!isMaxReached) {
+                                setSelectedCandidateIds(prev => [...prev, candidate.id]);
+                              } else {
+                                showToast.info("Limit Reached", `You can vote for up to ${allowedVotes} candidates.`);
+                              }
+                            } else {
+                              setSelectedCandidateIds([candidate.id]);
+                            }
+                          }
                         }}
                         style={[
                           styles.candRowCard,
                           isSelected && styles.candRowCardSelected,
                           hasVoted && styles.candRowCardVoted,
-                          !isVotingActive && !hasVoted && { opacity: 0.7, borderColor: COLORS.outlineVariant }
+                          (!isVotingActive && !hasVoted) && { opacity: 0.7, borderColor: COLORS.outlineVariant },
+                          isMaxReached && { opacity: 0.5 }
                         ]}
                       >
                         <View style={styles.candRowContent}>
@@ -1007,12 +1033,12 @@ const VotingScreen = ({ navigation, route }: any) => {
             disabled={submitting}
             style={[
               styles.actionCastBtn,
-              ((!selectedCandidateId || submitting) && isVotingActive) && styles.actionCastBtnDisabled,
+              ((selectedCandidateIds.length === 0 || submitting) && isVotingActive) && styles.actionCastBtnDisabled,
               !isVotingActive && { opacity: 0.8 }
             ]}
           >
             <LinearGradient
-              colors={!isVotingActive ? ['#94a3b8', '#64748b'] : (selectedCandidateId ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6'])}
+              colors={!isVotingActive ? ['#94a3b8', '#64748b'] : (selectedCandidateIds.length > 0 ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6'])}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.actionCastGradient}

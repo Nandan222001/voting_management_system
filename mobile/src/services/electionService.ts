@@ -38,4 +38,12 @@ export const electionService = {
     const response = await api.get(`/votes/my-vote/${electionId}`);
     return response.data.data;
   },
+
+  castVoteBatch: async (electionId: number, candidateIds: number[]) => {
+    const response = await api.post('/voting/submit-batch', {
+      election_id: electionId,
+      candidate_ids: candidateIds,
+    });
+    return response.data.data || response.data;
+  },
 };
