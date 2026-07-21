@@ -147,12 +147,20 @@ class VoteService:
                 ),
             )
 
-        # 4. Duplicate vote check.
-        if vote_repo.has_user_voted(user_id, election_id):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="You have already cast your vote in this election.",
-            )
+        # 4. Duplicate / limit vote check based on voting_type.
+        if election.voting_type.value == "MULTIPLE_MEMBER":
+            current_count = vote_repo.get_user_vote_count_in_election(user_id, election_id)
+            if current_count >= election.votes_allowed_per_voter:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="You have already cast all your allowed votes in this election.",
+                )
+        else:
+            if vote_repo.has_user_voted(user_id, election_id):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="You have already cast your vote in this election.",
+                )
 
         # Persist the vote — tenant_id is required on the Vote model.
         vote = Vote(
@@ -191,6 +199,177 @@ class VoteService:
         return vote
 
     # ------------------------------------------------------------------
+    # Cast batch votes (MULTIPLE_MEMBER)
+    # ------------------------------------------------------------------
+
+    def cast_batch_votes(
+        self,
+        db: Session,
+        user_id: int,
+        election_id: int,
+        candidate_ids: list[int],
+        ip_address: Optional[str] = None,
+        tenant_id: Optional[int] = None,
+    ) -> list[Vote]:
+        """
+        Cast multiple votes in a MULTIPLE_MEMBER election.
+
+        Validates:
+        1. Election exists, is active, belongs to tenant.
+        2. Election voting_type is MULTIPLE_MEMBER.
+        3. candidate_ids count <= votes_allowed_per_voter.
+        4. No duplicate candidate_ids.
+        5. Each candidate belongs to the election.
+        6. User hasn't exceeded their allowed votes.
+
+        Returns:
+            List of newly-created ``Vote`` ORM instances.
+        """
+        election_repo = ElectionRepository(db)
+        candidate_repo = CandidateRepository(db)
+        vote_repo = VoteRepository(db)
+        audit_repo = AuditLogRepository(db)
+
+        # 1. Election must exist and belong to the correct tenant.
+        election: Optional[Election] = election_repo.get_by_id(election_id)
+        if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+
+        # 1b. Must be MULTIPLE_MEMBER type.
+        if election.voting_type.value != "MULTIPLE_MEMBER":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Batch voting is only allowed for MULTIPLE_MEMBER elections.",
+            )
+
+        # 2. Election must be active.
+        if election.status != ElectionStatus.active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Voting is not currently open for this election. "
+                    f"Status: '{election.status.value}'."
+                ),
+            )
+
+        member = db.query(User).filter(User.id == user_id).first()
+        if member is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Member not found.",
+            )
+        if election.target_district and member.district != election.target_district:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This election is not available for your district.",
+            )
+
+        eligibility = payment_service.check_voting_eligibility(db, member)
+        if not eligibility["membership_selected"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please select a Membership Plan first.",
+            )
+        if not eligibility["payment_completed"]:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Payment required before voting.",
+            )
+
+        # 3. Validate candidate_ids count.
+        allowed = election.votes_allowed_per_voter
+        if len(candidate_ids) > allowed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"You may vote for at most {allowed} candidates in this election.",
+            )
+
+        # 4. No duplicate candidate_ids.
+        if len(set(candidate_ids)) != len(candidate_ids):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Duplicate candidate IDs are not allowed.",
+            )
+
+        # 5. Each candidate must belong to this election.
+        for cid in candidate_ids:
+            candidate = candidate_repo.get_by_id(cid)
+            if candidate is None or candidate.election_id != election_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Candidate with id={cid} not found in election id={election_id}.",
+                )
+
+        # 5b. Remove candidates the user has already voted for and enforce limit.
+        already_voted = set(
+            v.candidate_id for v in vote_repo.get_user_votes_in_election(user_id, election_id)
+        )
+        new_candidate_ids = [cid for cid in candidate_ids if cid not in already_voted]
+
+        if not new_candidate_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="All selected candidates have already received your vote.",
+            )
+
+        current_count = vote_repo.get_user_vote_count_in_election(user_id, election_id)
+        if current_count + len(new_candidate_ids) > allowed:
+            remaining = allowed - current_count
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"You have already cast {current_count} vote(s). "
+                    f"You may cast up to {remaining} more vote(s) in this election."
+                ),
+            )
+
+        # Persist all votes.
+        created_votes: list[Vote] = []
+        for cid in new_candidate_ids:
+            vote = Vote(
+                user_id=user_id,
+                election_id=election_id,
+                candidate_id=cid,
+                voted_at=datetime.now(timezone.utc),
+                ip_address=ip_address,
+                tenant_id=tenant_id if tenant_id is not None else election.tenant_id,
+            )
+            db.add(vote)
+            candidate_repo.increment_vote_count(cid)
+            created_votes.append(vote)
+
+        db.commit()
+        for v in created_votes:
+            db.refresh(v)
+
+        # Audit trail (best-effort).
+        try:
+            audit_repo.log_action(
+                user_id=user_id,
+                action="vote.cast_batch",
+                entity_type="election",
+                entity_id=election_id,
+                details={
+                    "candidate_ids": candidate_ids,
+                    "count": len(candidate_ids),
+                    "election_title": election.title,
+                },
+                ip_address=ip_address,
+            )
+        except Exception:
+            pass
+
+        return created_votes
+
+    # ------------------------------------------------------------------
     # User's vote
     # ------------------------------------------------------------------
 
@@ -205,6 +384,21 @@ class VoteService:
         """
         vote_repo = VoteRepository(db)
         return vote_repo.get_user_vote_in_election(user_id, election_id)
+
+    def get_user_votes(
+        self,
+        db: Session,
+        user_id: int,
+        election_id: int,
+    ) -> list[Vote]:
+        """
+        Retrieve all vote records for a specific user in a specific election.
+
+        Used for MULTIPLE_MEMBER elections where a voter may cast multiple
+        ballots (one per candidate).
+        """
+        vote_repo = VoteRepository(db)
+        return vote_repo.get_user_votes_in_election(user_id, election_id)
 
     # ------------------------------------------------------------------
     # Election results

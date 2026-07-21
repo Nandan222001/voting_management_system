@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -36,11 +36,13 @@ const COLORS = {
   onSurface: '#191c1e',
   onSurfaceVariant: '#434654',
   outlineVariant: '#c3c6d6',
+  outline: '#c3c6d6',
   secondary: '#056e00',
   secondaryContainer: '#8dfc75',
   onSecondaryContainer: '#067500',
   surfaceContainerLow: '#f3f4f6',
   surfaceContainerHighest: '#e1e2e4',
+  white: '#ffffff',
 };
 
 declare const require: (moduleName: string) => any;
@@ -107,11 +109,13 @@ const VotingScreen = ({ navigation, route }: any) => {
   const itemsPerPage = 10;
   const [candidates, setCandidates] = useState<any[]>([]);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [existingVote, setExistingVote] = useState<any>(null);
+  const [existingVotes, setExistingVotes] = useState<number[]>([]);
   const [myNomination, setMyNomination] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [withdrawingNomination, setWithdrawingNomination] = useState(false);
@@ -119,6 +123,9 @@ const VotingScreen = ({ navigation, route }: any) => {
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [fetchingPlans, setFetchingPlans] = useState(false);
+
+  const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
+  const [votedCandidateIds, setVotedCandidateIds] = useState<number[]>([]);
 
   const fetchPlans = async () => {
     setFetchingPlans(true);
@@ -162,9 +169,15 @@ const VotingScreen = ({ navigation, route }: any) => {
   const fetchElections = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const response = await electionService.getElections(false, 1, 100, 'active');
-      const electionList = Array.isArray(response) ? response : (response?.data || []);
-      setElections(electionList);
+      if (selectedFilter === 'completed') {
+        const response = await electionService.getCompletedElections();
+        const data = response?.data || response || [];
+        setElections(Array.isArray(data) ? data : []);
+      } else {
+        const response = await electionService.getElections(false, 1, 100);
+        const electionList = Array.isArray(response) ? response : (response?.data || []);
+        setElections(electionList);
+      }
     } catch (error) {
       console.error("Failed to load elections", error);
       showToast.error("Error", "Failed to load elections.");
@@ -193,6 +206,7 @@ const VotingScreen = ({ navigation, route }: any) => {
         (e.election_type && e.election_type.toLowerCase().includes(query))
       );
     }
+
     return filtered;
   };
 
@@ -211,25 +225,65 @@ const VotingScreen = ({ navigation, route }: any) => {
   const fetchElectionDetails = async (electionId: number, silent = false) => {
     try {
       if (!silent) setLoading(true);
+      
+      // Determine the voting type without updating selectedElection state
+      // to avoid triggering the useEffect loop
+      const isMM = selectedElection?.voting_type === 'MULTIPLE_MEMBER';
+      
       const [cands, voteResponse, nominationResponse] = await Promise.all([
-        electionService.getCandidates(electionId),
+        electionService.getCandidates(electionId).catch(() => []),
         electionService.getMyVote(electionId).catch(() => null),
         nominationService.getMyForElection(electionId).catch(() => null),
       ]);
-      setCandidates(cands);
+      
+      // For MULTIPLE_MEMBER, also fetch getMyVotes
+      let votesResponse = null;
+      if (isMM) {
+        try {
+          votesResponse = await electionService.getMyVotes(electionId);
+        } catch (e) {
+          votesResponse = null;
+        }
+      }
+      
+      // Ensure candidates is always an array
+      const candidatesList = Array.isArray(cands) ? cands : (cands?.data || []);
+      setCandidates(candidatesList);
       setMyNomination(nominationResponse);
       
-      if (voteResponse && voteResponse.has_voted) {
-        setExistingVote(voteResponse.vote);
-        setSelectedCandidateId(voteResponse.vote.candidate_id);
+      // Handle existing votes for both SINGLE_CANDIDATE and MULTIPLE_MEMBER
+      if (isMM) {
+        const votedIds: number[] = [];
+        if (votesResponse?.already_voted && Array.isArray(votesResponse?.voted_candidate_ids)) {
+          votedIds.push(...votesResponse.voted_candidate_ids);
+        } else if (votesResponse?.votes) {
+          votesResponse.votes.forEach((v: any) => votedIds.push(v.candidate_id));
+        }
+        setExistingVotes(votedIds);
+        setSelectedCandidateIds(votedIds);
+        setExistingVote(votedIds.length > 0 ? { candidate_id: votedIds } : null);
+        setHasAlreadyVoted(votedIds.length > 0);
+        setVotedCandidateIds(votedIds);
       } else {
-        setExistingVote(null);
-        setSelectedCandidateId(null);
+        if (voteResponse && voteResponse.already_voted) {
+          setExistingVote(voteResponse.vote);
+          setSelectedCandidateId(voteResponse.vote?.candidate_id || voteResponse?.voted_candidate_ids?.[0] || null);
+          setHasAlreadyVoted(true);
+          setVotedCandidateIds(voteResponse?.voted_candidate_ids || (voteResponse.vote ? [voteResponse.vote.candidate_id] : []));
+        } else {
+          setExistingVote(null);
+          setSelectedCandidateId(null);
+          setHasAlreadyVoted(false);
+          setVotedCandidateIds([]);
+        }
+        setExistingVotes([]);
+        setSelectedCandidateIds([]);
       }
     } catch (error) {
       console.error("Failed to load election data", error);
       showToast.error("Error", "Failed to load election details.");
       setMyNomination(null);
+      setCandidates([]);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -404,7 +458,13 @@ const VotingScreen = ({ navigation, route }: any) => {
   };
 
   const handleCastVote = async () => {
-    if (!selectedCandidateId || !selectedElection) return;
+    if (!selectedElection) return;
+    if (hasAlreadyVoted) {
+      showToast.error("Already Voted", "You have already cast your vote in this election.");
+      return;
+    }
+    if (!isMultipleMember && !selectedCandidateId) return;
+    if (isMultipleMember && selectedCandidateIds.length === 0) return;
     
     setSubmitting(true);
     try {
@@ -418,7 +478,11 @@ const VotingScreen = ({ navigation, route }: any) => {
         return;
       }
 
-      await electionService.castVote(selectedElection.id, selectedCandidateId);
+      if (isMultipleMember) {
+        await electionService.castVoteBatch(selectedElection.id, selectedCandidateIds);
+      } else {
+        await electionService.castVote(selectedElection.id, selectedCandidateId!);
+      }
       setShowConfirmModal(false);
       setShowSuccessModal(true);
       fetchElectionDetails(selectedElection.id);
@@ -502,6 +566,8 @@ const VotingScreen = ({ navigation, route }: any) => {
 
   const statusConfig = calculateElectionStatus();
   const isVotingActive = statusConfig?.isVotingActive || false;
+  const isMultipleMember = selectedElection?.voting_type === 'MULTIPLE_MEMBER';
+  const votesAllowed = selectedElection?.votes_allowed_per_voter || 1;
 
   const handleDisabledVotePress = () => {
     if (statusConfig?.label === 'SCHEDULED') {
@@ -598,6 +664,8 @@ const VotingScreen = ({ navigation, route }: any) => {
                   />
                   <Text style={[styles.premiumFilterTabText, selectedFilter === 'upcoming' && styles.premiumFilterTabTextActive]}>Upcoming</Text>
                 </TouchableOpacity>
+
+
               </View>
 
               <View style={styles.modernListContainer}>
@@ -666,6 +734,24 @@ const VotingScreen = ({ navigation, route }: any) => {
                                        {new Date(elec.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </Text>
                                  </View>
+                              </View>
+
+                              <View style={styles.elecTypeRow}>
+                                <View style={[styles.elecTypeBadge, { backgroundColor: elec.voting_type === 'MULTIPLE_MEMBER' ? '#eef2ff' : '#f0fdf4' }]}>
+                                  <MaterialIcons
+                                    name={elec.voting_type === 'MULTIPLE_MEMBER' ? 'groups' : 'person'}
+                                    size={ms(10)}
+                                    color={elec.voting_type === 'MULTIPLE_MEMBER' ? '#4f46e5' : '#16a34a'}
+                                  />
+                                  <Text style={[styles.elecTypeBadgeText, { color: elec.voting_type === 'MULTIPLE_MEMBER' ? '#4f46e5' : '#16a34a' }]}>
+                                    {elec.voting_type === 'MULTIPLE_MEMBER' ? 'Multi-Member' : 'Single'}
+                                  </Text>
+                                </View>
+                                {elec.votes_allowed_per_voter > 1 && (
+                                  <Text style={styles.elecVotesAllowedText}>
+                                    Votes/user: {elec.votes_allowed_per_voter}
+                                  </Text>
+                                )}
                               </View>
                            </View>
 
@@ -793,6 +879,31 @@ const VotingScreen = ({ navigation, route }: any) => {
                 )}
               </View>
 
+              {hasAlreadyVoted && (
+                <View style={styles.voteSubmittedBanner}>
+                  <LinearGradient
+                    colors={[COLORS.secondary + '20', COLORS.secondary + '10']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.voteSubmittedGradient}
+                  >
+                    <View style={styles.voteSubmittedIcon}>
+                      <MaterialIcons name="verified" size={ms(28)} color={COLORS.secondary} />
+                    </View>
+                    <View style={styles.voteSubmittedTextWrap}>
+                      <Text style={styles.voteSubmittedTitle}>
+                        {isMultipleMember ? 'Votes Submitted' : 'Vote Submitted'}
+                      </Text>
+                      <Text style={styles.voteSubmittedSub}>
+                        {isMultipleMember
+                          ? `You voted for ${votedCandidateIds.length} candidate(s)`
+                          : 'Your choice has been recorded'}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </View>
+              )}
+
               {statusConfig?.label === 'SCHEDULED' && (
                 <>
                   <TouchableOpacity 
@@ -883,6 +994,14 @@ const VotingScreen = ({ navigation, route }: any) => {
                 </View>
               </View>
 
+              {isMultipleMember && !hasAlreadyVoted && (
+                <View style={styles.multiMemberHint}>
+                  <MaterialIcons name="info-outline" size={ms(14)} color={COLORS.onSurfaceVariant} />
+                  <Text style={styles.multiMemberHintText}>
+                    Select up to {votesAllowed} candidate(s). Tap to toggle selection.
+                  </Text>
+                </View>
+              )}
               <View style={styles.premiumCandidatesList}>
                 {candidates.length === 0 ? (
                   <View style={styles.emptyCandidatesBox}>
@@ -891,19 +1010,40 @@ const VotingScreen = ({ navigation, route }: any) => {
                   </View>
                 ) : (
                   candidates.map(candidate => {
-                    const isSelected = selectedCandidateId === candidate.id;
-                    const hasVoted = existingVote && existingVote.candidate_id === candidate.id;
+                    const isSelected = isMultipleMember
+                      ? selectedCandidateIds.includes(candidate.id)
+                      : selectedCandidateId === candidate.id;
+                    const hasVoted = votedCandidateIds.includes(candidate.id);
                     
                     return (
                       <TouchableOpacity 
                         key={candidate.id}
-                        activeOpacity={existingVote || !isVotingActive ? 1 : 0.7}
+                        activeOpacity={hasAlreadyVoted || !isVotingActive ? 1 : 0.7}
                         onPress={() => {
-                          if (!isVotingActive && !hasVoted) {
+                          if (hasAlreadyVoted) {
+                            return;
+                          }
+                          if (!isVotingActive) {
                             handleDisabledVotePress();
                             return;
                           }
-                          if (!existingVote) setSelectedCandidateId(candidate.id);
+                          if (isMultipleMember) {
+                            setSelectedCandidateIds(prev => {
+                              if (prev.includes(candidate.id)) {
+                                return prev.filter(id => id !== candidate.id);
+                              }
+                              if (prev.length >= votesAllowed) {
+                                showToast.info(
+                                  "Selection Limit",
+                                  `You can select up to ${votesAllowed} candidates.`
+                                );
+                                return prev;
+                              }
+                              return [...prev, candidate.id];
+                            });
+                          } else {
+                            setSelectedCandidateId(candidate.id);
+                          }
                         }}
                         style={[
                           styles.candRowCard,
@@ -944,26 +1084,26 @@ const VotingScreen = ({ navigation, route }: any) => {
                           </View>
 
                           <View style={styles.candRowRight}>
-                            {!existingVote ? (
+                            {hasAlreadyVoted ? (
+                              <View style={[styles.rowStatusBadge, hasVoted && styles.rowStatusBadgeVoted]}>
+                                <Text style={[styles.rowStatusText, hasVoted && styles.rowStatusTextVoted]}>
+                                  YOUR CHOICE
+                                </Text>
+                              </View>
+                            ) : (
                               <View style={[
-                                styles.rowVoteBtn, 
+                                styles.rowVoteBtn,
                                 isSelected && styles.rowVoteBtnActive,
                                 !isVotingActive && { backgroundColor: COLORS.surfaceContainerLow }
                               ]}>
                                 <Text style={[
-                                  styles.rowVoteBtnText, 
+                                  styles.rowVoteBtnText,
                                   isSelected && styles.rowVoteBtnTextActive,
                                   !isVotingActive && { color: COLORS.onSurfaceVariant, opacity: 0.5 }
                                 ]}>
                                   {isSelected ? 'SELECTED' : 'VOTE'}
                                 </Text>
                                 {isSelected && <MaterialIcons name="check-circle" size={ms(16)} color="#fff" />}
-                              </View>
-                            ) : (
-                              <View style={[styles.rowStatusBadge, hasVoted && styles.rowStatusBadgeVoted]}>
-                                <Text style={[styles.rowStatusText, hasVoted && styles.rowStatusTextVoted]}>
-                                  {hasVoted ? 'YOUR CHOICE' : 'CAST'}
-                                </Text>
                               </View>
                             )}
                             <TouchableOpacity 
@@ -994,9 +1134,9 @@ const VotingScreen = ({ navigation, route }: any) => {
         )}
       </ScrollView>
 
-      {selectedElection && !existingVote && (
+      {selectedElection && !hasAlreadyVoted && !isMultipleMember && (
         <View style={styles.floatingVoteBar}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => {
               if (!isVotingActive) {
                 handleDisabledVotePress();
@@ -1024,6 +1164,50 @@ const VotingScreen = ({ navigation, route }: any) => {
                   <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={ms(22)} color="#fff" />
                   <Text style={styles.actionCastBtnText}>
                     {isVotingActive ? 'Cast Secure Vote' : 'Voting Unavailable'}
+                  </Text>
+                </>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {selectedElection && !hasAlreadyVoted && isMultipleMember && (
+        <View style={styles.floatingVoteBar}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!isVotingActive) {
+                handleDisabledVotePress();
+                return;
+              }
+              if (selectedCandidateIds.length === 0) {
+                showToast.info("Selection Required", "Please select at least one candidate.");
+                return;
+              }
+              handleCastVote();
+            }}
+            disabled={submitting}
+            style={[
+              styles.actionCastBtn,
+              ((selectedCandidateIds.length === 0 || submitting) && isVotingActive) && styles.actionCastBtnDisabled,
+              !isVotingActive && { opacity: 0.8 }
+            ]}
+          >
+            <LinearGradient
+              colors={!isVotingActive ? ['#94a3b8', '#64748b'] : (selectedCandidateIds.length > 0 ? ['#4f46e5', '#3730a3'] : ['#c3c6d6', '#c3c6d6'])}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.actionCastGradient}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <>
+                  <MaterialIcons name={isVotingActive ? "verified" : "lock"} size={ms(22)} color="#fff" />
+                  <Text style={styles.actionCastBtnText}>
+                    {isVotingActive
+                      ? `Cast Votes (${selectedCandidateIds.length})`
+                      : 'Voting Unavailable'}
                   </Text>
                 </>
               )}
@@ -1410,6 +1594,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.outlineVariant,
     opacity: 0.4,
   },
+  elecTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: vs(6),
+    gap: hs(8),
+  },
+  elecTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(4),
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
+    borderRadius: ms(4),
+  },
+  elecTypeBadgeText: {
+    fontSize: ms(9),
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  elecVotesAllowedText: {
+    fontSize: ms(9),
+    fontWeight: '700',
+    color: COLORS.onSurfaceVariant,
+    opacity: 0.7,
+  },
   premiumElecRight: {
     justifyContent: 'center',
   },
@@ -1555,6 +1764,40 @@ const styles = StyleSheet.create({
     lineHeight: vs(20),
     opacity: 0.8,
   },
+  voteSubmittedBanner: {
+    borderRadius: ms(12),
+    overflow: 'hidden',
+    marginBottom: vs(20),
+    borderWidth: 1,
+    borderColor: COLORS.secondary + '40',
+  },
+  voteSubmittedGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: hs(16),
+    gap: hs(14),
+  },
+  voteSubmittedIcon: {
+    width: ms(48),
+    height: ms(48),
+    borderRadius: ms(24),
+    backgroundColor: COLORS.secondary + '25',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  voteSubmittedTextWrap: { flex: 1 },
+  voteSubmittedTitle: {
+    fontSize: ms(16),
+    fontWeight: '900',
+    color: COLORS.secondary,
+    letterSpacing: -0.3,
+  },
+  voteSubmittedSub: {
+    fontSize: ms(12),
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+    marginTop: vs(2),
+  },
   nominationActionBtn: {
     borderRadius: ms(10),
     overflow: 'hidden',
@@ -1624,6 +1867,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: vs(16),
     paddingHorizontal: hs(4),
+  },
+  multiMemberHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(8),
+    backgroundColor: COLORS.surfaceContainerLow,
+    padding: hs(12),
+    borderRadius: ms(8),
+    marginBottom: vs(12),
+  },
+  multiMemberHintText: {
+    fontSize: ms(12),
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+    flex: 1,
+  },
+  emptyCandidatesBox: {
+    alignItems: 'center',
+    paddingVertical: vs(40),
+    gap: vs(12),
+  },
+  emptyCandidatesText: {
+    fontSize: ms(14),
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
+    textAlign: 'center',
+    opacity: 0.7,
   },
   sectionTitleLabel: { fontSize: ms(11), fontWeight: '900', color: COLORS.onSurfaceVariant, letterSpacing: 1 },
   candidateCountBadge: { backgroundColor: COLORS.primary, paddingHorizontal: hs(8), paddingVertical: vs(2), borderRadius: ms(5) },

@@ -7,7 +7,6 @@ export const electionService = {
       endpoint += `&status=${status}`;
     }
     const response = await api.get(endpoint);
-    // Return the full envelope (contains success, message, data, pagination)
     return response.data;
   },
 
@@ -18,12 +17,12 @@ export const electionService = {
 
   getElectionDetails: async (id: number) => {
     const response = await api.get(`/elections/${id}`);
-    return response.data.data; // Standardized envelope
+    return response.data.data;
   },
 
   getCandidates: async (electionId: number) => {
     const response = await api.get(`/candidates/election/${electionId}`);
-    return response.data.data; // Standardized envelope
+    return response.data.data;
   },
 
   castVote: async (electionId: number, candidateId: number) => {
@@ -34,8 +33,41 @@ export const electionService = {
     return response.data.data || response.data;
   },
 
+  castVoteBatch: async (electionId: number, candidateIds: number[]) => {
+    const response = await api.post('/voting/submit-batch', {
+      election_id: electionId,
+      candidate_ids: candidateIds,
+    });
+    return response.data.data || response.data;
+  },
+
   getMyVote: async (electionId: number) => {
     const response = await api.get(`/votes/my-vote/${electionId}`);
     return response.data.data;
+  },
+
+  getMyVotes: async (electionId: number) => {
+    const response = await api.get(`/votes/my-vote/${electionId}`);
+    return response.data.data;
+  },
+
+  getCompletedElections: async () => {
+    const response = await api.get('/elections/completed');
+    return response.data.data || [];
+  },
+
+  getMyCompletedElections: async () => {
+    const response = await api.get('/elections/completed/my');
+    return response.data.data || [];
+  },
+
+  getElectionResult: async (electionId: number) => {
+    const response = await api.get(`/elections/${electionId}`);
+    return response.data.data || response.data;
+  },
+
+  getCompletedElectionResult: async (electionId: number) => {
+    const response = await api.get(`/elections/completed/${electionId}`);
+    return response.data.data || response.data;
   },
 };

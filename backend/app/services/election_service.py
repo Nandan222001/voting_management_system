@@ -11,6 +11,7 @@ Dependency Inversion: Depends on ``ElectionRepository`` (abstraction).
 """
 
 from typing import Any, Optional
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import or_
@@ -18,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.models.election import Election, ElectionStatus
 from app.models.candidate import Candidate
+from app.models.vote import Vote
 from app.repositories.election_repository import ElectionRepository
 from app.repositories.tenant_repository import TenantRepository
 from app.schemas.election import ElectionCreate, ElectionUpdate
@@ -35,10 +37,6 @@ class ElectionService:
     ) -> int:
         """
         Resolve the tenant used when a superadmin creates tenant-owned data.
-
-        Superadmins do not carry a tenant_id in their JWT. If they pass one
-        explicitly, use it. If the platform has exactly one tenant, use that
-        tenant as a practical default for local/single-tenant deployments.
         """
         if tenant_id is not None:
             return tenant_id
@@ -105,24 +103,6 @@ class ElectionService:
     ) -> Election:
         """
         Persist a new election, scoped to *tenant_id*.
-
-        When *tenant_id* is provided the tenant's ``max_elections`` limit is
-        checked before creation unless ``bypass_limit`` is True.  
-        Superadmin callers may pass ``None`` to create platform-level elections 
-        (no limit check performed).
-
-        Args:
-            db:           Active database session.
-            data:         Validated creation payload.
-            created_by:   Primary key of the admin creating the election.
-            tenant_id:    Tenant to assign the election to, or ``None``.
-            bypass_limit: If True, skips the election quota check.
-
-        Returns:
-            The freshly-created ``Election`` ORM instance.
-
-        Raises:
-            HTTPException 402: If the tenant's election limit has been reached.
         """
         if tenant_id is not None and not bypass_limit:
             tenant_repo = TenantRepository(db)
@@ -144,15 +124,28 @@ class ElectionService:
 
         repo = ElectionRepository(db)
         election_data = data.model_dump(exclude={"target_ids"})
+
+        # Clean target_ids and derive legacy target_id/target_district
+        clean_ids = []
+        if data.target_ids:
+            clean_ids = [int(tid) for tid in data.target_ids if tid is not None]
+            if clean_ids:
+                # Set legacy target_id to the first selected target
+                election_data["target_id"] = clean_ids[0]
+                # Derive target_district from first target name if available
+                from app.models.target import Target
+                first_target = db.query(Target).filter(Target.id == clean_ids[0]).first()
+                if first_target and first_target.name:
+                    election_data["target_district"] = first_target.name
+
         election_data["created_by"] = created_by
         election_data["tenant_id"] = tenant_id
         
         election = repo.create(election_data)
         
-        # Link multiple targets if provided
-        if data.target_ids:
+        if clean_ids:
             from app.models.target import Target
-            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
+            targets = db.query(Target).filter(Target.id.in_(clean_ids)).all()
             election.targets = targets
             db.commit()
             
@@ -175,41 +168,21 @@ class ElectionService:
         """
         Return a paginated list of elections, optionally filtered by status,
         search term, and scoped to a tenant.
-
-        Args:
-            db:            Active database session.
-            skip:          Row offset.
-            limit:         Maximum rows to return.
-            status_filter: When supplied (e.g. 'active', 'draft'), restrict results.
-                           'all' or None returns everything.
-            search_filter: Optional search term for the election title (LIKE %term%).
-            tenant_id:     When supplied, restrict to elections belonging to
-                           this tenant.  Pass ``None`` (superadmin) to see all.
-
-        Returns:
-            A ``(elections, total)`` tuple.
         """
         from sqlalchemy import text
 
-        # Base query
         query = db.query(Election)
 
-        # 1. Multi-tenancy Scoping
         if tenant_id is not None:
             query = query.filter(Election.tenant_id == tenant_id)
 
-        # 2. Strict Status Filtering (Raw SQL logic via text)
         if status_filter:
-            # Query equivalent: WHERE status = :status
             query = query.filter(text("status = :status")).params(status=status_filter)
 
-        # 3. Search Filtering (Node Title Search)
         if search_filter:
-            # Query equivalent: WHERE title LIKE :search
             search_param = f"%{search_filter}%"
             query = query.filter(Election.title.ilike(search_param))
 
-        # 4. Member District Scoping
         if member_district is not None:
             query = query.filter(
                 or_(
@@ -238,19 +211,6 @@ class ElectionService:
     ) -> Election:
         """
         Fetch a single election by primary key, optionally scoped to a tenant.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key to look up.
-            tenant_id:   When supplied, verify the election belongs to this
-                         tenant.  Pass ``None`` (superadmin) to skip the check.
-
-        Returns:
-            The matching ``Election`` instance.
-
-        Raises:
-            HTTPException 404: If no election with that id exists, or the
-                               election does not belong to the specified tenant.
         """
         repo = ElectionRepository(db)
         election: Optional[Election] = repo.get_by_id(election_id)
@@ -289,16 +249,26 @@ class ElectionService:
                 detail=f"Cannot update an election in '{election.status.value}' status.",
             )
 
-        # Update base fields
         update_data = data.model_dump(exclude_unset=True, exclude={"target_ids"})
-        updated = repo.update(election, update_data)
-        
-        # Update targets relationship if target_ids provided
+
+        # If target_ids are being updated, also sync legacy target_id/target_district
         if data.target_ids is not None:
-            from app.models.target import Target
-            targets = db.query(Target).filter(Target.id.in_(data.target_ids)).all()
-            updated.targets = targets
-            db.commit()
+            clean_ids = [int(tid) for tid in data.target_ids if tid is not None]
+            if clean_ids:
+                from app.models.target import Target
+                first_target = db.query(Target).filter(Target.id == clean_ids[0]).first()
+                if first_target:
+                    update_data["target_id"] = clean_ids[0]
+                    update_data["target_district"] = first_target.name
+                targets = db.query(Target).filter(Target.id.in_(clean_ids)).all()
+                updated.targets = targets
+            else:
+                update_data["target_id"] = None
+                update_data["target_district"] = None
+                updated.targets = []
+
+        updated = repo.update(election, update_data)
+        db.commit()
 
         return updated
 
@@ -310,21 +280,6 @@ class ElectionService:
     ) -> bool:
         """
         Permanently delete an election.
-
-        Only draft elections may be deleted to prevent accidental removal of
-        active or historical voting data.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key of the election to delete.
-            tenant_id:   When supplied, verify tenant ownership before deletion.
-
-        Returns:
-            ``True`` on success.
-
-        Raises:
-            HTTPException 404: If the election does not exist or is not in tenant.
-            HTTPException 400: If the election is not in ``draft`` status.
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -332,10 +287,7 @@ class ElectionService:
         if election.status != ElectionStatus.draft:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Only draft elections can be deleted. "
-                    f"Current status: '{election.status.value}'."
-                ),
+                detail=f"Only draft elections can be deleted. Current status: '{election.status.value}'.",
             )
 
         deleted = repo.delete(election_id)
@@ -358,22 +310,6 @@ class ElectionService:
     ) -> Election:
         """
         Transition a draft election to ``active``.
-
-        At least one candidate must be registered before the election can be
-        activated.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key of the election to activate.
-            tenant_id:   When supplied, verify tenant ownership first.
-
-        Returns:
-            The updated ``Election`` instance.
-
-        Raises:
-            HTTPException 404: If the election does not exist or is not in tenant.
-            HTTPException 400: If the election is not in ``draft`` status or
-                               has zero registered candidates.
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -381,13 +317,9 @@ class ElectionService:
         if election.status != ElectionStatus.draft:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Only draft elections can be activated. "
-                    f"Current status: '{election.status.value}'."
-                ),
+                detail=f"Only draft elections can be activated. Current status: '{election.status.value}'.",
             )
 
-        # ── Guard: at least one candidate must be registered ──────────────────
         candidate_count: int = (
             db.query(Candidate)
             .filter(Candidate.election_id == election_id)
@@ -396,10 +328,7 @@ class ElectionService:
         if candidate_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "Cannot activate an election with zero candidates. "
-                    "Please register at least one candidate first."
-                ),
+                detail="Cannot activate an election with zero candidates.",
             )
 
         updated = repo.update_status(election_id, ElectionStatus.active)
@@ -418,18 +347,6 @@ class ElectionService:
     ) -> Election:
         """
         Transition an active election to ``closed``.
-
-        Args:
-            db:          Active database session.
-            election_id: Primary key of the election to close.
-            tenant_id:   When supplied, verify tenant ownership first.
-
-        Returns:
-            The updated ``Election`` instance.
-
-        Raises:
-            HTTPException 404: If the election does not exist or is not in tenant.
-            HTTPException 400: If the election is not in ``active`` status.
         """
         repo = ElectionRepository(db)
         election = self.get_by_id(db, election_id, tenant_id=tenant_id)
@@ -437,10 +354,7 @@ class ElectionService:
         if election.status != ElectionStatus.active:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Only active elections can be closed. "
-                    f"Current status: '{election.status.value}'."
-                ),
+                detail=f"Only active elections can be closed. Current status: '{election.status.value}'.",
             )
 
         updated = repo.update_status(election_id, ElectionStatus.closed)
@@ -461,35 +375,17 @@ class ElectionService:
         tenant_id: Optional[int] = None,
     ) -> dict[str, Any]:
         """
-        Return aggregate election statistics, optionally scoped to a tenant.
-
-        Superadmin callers pass ``None`` to receive platform-wide totals.
-
-        Args:
-            db:        Active database session.
-            tenant_id: When supplied, restrict counts to this tenant.
-
-        Returns:
-            A dictionary with keys:
-            ``total``, ``draft``, ``active``, ``closed``, ``cancelled``.
+        Return aggregate election statistics.
         """
         base_query = db.query(Election)
         if tenant_id is not None:
             base_query = base_query.filter(Election.tenant_id == tenant_id)
 
         total: int = base_query.count()
-        draft_count: int = (
-            base_query.filter(Election.status == ElectionStatus.draft).count()
-        )
-        active_count: int = (
-            base_query.filter(Election.status == ElectionStatus.active).count()
-        )
-        closed_count: int = (
-            base_query.filter(Election.status == ElectionStatus.closed).count()
-        )
-        cancelled_count: int = (
-            base_query.filter(Election.status == ElectionStatus.cancelled).count()
-        )
+        draft_count: int = base_query.filter(Election.status == ElectionStatus.draft).count()
+        active_count: int = base_query.filter(Election.status == ElectionStatus.active).count()
+        closed_count: int = base_query.filter(Election.status == ElectionStatus.closed).count()
+        cancelled_count: int = base_query.filter(Election.status == ElectionStatus.cancelled).count()
 
         return {
             "total": total,
@@ -498,6 +394,171 @@ class ElectionService:
             "closed": closed_count,
             "cancelled": cancelled_count,
         }
+
+    # ------------------------------------------------------------------
+    # Completed Elections
+    # ------------------------------------------------------------------
+
+    def get_completed(
+        self,
+        db: Session,
+        tenant_id: Optional[int] = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Return ALL completed elections with winner summaries.
+        """
+        query = db.query(Election)
+
+        if tenant_id is not None:
+            query = query.filter(Election.tenant_id == tenant_id)
+
+        now = datetime.now(timezone.utc)
+        query = query.filter(
+            or_(
+                Election.status == ElectionStatus.closed,
+                Election.end_date < now,
+            )
+        )
+
+        elections = query.order_by(Election.end_date.desc()).all()
+        return self._build_results(db, elections)
+
+    def get_completed_for_user(
+        self,
+        db: Session,
+        user_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Return ONLY completed elections where the user has cast at least one vote.
+        """
+        # Get distinct election IDs the user voted in
+        voted_election_ids = (
+            db.query(Vote.election_id)
+            .filter(Vote.user_id == user_id)
+            .distinct()
+            .subquery()
+        )
+
+        query = db.query(Election).filter(Election.id.in_(voted_election_ids))
+
+        if tenant_id is not None:
+            query = query.filter(Election.tenant_id == tenant_id)
+
+        now = datetime.now(timezone.utc)
+        query = query.filter(
+            or_(
+                Election.status == ElectionStatus.closed,
+                Election.end_date < now,
+            )
+        )
+
+        elections = query.order_by(Election.end_date.desc()).all()
+        return self._build_results(db, elections)
+
+    def get_completed_by_id(
+        self,
+        db: Session,
+        election_id: int,
+        tenant_id: Optional[int] = None,
+    ) -> dict[str, Any]:
+        """
+        Return a single completed election result by ID, or raise 404.
+        """
+        election = db.query(Election).filter(Election.id == election_id).first()
+        if election is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        if tenant_id is not None and election.tenant_id != tenant_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Election with id={election_id} not found.",
+            )
+        # Ensure it's completed (handle naive end_date from SQLite)
+        now = datetime.now(timezone.utc)
+        end_date = election.end_date
+        if end_date is not None and end_date.tzinfo is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+        is_completed = (
+            election.status == ElectionStatus.closed or
+            (end_date is not None and end_date < now)
+        )
+        if not is_completed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Election is not yet completed.",
+            )
+        results = self._build_results(db, [election])
+        return results[0] if results else {}
+
+    def _build_results(
+        self,
+        db: Session,
+        elections: list[Election],
+    ) -> list[dict[str, Any]]:
+        """
+        Shared helper: build result dicts with winner, runner-up, and candidate list.
+        """
+        results = []
+        for election in elections:
+            candidates = (
+                db.query(Candidate)
+                .filter(Candidate.election_id == election.id)
+                .order_by(Candidate.vote_count.desc(), Candidate.full_name.asc())
+                .all()
+            )
+            total_votes = sum(c.vote_count or 0 for c in candidates)
+            winner = candidates[0] if candidates and (candidates[0].vote_count or 0) > 0 else None
+            runner_up = candidates[1] if len(candidates) > 1 and (candidates[1].vote_count or 0) > 0 else None
+            winning_margin = (
+                (winner.vote_count or 0) - (runner_up.vote_count or 0)
+                if winner and runner_up
+                else (winner.vote_count or 0 if winner else 0)
+            )
+
+            candidate_list = []
+            for idx, c in enumerate(candidates, start=1):
+                pct = (
+                    round(((c.vote_count or 0) / total_votes) * 100, 2)
+                    if total_votes > 0
+                    else 0.0
+                )
+                candidate_list.append({
+                    "id": c.id,
+                    "name": c.full_name,
+                    "photo": c.image_url,
+                    "symbol": c.symbol,
+                    "votes": c.vote_count or 0,
+                    "percentage": pct,
+                    "rank": idx,
+                })
+
+            results.append({
+                "election_id": election.id,
+                "title": election.title,
+                "status": election.status.value,
+                "end_date": election.end_date.isoformat() if election.end_date else None,
+                "total_votes": total_votes,
+                "winner": {
+                    "candidate_id": winner.id,
+                    "name": winner.full_name,
+                    "photo": winner.image_url,
+                    "symbol": winner.symbol,
+                    "position": winner.position_name,
+                    "votes": winner.vote_count or 0,
+                } if winner else None,
+                "runner_up": {
+                    "candidate_id": runner_up.id,
+                    "name": runner_up.full_name,
+                    "votes": runner_up.vote_count or 0,
+                } if runner_up else None,
+                "winning_margin": winning_margin,
+                "candidates": candidate_list,
+            })
+
+        return results
 
 
 # ---------------------------------------------------------------------------

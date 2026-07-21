@@ -514,6 +514,18 @@ const ProfileScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </ProfileSection>
 
+          {/* Voting Section */}
+          <ProfileSection title="Voting" icon="how-to-vote">
+            <TouchableOpacity 
+              style={styles.supportAction}
+              onPress={() => navigation.navigate('CompletedElections')}
+            >
+              <MaterialIcons name="emoji-events" size={ms(22)} color={COLORS.gold} />
+              <Text style={styles.supportActionText}>Election Results</Text>
+              <MaterialIcons name="chevron-right" size={ms(20)} color={COLORS.outlineVariant} />
+            </TouchableOpacity>
+          </ProfileSection>
+
           {/* Logout Action */}
           <TouchableOpacity 
             style={styles.logoutButton} 

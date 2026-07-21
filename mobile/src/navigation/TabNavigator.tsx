@@ -11,6 +11,8 @@ import NotificationScreen from '../screens/NotificationScreen';
 import VotingScreen from '../screens/VotingScreen';
 import CandidateDetailScreen from '../screens/CandidateDetailScreen';
 import NominationScreen from '../screens/NominationScreen';
+import CompletedElectionsScreen from '../screens/CompletedElectionsScreen';
+import ElectionResultScreen from '../screens/ElectionResultScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
@@ -71,6 +73,8 @@ const ProfileStack = () => (
     <Stack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
     <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     <Stack.Screen name="Terms" component={TermsScreen} />
+    <Stack.Screen name="CompletedElections" component={CompletedElectionsScreen} />
+    <Stack.Screen name="ElectionResult" component={ElectionResultScreen} />
   </Stack.Navigator>
 );
 

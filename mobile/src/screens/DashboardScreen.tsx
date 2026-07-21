@@ -341,6 +341,16 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
                       <View style={[styles.minimalTypeBadge, { backgroundColor: COLORS.secondary + '10' }]}>
                         <Text style={[styles.minimalTypeBadgeText, { color: COLORS.secondary }]}>{election.election_type || 'GENERAL'}</Text>
                       </View>
+                      <View style={election.voting_type === 'MULTIPLE_MEMBER' ? styles.votingTypeMMBadge : styles.votingTypeSingleBadge}>
+                        <MaterialIcons
+                          name={election.voting_type === 'MULTIPLE_MEMBER' ? 'groups' : 'person'}
+                          size={ms(9)}
+                          color={election.voting_type === 'MULTIPLE_MEMBER' ? '#fff' : '#fff'}
+                        />
+                        <Text style={election.voting_type === 'MULTIPLE_MEMBER' ? styles.votingTypeMMBadgeText : styles.votingTypeSingleBadgeText}>
+                          {election.voting_type === 'MULTIPLE_MEMBER' ? 'Multi' : 'Single'}
+                        </Text>
+                      </View>
                       <View style={styles.liveIndicator}>
                         <View style={styles.livePulse} />
                         <Text style={styles.liveIndicatorText}>ACTIVE</Text>
@@ -418,6 +428,16 @@ const DashboardScreen = ({ navigation }: { navigation: any }) => {
                     <View style={styles.minimalCardTopRow}>
                       <View style={styles.minimalTypeBadge}>
                         <Text style={styles.minimalTypeBadgeText}>{election.election_type || 'GENERAL'}</Text>
+                      </View>
+                      <View style={election.voting_type === 'MULTIPLE_MEMBER' ? styles.votingTypeMMBadge : styles.votingTypeSingleBadge}>
+                        <MaterialIcons
+                          name={election.voting_type === 'MULTIPLE_MEMBER' ? 'groups' : 'person'}
+                          size={ms(9)}
+                          color={election.voting_type === 'MULTIPLE_MEMBER' ? '#fff' : '#fff'}
+                        />
+                        <Text style={election.voting_type === 'MULTIPLE_MEMBER' ? styles.votingTypeMMBadgeText : styles.votingTypeSingleBadgeText}>
+                          {election.voting_type === 'MULTIPLE_MEMBER' ? 'Multi' : 'Single'}
+                        </Text>
                       </View>
                     </View>
 
@@ -563,6 +583,9 @@ const styles = StyleSheet.create({
   viewAnnouncementsText: { color: COLORS.primary, fontSize: ms(13), fontWeight: '900' },
   emptyAnnouncementCard: { backgroundColor: COLORS.surfaceContainerLow, borderRadius: ms(10), padding: ms(28), alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: COLORS.outlineVariant, marginBottom: vs(28) },
 
+  activeHeroContainer: {
+    marginBottom: vs(8),
+  },
   heroPremiumCard: {
     borderRadius: ms(12),
     backgroundColor: '#fff',
@@ -715,6 +738,38 @@ const styles = StyleSheet.create({
   },
   minimalTypeBadgeText: {
     color: COLORS.onSurfaceVariant, fontSize: ms(9), fontWeight: '800', letterSpacing: 0.3,
+  },
+  votingTypeMMBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(4),
+    backgroundColor: '#4f46e5',
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
+    borderRadius: ms(4),
+    marginLeft: hs(6),
+  },
+  votingTypeMMBadgeText: {
+    color: '#fff',
+    fontSize: ms(8),
+    fontWeight: '900',
+    letterSpacing: 0.3,
+  },
+  votingTypeSingleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: hs(4),
+    backgroundColor: '#16a34a',
+    paddingHorizontal: hs(8),
+    paddingVertical: vs(3),
+    borderRadius: ms(4),
+    marginLeft: hs(6),
+  },
+  votingTypeSingleBadgeText: {
+    color: '#fff',
+    fontSize: ms(8),
+    fontWeight: '900',
+    letterSpacing: 0.3,
   },
   minimalCardBody: {
     flex: 1,

@@ -23,8 +23,9 @@ from app.config.database import get_db
 from app.middlewares.auth_middleware import get_current_user
 from app.models.election import Election
 from app.models.user import User, UserRole
+from app.repositories.election_repository import ElectionRepository
 from app.schemas.payment import VotingEligibilityResponse
-from app.schemas.vote import VoteCreate, VoteResponse
+from app.schemas.vote import BatchVoteCreate, VoteCreate, VoteResponse
 from app.services.payment_service import payment_service
 from app.services.vote_service import vote_service
 from app.utils.helpers import get_client_ip
@@ -161,6 +162,64 @@ def submit_vote(
     )
 
 
+@voting_router.post(
+    "/submit-batch",
+    summary="Submit batch votes for MULTIPLE_MEMBER elections",
+)
+def submit_batch_vote(
+    payload: BatchVoteCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Submit votes for multiple candidates in a MULTIPLE_MEMBER election.
+
+    The backend validates membership, payment eligibility, and enforces
+    the ``votes_allowed_per_voter`` limit.
+
+    Request body:
+        election_id (int): ID of the election.
+        candidate_ids (list[int]): List of candidate IDs to vote for.
+
+    Returns:
+        List of created vote records on success.
+    """
+    eligibility = payment_service.check_voting_eligibility(db, current_user)
+    if not eligibility["can_vote"]:
+        status_code = (
+            status.HTTP_402_PAYMENT_REQUIRED
+            if eligibility["membership_selected"]
+            else status.HTTP_400_BAD_REQUEST
+        )
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "message": "Membership payment required before voting."
+                if eligibility["membership_selected"]
+                else "Membership Plan required before voting.",
+            },
+        )
+
+    ip = get_client_ip(request)
+    votes = vote_service.cast_batch_votes(
+        db,
+        user_id=current_user.id,
+        election_id=payload.election_id,
+        candidate_ids=payload.candidate_ids,
+        ip_address=ip,
+        tenant_id=current_user.tenant_id,
+    )
+    return success_response(
+        data={
+            "votes": [VoteResponse.model_validate(v).model_dump(mode="json") for v in votes],
+            "count": len(votes),
+        },
+        message=f"Successfully cast {len(votes)} vote(s)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # GET /my-vote/{election_id}
 # ---------------------------------------------------------------------------
@@ -175,18 +234,49 @@ def get_my_vote(
     current_user: User = Depends(get_current_user),
 ) -> JSONResponse:
     """
-    Return the authenticated user's vote record for the given election,
-    or ``null`` if they have not yet voted.
+    Return the authenticated user's vote record(s) for the given election.
+
+    For ``SINGLE_CANDIDATE`` elections the response contains a single ``vote``
+    object.  For ``MULTIPLE_MEMBER`` elections the response contains a
+    ``votes`` list so the caller can see every candidate the voter selected.
     """
+    election_repo = ElectionRepository(db)
+    election = election_repo.get_by_id(election_id)
+    if election is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Election with id={election_id} not found.",
+        )
+
+    if election.voting_type.value == "MULTIPLE_MEMBER":
+        votes = vote_service.get_user_votes(db, current_user.id, election_id)
+        if not votes:
+            return success_response(
+                data={"already_voted": False, "voted_candidate_ids": [], "votes_allowed": election.votes_allowed_per_voter},
+                message="User has not voted in this election.",
+            )
+        return success_response(
+            data={
+                "already_voted": True,
+                "voted_candidate_ids": [v.candidate_id for v in votes],
+                "votes_allowed": election.votes_allowed_per_voter,
+                "votes": [VoteResponse.model_validate(v).model_dump(mode="json") for v in votes],
+            },
+            message="Vote records retrieved.",
+        )
+
+    # SINGLE_CANDIDATE and other types — keep legacy single-vote shape.
     vote = vote_service.get_user_vote(db, current_user.id, election_id)
     if vote is None:
         return success_response(
-            data={"has_voted": False, "vote": None},
+            data={"already_voted": False, "voted_candidate_ids": [], "votes_allowed": 1},
             message="User has not voted in this election.",
         )
     return success_response(
         data={
-            "has_voted": True,
+            "already_voted": True,
+            "voted_candidate_ids": [vote.candidate_id],
+            "votes_allowed": 1,
             "vote": VoteResponse.model_validate(vote).model_dump(mode="json"),
         },
         message="Vote record retrieved.",

@@ -33,6 +33,106 @@ router = APIRouter(prefix="/elections", tags=["Elections"])
 
 
 # ---------------------------------------------------------------------------
+# GET /completed/my — List completed elections the user voted in
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/completed/my",
+    summary="List completed elections where the current user voted",
+)
+def get_my_completed_elections(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Return ONLY completed elections in which the authenticated user
+    has cast at least one vote. Users see only their own elections.
+    """
+    effective_tenant_id: Optional[int] = None
+    if current_user.role != UserRole.superadmin:
+        effective_tenant_id = current_user.tenant_id
+
+    results = election_service.get_completed_for_user(
+        db,
+        user_id=current_user.id,
+        tenant_id=effective_tenant_id,
+    )
+    return success_response(
+        data=results,
+        message="Your completed elections retrieved.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /completed/{election_id} — Single completed election result
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/completed/{election_id}",
+    summary="Get a single completed election result with full details",
+)
+def get_completed_election_result(
+    election_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Return the full result for a single completed election, including
+    candidate list, winner, runner-up, vote counts, and percentages.
+    Only completed elections (closed or past end_date) are accessible.
+    """
+    effective_tenant_id: Optional[int] = None
+    if current_user.role != UserRole.superadmin:
+        effective_tenant_id = current_user.tenant_id
+
+    result = election_service.get_completed_by_id(
+        db,
+        election_id=election_id,
+        tenant_id=effective_tenant_id,
+    )
+    return success_response(
+        data=result,
+        message="Election result retrieved.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /completed — List completed elections with results
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/completed",
+    summary="List completed elections with winner/result summaries",
+)
+def get_completed_elections(
+    tenant_id: Optional[int] = Query(
+        default=None,
+        description="Filter by tenant ID (superadmin)",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> JSONResponse:
+    """
+    Return completed elections with winner and candidate results.
+
+    A completed election is one whose ``status`` is ``closed`` or whose
+    ``end_date`` is in the past. Results are scoped to the caller's tenant
+    unless they are a superadmin explicitly passing ``tenant_id``.
+    """
+    effective_tenant_id: Optional[int] = None
+    if current_user.role == UserRole.superadmin:
+        effective_tenant_id = tenant_id
+    else:
+        effective_tenant_id = current_user.tenant_id
+
+    results = election_service.get_completed(db, tenant_id=effective_tenant_id)
+    return success_response(
+        data=results,
+        message="Completed elections retrieved.",
+    )
+
+
+# ---------------------------------------------------------------------------
 # GET /public — List elections for registration/pre-auth
 # ---------------------------------------------------------------------------
 

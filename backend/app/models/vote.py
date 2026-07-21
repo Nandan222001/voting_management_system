@@ -24,9 +24,12 @@ class Vote(Base):
 
     __tablename__ = "votes"
 
-    # Enforce one-vote-per-election at the DB level
+    # Enforce one-vote-per-candidate-per-election at the DB level.
+    # For SINGLE_CANDIDATE elections the service layer prevents >1 vote.
+    # For MULTIPLE_MEMBER elections this allows a voter to choose several
+    # candidates while preventing duplicate votes for the same candidate.
     __table_args__ = (
-        UniqueConstraint("user_id", "election_id", name="uq_vote_user_election"),
+        UniqueConstraint("user_id", "election_id", "candidate_id", name="uq_vote_user_election_candidate"),
     )
 
     # Multi-tenancy – CASCADE delete votes when tenant is removed

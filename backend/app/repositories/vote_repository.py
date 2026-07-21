@@ -46,6 +46,27 @@ class VoteRepository(BaseRepository[Vote]):
             .first()
         )
 
+    def get_user_votes_in_election(
+        self, user_id: int, election_id: int
+    ) -> list[Vote]:
+        """
+        Fetch **all** votes cast by *user_id* in *election_id*.
+        Used primarily for MULTIPLE_MEMBER elections where a voter can
+        select several candidates.
+
+        Args:
+            user_id:     Primary key of the voter.
+            election_id: Primary key of the election.
+
+        Returns:
+            A list of ``Vote`` instances (empty if none).
+        """
+        return (
+            self.db.query(Vote)
+            .filter(Vote.user_id == user_id, Vote.election_id == election_id)
+            .all()
+        )
+
     def has_user_voted(self, user_id: int, election_id: int) -> bool:
         """
         Return ``True`` if the user has already cast a vote in the election.
@@ -63,6 +84,26 @@ class VoteRepository(BaseRepository[Vote]):
             .count()
             > 0
         )
+
+    def get_user_vote_count_in_election(self, user_id: int, election_id: int) -> int:
+        """
+        Return the number of votes cast by *user_id* in *election_id*.
+
+        Used for ``MULTIPLE_MEMBER`` elections where a voter may cast
+        up to ``votes_allowed_per_voter`` ballots.
+
+        Args:
+            user_id:     Primary key of the voter.
+            election_id: Primary key of the election.
+
+        Returns:
+            Integer vote count (0 if none).
+        """
+        return (
+            self.db.query(func.count(Vote.id))
+            .filter(Vote.user_id == user_id, Vote.election_id == election_id)
+            .scalar()
+        ) or 0
 
     def get_election_vote_count(self, election_id: int) -> int:
         """
