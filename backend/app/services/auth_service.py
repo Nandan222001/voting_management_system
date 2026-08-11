@@ -120,12 +120,17 @@ class AuthService:
                     ),
                 )
 
-        if repo.get_by_email(normalized_email):
-            print(f"DEBUG: User with email {normalized_email} already exists")
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this email address already exists.",
-            )
+        existing_user = repo.get_by_email(normalized_email)
+        if existing_user:
+            if existing_user.hashed_password:
+                # Full account already exists
+                print(f"DEBUG: User with email {normalized_email} already exists")
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="A user with this email address already exists.",
+                )
+            # Temporary record from send-otp - we'll update it instead of creating new
+            print(f"DEBUG: Found temporary record for {normalized_email}, will update it")
 
         if register_data.voter_id:
             existing_voter = db.query(User).filter(User.voter_id == register_data.voter_id).first()
@@ -179,69 +184,115 @@ class AuthService:
         # Normalize empty strings to None for optional unique fields
         voter_id = register_data.voter_id if register_data.voter_id and register_data.voter_id.strip() != "" else None
 
-        print(f"DEBUG: Creating User object for {normalized_email}")
-        try:
-            user = User(
-                full_name=register_data.full_name,
-                email=normalized_email,
-                phone=register_data.phone,
-                date_of_birth=register_data.date_of_birth,
-                gender=register_data.gender,
-                parent_name=register_data.parent_name,
-                voter_id=voter_id,
-                designation=register_data.designation,
-                
-                # KYC
-                kyc_type=register_data.kyc_type,
-                kyc_front_url=register_data.kyc_front_url,
-                kyc_back_url=register_data.kyc_back_url,
+        if existing_user:
+            # Update the existing temporary record with full registration data
+            print(f"DEBUG: Updating existing temporary user record for {normalized_email}")
+            user = existing_user
+            user.full_name = register_data.full_name
+            user.phone = register_data.phone
+            user.date_of_birth = register_data.date_of_birth
+            user.gender = register_data.gender
+            user.parent_name = register_data.parent_name
+            user.voter_id = voter_id
+            user.designation = register_data.designation
+            user.kyc_type = register_data.kyc_type
+            user.kyc_front_url = register_data.kyc_front_url
+            user.kyc_back_url = register_data.kyc_back_url
+            user.house_number = register_data.house_number
+            user.street_address = register_data.street_address
+            user.village = register_data.village
+            user.landmark = register_data.landmark
+            user.pincode = register_data.pincode
+            user.city = register_data.city
+            user.taluka = register_data.taluka
+            user.district = register_data.district
+            user.state = register_data.state
+            user.country = register_data.country
+            user.current_street_address = register_data.current_street_address
+            user.current_city = register_data.current_city
+            user.current_district = register_data.current_district
+            user.current_state = register_data.current_state
+            user.current_pincode = register_data.current_pincode
+            user.target_id = register_data.target_id
+            user.committee_id = register_data.committee_id
+            user.membership_plan_id = register_data.membership_plan_id
+            user.hashed_password = hash_password(register_data.password)
+            user.tenant_id = resolved_tenant_id
+            # Preserve existing OTP if already verified, otherwise set new one
+            if not user.is_verified:
+                user.otp_code = otp
+                user.otp_expires_at = otp_expires
+            try:
+                db.flush() # Get user.id
+                print(f"DEBUG: Temporary user updated successfully. ID: {user.id}")
+            except Exception as e:
+                print(f"DEBUG: Database flush failed: {str(e)}")
+                db.rollback()
+                raise e
+        else:
+            print(f"DEBUG: Creating User object for {normalized_email}")
+            try:
+                user = User(
+                    full_name=register_data.full_name,
+                    email=normalized_email,
+                    phone=register_data.phone,
+                    date_of_birth=register_data.date_of_birth,
+                    gender=register_data.gender,
+                    parent_name=register_data.parent_name,
+                    voter_id=voter_id,
+                    designation=register_data.designation,
+                    
+                    # KYC
+                    kyc_type=register_data.kyc_type,
+                    kyc_front_url=register_data.kyc_front_url,
+                    kyc_back_url=register_data.kyc_back_url,
 
-                # Address (Permanent)
-                house_number=register_data.house_number,
-                street_address=register_data.street_address,
-                village=register_data.village,
-                landmark=register_data.landmark,
-                pincode=register_data.pincode,
-                city=register_data.city,
-                taluka=register_data.taluka,
-                district=register_data.district,
-                state=register_data.state,
-                country=register_data.country,
+                    # Address (Permanent)
+                    house_number=register_data.house_number,
+                    street_address=register_data.street_address,
+                    village=register_data.village,
+                    landmark=register_data.landmark,
+                    pincode=register_data.pincode,
+                    city=register_data.city,
+                    taluka=register_data.taluka,
+                    district=register_data.district,
+                    state=register_data.state,
+                    country=register_data.country,
 
-                # Current Address
-                current_street_address=register_data.current_street_address,
-                current_city=register_data.current_city,
-                current_district=register_data.current_district,
-                current_state=register_data.current_state,
-                current_pincode=register_data.current_pincode,
+                    # Current Address
+                    current_street_address=register_data.current_street_address,
+                    current_city=register_data.current_city,
+                    current_district=register_data.current_district,
+                    current_state=register_data.current_state,
+                    current_pincode=register_data.current_pincode,
 
-                # Mapping
-                target_id=register_data.target_id,
-                committee_id=register_data.committee_id,
-                membership_plan_id=register_data.membership_plan_id,
+                    # Mapping
+                    target_id=register_data.target_id,
+                    committee_id=register_data.committee_id,
+                    membership_plan_id=register_data.membership_plan_id,
 
-                hashed_password=hash_password(register_data.password),
-                role=UserRole.voter,
-                status=UserStatus.pending,
-                is_verified=False,
-                otp_code=otp,
-                otp_expires_at=otp_expires,
-                tenant_id=resolved_tenant_id,
-            )
-            print("DEBUG: User object instantiated successfully")
-        except Exception as e:
-            print(f"DEBUG: Failed to instantiate User object: {str(e)}")
-            raise e
+                    hashed_password=hash_password(register_data.password),
+                    role=UserRole.voter,
+                    status=UserStatus.pending,
+                    is_verified=False,
+                    otp_code=otp,
+                    otp_expires_at=otp_expires,
+                    tenant_id=resolved_tenant_id,
+                )
+                print("DEBUG: User object instantiated successfully")
+            except Exception as e:
+                print(f"DEBUG: Failed to instantiate User object: {str(e)}")
+                raise e
 
-        print("DEBUG: Adding user to session and flushing...")
-        db.add(user)
-        try:
-            db.flush() # Get user.id
-            print(f"DEBUG: User flushed successfully. ID: {user.id}")
-        except Exception as e:
-            print(f"DEBUG: Database flush failed: {str(e)}")
-            db.rollback()
-            raise e
+            print("DEBUG: Adding user to session and flushing...")
+            db.add(user)
+            try:
+                db.flush() # Get user.id
+                print(f"DEBUG: User flushed successfully. ID: {user.id}")
+            except Exception as e:
+                print(f"DEBUG: Database flush failed: {str(e)}")
+                db.rollback()
+                raise e
 
         # Create or update payment record to 'captured' and link to user
         if register_data.membership_plan_id and register_data.razorpay_order_id:
@@ -275,6 +326,82 @@ class AuthService:
             # We don't raise an exception here so the user can still proceed.
 
         return user
+
+    # ------------------------------------------------------------------
+    # Send OTP (pre-registration email verification)
+    # ------------------------------------------------------------------
+
+    def send_otp(self, db: Session, email: str) -> bool:
+        """
+        Generate and send an OTP to the given email address for
+        pre-registration verification.
+
+        Creates a temporary user record (with an empty password) holding
+        the OTP so that the existing ``verify_otp`` endpoint can find and
+        verify it. If a temporary record already exists (e.g. from a
+        previous send-otp request), its OTP is refreshed.
+
+        Args:
+            db:    Active database session.
+            email: The email address to send the OTP to.
+
+        Returns:
+            True if the OTP was sent successfully.
+
+        Raises:
+            HTTPException 409: If the email is already registered with a
+                               fully-created account.
+            HTTPException 500: If sending the email fails.
+        """
+        repo = UserRepository(db)
+        normalized_email = email.lower().strip()
+
+        # Check if email is already registered with a full account
+        existing = repo.get_by_email(normalized_email)
+        if existing and existing.hashed_password:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This email is already registered. Please use a different email or login.",
+            )
+
+        otp = generate_otp()
+        otp_expires = datetime.now(timezone.utc) + timedelta(minutes=_OTP_TTL_MINUTES)
+
+        if existing:
+            # Refresh OTP on existing temporary record
+            existing.otp_code = otp
+            existing.otp_expires_at = otp_expires
+            db.commit()
+            temp_user = existing
+        else:
+            # Create a minimal temporary user record to hold the OTP
+            temp_user = User(
+                email=normalized_email,
+                full_name="",
+                phone="",
+                hashed_password="",
+                role=UserRole.voter,
+                status=UserStatus.pending,
+                is_verified=False,
+                otp_code=otp,
+                otp_expires_at=otp_expires,
+            )
+            db.add(temp_user)
+            db.commit()
+            db.refresh(temp_user)
+
+        # Send the OTP via email
+        try:
+            send_registration_otp_email(normalized_email, otp)
+            logger.info(f"OTP sent to {normalized_email}")
+        except Exception as e:
+            logger.error(f"Failed to send OTP email to {normalized_email}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to send OTP email: {str(e)}",
+            )
+
+        return True
 
     # ------------------------------------------------------------------
     # Login
@@ -555,35 +682,52 @@ class AuthService:
                 detail="Invalid OTP code.",
             )
 
+        # Check if this is a fully registered user or a pre-registration temp user
+        is_fully_registered = bool(user.hashed_password)
+
         # Mark as verified and clear the OTP fields.
         user.is_verified = True
         user.otp_code = None
         user.otp_expires_at = None
-        
-        # New: If the user is a voter, activate them automatically upon verification
-        # (Assuming registration sets them to pending)
-        if user.role == UserRole.voter:
-            user.status = UserStatus.active
 
-        db.commit()
-        db.refresh(user)
+        if is_fully_registered:
+            # Fully registered user: activate them upon verification
+            if user.role == UserRole.voter:
+                user.status = UserStatus.active
 
-        # Issue tokens so the user is logged in immediately
-        token_payload = {
-            "sub": str(user.id),
-            "role": user.role.value,
-            "tenant_id": user.tenant_id,
-            "district": user.district,
-            "designation": user.designation,
-        }
-        access_token = create_access_token(token_payload)
-        refresh_token = create_refresh_token(token_payload)
+            db.commit()
+            db.refresh(user)
 
-        return TokenResponse(
-            access_token=access_token,
-            token_type="bearer",
-            user=AuthUserInfo.model_validate(user),
-        )
+            # Issue tokens so the user is logged in immediately
+            token_payload = {
+                "sub": str(user.id),
+                "role": user.role.value,
+                "tenant_id": user.tenant_id,
+                "district": user.district,
+                "designation": user.designation,
+            }
+            access_token = create_access_token(token_payload)
+            refresh_token = create_refresh_token(token_payload)
+
+            return TokenResponse(
+                access_token=access_token,
+                token_type="bearer",
+                user=AuthUserInfo.model_validate(user),
+            )
+        else:
+            # Pre-registration temp user: just mark email as verified.
+            # Keep status as pending — they still need to complete registration.
+            db.commit()
+            db.refresh(user)
+
+            # Return an empty TokenResponse — the mobile app checks for
+            # access_token to decide whether login happened. No token means
+            # the user still needs to complete registration.
+            return TokenResponse(
+                access_token="",
+                token_type="bearer",
+                user=AuthUserInfo.model_validate(user),
+            )
 
     # ------------------------------------------------------------------
     # Forgot Password

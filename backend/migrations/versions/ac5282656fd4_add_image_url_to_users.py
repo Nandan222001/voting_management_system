@@ -18,7 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column('users', sa.Column('image_url', sa.String(length=500), nullable=True))
+    op.add_column('users', sa.Column('membership_expires_at', sa.DateTime(), nullable=True))
 
 
 def downgrade() -> None:
+    op.drop_column('users', 'membership_expires_at')
     op.drop_column('users', 'image_url')

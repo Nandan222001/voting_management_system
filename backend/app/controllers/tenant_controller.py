@@ -168,6 +168,7 @@ def update_tenant(
     contact_email: EmailStr | None = Form(None),
     contact_phone: str | None = Form(None),
     plan: str | None = Form(None),
+    status: str | None = Form(None),
     logo: UploadFile | None = File(None),
     _: User = Depends(require_superadmin),
     db: Session = Depends(get_db),
@@ -184,6 +185,8 @@ def update_tenant(
         update_data['contact_phone'] = contact_phone
     if plan is not None:
         update_data['plan'] = plan
+    if status is not None:
+        update_data['status'] = status
 
     body = TenantUpdate(**update_data) if update_data else TenantUpdate()
     tenant = tenant_service.update_tenant(db, tenant_id, body, logo=logo)

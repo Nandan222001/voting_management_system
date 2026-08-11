@@ -2,10 +2,17 @@ import api from './api';
 
 const toTenantFormData = (data = {}) => {
   if (data instanceof FormData) return data
-  
-  // If no file, return data as is, or convert to FormData if the API strictly expects it.
-  // Given the backend expects "body" fields for validation, let's try sending as plain JSON if not FormData.
-  return data
+
+  // The backend create/update tenant endpoints use FastAPI Form(...)/File(...)
+  // parameters, so they ALWAYS expect multipart/form-data. Convert the plain
+  // object to FormData so the request is accepted.
+  const formData = new FormData();
+  Object.entries(data).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      formData.append(key, value);
+    }
+  });
+  return formData;
 }
 
 const tenantService = {

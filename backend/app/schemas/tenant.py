@@ -35,6 +35,7 @@ class TenantUpdate(BaseModel):
     contact_email: Optional[EmailStr] = None
     contact_phone: Optional[str] = Field(None, max_length=20)
     plan: Optional[str] = Field(None, description="Subscription plan tier.")
+    status: Optional[str] = Field(None, description="Lifecycle status: draft, active, suspended, cancelled.")
     
     # Optional Razorpay updates via main update schema
     razorpay_key_id: Optional[str] = None

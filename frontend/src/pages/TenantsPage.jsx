@@ -774,8 +774,11 @@ export default function TenantsPage() {
         });
         setErrors(newErrors);
         toast.error('Please fix the validation errors.');
+      } else if (errorData && typeof errorData === 'object' && errorData.detail) {
+        // FastAPI returns a plain string detail for business errors (e.g. 409 conflict)
+        toast.error(errorData.detail);
       } else {
-        toast.error(typeof error === 'string' ? error : (errorData.message || 'Failed to create tenant.'));
+        toast.error(typeof error === 'string' ? error : (errorData?.message || 'Failed to create tenant.'));
       }
     }
   };

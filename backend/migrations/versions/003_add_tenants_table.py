@@ -33,14 +33,14 @@ def upgrade() -> None:
         sa.Column(
             "status",
             sa.Enum(
-                "trial",
+                "draft",
                 "active",
                 "suspended",
                 "cancelled",
                 name="tenant_status_enum",
             ),
             nullable=False,
-            server_default="trial",
+            server_default="draft",
         ),
         sa.Column(
             "plan",
@@ -60,6 +60,7 @@ def upgrade() -> None:
             "max_voters", sa.Integer(), nullable=False, server_default="1000"
         ),
         sa.Column("contact_email", sa.String(255), nullable=True),
+        sa.Column("contact_phone", sa.String(20), nullable=True),
         sa.Column("created_by", sa.Integer(), nullable=True),
         sa.Column(
             "created_at",

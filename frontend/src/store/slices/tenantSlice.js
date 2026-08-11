@@ -34,7 +34,9 @@ export const createTenant = createAsyncThunk(
       const response = await tenantService.createTenant(data)
       return response.data
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create tenant.')
+      // Pass the full error response so the UI can map FastAPI validation
+      // errors (detail array) to individual form fields.
+      return rejectWithValue(error.response?.data || { message: 'Failed to create tenant.' })
     }
   }
 )

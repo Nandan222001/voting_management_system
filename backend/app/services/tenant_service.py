@@ -51,6 +51,12 @@ class TenantService:
         }
         max_e, max_v = plan_limits.get(data.plan or "starter", (5, 1000))
 
+        # Respect the submitted status (defaults to draft if not provided)
+        try:
+            tenant_status = TenantStatus(data.status or "draft")
+        except ValueError:
+            tenant_status = TenantStatus.draft
+
         tenant = Tenant(
             name=data.name,
             slug=slug,
@@ -61,7 +67,7 @@ class TenantService:
             primary_color=getattr(data, 'primary_color', None) or "#0051D5",
             max_elections=max_e,
             max_voters=max_v,
-            status=TenantStatus.draft,
+            status=tenant_status,
             created_by=created_by,
         )
         db.add(tenant)

@@ -29,10 +29,14 @@ def upgrade() -> None:
     # 4. Rename the main table
     op.rename_table('candidate_roles', 'candidate_committees')
     
-    # 5. Create new index on candidates
+    # 5. Rename indexes on the renamed table (MySQL keeps old index names)
+    op.execute('ALTER TABLE candidate_committees RENAME INDEX ix_candidate_roles_id TO ix_candidate_committees_id')
+    op.execute('ALTER TABLE candidate_committees RENAME INDEX ix_candidate_roles_tenant_id TO ix_candidate_committees_tenant_id')
+    
+    # 6. Create new index on candidates
     op.create_index(op.f('ix_candidates_committee_id'), 'candidates', ['committee_id'], unique=False)
     
-    # 6. Create new FK on candidates
+    # 7. Create new FK on candidates
     op.create_foreign_key('fk_candidates_committee', 'candidates', 'candidate_committees', ['committee_id'], ['id'], ondelete='SET NULL')
 
 
